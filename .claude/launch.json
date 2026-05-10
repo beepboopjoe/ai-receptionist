@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "API Server",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@ai-receptionist/api", "run", "demo"],
+      "port": 3001
+    },
+    {
+      "name": "API Worker (BullMQ)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@ai-receptionist/api", "run", "dev:worker"],
+      "port": 0
+    },
+    {
+      "name": "Dashboard",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@ai-receptionist/dashboard", "run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "Localtunnel (webhook relay → :3001)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["localtunnel", "--port", "3001"],
+      "port": 4040
+    }
+  ]
+}

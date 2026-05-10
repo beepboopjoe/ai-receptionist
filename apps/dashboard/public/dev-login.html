@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Dev Login</title></head>
+<body>
+<script>
+  localStorage.setItem('auth_token', 'mock.jwt.token.au0lnkqfmwk');
+  localStorage.setItem('auth_refresh_token', 'mock.refresh.oypm642mt1');
+  localStorage.setItem('auth_user', JSON.stringify({id:'usr_demo_001',email:'demo@riversidedental.com',role:'owner'}));
+  var target = new URLSearchParams(location.search).get('to') || '/dashboard';
+  window.location.replace(target);
+</script>
+<p>Redirecting...</p>
+</body>
+</html>

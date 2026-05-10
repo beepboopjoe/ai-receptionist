@@ -1,0 +1,87 @@
+# ============================================================
+# CI — runs on every PR and push to main.
+# Three parallel jobs: api, dashboard, shared. Each does
+# install + type-check, plus tests where they exist.
+# ============================================================
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel in-flight runs on the same ref when a new commit lands.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  api:
+    name: API · type-check + tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Type-check
+        run: pnpm --filter @ai-receptionist/api type-check
+      - name: Smoke tests
+        run: pnpm --filter @ai-receptionist/api test
+        env:
+          # Tests don't need real services — vitest runs in-process and the
+          # smoke tests are pure logic. These satisfy zod env validation
+          # without needing a real DB / Redis at CI time.
+          NODE_ENV: test
+          DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: ${{ '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' }}
+          JWT_REFRESH_SECRET: ${{ 'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210' }}
+          ENCRYPTION_KEY: ${{ '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' }}
+          XAI_API_KEY: ci-fake
+
+  dashboard:
+    name: Dashboard · type-check + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Type-check
+        run: pnpm --filter @ai-receptionist/dashboard type-check
+      - name: Lint
+        run: pnpm --filter @ai-receptionist/dashboard lint
+      - name: Build
+        run: pnpm --filter @ai-receptionist/dashboard build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+
+  shared:
+    name: Shared · type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Type-check
+        run: pnpm --filter @ai-receptionist/shared build

@@ -1,0 +1,11 @@
+{
+  "name": "@ai-receptionist/config",
+  "version": "1.0.0",
+  "private": true,
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./tsconfig.nextjs.json": "./tsconfig.nextjs.json",
+    "./eslint-base": "./eslint-base.js",
+    "./prettier": "./prettier.config.js"
+  }
+}

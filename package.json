@@ -1,0 +1,29 @@
+{
+  "name": "ai-receptionist",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Receptionist + Scheduling Hub — vertical-first SaaS for appointment-based businesses",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "db:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "db:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "db:migrate": "tsx apps/api/src/db/migrate.ts",
+    "db:seed": "tsx infra/scripts/seed.ts",
+    "db:studio": "echo 'PgAdmin running at http://localhost:5050'",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

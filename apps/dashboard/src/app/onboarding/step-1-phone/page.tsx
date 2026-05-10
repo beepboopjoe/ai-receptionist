@@ -1,0 +1,144 @@
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { onboardingApi } from '@/lib/api';
+import { CheckCircle, ArrowRight } from 'lucide-react';
+import { useVertical } from '@/lib/useVertical';
+
+export default function Step1PhonePage() {
+  const vertical = useVertical();
+  const router = useRouter();
+  const [areaCode, setAreaCode] = useState('');
+  const [provisioned, setProvisioned] = useState<{ phoneNumber: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [option, setOption] = useState<'twilio' | 'ringcentral' | null>(null);
+
+  async function handleProvision() {
+    setLoading(true);
+    setError('');
+    try {
+      const result = await onboardingApi.provisionNumber(areaCode || undefined);
+      setProvisioned(result);
+      await onboardingApi.completeStep(1);
+    } catch (err: any) {
+      setError(err.message ?? 'Provisioning failed');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="card p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 1 — Set Up Your AI Phone Line</h2>
+        <p className="text-sm text-gray-500">
+          Choose how you want to connect your AI receptionist to your phone system.
+        </p>
+      </div>
+
+      {/* Option A — Twilio forwarding (recommended) */}
+      <div
+        onClick={() => setOption('twilio')}
+        className={`card p-6 cursor-pointer transition-all ${
+          option === 'twilio' ? 'ring-2 ring-brand-500' : 'hover:ring-1 hover:ring-gray-300'
+        }`}
+      >
+        <div className="flex items-start gap-4">
+          <div className="text-3xl">📞</div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-gray-900">Quick Setup — Forwarding Number</p>
+              <span className="badge badge-green">Recommended</span>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              We provision a phone number for your {vertical.businessNoun}. You just set your existing main line to
+              forward to it — no changes to your phone system. Works with any carrier.
+            </p>
+            <p className="text-xs text-gray-400 mt-2">✓ Done in 60 seconds · ✓ Works with any phone system</p>
+          </div>
+        </div>
+
+        {option === 'twilio' && (
+          <div className="mt-5 space-y-3">
+            {!provisioned ? (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Preferred area code (optional)
+                  </label>
+                  <input
+                    value={areaCode}
+                    onChange={(e) => setAreaCode(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                    placeholder="e.g. 212"
+                    className="input w-40"
+                    maxLength={3}
+                  />
+                </div>
+                {error && <p className="text-sm text-red-500">{error}</p>}
+                <button
+                  onClick={handleProvision}
+                  disabled={loading}
+                  className="btn-primary"
+                >
+                  {loading ? 'Provisioning…' : 'Provision My Number'}
+                </button>
+              </>
+            ) : (
+              <div className="rounded-xl bg-green-50 p-4 ring-1 ring-green-100">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle size={18} className="text-green-600" />
+                  <p className="font-semibold text-green-800">Your number is ready!</p>
+                </div>
+                <p className="text-2xl font-bold text-green-900">{provisioned.phoneNumber}</p>
+                <p className="text-sm text-green-700 mt-2">
+                  Set your existing {vertical.businessNoun} phone to forward to this number.
+                  Your carrier or VoIP provider usually has a &quot;Call Forwarding&quot; or &quot;Forward When Busy&quot; option.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Option B — RingCentral */}
+      <div
+        onClick={() => setOption('ringcentral')}
+        className={`card p-6 cursor-pointer transition-all ${
+          option === 'ringcentral' ? 'ring-2 ring-brand-500' : 'hover:ring-1 hover:ring-gray-300'
+        }`}
+      >
+        <div className="flex items-start gap-4">
+          <div className="text-3xl">🔔</div>
+          <div className="flex-1">
+            <p className="font-semibold text-gray-900">RingCentral Integration</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Already using RingCentral? Connect your account directly via OAuth.
+            </p>
+            <p className="text-xs text-gray-400 mt-2">✓ No forwarding setup needed · Requires RingCentral account</p>
+          </div>
+        </div>
+        {option === 'ringcentral' && (
+          <div className="mt-4">
+            <a
+              href="/api/v1/integrations/ringcentral/connect"
+              className="btn-primary inline-flex"
+            >
+              Connect RingCentral
+            </a>
+          </div>
+        )}
+      </div>
+
+      {/* Next */}
+      {(provisioned || option === 'ringcentral') && (
+        <button
+          onClick={() => router.push('/onboarding/step-2-calendar')}
+          className="btn-primary w-full justify-center"
+        >
+          Continue to Step 2 <ArrowRight size={16} />
+        </button>
+      )}
+    </div>
+  );
+}

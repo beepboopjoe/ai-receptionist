@@ -1,0 +1,225 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Body sans + editorial serif for headings — warm/calm pairing */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&family=Instrument+Serif:ital@0;1&display=swap');
+
+@layer base {
+  :root {
+    /* Warm cream base palette (was cool gray) */
+    --background: 47 27% 97%;       /* #faf9f5 */
+    --foreground: 30 6% 12%;        /* #1f1e1c */
+    --card: 0 0% 100%;
+    --card-foreground: 30 6% 12%;
+    --border: 30 14% 86%;           /* #e6e2d5 */
+    --input: 30 14% 86%;
+    --ring: 16 56% 53%;             /* terracotta */
+    --radius: 0.625rem;
+  }
+
+  * {
+    @apply border-cream-200;
+  }
+
+  body {
+    @apply bg-cream-50 text-cream-900 font-sans antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  h1, h2, h3 {
+    letter-spacing: -0.01em;
+  }
+}
+
+/* ── Hero / landing utilities (warm palette) ─────────────────── */
+
+/* Dark hero variant — kept for sections that want high-contrast impact.
+   The radial highlights are now warm terracotta instead of cool indigo. */
+.mesh-gradient {
+  background-color: #1a1614;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 20% -10%, rgba(217,119,87,0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 110%, rgba(201,100,66,0.18) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 40% at 60% 40%, rgba(168,78,48,0.10) 0%, transparent 50%);
+}
+
+/* Light hero variant — cream wash with soft terracotta glow,
+   for sections that want to stay on-palette without going dark. */
+.mesh-gradient-light {
+  background-color: #faf9f5;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 15% -10%, rgba(201,100,66,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 110%, rgba(217,119,87,0.08) 0%, transparent 50%);
+}
+
+/* Glass card on dark hero (white-tinted translucent) */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Glass card on cream hero (warm-tinted translucent) */
+.glass-card-light {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(60, 50, 40, 0.08);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+
+/* Sticky nav glass */
+.glass-nav {
+  background: rgba(250, 249, 245, 0.82);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Primary CTA glow (terracotta) */
+.glow-btn {
+  box-shadow: 0 0 0 0 rgba(201,100,66,0);
+  transition: box-shadow 0.3s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+.glow-btn:hover {
+  box-shadow: 0 8px 32px rgba(201,100,66,0.40);
+  transform: translateY(-1px);
+}
+.glow-btn:active {
+  transform: translateY(0);
+}
+
+/* Editorial gradient text — warm terracotta scale */
+.gradient-text {
+  background: linear-gradient(135deg, #c96442 0%, #d97757 50%, #a84e30 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* One-shot serif headline helper */
+.heading-serif {
+  font-family: 'Instrument Serif', 'Source Serif Pro', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+}
+
+.feature-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.feature-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(201,100,66,0.10), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.feature-card:hover::before { opacity: 1; }
+.feature-card:hover { transform: translateY(-3px); box-shadow: 0 16px 48px rgba(40,28,18,0.10); }
+
+.pricing-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.pricing-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 60px rgba(40,28,18,0.10);
+}
+
+/* ROI calculator sliders — terracotta thumb */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #c96442;
+  border: 2px solid rgba(255,255,255,0.85);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(201,100,66,0.45);
+}
+input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #c96442;
+  border: 2px solid rgba(255,255,255,0.85);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(201,100,66,0.45);
+}
+
+/* FAQ chevrons */
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details[open] summary .faq-icon { transform: rotate(45deg); }
+.faq-icon { transition: transform 0.25s ease; display: inline-block; }
+
+/* Shimmer for badges (white sweep — works on terracotta or indigo, palette-agnostic) */
+@keyframes shimmer-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+.shimmer-badge {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-badge::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%);
+  animation: shimmer-slide 3s ease infinite;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-cream-800 shadow-sm ring-1 ring-inset ring-cream-300 hover:bg-cream-50 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors;
+  }
+
+  .card {
+    @apply rounded-xl bg-white shadow-sm ring-1 ring-cream-200;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .badge-green {
+    @apply badge bg-green-100 text-green-800;
+  }
+
+  .badge-red {
+    @apply badge bg-red-100 text-red-800;
+  }
+
+  .badge-yellow {
+    @apply badge bg-yellow-100 text-yellow-800;
+  }
+
+  .badge-blue {
+    @apply badge bg-blue-100 text-blue-800;
+  }
+
+  .badge-gray {
+    @apply badge bg-cream-200 text-cream-800;
+  }
+
+  .input {
+    @apply block w-full rounded-lg border-cream-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm;
+  }
+}
