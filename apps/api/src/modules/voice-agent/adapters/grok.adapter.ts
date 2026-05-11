@@ -1,7 +1,13 @@
 // ============================================================
 // Grok Voice Adapter — xAI Realtime Voice API
-// WebSocket: wss://api.x.ai/v1/realtime?model=grok-realtime-preview
+// WebSocket: wss://api.x.ai/v1/realtime?model=grok-voice-think-fast-1.0
 // Protocol: compatible with OpenAI Realtime API spec
+//
+// Model history:
+//   - grok-voice-fast-1.0      : deprecated, scheduled for removal
+//   - grok-realtime-preview    : older preview, replaced by think-fast
+//   - grok-voice-think-fast-1.0: CURRENT — flagship voice model with
+//     better turn-taking and a more natural cadence than the preview.
 // ============================================================
 import { WebSocket } from 'ws';
 import type {
@@ -14,12 +20,17 @@ import { IntegrationError } from '../../../lib/errors.js';
 
 // xAI Realtime endpoint — model must be passed as a query param
 const GROK_REALTIME_BASE = 'wss://api.x.ai/v1/realtime';
-const GROK_MODEL = 'grok-realtime-preview';
+const GROK_MODEL = 'grok-voice-think-fast-1.0';
 
-// Valid Grok voice names (case-sensitive)
-const GROK_VOICES = ['Ara', 'Rex', 'Sal', 'Eve', 'Leo'] as const;
+// Valid Grok voice names (lowercase per current xAI Voice Agent docs)
+//   eve — Default voice, engaging and enthusiastic
+//   ara — Balanced and conversational
+//   rex — Professional and articulate, ideal for business applications
+//   sal — Versatile voice suitable for various contexts
+//   leo — Decisive and commanding, suitable for instructional content
+const GROK_VOICES = ['eve', 'ara', 'rex', 'sal', 'leo'] as const;
 type GrokVoice = typeof GROK_VOICES[number];
-const DEFAULT_VOICE: GrokVoice = 'Ara';
+const DEFAULT_VOICE: GrokVoice = 'eve';
 
 // ---- Per-session in-memory stores ----
 // Keyed by sessionId. In V2 migrate to Redis for multi-instance safety.
@@ -231,6 +242,8 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
 
 function validateVoice(voice?: string): GrokVoice | null {
   if (!voice) return null;
-  const normalized = voice.charAt(0).toUpperCase() + voice.slice(1).toLowerCase();
+  // xAI Voice Agent expects lowercase ('eve', 'ara', 'rex', 'sal', 'leo').
+  // Old tenant settings may store capitalized values ('Ara', 'Eve') — coerce.
+  const normalized = voice.toLowerCase();
   return GROK_VOICES.includes(normalized as GrokVoice) ? (normalized as GrokVoice) : null;
 }

@@ -165,7 +165,7 @@ export async function handleMediaStream(
   const voiceAdapter = createVoiceAdapter('grok');
   const session = await voiceAdapter.createSession({
     systemPrompt,
-    voice: settingsRow?.voiceName ?? 'Ara',
+    voice: settingsRow?.voiceName ?? 'eve',
     audioInputFormat: 'pcmu',  // G.711 µ-law from Telnyx
     audioOutputFormat: 'pcmu',
     callMetadata: { callId, tenantId, fromNumber },
@@ -184,7 +184,7 @@ export async function handleMediaStream(
     const sessionUpdate = GrokVoiceAdapter.buildSessionUpdate({
       sessionId: grokSessionId,
       systemPrompt,
-      voice: settingsRow?.voiceName ?? 'Ara',
+      voice: settingsRow?.voiceName ?? 'eve',
       audioInputFormat: 'pcmu',
       audioOutputFormat: 'pcmu',
     });

@@ -42,7 +42,7 @@ export const tenantSettings = pgTable('tenant_settings', {
   transferNumber: text('transfer_number'),
   maxHoldSeconds: integer('max_hold_seconds').notNull().default(30),
   voiceAgentId: text('voice_agent_id'),
-  voiceName: text('voice_name').notNull().default('Ara'),
+  voiceName: text('voice_name').notNull().default('eve'),
   voiceProvider: text('voice_provider').notNull().default('grok'),
   telephonyProvider: text('telephony_provider').notNull().default('telnyx'),
   provisionedNumber: text('twilio_number'),      // column kept for migration compat; name is provider-agnostic

@@ -30,11 +30,11 @@ interface TranscriptEntry {
 
 // ── Static config ─────────────────────────────────────────────────────────────
 const VOICES: Voice[] = [
-  { id: 'Ara', label: 'Ara', description: 'Warm & professional' },
-  { id: 'Eve', label: 'Eve', description: 'Clear & confident' },
-  { id: 'Leo', label: 'Leo', description: 'Friendly & approachable' },
-  { id: 'Rex', label: 'Rex', description: 'Authoritative & calm' },
-  { id: 'Sal', label: 'Sal', description: 'Neutral & efficient' },
+  { id: 'eve', label: 'Eve', description: 'Engaging & enthusiastic (default)' },
+  { id: 'ara', label: 'Ara', description: 'Balanced & conversational' },
+  { id: 'rex', label: 'Rex', description: 'Professional & articulate' },
+  { id: 'sal', label: 'Sal', description: 'Versatile & neutral' },
+  { id: 'leo', label: 'Leo', description: 'Decisive & commanding' },
 ];
 
 const API_WS_BASE =
@@ -129,7 +129,7 @@ function Waveform({ active, speaking }: { active: boolean; speaking: boolean }) 
 export default function DemoPage() {
   const [selectedVertical, setSelectedVertical] = useState<Vertical>('dental');
   const [selectedUseCase, setSelectedUseCase] = useState('dental_receptionist');
-  const [selectedVoice, setSelectedVoice] = useState('Ara');
+  const [selectedVoice, setSelectedVoice] = useState('eve');
 
   const verticalConfig = VERTICAL_CONFIGS[selectedVertical];
 
@@ -324,7 +324,7 @@ export default function DemoPage() {
   useEffect(() => () => stopSession(), [stopSession]);
 
   const codeSnippet = `const ws = new WebSocket(
-  "wss://api.x.ai/v1/realtime?model=grok-realtime-preview",
+  "wss://api.x.ai/v1/realtime?model=grok-voice-think-fast-1.0",
   { headers: { Authorization: "Bearer YOUR_XAI_KEY" } }
 );
 

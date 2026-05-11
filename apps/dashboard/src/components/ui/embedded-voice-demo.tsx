@@ -39,11 +39,11 @@ function iconForUseCase(useCaseId: string, verticalId: string): string {
 }
 
 const VOICES = [
-  { id: 'Ara', label: 'Ara', description: 'Warm & professional' },
-  { id: 'Eve', label: 'Eve', description: 'Clear & confident' },
-  { id: 'Leo', label: 'Leo', description: 'Friendly & approachable' },
-  { id: 'Rex', label: 'Rex', description: 'Authoritative & calm' },
-  { id: 'Sal', label: 'Sal', description: 'Neutral & efficient' },
+  { id: 'eve', label: 'Eve', description: 'Engaging & enthusiastic (default)' },
+  { id: 'ara', label: 'Ara', description: 'Balanced & conversational' },
+  { id: 'rex', label: 'Rex', description: 'Professional & articulate' },
+  { id: 'sal', label: 'Sal', description: 'Versatile & neutral' },
+  { id: 'leo', label: 'Leo', description: 'Decisive & commanding' },
 ];
 
 const API_WS_BASE =
@@ -140,7 +140,7 @@ export function EmbeddedVoiceDemo({ vertical: verticalProp = 'dental' }: { verti
   }));
 
   const [selectedUseCase, setSelectedUseCase] = useState(useCases[0]?.id ?? 'dental_receptionist');
-  const [selectedVoice, setSelectedVoice] = useState('Ara');
+  const [selectedVoice, setSelectedVoice] = useState('eve');
 
   // When the parent switches verticals, reset the selected use case to the first
   // one for that vertical so we don't try to use a stale ID across industries.

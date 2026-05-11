@@ -24,7 +24,7 @@ export interface VoiceSession {
 export interface CreateVoiceSessionParams {
   /** System prompt assembled by prompt-builder.ts */
   systemPrompt: string;
-  /** Voice name or ID (provider-specific: "Ara"/"Rex" for Grok, voice ID for EL) */
+  /** Voice name or ID (provider-specific: "eve"/"ara"/"rex"/"sal"/"leo" for Grok, voice ID for EL) */
   voice?: string;
   /**
    * Audio input format from the telephony provider.

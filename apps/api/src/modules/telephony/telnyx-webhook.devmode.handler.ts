@@ -171,7 +171,7 @@ function bridgeMediaStream(telnyxSocket: WsWebSocket): void {
   const queuedAudio: string[] = [];
 
   function connectGrok() {
-    grokSocket = new WsClient('wss://api.x.ai/v1/realtime?model=grok-realtime-preview', {
+    grokSocket = new WsClient('wss://api.x.ai/v1/realtime?model=grok-voice-think-fast-1.0', {
       headers: { Authorization: `Bearer ${xaiKey}` },
     });
 

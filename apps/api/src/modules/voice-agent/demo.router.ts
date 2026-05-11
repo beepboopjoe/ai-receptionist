@@ -21,11 +21,11 @@ export async function demoPlugin(app: FastifyInstance) {
     return reply.send({
       useCases: Object.keys(VERTICAL_PROMPTS).map((id) => ({ id })),
       voices: [
-        { id: 'Ara', label: 'Ara', description: 'Warm & professional' },
-        { id: 'Eve', label: 'Eve', description: 'Clear & confident' },
-        { id: 'Leo', label: 'Leo', description: 'Friendly & approachable' },
-        { id: 'Rex', label: 'Rex', description: 'Authoritative & calm' },
-        { id: 'Sal', label: 'Sal', description: 'Neutral & efficient' },
+        { id: 'eve', label: 'Eve', description: 'Engaging & enthusiastic (default)' },
+        { id: 'ara', label: 'Ara', description: 'Balanced & conversational' },
+        { id: 'rex', label: 'Rex', description: 'Professional & articulate' },
+        { id: 'sal', label: 'Sal', description: 'Versatile & neutral' },
+        { id: 'leo', label: 'Leo', description: 'Decisive & commanding' },
       ],
     });
   });
@@ -47,7 +47,7 @@ export async function demoPlugin(app: FastifyInstance) {
 
     const query = request.query as Record<string, string>;
     const useCase = query['useCase'] ?? 'dental_receptionist';
-    const voice = query['voice'] ?? 'Ara';
+    const voice = (query['voice'] ?? 'eve').toLowerCase();
 
     const systemPrompt = VERTICAL_PROMPTS[useCase] ?? VERTICAL_PROMPTS['dental_receptionist']!;
 
@@ -61,7 +61,7 @@ export async function demoPlugin(app: FastifyInstance) {
 
     // Open connection to xAI Realtime API
     const xaiWs = new WebSocket(
-      `wss://api.x.ai/v1/realtime?model=grok-realtime-preview`,
+      `wss://api.x.ai/v1/realtime?model=grok-voice-think-fast-1.0`,
       {
         headers: {
           Authorization: `Bearer ${config.XAI_API_KEY}`,

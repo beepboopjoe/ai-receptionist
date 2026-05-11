@@ -6,14 +6,15 @@ import { Save } from 'lucide-react';
 import { VERTICALS } from '@/lib/verticals';
 import { useToast } from '@/components/ui/toast';
 
-const GROK_VOICES = ['Ara', 'Rex', 'Sal', 'Eve', 'Leo'];
+// xAI Voice Agent voices (current spec: lowercase, eve is the recommended default)
+const GROK_VOICES = ['eve', 'ara', 'rex', 'sal', 'leo'];
 
 export default function VoiceAgentPage() {
   const { data } = useSWR('settings', () => settingsApi.get());
   const settings = (data as any)?.settings;
   const tenant = (data as any)?.tenant;
 
-  const [voiceName, setVoiceName] = useState('Ara');
+  const [voiceName, setVoiceName] = useState('eve');
   const [voiceProvider, setVoiceProvider] = useState('grok');
   const [afterHoursMode, setAfterHoursMode] = useState('voicemail');
   const [transferNumber, setTransferNumber] = useState('');
@@ -24,7 +25,8 @@ export default function VoiceAgentPage() {
 
   useEffect(() => {
     if (settings) {
-      setVoiceName(settings.voiceName ?? 'Ara');
+      // Coerce legacy capitalized voice names to lowercase (xAI now requires lowercase)
+      setVoiceName((settings.voiceName ?? 'eve').toLowerCase());
       setVoiceProvider(settings.voiceProvider ?? 'grok');
       setAfterHoursMode(settings.afterHoursMode ?? 'voicemail');
       setTransferNumber(settings.transferNumber ?? '');
