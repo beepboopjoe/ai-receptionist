@@ -58,7 +58,9 @@ const PLAN_TIERS: Record<string, { minutesIncluded: number; price: number; outbo
 
 // Per-vertical default appointment types seeded at signup. The dashboard
 // UI lets owners customize these afterwards in Settings → Appointment Types.
-const DEFAULT_APPT_TYPES_BY_VERTICAL: Record<string, Array<{ id: string; name: string; duration_min: number; buffer_min: number }>> = {
+// Exported so the Google sign-up flow (google-auth.service.ts) seeds the
+// same defaults a password sign-up gets.
+export const DEFAULT_APPT_TYPES_BY_VERTICAL: Record<string, Array<{ id: string; name: string; duration_min: number; buffer_min: number }>> = {
   dental: [
     { id: 'cleaning',   name: 'Cleaning / Hygiene',           duration_min: 60,  buffer_min: 10 },
     { id: 'checkup',    name: 'Checkup / Exam',               duration_min: 30,  buffer_min: 10 },

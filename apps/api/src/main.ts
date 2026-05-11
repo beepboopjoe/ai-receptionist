@@ -29,6 +29,8 @@ import { workflowPlugin } from './modules/workflow-engine/router.js';
 import { notificationsPlugin } from './modules/notifications/router.js';
 import { adminPlugin } from './modules/admin/router.js';
 import { teamPlugin } from './modules/admin/team.router.js';
+import { googleAuthPlugin } from './modules/admin/auth-google.router.js';
+import { makeResolveGoogleUser } from './modules/admin/google-auth.service.js';
 import { campaignsPlugin } from './modules/campaigns/campaign.router.js';
 import { demoPlugin } from './modules/voice-agent/demo.router.js';
 import { webhookPlugin } from './modules/webhooks/webhook.router.js';
@@ -142,6 +144,10 @@ async function buildApp() {
   await app.register(workflowPlugin, { prefix: '/api/v1' });
   await app.register(notificationsPlugin, { prefix: '/api/v1' });
   await app.register(adminPlugin, { prefix: '/api/v1' });
+  // Google sign-in routes (/auth/google + /auth/google/callback) under
+  // /api/v1. Plugin returns 501 with setup instructions when GOOGLE_AUTH_*
+  // env vars are absent, so it's safe to register unconditionally.
+  await app.register(googleAuthPlugin({ resolveUser: makeResolveGoogleUser(app) }), { prefix: '/api/v1' });
   await app.register(teamPlugin, { prefix: '/api/v1' });
   await app.register(campaignsPlugin, { prefix: '/api/v1' });
   await app.register(demoPlugin, { prefix: '/api/v1' });

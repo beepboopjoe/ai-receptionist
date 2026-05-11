@@ -230,7 +230,11 @@ export const adminUsers = pgTable(
       .notNull()
       .references(() => tenants.id, { onDelete: 'cascade' }),
     email: text('email').notNull(),
-    passwordHash: text('password_hash').notNull(),
+    // Nullable: users that signed up via Google never set a password.
+    passwordHash: text('password_hash'),
+    // Google `sub` claim — used to look up Google-authenticated users
+    // and link existing email accounts to a Google identity.
+    googleId: text('google_id'),
     role: text('role').notNull().default('staff'),
     firstName: text('first_name'),
     lastName: text('last_name'),
