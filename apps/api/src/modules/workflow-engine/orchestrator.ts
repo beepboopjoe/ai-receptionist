@@ -34,7 +34,7 @@ type FlowExecutor = { execute: (state: any) => Promise<FlowResult> };
  */
 const VERTICAL_FLOW_OVERRIDES: Record<string, () => Promise<FlowExecutor>> = {
   // Example shape — uncomment when a real variant ships:
-  // 'new_patient__legal': async () => {
+  // 'new_contact__legal': async () => {
   //   const { LegalNewClientFlow } = await import('./flows/legal-new-client.flow.js');
   //   return new LegalNewClientFlow();
   // },
@@ -43,13 +43,13 @@ const VERTICAL_FLOW_OVERRIDES: Record<string, () => Promise<FlowExecutor>> = {
 /** Generic, vertical-agnostic flow loaders. */
 async function loadGenericFlow(workflow: string): Promise<FlowExecutor | null> {
   switch (workflow) {
-    case 'new_patient': {
-      const { NewPatientFlow } = await import('./flows/new-patient.flow.js');
-      return new NewPatientFlow();
+    case 'new_contact': {
+      const { NewContactFlow } = await import('./flows/new-contact.flow.js');
+      return new NewContactFlow();
     }
-    case 'existing_patient': {
-      const { ExistingPatientFlow } = await import('./flows/existing-patient.flow.js');
-      return new ExistingPatientFlow();
+    case 'existing_contact': {
+      const { ExistingContactFlow } = await import('./flows/existing-contact.flow.js');
+      return new ExistingContactFlow();
     }
     case 'reschedule': {
       const { RescheduleFlow } = await import('./flows/reschedule.flow.js');
@@ -123,7 +123,7 @@ export async function orchestrate(params: OrchestrateParams): Promise<FlowResult
     return { outcome: 'no_action', summary: 'Call state not found.' };
   }
 
-  const workflow = state.workflow ?? 'new_patient';
+  const workflow = state.workflow ?? 'new_contact';
   // Vertical is stashed in collectedData by the media-stream handler so it
   // travels with the call without needing a CallState schema change. Best-
   // effort: getFlow accepts undefined.

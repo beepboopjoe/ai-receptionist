@@ -86,7 +86,7 @@ export const contacts = pgTable(
     phoneE164: text('phone_e164').notNull(),
     email: text('email'),
     dateOfBirth: date('date_of_birth'),
-    patientType: text('patient_type').notNull().default('existing'),
+    contactType: text('contact_type').notNull().default('existing'),
     insuranceProvider: text('insurance_provider'),
     insuranceId: text('insurance_id'),
     recallDueDate: date('recall_due_date'),

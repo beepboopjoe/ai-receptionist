@@ -41,7 +41,7 @@ export async function processCrmSync(job: Job<CrmSyncJobData>): Promise<void> {
       insuranceId: data.insuranceId,
       notes: data.notes,
       source: (data.source as 'call' | 'manual' | 'csv_import' | 'crm_sync') ?? 'call',
-      patientType: 'new',
+      contactType: 'new',
     })
     .onConflictDoUpdate({
       target: [contacts.tenantId, contacts.phoneE164],

@@ -54,7 +54,7 @@ export interface INotificationAdapter {
 
 // ---- Template variable tokens ----
 export interface NotificationTemplateVars {
-  patientName?: string;
+  contactName?: string;
   practiceNname?: string;
   appointmentDate?: string;
   appointmentTime?: string;

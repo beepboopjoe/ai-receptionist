@@ -36,7 +36,7 @@ function buildNav(contactsLabel: string, appointmentsLabel: string) {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/calls', label: 'Call Log', icon: Phone },
     { href: '/appointments', label: appointmentsLabel, icon: Calendar },
-    { href: '/patients', label: contactsLabel, icon: Users },
+    { href: '/contacts', label: contactsLabel, icon: Users },
     { href: '/missed-calls', label: 'Missed Calls', icon: PhoneMissed },
     { href: '/reminders', label: 'Reminders', icon: Bell },
     { href: '/escalations', label: 'Escalations', icon: AlertCircle },

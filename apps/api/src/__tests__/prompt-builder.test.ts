@@ -23,7 +23,7 @@ const BASE_CTX = {
   appointmentTypes: [],
   providers: [],
   caller: null,
-  workflowHint: 'new_patient' as const,
+  workflowHint: 'new_contact' as const,
   transferNumber: null,
 };
 

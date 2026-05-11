@@ -55,7 +55,7 @@ function getEmailSubject(type: NotificationType, vars: Record<string, unknown>):
     case 'reminder_2h':
       return `Reminder: Your appointment is in 2 hours`;
     case 'missed_call':
-      return `Missed call from ${vars['patientName'] ?? 'patient'}`;
+      return `Missed call from ${vars['contactName'] ?? 'contact'}`;
     case 'staff_task':
       return `Action required: ${vars['taskType'] ?? 'staff task'}`;
     default:

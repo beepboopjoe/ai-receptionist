@@ -120,7 +120,7 @@ async function seedContacts(tenantId: string, count: number): Promise<string[]> 
         lastName: last,
         phoneE164: phone,
         email: `${first.toLowerCase()}.${last.toLowerCase()}@example.com`,
-        patientType: i % 5 === 0 ? 'new' : 'existing',
+        contactType: i % 5 === 0 ? 'new' : 'existing',
       })
       .onConflictDoNothing()
       .returning({ id: contacts.id });

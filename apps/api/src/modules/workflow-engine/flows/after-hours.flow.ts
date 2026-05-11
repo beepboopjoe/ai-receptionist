@@ -40,10 +40,10 @@ export class AfterHoursFlow implements BaseFlow {
         metadata: {
           taskType: 'after_hours_emergency',
           priority: 'urgent',
-          patientName: contact
+          contactName: contact
             ? `${contact.firstName} ${contact.lastName}`
             : 'Unknown caller',
-          patientPhone: fromNumber,
+          contactPhone: fromNumber,
           message: collectedData.escalationText ?? 'Emergency reported outside office hours',
         },
       });
@@ -79,10 +79,10 @@ export class AfterHoursFlow implements BaseFlow {
       contactId: contact?.id,
       callId: callId ?? undefined,
       metadata: {
-        patientName: contact
+        contactName: contact
           ? `${contact.firstName} ${contact.lastName}`
           : 'Unknown caller',
-        patientPhone: fromNumber,
+        contactPhone: fromNumber,
         afterHoursMode: mode,
         callbackRequested: collectedData.callbackRequested === true,
       },

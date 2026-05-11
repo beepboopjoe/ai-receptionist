@@ -55,7 +55,7 @@ function phone(i: number) {
   return `+1${s.slice(0, 3)}${s.slice(3, 6)}${s.slice(6)}`;
 }
 
-export const MOCK_PATIENTS = FIRST_NAMES.map((first, i) => ({
+export const MOCK_CONTACTS = FIRST_NAMES.map((first, i) => ({
   id: `pat_${String(i + 1).padStart(4, '0')}`,
   firstName: first,
   lastName: LAST_NAMES[i % LAST_NAMES.length],
@@ -74,15 +74,15 @@ const overlay = getOverlay(MOCK_TENANT.vertical);
 const CALL_REASONS = overlay.callReasons;
 
 export const MOCK_CALLS = Array.from({ length: 20 }, (_, i) => {
-  const patient = MOCK_PATIENTS[i % MOCK_PATIENTS.length]!;
+  const contact = MOCK_CONTACTS[i % MOCK_CONTACTS.length]!;
   const outcome = CALL_OUTCOMES[i % CALL_OUTCOMES.length]!;
   return {
     id: `call_${String(i + 1).padStart(4, '0')}`,
     direction: i % 4 === 0 ? 'outbound' : 'inbound',
-    fromNumber: patient.phone,
+    fromNumber: contact.phone,
     toNumber: '+16265170214',
-    callerName: patient.fullName,
-    patientId: patient.id,
+    callerName: contact.fullName,
+    contactId: contact.id,
     status: outcome === 'missed' ? 'missed' : 'completed',
     outcome,
     reason: CALL_REASONS[i % CALL_REASONS.length],
@@ -105,12 +105,12 @@ export const MOCK_MISSED_CALLS = MOCK_CALLS.filter(c => c.outcome === 'missed').
 const APPT_TYPES = overlay.apptTypes;
 
 export const MOCK_APPOINTMENTS = Array.from({ length: 8 }, (_, i) => {
-  const patient = MOCK_PATIENTS[i]!;
+  const contact = MOCK_CONTACTS[i]!;
   return {
     id: `apt_${String(i + 1).padStart(4, '0')}`,
-    patientId: patient.id,
-    patientName: patient.fullName,
-    patientPhone: patient.phone,
+    contactId: contact.id,
+    contactName: contact.fullName,
+    contactPhone: contact.phone,
     type: APPT_TYPES[i % APPT_TYPES.length],
     status: i === 0 ? 'confirmed' : i === 7 ? 'pending' : 'confirmed',
     startTime: daysFromNow(Math.floor(i / 2) + 1),
@@ -124,20 +124,20 @@ export const MOCK_APPOINTMENTS = Array.from({ length: 8 }, (_, i) => {
 });
 
 export const MOCK_ESCALATIONS = [
-  { id: 'esc_001', patientName: MOCK_PATIENTS[0]!.fullName, patientPhone: MOCK_PATIENTS[0]!.phone, reason: 'Urgent request — needs same-day appointment', priority: 'urgent', status: 'open', createdAt: minutesAgo(12), callId: MOCK_CALLS[1]!.id, assignedTo: null },
-  { id: 'esc_002', patientName: MOCK_PATIENTS[4]!.fullName, patientPhone: MOCK_PATIENTS[4]!.phone, reason: 'Billing question — caller wants human', priority: 'normal', status: 'open', createdAt: hoursAgo(1), callId: MOCK_CALLS[3]!.id, assignedTo: null },
-  { id: 'esc_003', patientName: MOCK_PATIENTS[7]!.fullName, patientPhone: MOCK_PATIENTS[7]!.phone, reason: 'Complaint about last service', priority: 'high', status: 'open', createdAt: hoursAgo(3), callId: MOCK_CALLS[5]!.id, assignedTo: null },
-  { id: 'esc_004', patientName: MOCK_PATIENTS[11]!.fullName, patientPhone: MOCK_PATIENTS[11]!.phone, reason: 'Urgent service issue — needs immediate attention', priority: 'urgent', status: 'resolved', createdAt: daysAgo(1), callId: MOCK_CALLS[8]!.id, assignedTo: 'Alex Carter', resolvedAt: hoursAgo(20) },
-  { id: 'esc_005', patientName: MOCK_PATIENTS[14]!.fullName, patientPhone: MOCK_PATIENTS[14]!.phone, reason: 'Complex inquiry — requires specialist', priority: 'normal', status: 'resolved', createdAt: daysAgo(2), callId: MOCK_CALLS[10]!.id, assignedTo: 'Jordan Lee', resolvedAt: daysAgo(1) },
+  { id: 'esc_001', contactName: MOCK_CONTACTS[0]!.fullName, contactPhone: MOCK_CONTACTS[0]!.phone, reason: 'Urgent request — needs same-day appointment', priority: 'urgent', status: 'open', createdAt: minutesAgo(12), callId: MOCK_CALLS[1]!.id, assignedTo: null },
+  { id: 'esc_002', contactName: MOCK_CONTACTS[4]!.fullName, contactPhone: MOCK_CONTACTS[4]!.phone, reason: 'Billing question — caller wants human', priority: 'normal', status: 'open', createdAt: hoursAgo(1), callId: MOCK_CALLS[3]!.id, assignedTo: null },
+  { id: 'esc_003', contactName: MOCK_CONTACTS[7]!.fullName, contactPhone: MOCK_CONTACTS[7]!.phone, reason: 'Complaint about last service', priority: 'high', status: 'open', createdAt: hoursAgo(3), callId: MOCK_CALLS[5]!.id, assignedTo: null },
+  { id: 'esc_004', contactName: MOCK_CONTACTS[11]!.fullName, contactPhone: MOCK_CONTACTS[11]!.phone, reason: 'Urgent service issue — needs immediate attention', priority: 'urgent', status: 'resolved', createdAt: daysAgo(1), callId: MOCK_CALLS[8]!.id, assignedTo: 'Alex Carter', resolvedAt: hoursAgo(20) },
+  { id: 'esc_005', contactName: MOCK_CONTACTS[14]!.fullName, contactPhone: MOCK_CONTACTS[14]!.phone, reason: 'Complex inquiry — requires specialist', priority: 'normal', status: 'resolved', createdAt: daysAgo(2), callId: MOCK_CALLS[10]!.id, assignedTo: 'Jordan Lee', resolvedAt: daysAgo(1) },
 ];
 
 export const MOCK_NOTIFICATIONS = [
-  { id: 'not_001', type: 'sms_reminder', channel: 'sms', status: 'sent', toAddress: MOCK_PATIENTS[0]!.phone, subject: null, body: 'Reminder: Consultation tomorrow at 10am', createdAt: hoursAgo(2), sentAt: hoursAgo(2), failedReason: null },
-  { id: 'not_002', type: 'sms_reminder', channel: 'sms', status: 'sent', toAddress: MOCK_PATIENTS[1]!.phone, subject: null, body: 'Reminder: Follow-up Wednesday at 2:30pm', createdAt: hoursAgo(5), sentAt: hoursAgo(5), failedReason: null },
-  { id: 'not_003', type: 'sms_reminder', channel: 'sms', status: 'pending', toAddress: MOCK_PATIENTS[2]!.phone, subject: null, body: 'Reminder: Intake meeting Friday 9am', createdAt: minutesAgo(30), sentAt: null, failedReason: null },
-  { id: 'not_004', type: 'booking_confirmation', channel: 'sms', status: 'sent', toAddress: MOCK_PATIENTS[3]!.phone, subject: null, body: 'Confirmed: Review appointment Mar 28 at 11am', createdAt: hoursAgo(8), sentAt: hoursAgo(8), failedReason: null },
-  { id: 'not_005', type: 'sms_reminder', channel: 'sms', status: 'failed', toAddress: MOCK_PATIENTS[4]!.phone, subject: null, body: 'Reminder: Service call Saturday 1pm', createdAt: hoursAgo(12), sentAt: null, failedReason: 'Invalid phone number' },
-  { id: 'not_006', type: 'sms_reminder', channel: 'sms', status: 'pending', toAddress: MOCK_PATIENTS[5]!.phone, subject: null, body: 'Reminder: New client exam Monday 3pm', createdAt: minutesAgo(10), sentAt: null, failedReason: null },
+  { id: 'not_001', type: 'sms_reminder', channel: 'sms', status: 'sent', toAddress: MOCK_CONTACTS[0]!.phone, subject: null, body: 'Reminder: Consultation tomorrow at 10am', createdAt: hoursAgo(2), sentAt: hoursAgo(2), failedReason: null },
+  { id: 'not_002', type: 'sms_reminder', channel: 'sms', status: 'sent', toAddress: MOCK_CONTACTS[1]!.phone, subject: null, body: 'Reminder: Follow-up Wednesday at 2:30pm', createdAt: hoursAgo(5), sentAt: hoursAgo(5), failedReason: null },
+  { id: 'not_003', type: 'sms_reminder', channel: 'sms', status: 'pending', toAddress: MOCK_CONTACTS[2]!.phone, subject: null, body: 'Reminder: Intake meeting Friday 9am', createdAt: minutesAgo(30), sentAt: null, failedReason: null },
+  { id: 'not_004', type: 'booking_confirmation', channel: 'sms', status: 'sent', toAddress: MOCK_CONTACTS[3]!.phone, subject: null, body: 'Confirmed: Review appointment Mar 28 at 11am', createdAt: hoursAgo(8), sentAt: hoursAgo(8), failedReason: null },
+  { id: 'not_005', type: 'sms_reminder', channel: 'sms', status: 'failed', toAddress: MOCK_CONTACTS[4]!.phone, subject: null, body: 'Reminder: Service call Saturday 1pm', createdAt: hoursAgo(12), sentAt: null, failedReason: 'Invalid phone number' },
+  { id: 'not_006', type: 'sms_reminder', channel: 'sms', status: 'pending', toAddress: MOCK_CONTACTS[5]!.phone, subject: null, body: 'Reminder: New client exam Monday 3pm', createdAt: minutesAgo(10), sentAt: null, failedReason: null },
 ];
 
 export const MOCK_CAMPAIGNS = [

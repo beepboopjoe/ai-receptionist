@@ -108,7 +108,9 @@
       "Bash(curl -s -o nul -w \"Login page: HTTP %{http_code}\\\\n\" https://ai-receptionist-dashboard-sigma.vercel.app/login)",
       "Bash(curl -s -o nul -w \"API health: HTTP %{http_code}\\\\n\" https://ai-receptionist-production-de7b.up.railway.app/health/ready)",
       "Bash(pnpm --filter @ai-receptionist/api type-check)",
-      "Bash(pnpm --filter @ai-receptionist/api build)"
+      "Bash(pnpm --filter @ai-receptionist/api build)",
+      "Bash(curl -fsS -o /dev/null https://ai-receptionist-production-de7b.up.railway.app/health/ready)",
+      "Bash(curl -fsS https://ai-receptionist-production-de7b.up.railway.app/api/v1/public/whoami)"
     ]
   }
 }

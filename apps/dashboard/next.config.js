@@ -35,6 +35,12 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      { source: '/patients', destination: '/contacts', permanent: true },
+      { source: '/patients/:id', destination: '/contacts/:id', permanent: true },
+    ];
+  },
   // The shared package uses NodeNext module resolution, which means its
   // imports look like `./foo.js` but the source files are `.ts`. Webpack
   // needs an extensionAlias to follow that convention.

@@ -211,7 +211,7 @@ export async function publicApiPlugin(app: FastifyInstance): Promise<void> {
           lastName: contacts.lastName,
           phoneE164: contacts.phoneE164,
           email: contacts.email,
-          patientType: contacts.patientType, // legacy column name; consumers can alias
+          contactType: contacts.contactType,
           createdAt: contacts.createdAt,
         })
         .from(contacts)
@@ -346,7 +346,7 @@ export async function publicApiPlugin(app: FastifyInstance): Promise<void> {
             phoneE164: { type: 'string', pattern: '^\\+\\d{8,15}$' },
             email: { type: 'string', format: 'email', nullable: true },
             dateOfBirth: { type: 'string', format: 'date', nullable: true },
-            patientType: { type: 'string', maxLength: 40, nullable: true },
+            contactType: { type: 'string', maxLength: 40, nullable: true },
             insuranceProvider: { type: 'string', maxLength: 120, nullable: true },
             insuranceId: { type: 'string', maxLength: 80, nullable: true },
             preferredProvider: { type: 'string', maxLength: 120, nullable: true },
@@ -370,7 +370,7 @@ export async function publicApiPlugin(app: FastifyInstance): Promise<void> {
         phoneE164,
         email: (body['email'] as string | null | undefined) ?? null,
         dateOfBirth: (body['dateOfBirth'] as string | null | undefined) ?? null,
-        patientType: (body['patientType'] as string | undefined) ?? 'existing',
+        contactType: (body['contactType'] as string | undefined) ?? 'existing',
         insuranceProvider: (body['insuranceProvider'] as string | null | undefined) ?? null,
         insuranceId: (body['insuranceId'] as string | null | undefined) ?? null,
         preferredProvider: (body['preferredProvider'] as string | null | undefined) ?? null,
@@ -415,7 +415,7 @@ export async function publicApiPlugin(app: FastifyInstance): Promise<void> {
             phoneE164: { type: 'string', pattern: '^\\+\\d{8,15}$' },
             email: { type: ['string', 'null'], format: 'email' },
             dateOfBirth: { type: ['string', 'null'], format: 'date' },
-            patientType: { type: 'string', maxLength: 40 },
+            contactType: { type: 'string', maxLength: 40 },
             insuranceProvider: { type: ['string', 'null'], maxLength: 120 },
             insuranceId: { type: ['string', 'null'], maxLength: 80 },
             preferredProvider: { type: ['string', 'null'], maxLength: 120 },

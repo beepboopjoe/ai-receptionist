@@ -22,7 +22,7 @@ export interface PromptContext {
   appointmentTypes: AppointmentType[];
   providers: string[]; // Provider/agent/attorney names
   caller: Contact | null;
-  workflowHint: 'new_patient' | 'existing_patient' | 'reschedule' | 'cancellation' | 'after_hours' | null;
+  workflowHint: 'new_contact' | 'existing_contact' | 'reschedule' | 'cancellation' | 'after_hours' | null;
   transferNumber: string | null;
   escalationVocabulary?: string[];
 }
@@ -218,7 +218,7 @@ function getWorkflowInstructions(
   ctx: PromptContext
 ): string {
   switch (workflow) {
-    case 'new_patient':
+    case 'new_contact':
       return `You are helping a new patient schedule their first appointment.
 Steps:
 1. Welcome them warmly to ${ctx.practiceName}
@@ -228,7 +228,7 @@ Steps:
 5. Confirm the appointment details and ask for insurance provider (optional)
 6. Confirm all details and let them know they'll receive a text confirmation`;
 
-    case 'existing_patient':
+    case 'existing_contact':
       return `You are helping an existing patient. They may want to book, reschedule, cancel, or ask a question.
 Steps:
 1. Greet them by first name

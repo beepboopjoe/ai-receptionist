@@ -96,7 +96,7 @@ export function CommandPalette() {
         id: c.id,
         title: `${c.firstName} ${c.lastName}`.trim() || c.phoneE164,
         subtitle: [c.phoneE164, c.email].filter(Boolean).join(' · '),
-        href: `/patients/${c.id}`,
+        href: `/contacts/${c.id}`,
       });
     }
     for (const call of hits.calls) {

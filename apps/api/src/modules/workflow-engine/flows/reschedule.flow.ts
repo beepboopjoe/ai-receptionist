@@ -77,7 +77,7 @@ export class RescheduleFlow implements BaseFlow {
         contactId: contact.id,
         appointmentId: updated.id,
         metadata: {
-          patientName: contact.firstName,
+          contactName: contact.firstName,
           appointmentDate: newStartAt.toLocaleDateString('en-US'),
           appointmentTime: newStartAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
           appointmentType,
@@ -92,7 +92,7 @@ export class RescheduleFlow implements BaseFlow {
         appointmentId: updated.id,
         sendAt: new Date(newStartAt.getTime() - 24 * 60 * 60 * 1000),
         metadata: {
-          patientName: contact.firstName,
+          contactName: contact.firstName,
           appointmentDate: newStartAt.toLocaleDateString('en-US'),
           appointmentTime: newStartAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
         },
@@ -105,7 +105,7 @@ export class RescheduleFlow implements BaseFlow {
         appointmentId: updated.id,
         sendAt: new Date(newStartAt.getTime() - 2 * 60 * 60 * 1000),
         metadata: {
-          patientName: contact.firstName,
+          contactName: contact.firstName,
           appointmentDate: newStartAt.toLocaleDateString('en-US'),
           appointmentTime: newStartAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
         },

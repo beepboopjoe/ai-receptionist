@@ -68,7 +68,7 @@ export class InternalCrmAdapter implements ICrmAdapter {
         phoneE164: phone,
         email: data.email?.toLowerCase() ?? null,
         dateOfBirth: data.dateOfBirth ?? null,
-        patientType: data.patientType ?? 'existing',
+        contactType: data.contactType ?? 'existing',
         insuranceProvider: data.insuranceProvider ?? null,
         insuranceId: data.insuranceId ?? null,
         recallDueDate: data.recallDueDate ?? null,
@@ -91,7 +91,7 @@ export class InternalCrmAdapter implements ICrmAdapter {
     if (data.phoneE164) updateData['phoneE164'] = normalizePhone(data.phoneE164) ?? data.phoneE164;
     if (data.email !== undefined) updateData['email'] = data.email?.toLowerCase() ?? null;
     if (data.dateOfBirth !== undefined) updateData['dateOfBirth'] = data.dateOfBirth;
-    if (data.patientType !== undefined) updateData['patientType'] = data.patientType;
+    if (data.contactType !== undefined) updateData['contactType'] = data.contactType;
     if (data.insuranceProvider !== undefined) updateData['insuranceProvider'] = data.insuranceProvider;
     if (data.insuranceId !== undefined) updateData['insuranceId'] = data.insuranceId;
     if (data.recallDueDate !== undefined) updateData['recallDueDate'] = data.recallDueDate;
@@ -142,7 +142,7 @@ function mapContact(row: typeof contacts.$inferSelect): Contact {
     phoneE164: row.phoneE164,
     email: row.email,
     dateOfBirth: row.dateOfBirth,
-    patientType: row.patientType as 'new' | 'existing',
+    contactType: row.contactType as 'new' | 'existing',
     insuranceProvider: row.insuranceProvider,
     insuranceId: row.insuranceId,
     recallDueDate: row.recallDueDate,

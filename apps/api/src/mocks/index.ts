@@ -10,7 +10,7 @@ import {
   MOCK_TENANT,
   MOCK_USER,
   MOCK_BILLING,
-  MOCK_PATIENTS,
+  MOCK_CONTACTS,
   MOCK_CALLS,
   MOCK_MISSED_CALLS,
   MOCK_APPOINTMENTS,
@@ -71,13 +71,12 @@ export const mocksPlugin: FastifyPluginAsync = async (app) => {
     return a;
   });
 
-  // ── Patients / Contacts ───────────────────────────────────
-  app.get('/contacts', async () => ({ data: MOCK_PATIENTS, total: MOCK_PATIENTS.length }));
-  app.get('/patients', async () => ({ data: MOCK_PATIENTS, total: MOCK_PATIENTS.length }));
-  app.get<{ Params: { id: string } }>('/patients/:id', async (req, reply) => {
-    const p = MOCK_PATIENTS.find(x => x.id === req.params.id);
-    if (!p) return reply.code(404).send({ error: 'Not found' });
-    return p;
+  // ── Contacts ──────────────────────────────────────────────
+  app.get('/contacts', async () => ({ data: MOCK_CONTACTS, total: MOCK_CONTACTS.length }));
+  app.get<{ Params: { id: string } }>('/contacts/:id', async (req, reply) => {
+    const c = MOCK_CONTACTS.find(x => x.id === req.params.id);
+    if (!c) return reply.code(404).send({ error: 'Not found' });
+    return c;
   });
 
   // ── Escalations ───────────────────────────────────────────

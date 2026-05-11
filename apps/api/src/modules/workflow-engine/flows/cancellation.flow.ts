@@ -49,7 +49,7 @@ export class CancellationFlow implements BaseFlow {
       contactId: contact.id,
       appointmentId,
       metadata: {
-        patientName: contact.firstName,
+        contactName: contact.firstName,
         isCancellation: true,
         cancellationReason,
       },
@@ -64,8 +64,8 @@ export class CancellationFlow implements BaseFlow {
       appointmentId,
       metadata: {
         taskType: 'cancellation',
-        patientName: `${contact.firstName} ${contact.lastName}`,
-        patientPhone: contact.phoneE164,
+        contactName: `${contact.firstName} ${contact.lastName}`,
+        contactPhone: contact.phoneE164,
         cancellationReason,
         wantsToRebook: collectedData.wantsToRebook === true,
       },

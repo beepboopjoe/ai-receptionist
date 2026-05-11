@@ -32,7 +32,7 @@ export async function processMissedCallRecovery(job: Job<MissedCallRecoveryJobDa
 
   // Look up caller identity
   let contactId: string | undefined;
-  let patientName = 'Unknown caller';
+  let contactName = 'Unknown caller';
 
   if (call.contactId) {
     const [contact] = await db
@@ -43,7 +43,7 @@ export async function processMissedCallRecovery(job: Job<MissedCallRecoveryJobDa
 
     if (contact) {
       contactId = contact.id;
-      patientName = `${contact.firstName} ${contact.lastName}`;
+      contactName = `${contact.firstName} ${contact.lastName}`;
     }
   }
 
@@ -54,8 +54,8 @@ export async function processMissedCallRecovery(job: Job<MissedCallRecoveryJobDa
     contactId,
     callId,
     metadata: {
-      patientName,
-      patientPhone: fromNumber,
+      contactName,
+      contactPhone: fromNumber,
       callbackRequested: false,
       afterHoursMode: 'n/a',
     },

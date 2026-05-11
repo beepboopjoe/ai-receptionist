@@ -275,7 +275,7 @@ async function ensureContact(
       lastName: cc.lastName || '',
       phoneE164: cc.phoneE164,
       email: email ?? cc.email ?? undefined,
-      patientType: 'new',
+      contactType: 'new',
       source: 'call',
     },
     tenantId

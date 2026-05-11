@@ -11,7 +11,7 @@ import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 import { useToast } from '@/components/ui/toast';
 import { downloadCsv } from '@/lib/csv';
 
-export default function PatientsPage() {
+export default function ContactsPage() {
   const vertical = useVertical();
   const toast = useToast();
   const [search, setSearch] = useState('');
@@ -54,7 +54,7 @@ export default function PatientsPage() {
     { label: 'Last name',  value: (c: Record<string, any>) => c['lastName'] ?? '' },
     { label: 'Phone',      value: (c: Record<string, any>) => c['phoneE164'] ?? '' },
     { label: 'Email',      value: (c: Record<string, any>) => c['email'] ?? '' },
-    { label: 'Type',       value: (c: Record<string, any>) => c['patientType'] ?? '' },
+    { label: 'Type',       value: (c: Record<string, any>) => c['contactType'] ?? '' },
     { label: 'Source',     value: (c: Record<string, any>) => c['source'] ?? '' },
     { label: 'Created',    value: (c: Record<string, any>) => c['createdAt'] ? new Date(c['createdAt']) : '' },
   ];
@@ -180,7 +180,7 @@ export default function PatientsPage() {
                       className="h-4 w-4 rounded border-gray-300 shrink-0"
                     />
                     <Link
-                      href={`/patients/${c['id']}`}
+                      href={`/contacts/${c['id']}`}
                       className="flex items-center gap-4 flex-1 min-w-0 group"
                     >
                       <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center font-semibold text-brand-700 shrink-0">
@@ -196,8 +196,8 @@ export default function PatientsPage() {
                         </p>
                       </div>
                       <div className="shrink-0 flex items-center gap-2">
-                        <span className={`badge ${c['patientType'] === 'new' ? 'badge-blue' : 'badge-gray'}`}>
-                          {c['patientType'] === 'new' ? 'New' : 'Returning'}
+                        <span className={`badge ${c['contactType'] === 'new' ? 'badge-blue' : 'badge-gray'}`}>
+                          {c['contactType'] === 'new' ? `New ${vertical.contactNoun}` : `Returning ${vertical.contactNoun}`}
                         </span>
                         {vertical.id === 'dental' &&
                           c['recallDueDate'] &&

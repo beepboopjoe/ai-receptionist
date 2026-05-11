@@ -112,7 +112,7 @@ export async function handleMediaStream(
     const dayName = now.format('ddd').toLowerCase() as keyof OfficeHours;
     const todayHours = officeHours[dayName];
     const isAfterHours = !todayHours || isOutsideHours(now, todayHours.open, todayHours.close);
-    workflow = isAfterHours ? 'after_hours' : contact ? 'existing_patient' : 'new_patient';
+    workflow = isAfterHours ? 'after_hours' : contact ? 'existing_contact' : 'new_contact';
 
     systemPrompt = buildSystemPrompt({
       practiceName,
@@ -122,7 +122,7 @@ export async function handleMediaStream(
       appointmentTypes: apptTypes,
       providers: [],
       caller: contact,
-      workflowHint: workflow === 'after_hours' ? 'after_hours' : (workflow as 'new_patient' | 'existing_patient'),
+      workflowHint: workflow === 'after_hours' ? 'after_hours' : (workflow as 'new_contact' | 'existing_contact'),
       transferNumber: settingsRow?.transferNumber ?? null,
     });
   }

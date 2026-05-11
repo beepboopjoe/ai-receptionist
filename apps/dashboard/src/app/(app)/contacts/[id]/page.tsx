@@ -70,14 +70,14 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center gap-3">
-        <Link href="/patients" className="btn-secondary">
+        <Link href="/contacts" className="btn-secondary">
           <ArrowLeft size={16} /> Back
         </Link>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">
           {c.firstName} {c.lastName}
         </h1>
-        <span className={`badge ${c.patientType === 'new' ? 'badge-blue' : 'badge-gray'}`}>
-          {c.patientType === 'new' ? `New ${vertical.contactNoun}` : `Returning ${vertical.contactNoun}`}
+        <span className={`badge ${c.contactType === 'new' ? 'badge-blue' : 'badge-gray'}`}>
+          {c.contactType === 'new' ? `New ${vertical.contactNoun}` : `Returning ${vertical.contactNoun}`}
         </span>
       </div>
 

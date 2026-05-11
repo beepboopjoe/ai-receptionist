@@ -121,7 +121,7 @@ export async function importContactsCsv(params: {
             phoneE164: phone,
             email: row.email ? normalizeEmail(row.email) : null,
             dateOfBirth: row.date_of_birth ? parseDate(row.date_of_birth) : null,
-            patientType: 'existing',
+            contactType: 'existing',
             insuranceProvider: row.insurance_provider ?? null,
             notes: row.notes ?? null,
             recallDueDate: row.recall_due_date ? parseDate(row.recall_due_date) : null,

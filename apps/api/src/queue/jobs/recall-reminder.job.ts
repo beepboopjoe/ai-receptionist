@@ -77,7 +77,7 @@ export async function processRecallReminder(job: Job<RecallReminderJobData>): Pr
       channel: 'sms',
       contactId: contact.id,
       metadata: {
-        patientName: contact.firstName,
+        contactName: contact.firstName,
         recallDueDate: contact.recallDueDate,
         intervalMonths,
       },

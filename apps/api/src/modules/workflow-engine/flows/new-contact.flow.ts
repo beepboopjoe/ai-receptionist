@@ -1,5 +1,5 @@
 // ============================================================
-// New Patient Flow
+// New Contact Flow
 // ============================================================
 import type { BaseFlow } from './base.flow.js';
 import type { FlowResult, CallState } from '@ai-receptionist/shared';
@@ -12,11 +12,11 @@ import { tenantSettings, tenants } from '../../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import type { AppointmentType } from '@ai-receptionist/shared';
 
-export class NewPatientFlow implements BaseFlow {
+export class NewContactFlow implements BaseFlow {
   async execute(state: CallState): Promise<FlowResult> {
     const { tenantId, callId, rcCallId, collectedData } = state;
 
-    // At this point, the ElevenLabs conversation has collected patient data
+    // At this point, the ElevenLabs conversation has collected contact data
     // via its tool-calling or structured extraction capabilities.
     // This flow runs AFTER the AI voice conversation has concluded.
 
@@ -48,7 +48,7 @@ export class NewPatientFlow implements BaseFlow {
         email: collectedData.email,
         dateOfBirth: collectedData.dateOfBirth,
         insuranceProvider: collectedData.insuranceProvider,
-        patientType: 'new',
+        contactType: 'new',
         source: 'call',
       },
       tenantId
@@ -81,7 +81,7 @@ export class NewPatientFlow implements BaseFlow {
         contactId: contact.id,
         appointmentId: appointment.id,
         metadata: {
-          patientName: contact.firstName,
+          contactName: contact.firstName,
           appointmentDate: startAt.toLocaleDateString('en-US'),
           appointmentTime: startAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
           appointmentType: collectedData.appointmentType ?? 'appointment',
@@ -95,7 +95,7 @@ export class NewPatientFlow implements BaseFlow {
         appointmentId: appointment.id,
         sendAt: new Date(startAt.getTime() - 24 * 60 * 60 * 1000),
         metadata: {
-          patientName: contact.firstName,
+          contactName: contact.firstName,
           appointmentDate: startAt.toLocaleDateString('en-US'),
           appointmentTime: startAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
         },
@@ -108,7 +108,7 @@ export class NewPatientFlow implements BaseFlow {
         appointmentId: appointment.id,
         sendAt: new Date(startAt.getTime() - 2 * 60 * 60 * 1000),
         metadata: {
-          patientName: contact.firstName,
+          contactName: contact.firstName,
           appointmentDate: startAt.toLocaleDateString('en-US'),
           appointmentTime: startAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
         },
@@ -120,7 +120,7 @@ export class NewPatientFlow implements BaseFlow {
     return {
       outcome: 'booked',
       appointmentId: appointment.id,
-      summary: `New patient ${contact.firstName} ${contact.lastName} booked a ${collectedData.appointmentType} on ${startAt.toLocaleDateString('en-US')} at ${startAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}.`,
+      summary: `New contact ${contact.firstName} ${contact.lastName} booked a ${collectedData.appointmentType} on ${startAt.toLocaleDateString('en-US')} at ${startAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}.`,
     };
   }
 }

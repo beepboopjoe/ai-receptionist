@@ -66,10 +66,10 @@ export class EscalationFlow implements BaseFlow {
         taskType: 'escalation',
         priority,
         reason,
-        patientName: contact
+        contactName: contact
           ? `${contact.firstName} ${contact.lastName}`
           : 'Unknown caller',
-        patientPhone: fromNumber,
+        contactPhone: fromNumber,
         escalationText,
         escalationId: escalation?.id,
         isUrgent,

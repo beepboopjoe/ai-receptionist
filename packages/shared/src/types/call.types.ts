@@ -20,8 +20,8 @@ export type CallOutcome =
   | 'voicemail';
 
 export type WorkflowType =
-  | 'new_patient'
-  | 'existing_patient'
+  | 'new_contact'
+  | 'existing_contact'
   | 'reschedule'
   | 'cancellation'
   | 'reminder'

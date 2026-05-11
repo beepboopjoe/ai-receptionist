@@ -2,7 +2,7 @@
 // Contact / CRM Types
 // ============================================================
 
-export type PatientType = 'new' | 'existing';
+export type ContactType = 'new' | 'existing';
 export type ContactSource = 'manual' | 'csv_import' | 'call' | 'crm_sync';
 
 export interface Contact {
@@ -13,7 +13,7 @@ export interface Contact {
   phoneE164: string;
   email: string | null;
   dateOfBirth: string | null; // ISO date YYYY-MM-DD
-  patientType: PatientType;
+  contactType: ContactType;
   insuranceProvider: string | null;
   insuranceId: string | null;
   recallDueDate: string | null; // ISO date
@@ -31,7 +31,7 @@ export interface CreateContactInput {
   phoneE164: string;
   email?: string;
   dateOfBirth?: string;
-  patientType?: PatientType;
+  contactType?: ContactType;
   insuranceProvider?: string;
   insuranceId?: string;
   recallDueDate?: string;

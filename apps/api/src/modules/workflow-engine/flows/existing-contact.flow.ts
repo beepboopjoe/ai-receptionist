@@ -1,5 +1,5 @@
 // ============================================================
-// Existing Patient Flow
+// Existing Contact Flow
 // Runs post-call when caller is a known contact
 // ============================================================
 import type { BaseFlow } from './base.flow.js';
@@ -12,7 +12,7 @@ import { tenantSettings, tenants } from '../../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import type { AppointmentType } from '@ai-receptionist/shared';
 
-export class ExistingPatientFlow implements BaseFlow {
+export class ExistingContactFlow implements BaseFlow {
   async execute(state: CallState): Promise<FlowResult> {
     const { tenantId, callId, rcCallId, collectedData, contact } = state;
 
@@ -33,10 +33,10 @@ export class ExistingPatientFlow implements BaseFlow {
 
     if (!collectedData.selectedSlotStart || !collectedData.appointmentType) {
       // No booking data collected — general inquiry, no action needed
-      return { outcome: 'no_action', summary: 'Existing patient called; no appointment action taken.' };
+      return { outcome: 'no_action', summary: 'Existing contact called; no appointment action taken.' };
     }
 
-    // Book appointment for existing patient (skip data collection)
+    // Book appointment for existing contact (skip data collection)
     await advanceStep(rcCallId, 'booking');
 
     const [tenant] = await db.select({ timezone: tenants.timezone })
@@ -53,7 +53,7 @@ export class ExistingPatientFlow implements BaseFlow {
     const endAt = new Date(startAt.getTime() + apptType.durationMin * 60 * 1000);
 
     if (!contact) {
-      return { outcome: 'no_action', summary: 'Contact record missing for existing patient flow.' };
+      return { outcome: 'no_action', summary: 'Contact record missing for existing contact flow.' };
     }
 
     const appointment = await bookAppointment({
@@ -77,7 +77,7 @@ export class ExistingPatientFlow implements BaseFlow {
         contactId: contact.id,
         appointmentId: appointment.id,
         metadata: {
-          patientName: contact.firstName,
+          contactName: contact.firstName,
           appointmentDate: startAt.toLocaleDateString('en-US'),
           appointmentTime: startAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
           appointmentType: collectedData.appointmentType ?? 'appointment',
@@ -91,7 +91,7 @@ export class ExistingPatientFlow implements BaseFlow {
         appointmentId: appointment.id,
         sendAt: new Date(startAt.getTime() - 24 * 60 * 60 * 1000),
         metadata: {
-          patientName: contact.firstName,
+          contactName: contact.firstName,
           appointmentDate: startAt.toLocaleDateString('en-US'),
           appointmentTime: startAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
         },
@@ -104,7 +104,7 @@ export class ExistingPatientFlow implements BaseFlow {
         appointmentId: appointment.id,
         sendAt: new Date(startAt.getTime() - 2 * 60 * 60 * 1000),
         metadata: {
-          patientName: contact.firstName,
+          contactName: contact.firstName,
           appointmentDate: startAt.toLocaleDateString('en-US'),
           appointmentTime: startAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
         },
@@ -116,7 +116,7 @@ export class ExistingPatientFlow implements BaseFlow {
     return {
       outcome: 'booked',
       appointmentId: appointment.id,
-      summary: `Existing patient ${contact.firstName} ${contact.lastName} booked a ${collectedData.appointmentType} on ${startAt.toLocaleDateString('en-US')} at ${startAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}.`,
+      summary: `Existing contact ${contact.firstName} ${contact.lastName} booked a ${collectedData.appointmentType} on ${startAt.toLocaleDateString('en-US')} at ${startAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}.`,
     };
   }
 }
