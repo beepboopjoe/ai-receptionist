@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { authApi } from '@/lib/api';
+import { BRAND_NAME } from '@/lib/brand';
 
 export default function ResetPasswordPage() {
   const params = useParams();

@@ -83,7 +83,27 @@
       "Bash(curl -s http://localhost:3000/legal/hipaa)",
       "Bash(curl -s http://localhost:3000/legal/terms)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git config *)",
+      "Bash(gh auth *)",
+      "Bash(where git *)",
+      "Bash(git --version)",
+      "Bash(git remote *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "mcp__Claude_in_Chrome__get_page_text",
+      "mcp__Claude_in_Chrome__browser_batch",
+      "mcp__Claude_in_Chrome__tabs_create_mcp",
+      "Bash(pnpm install *)",
+      "Bash(git commit *)",
+      "Bash(where.exe gh *)",
+      "Bash(curl -s -o nul -w \"HTTP %{http_code}\\\\n\" https://ai-receptionist-production-de7b.up.railway.app/health/ready)",
+      "Bash(curl -s https://ai-receptionist-production-de7b.up.railway.app/health/ready)",
+      "Bash(Remove-Item vercel.json)",
+      "Bash(git rm *)",
+      "Bash(git mv *)",
+      "Bash(pnpm --filter @ai-receptionist/dashboard build)"
     ]
   }
 }

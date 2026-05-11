@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authApi } from '@/lib/api';
+import { BRAND_NAME } from '@/lib/brand';
 
 type AiUseCase = 'inbound' | 'outbound' | 'both';
 

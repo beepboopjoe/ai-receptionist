@@ -5,10 +5,12 @@
 // successful Google sign-in. We persist the tokens then route
 // the user into the dashboard (or onboarding for new accounts).
 // ============================================================
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function GoogleCompletePage() {
+export const dynamic = 'force-dynamic';
+
+function GoogleCompleteInner() {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -35,6 +37,10 @@ export default function GoogleCompletePage() {
     router.replace(isNew ? '/onboarding/plan' : '/dashboard');
   }, [params, router]);
 
+  return null;
+}
+
+export default function GoogleCompletePage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="text-center">
@@ -43,6 +49,9 @@ export default function GoogleCompletePage() {
         </div>
         <p className="text-sm text-gray-600">Signing you in with Google…</p>
       </div>
+      <Suspense fallback={null}>
+        <GoogleCompleteInner />
+      </Suspense>
     </div>
   );
 }
