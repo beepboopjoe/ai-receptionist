@@ -35,6 +35,16 @@ const nextConfig = {
       },
     ];
   },
+  // The shared package uses NodeNext module resolution, which means its
+  // imports look like `./foo.js` but the source files are `.ts`. Webpack
+  // needs an extensionAlias to follow that convention.
+  webpack(config) {
+    config.resolve.extensionAlias = {
+      ...(config.resolve.extensionAlias ?? {}),
+      '.js': ['.ts', '.tsx', '.js', '.jsx'],
+    };
+    return config;
+  },
 };
 
 module.exports = nextConfig;

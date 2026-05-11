@@ -18,9 +18,12 @@ import { db } from '../../db/client.js';
 import { calls, appointments, contacts, escalations } from '../../db/schema.js';
 import { and, eq, desc, asc, count, gte } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '../../lib/errors.js';
+import { emitWebhook } from '../webhooks/webhook.service.js';
+import { pushActivity } from '../activity/activity.service.js';
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
+const PHONE_E164 = /^\+\d{8,15}$/;
 
 function parseLimit(value: unknown): number {
   const n = typeof value === 'string' ? parseInt(value, 10) : NaN;
@@ -31,6 +34,19 @@ function parseLimit(value: unknown): number {
 function parseOffset(value: unknown): number {
   const n = typeof value === 'string' ? parseInt(value, 10) : NaN;
   return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
+/** Parse an ISO 8601 timestamp; throws ValidationError on bad input. */
+function parseDate(value: unknown, field: string): Date {
+  if (typeof value !== 'string') throw new ValidationError(`${field} must be an ISO 8601 string`);
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) throw new ValidationError(`${field} is not a valid ISO 8601 date`);
+  return d;
+}
+
+/** True when an error came back from pg as a unique-constraint violation. */
+function isUniqueViolation(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && (err as { code?: string }).code === '23505';
 }
 
 export async function publicApiPlugin(app: FastifyInstance): Promise<void> {
@@ -299,6 +315,429 @@ export async function publicApiPlugin(app: FastifyInstance): Promise<void> {
         .offset(offset);
 
       return reply.send({ data: rows, limit, offset });
+    }
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────
+  //  WRITE ENDPOINTS — require an API key with `write` scope.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // ── Create contact ─────────────────────────────────────────
+  // POST behaves as upsert-on-phone: if a contact already exists for this
+  // tenant + phoneE164, we return the existing row (HTTP 200) instead of
+  // erroring. That keeps CRM-sync clients idempotent without an explicit
+  // Idempotency-Key header.
+  app.post(
+    '/public/contacts',
+    {
+      onRequest: [app.requireApiKey('write')],
+      config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+      schema: {
+        tags: ['Contacts'],
+        summary: 'Create a contact',
+        description:
+          'Creates a contact. If a contact with the same phone already exists for this tenant, returns the existing record (idempotent). Returns 201 on create, 200 on dedupe.',
+        body: {
+          type: 'object',
+          required: ['firstName', 'lastName', 'phoneE164'],
+          properties: {
+            firstName: { type: 'string', minLength: 1, maxLength: 80 },
+            lastName: { type: 'string', minLength: 1, maxLength: 80 },
+            phoneE164: { type: 'string', pattern: '^\\+\\d{8,15}$' },
+            email: { type: 'string', format: 'email', nullable: true },
+            dateOfBirth: { type: 'string', format: 'date', nullable: true },
+            patientType: { type: 'string', maxLength: 40, nullable: true },
+            insuranceProvider: { type: 'string', maxLength: 120, nullable: true },
+            insuranceId: { type: 'string', maxLength: 80, nullable: true },
+            preferredProvider: { type: 'string', maxLength: 120, nullable: true },
+            notes: { type: 'string', maxLength: 4000, nullable: true },
+            externalCrmId: { type: 'string', maxLength: 120, nullable: true },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { tenantId } = request.apiKey!;
+      const body = request.body as Record<string, unknown>;
+      const phoneE164 = String(body['phoneE164']);
+      if (!PHONE_E164.test(phoneE164)) {
+        throw new ValidationError('phoneE164 must be E.164 (e.g. +14155551234)');
+      }
+      const values = {
+        tenantId,
+        firstName: String(body['firstName']),
+        lastName: String(body['lastName']),
+        phoneE164,
+        email: (body['email'] as string | null | undefined) ?? null,
+        dateOfBirth: (body['dateOfBirth'] as string | null | undefined) ?? null,
+        patientType: (body['patientType'] as string | undefined) ?? 'existing',
+        insuranceProvider: (body['insuranceProvider'] as string | null | undefined) ?? null,
+        insuranceId: (body['insuranceId'] as string | null | undefined) ?? null,
+        preferredProvider: (body['preferredProvider'] as string | null | undefined) ?? null,
+        notes: (body['notes'] as string | null | undefined) ?? null,
+        externalCrmId: (body['externalCrmId'] as string | null | undefined) ?? null,
+        source: 'api',
+      };
+
+      try {
+        const [created] = await db.insert(contacts).values(values).returning();
+        return reply.code(201).send(created);
+      } catch (err) {
+        if (!isUniqueViolation(err)) throw err;
+        // Phone already exists for this tenant — return the existing row.
+        const [existing] = await db
+          .select()
+          .from(contacts)
+          .where(and(eq(contacts.tenantId, tenantId), eq(contacts.phoneE164, phoneE164)))
+          .limit(1);
+        if (!existing) throw err; // shouldn't happen; bubble original error
+        return reply.code(200).send(existing);
+      }
+    }
+  );
+
+  // ── Update contact ─────────────────────────────────────────
+  app.patch(
+    '/public/contacts/:id',
+    {
+      onRequest: [app.requireApiKey('write')],
+      config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+      schema: {
+        tags: ['Contacts'],
+        summary: 'Update a contact',
+        params: { type: 'object', properties: { id: { type: 'string', format: 'uuid' } }, required: ['id'] },
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            firstName: { type: 'string', minLength: 1, maxLength: 80 },
+            lastName: { type: 'string', minLength: 1, maxLength: 80 },
+            phoneE164: { type: 'string', pattern: '^\\+\\d{8,15}$' },
+            email: { type: ['string', 'null'], format: 'email' },
+            dateOfBirth: { type: ['string', 'null'], format: 'date' },
+            patientType: { type: 'string', maxLength: 40 },
+            insuranceProvider: { type: ['string', 'null'], maxLength: 120 },
+            insuranceId: { type: ['string', 'null'], maxLength: 80 },
+            preferredProvider: { type: ['string', 'null'], maxLength: 120 },
+            notes: { type: ['string', 'null'], maxLength: 4000 },
+            externalCrmId: { type: ['string', 'null'], maxLength: 120 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { tenantId } = request.apiKey!;
+      const { id } = request.params as { id: string };
+      const patch = request.body as Record<string, unknown>;
+      if (Object.keys(patch).length === 0) {
+        throw new ValidationError('Request body must include at least one field to update');
+      }
+      try {
+        const [updated] = await db
+          .update(contacts)
+          .set({ ...patch, updatedAt: new Date() })
+          .where(and(eq(contacts.id, id), eq(contacts.tenantId, tenantId)))
+          .returning();
+        if (!updated) throw new NotFoundError('Contact', id);
+        return reply.send(updated);
+      } catch (err) {
+        if (isUniqueViolation(err)) {
+          throw new ValidationError('A contact with that phone number already exists for this tenant');
+        }
+        throw err;
+      }
+    }
+  );
+
+  // ── Delete contact ─────────────────────────────────────────
+  app.delete(
+    '/public/contacts/:id',
+    {
+      onRequest: [app.requireApiKey('write')],
+      config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+      schema: {
+        tags: ['Contacts'],
+        summary: 'Delete a contact',
+        params: { type: 'object', properties: { id: { type: 'string', format: 'uuid' } }, required: ['id'] },
+      },
+    },
+    async (request, reply) => {
+      const { tenantId } = request.apiKey!;
+      const { id } = request.params as { id: string };
+      const result = await db
+        .delete(contacts)
+        .where(and(eq(contacts.id, id), eq(contacts.tenantId, tenantId)))
+        .returning({ id: contacts.id });
+      if (result.length === 0) throw new NotFoundError('Contact', id);
+      return reply.code(204).send();
+    }
+  );
+
+  // ── Create appointment ─────────────────────────────────────
+  // Direct DB insert with `calendarProvider: 'external'` — this endpoint
+  // does NOT push to Google/Outlook. Callers that want a calendar event
+  // should create one in their own system and pass `externalCalendarEventId`
+  // (stored in `calendarEventId`) so future reconciliation can find it.
+  app.post(
+    '/public/appointments',
+    {
+      onRequest: [app.requireApiKey('write')],
+      config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+      schema: {
+        tags: ['Appointments'],
+        summary: 'Create an appointment',
+        description:
+          'Creates an appointment record. Does NOT create a calendar event in Google/Outlook — pass the external event id if your calendar holds the source of truth.',
+        body: {
+          type: 'object',
+          required: ['contactId', 'appointmentType', 'startsAt', 'endsAt'],
+          properties: {
+            contactId: { type: 'string', format: 'uuid' },
+            appointmentType: { type: 'string', minLength: 1, maxLength: 80 },
+            startsAt: { type: 'string', format: 'date-time' },
+            endsAt: { type: 'string', format: 'date-time' },
+            providerName: { type: 'string', maxLength: 120, nullable: true },
+            notes: { type: 'string', maxLength: 4000, nullable: true },
+            externalCalendarEventId: { type: 'string', maxLength: 240, nullable: true },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { tenantId } = request.apiKey!;
+      const body = request.body as Record<string, unknown>;
+
+      const contactId = String(body['contactId']);
+      // Verify contact belongs to this tenant — prevents cross-tenant FK insertion
+      const [contact] = await db
+        .select({ id: contacts.id })
+        .from(contacts)
+        .where(and(eq(contacts.id, contactId), eq(contacts.tenantId, tenantId)))
+        .limit(1);
+      if (!contact) throw new NotFoundError('Contact', contactId);
+
+      const startsAt = parseDate(body['startsAt'], 'startsAt');
+      const endsAt = parseDate(body['endsAt'], 'endsAt');
+      if (endsAt <= startsAt) throw new ValidationError('endsAt must be after startsAt');
+      const durationMinutes = Math.round((endsAt.getTime() - startsAt.getTime()) / 60_000);
+      const appointmentType = String(body['appointmentType']);
+
+      const [created] = await db
+        .insert(appointments)
+        .values({
+          tenantId,
+          contactId,
+          calendarProvider: 'external',
+          calendarEventId: (body['externalCalendarEventId'] as string | null | undefined) ?? null,
+          appointmentType,
+          providerName: (body['providerName'] as string | null | undefined) ?? null,
+          startsAt,
+          endsAt,
+          durationMinutes,
+          status: 'confirmed',
+          notes: (body['notes'] as string | null | undefined) ?? null,
+        })
+        .returning();
+      if (!created) throw new Error('Failed to create appointment');
+
+      void emitWebhook(tenantId, 'appointment.booked', {
+        appointmentId: created.id,
+        contactId,
+        appointmentType,
+        startsAt: startsAt.toISOString(),
+        endsAt: endsAt.toISOString(),
+        providerName: created.providerName,
+        source: 'public_api',
+      });
+      pushActivity(tenantId, 'appointment_booked', {
+        appointmentId: created.id,
+        appointmentType,
+        startsAt: startsAt.toISOString(),
+      });
+
+      return reply.code(201).send(created);
+    }
+  );
+
+  // ── Update appointment ─────────────────────────────────────
+  app.patch(
+    '/public/appointments/:id',
+    {
+      onRequest: [app.requireApiKey('write')],
+      config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+      schema: {
+        tags: ['Appointments'],
+        summary: 'Update an appointment',
+        params: { type: 'object', properties: { id: { type: 'string', format: 'uuid' } }, required: ['id'] },
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            appointmentType: { type: 'string', minLength: 1, maxLength: 80 },
+            startsAt: { type: 'string', format: 'date-time' },
+            endsAt: { type: 'string', format: 'date-time' },
+            providerName: { type: ['string', 'null'], maxLength: 120 },
+            notes: { type: ['string', 'null'], maxLength: 4000 },
+            status: { type: 'string', enum: ['confirmed', 'cancelled', 'completed', 'no_show'] },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { tenantId } = request.apiKey!;
+      const { id } = request.params as { id: string };
+      const body = request.body as Record<string, unknown>;
+      if (Object.keys(body).length === 0) {
+        throw new ValidationError('Request body must include at least one field to update');
+      }
+
+      const patch: Record<string, unknown> = { updatedAt: new Date() };
+      let newStartsAt: Date | undefined;
+      let newEndsAt: Date | undefined;
+
+      if (body['appointmentType'] !== undefined) patch['appointmentType'] = body['appointmentType'];
+      if (body['providerName'] !== undefined) patch['providerName'] = body['providerName'];
+      if (body['notes'] !== undefined) patch['notes'] = body['notes'];
+      if (body['status'] !== undefined) patch['status'] = body['status'];
+      if (body['startsAt'] !== undefined) {
+        newStartsAt = parseDate(body['startsAt'], 'startsAt');
+        patch['startsAt'] = newStartsAt;
+      }
+      if (body['endsAt'] !== undefined) {
+        newEndsAt = parseDate(body['endsAt'], 'endsAt');
+        patch['endsAt'] = newEndsAt;
+      }
+      if (newStartsAt && newEndsAt && newEndsAt <= newStartsAt) {
+        throw new ValidationError('endsAt must be after startsAt');
+      }
+      if (newStartsAt && newEndsAt) {
+        patch['durationMinutes'] = Math.round((newEndsAt.getTime() - newStartsAt.getTime()) / 60_000);
+      }
+
+      const [updated] = await db
+        .update(appointments)
+        .set(patch)
+        .where(and(eq(appointments.id, id), eq(appointments.tenantId, tenantId)))
+        .returning();
+      if (!updated) throw new NotFoundError('Appointment', id);
+
+      if (body['status'] === 'cancelled') {
+        void emitWebhook(tenantId, 'appointment.cancelled', {
+          appointmentId: updated.id,
+          contactId: updated.contactId,
+          appointmentType: updated.appointmentType,
+          source: 'public_api',
+        });
+        pushActivity(tenantId, 'appointment_cancelled', {
+          appointmentId: updated.id,
+          appointmentType: updated.appointmentType,
+        });
+      }
+
+      return reply.send(updated);
+    }
+  );
+
+  // ── Cancel appointment (DELETE = soft-cancel, sets status='cancelled') ──
+  app.delete(
+    '/public/appointments/:id',
+    {
+      onRequest: [app.requireApiKey('write')],
+      config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+      schema: {
+        tags: ['Appointments'],
+        summary: 'Cancel an appointment',
+        description: 'Soft-cancels the appointment by setting status to "cancelled". Emits appointment.cancelled.',
+        params: { type: 'object', properties: { id: { type: 'string', format: 'uuid' } }, required: ['id'] },
+      },
+    },
+    async (request, reply) => {
+      const { tenantId } = request.apiKey!;
+      const { id } = request.params as { id: string };
+      const [updated] = await db
+        .update(appointments)
+        .set({ status: 'cancelled', updatedAt: new Date() })
+        .where(and(eq(appointments.id, id), eq(appointments.tenantId, tenantId)))
+        .returning();
+      if (!updated) throw new NotFoundError('Appointment', id);
+
+      void emitWebhook(tenantId, 'appointment.cancelled', {
+        appointmentId: updated.id,
+        contactId: updated.contactId,
+        appointmentType: updated.appointmentType,
+        source: 'public_api',
+      });
+      pushActivity(tenantId, 'appointment_cancelled', {
+        appointmentId: updated.id,
+        appointmentType: updated.appointmentType,
+      });
+
+      return reply.code(204).send();
+    }
+  );
+
+  // ── Update escalation (typically: open → resolved) ─────────
+  app.patch(
+    '/public/escalations/:id',
+    {
+      onRequest: [app.requireApiKey('write')],
+      config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+      schema: {
+        tags: ['Escalations'],
+        summary: 'Update an escalation',
+        description: 'Update status, priority, or resolution note. Emits escalation.resolved when transitioning to status="resolved".',
+        params: { type: 'object', properties: { id: { type: 'string', format: 'uuid' } }, required: ['id'] },
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            status: { type: 'string', enum: ['open', 'in_progress', 'resolved', 'dismissed'] },
+            priority: { type: 'string', enum: ['low', 'normal', 'high', 'urgent'] },
+            resolutionNote: { type: ['string', 'null'], maxLength: 4000 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { tenantId } = request.apiKey!;
+      const { id } = request.params as { id: string };
+      const body = request.body as Record<string, unknown>;
+      if (Object.keys(body).length === 0) {
+        throw new ValidationError('Request body must include at least one field to update');
+      }
+
+      const [before] = await db
+        .select({ status: escalations.status })
+        .from(escalations)
+        .where(and(eq(escalations.id, id), eq(escalations.tenantId, tenantId)))
+        .limit(1);
+      if (!before) throw new NotFoundError('Escalation', id);
+
+      const patch: Record<string, unknown> = { ...body, updatedAt: new Date() };
+      if (body['status'] === 'resolved' && before.status !== 'resolved') {
+        patch['resolvedAt'] = new Date();
+      }
+
+      const [updated] = await db
+        .update(escalations)
+        .set(patch)
+        .where(and(eq(escalations.id, id), eq(escalations.tenantId, tenantId)))
+        .returning();
+      if (!updated) throw new NotFoundError('Escalation', id);
+
+      if (body['status'] === 'resolved' && before.status !== 'resolved') {
+        void emitWebhook(tenantId, 'escalation.resolved', {
+          escalationId: updated.id,
+          callId: updated.callId,
+          contactId: updated.contactId,
+          source: 'public_api',
+        });
+        pushActivity(tenantId, 'escalation_resolved', {
+          escalationId: updated.id,
+        });
+      }
+
+      return reply.send(updated);
     }
   );
 
