@@ -1,9 +1,26 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { authApi } from '@/lib/api';
 import { BRAND_NAME } from '@/lib/brand';
+
+// Stash the ?ref= attribution code in localStorage so it survives the
+// signup form submission (and the OAuth round-trip for Google signups).
+function StashRefCode() {
+  const params = useSearchParams();
+  useEffect(() => {
+    const code = params.get('ref');
+    if (code) {
+      try {
+        localStorage.setItem('referral_code', code);
+      } catch {
+        /* ignore — private browsing or quota */
+      }
+    }
+  }, [params]);
+  return null;
+}
 
 type AiUseCase = 'inbound' | 'outbound' | 'both';
 
@@ -64,6 +81,19 @@ export default function SignupPage() {
       });
       localStorage.setItem('auth_token', data.token);
       localStorage.setItem('auth_refresh_token', data.refreshToken);
+
+      // Attribute to an affiliate if a referral code is sitting in storage.
+      // Best-effort: a failure here shouldn't block the user from onboarding.
+      try {
+        const referralCode = localStorage.getItem('referral_code');
+        if (referralCode) {
+          await authApi.attributeAffiliate(referralCode);
+          localStorage.removeItem('referral_code');
+        }
+      } catch {
+        /* swallow */
+      }
+
       router.replace('/onboarding/step-0-industry');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
@@ -74,6 +104,11 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-cream-50 flex items-center justify-center p-4">
+      {/* Stash any ?ref= affiliate code in localStorage before form
+          submission, so it survives the API round-trip. */}
+      <Suspense fallback={null}>
+        <StashRefCode />
+      </Suspense>
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">

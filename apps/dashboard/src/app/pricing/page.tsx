@@ -201,6 +201,24 @@ export default function PricingPage() {
         </div>
       </section>
 
+      {/* ── Become a partner ── */}
+      <section className="max-w-3xl mx-auto px-6 pb-16">
+        <div className="glass-card rounded-2xl px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-white">Become a partner</h3>
+            <p className="text-sm text-gray-400 mt-1">
+              Resell AI Receptionist to your clients and earn a recurring commission on every customer you refer. Get a unique referral link + transparent commission reporting.
+            </p>
+          </div>
+          <a
+            href="mailto:partners@aireceptionist.ai?subject=Partner%20program%20interest"
+            className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/20 text-white font-semibold text-sm hover:bg-white/10 transition-colors"
+          >
+            Join the program →
+          </a>
+        </div>
+      </section>
+
       {/* ── Footer CTA ── */}
       <section className="text-center py-16 px-6 border-t border-white/5">
         <h2 className="text-2xl font-bold text-white mb-3">Ready to stop missing calls?</h2>

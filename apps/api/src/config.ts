@@ -85,6 +85,11 @@ const envSchema = z.object({
   STRIPE_PRICE_GROWTH_ANNUAL:   z.string().default(''),
   STRIPE_PRICE_SCALE_MONTHLY:   z.string().default(''),
   STRIPE_PRICE_SCALE_ANNUAL:    z.string().default(''),
+
+  // Comma-separated list of admin emails for the platform-owner-only
+  // admin endpoints (currently: affiliate management). Used as a
+  // simple gate above and beyond the per-tenant role system.
+  ADMIN_EMAILS: z.string().default(''),
 });
 
 function loadConfig() {

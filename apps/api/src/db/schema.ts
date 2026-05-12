@@ -37,9 +37,50 @@ export const tenants = pgTable('tenants', {
   currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
   trialEnd: timestamp('trial_end', { withTimezone: true }),
   billingCycle: text('billing_cycle'), // 'monthly' | 'annual'
+  // Affiliate attribution — set on signup when ?ref= was present.
+  // FK declared in migration 0015 (we can't reference `affiliates`
+  // here because it's declared below this tenants table).
+  affiliateId: uuid('affiliate_id'),
+  attributionSignedAt: timestamp('attribution_signed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ---- Affiliates (reseller MVP) ----
+// One affiliate row per partner. Their `code` is the URL param
+// (?ref=ABC123) used during signup attribution.
+export const affiliates = pgTable('affiliates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  code: text('code').notNull().unique(),
+  name: text('name').notNull(),
+  email: text('email').notNull(),
+  commissionPct: numeric('commission_pct', { precision: 5, scale: 2 }).notNull().default('20.00'),
+  stripeConnectAccountId: text('stripe_connect_account_id'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// One row per Stripe invoice.paid event for an affiliated tenant.
+// Unique on (stripe_invoice_id, affiliate_id) guards against duplicate
+// webhook deliveries.
+export const commissionEvents = pgTable(
+  'commission_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    affiliateId: uuid('affiliate_id').notNull().references(() => affiliates.id, { onDelete: 'cascade' }),
+    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    stripeInvoiceId: text('stripe_invoice_id').notNull(),
+    invoiceAmountCents: integer('invoice_amount_cents').notNull(),
+    commissionCents: integer('commission_cents').notNull(),
+    commissionPct: numeric('commission_pct', { precision: 5, scale: 2 }).notNull(),
+    payoutStatus: text('payout_status').notNull().default('pending'),
+    paidOutAt: timestamp('paid_out_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    invoiceUniq: unique().on(t.stripeInvoiceId, t.affiliateId),
+  })
+);
 
 // ---- Tenant Phone Numbers ----
 // Numbers purchased through the in-app Telnyx flow. Released numbers

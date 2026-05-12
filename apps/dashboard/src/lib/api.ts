@@ -94,6 +94,12 @@ export const authApi = {
       body: JSON.stringify({ refreshToken }),
     }),
   logout: () => apiFetch('/auth/logout', { method: 'POST' }),
+  /** Attribute the signed-in tenant to an affiliate referral code. */
+  attributeAffiliate: (code: string) =>
+    apiFetch<{ ok: true; alreadyAttributed: boolean }>('/auth/attribute-affiliate', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    }),
 };
 
 // ---- Calls ----

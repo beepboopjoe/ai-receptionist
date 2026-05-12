@@ -16,7 +16,8 @@ import { stripeWebhookEvents } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { config } from '../../config.js';
 import { getStripe } from './stripe.client.js';
-import { syncSubscription } from './billing.service.js';
+import { syncSubscription, tenantIdForStripeCustomer } from './billing.service.js';
+import { recordCommissionEvent } from '../affiliates/affiliate.service.js';
 
 export async function stripeWebhookPlugin(app: FastifyInstance): Promise<void> {
   // Capture the raw body for application/json on this route only.
@@ -102,10 +103,40 @@ export async function stripeWebhookPlugin(app: FastifyInstance): Promise<void> {
           await syncSubscription(event.data.object);
           break;
         }
-        case 'invoice.paid':
+        case 'invoice.paid': {
+          // Subscription status sync arrives via customer.subscription.updated.
+          // Here we record an affiliate commission event if the tenant
+          // was attributed at signup. Idempotent — duplicate webhook
+          // deliveries collide on the (invoice, affiliate) unique index.
+          const invoice = event.data.object;
+          const customerId =
+            typeof invoice.customer === 'string'
+              ? invoice.customer
+              : invoice.customer?.id ?? null;
+          if (customerId && invoice.amount_paid && invoice.amount_paid > 0) {
+            const tenantId = await tenantIdForStripeCustomer(customerId);
+            if (tenantId) {
+              try {
+                const result = await recordCommissionEvent({
+                  tenantId,
+                  stripeInvoiceId: invoice.id ?? '',
+                  invoiceAmountCents: invoice.amount_paid,
+                });
+                if (result) {
+                  app.log.info(
+                    { tenantId, invoiceId: invoice.id, commissionCents: result.commissionCents },
+                    'Recorded affiliate commission'
+                  );
+                }
+              } catch (err) {
+                app.log.error({ err, tenantId, invoiceId: invoice.id }, 'recordCommissionEvent failed');
+              }
+            }
+          }
+          break;
+        }
         case 'invoice.payment_failed': {
-          // We rely on subscription.updated for status sync; just log.
-          app.log.info({ invoiceId: event.data.object.id, type: event.type }, 'Stripe invoice event');
+          app.log.info({ invoiceId: event.data.object.id }, 'Stripe invoice payment failed');
           break;
         }
         default:
