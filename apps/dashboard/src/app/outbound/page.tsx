@@ -107,7 +107,7 @@ export default function OutboundPage() {
             <span className="font-serif text-lg text-cream-900">{BRAND_NAME}</span>
           </Link>
           <nav className="hidden md:flex items-center gap-7">
-            <Link href="/#features" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Inbound</Link>
+            <Link href="/inbound" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Inbound</Link>
             <Link href="/outbound" className="text-sm font-medium text-brand-600">Outbound</Link>
             <Link href="/pricing" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Pricing</Link>
             <Link href="/demo" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Demo</Link>
@@ -336,6 +336,23 @@ export default function OutboundPage() {
         </div>
       </section>
 
+      {/* ── Cross-link to /inbound ──────────────────────── */}
+      <section className="max-w-4xl mx-auto px-6 py-12">
+        <Link
+          href="/inbound"
+          className="block rounded-2xl bg-white border border-cream-200 p-6 hover:border-brand-300 transition-colors group"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-1">Looking for inbound?</p>
+              <h3 className="font-serif text-2xl text-cream-900 tracking-tight">Same AI answers your inbound calls 24/7 →</h3>
+              <p className="text-sm text-cream-600 mt-1.5">Books appointments straight into your calendar, handles after-hours, and switches to Spanish automatically. Included on every plan.</p>
+            </div>
+            <Phone size={28} className="text-brand-600 shrink-0 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
+      </section>
+
       {/* ── Footer ────────────────────────────────────────── */}
       <footer className="border-t border-cream-200 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-cream-500">
@@ -345,6 +362,8 @@ export default function OutboundPage() {
           </div>
           <div className="flex items-center gap-6">
             <Link href="/" className="hover:text-cream-900 transition-colors">Home</Link>
+            <Link href="/inbound" className="hover:text-cream-900 transition-colors">Inbound</Link>
+            <Link href="/outbound" className="hover:text-cream-900 transition-colors">Outbound</Link>
             <Link href="/pricing" className="hover:text-cream-900 transition-colors">Pricing</Link>
             <Link href="/demo" className="hover:text-cream-900 transition-colors">Demo</Link>
             <a href="mailto:hello@aireceptionist.ai" className="hover:text-cream-900 transition-colors">Contact</a>

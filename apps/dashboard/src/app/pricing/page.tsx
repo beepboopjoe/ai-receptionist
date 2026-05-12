@@ -68,7 +68,7 @@ export default function PricingPage() {
             <span className="font-bold text-gray-900 text-lg">AI Receptionist</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6">
-            <Link href="/#features" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Features</Link>
+            <Link href="/inbound" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Inbound</Link>
             <Link href="/outbound" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Outbound</Link>
             <Link href="/pricing" className="text-sm font-medium text-brand-600">Pricing</Link>
             <Link href="/demo" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Demo</Link>

@@ -110,7 +110,8 @@
       "Bash(pnpm --filter @ai-receptionist/api type-check)",
       "Bash(pnpm --filter @ai-receptionist/api build)",
       "Bash(curl -fsS -o /dev/null https://ai-receptionist-production-de7b.up.railway.app/health/ready)",
-      "Bash(curl -fsS https://ai-receptionist-production-de7b.up.railway.app/api/v1/public/whoami)"
+      "Bash(curl -fsS https://ai-receptionist-production-de7b.up.railway.app/api/v1/public/whoami)",
+      "WebFetch(domain:docs.x.ai)"
     ]
   }
 }
