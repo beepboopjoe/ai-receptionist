@@ -52,6 +52,7 @@ const proNavItems: { label: string; icon: React.ElementType; reason: UpgradeReas
 ];
 
 const settingsNav = [
+  { href: '/settings/phone-numbers', label: 'Phone Numbers' },
   { href: '/settings/integrations', label: 'Integrations' },
   { href: '/settings/office-hours', label: 'Office Hours' },
   { href: '/settings/voice-agent', label: 'Voice Agent' },

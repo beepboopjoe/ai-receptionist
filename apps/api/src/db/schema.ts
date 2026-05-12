@@ -41,6 +41,33 @@ export const tenants = pgTable('tenants', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ---- Tenant Phone Numbers ----
+// Numbers purchased through the in-app Telnyx flow. Released numbers
+// are soft-deleted (released_at populated) so history isn't lost.
+export const tenantPhoneNumbers = pgTable(
+  'tenant_phone_numbers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    phoneE164: text('phone_e164').notNull(),
+    telnyxPhoneId: text('telnyx_phone_id'),
+    country: text('country').notNull().default('US'),
+    region: text('region'),
+    /** "local" or "toll_free" — drives the monthly rate. */
+    numberType: text('number_type').notNull().default('local'),
+    monthlyCostCents: integer('monthly_cost_cents').notNull().default(500),
+    isPrimary: boolean('is_primary').notNull().default(false),
+    purchasedAt: timestamp('purchased_at', { withTimezone: true }).notNull().defaultNow(),
+    releasedAt: timestamp('released_at', { withTimezone: true }),
+    stripeSubscriptionItemId: text('stripe_subscription_item_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tenantIdx: index('tenant_phone_numbers_tenant_idx').on(t.tenantId, t.releasedAt),
+  })
+);
+
 // ---- Stripe Webhook Idempotency ----
 export const stripeWebhookEvents = pgTable('stripe_webhook_events', {
   eventId: text('event_id').primaryKey(),

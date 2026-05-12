@@ -372,6 +372,40 @@ export const billingApi = {
     }>('/billing/usage'),
 };
 
+// ---- Phone numbers (Telnyx-backed) ----
+export interface OwnedNumber {
+  id: string;
+  phoneE164: string;
+  numberType: 'local' | 'toll_free';
+  isPrimary: boolean;
+  monthlyCostCents: number;
+  purchasedAt: string;
+  region: string | null;
+}
+export interface AvailableNumber {
+  phoneE164: string;
+  telnyxId: string;
+  region: string | null;
+  locality: string | null;
+  numberType: 'local' | 'toll_free';
+  monthlyCostCents: number;
+}
+export const phoneNumbersApi = {
+  list: () => apiFetch<{ data: OwnedNumber[] }>('/phone-numbers'),
+  search: (params: { areaCode?: string; locality?: string; type?: 'local' | 'toll_free' }) =>
+    apiFetch<{ data: AvailableNumber[] }>('/phone-numbers/search', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+  purchase: (phoneE164: string, numberType: 'local' | 'toll_free' = 'local') =>
+    apiFetch<{ number: OwnedNumber; charged: boolean }>('/phone-numbers/purchase', {
+      method: 'POST',
+      body: JSON.stringify({ phoneE164, numberType }),
+    }),
+  release: (id: string) =>
+    apiFetch<void>(`/phone-numbers/${id}`, { method: 'DELETE' }),
+};
+
 // ---- Campaigns ----
 export const campaignsApi = {
   list: (status?: string) => {
