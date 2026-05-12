@@ -1,16 +1,33 @@
-// Public pricing page — no auth required, no sidebar
-// Uses root layout (apps/dashboard/src/app/layout.tsx)
-//
-// Plan data is the single shared catalog from @ai-receptionist/shared.
-// CTA buttons send the user to /signup with ?plan + ?cycle so the
-// dashboard knows what to upsell post-signup. Authenticated users
-// who land here go to /billing to upgrade through the Stripe Checkout
-// flow.
+// ============================================================
+// /pricing — Public pricing page. Cream theme matching
+// /inbound, /outbound, /demo. Pulls plans from the shared
+// catalog (single source of truth) and uses the PricingCards
+// client component for the monthly/annual toggle. Includes a
+// DashboardTeaser so visitors can see what they get inside.
+// ============================================================
 import Link from 'next/link';
-import { CheckCircle, Moon, Phone, Zap } from 'lucide-react';
-import { RoiSection } from '@/components/ui/roi-section';
+import dynamic from 'next/dynamic';
+import { CheckCircle, Moon, Phone, Sparkles } from 'lucide-react';
+import { BRAND_NAME } from '@/lib/brand';
 import { PLANS, PAY_AS_YOU_GO } from '@ai-receptionist/shared';
 import { PricingCards } from '@/components/ui/pricing-cards';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const DashboardTeaser = dynamic(
+  () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
+  {
+    ssr: false,
+    loading: () => <Skeleton width="w-full" height="h-[480px]" rounded="lg" />,
+  }
+);
+
+const RoiSection = dynamic(
+  () => import('@/components/ui/roi-section').then((m) => m.RoiSection),
+  {
+    ssr: false,
+    loading: () => <Skeleton width="w-full" height="h-64" rounded="lg" />,
+  }
+);
 
 const FAQS = [
   {
@@ -57,24 +74,24 @@ const FAQS = [
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      {/* ── Nav ── */}
-      <header className="sticky top-0 z-50 glass-nav border-b border-white/10">
+    <div className="min-h-screen bg-cream-50 text-cream-900">
+      {/* ── Nav ───────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 glass-nav border-b border-cream-200">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-serif text-lg shadow-lg">
+            <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-serif text-lg shadow-sm">
               ar
             </div>
-            <span className="font-bold text-gray-900 text-lg">AI Receptionist</span>
+            <span className="font-serif text-lg text-cream-900">{BRAND_NAME}</span>
           </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/inbound" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Inbound</Link>
-            <Link href="/outbound" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Outbound</Link>
+          <nav className="hidden md:flex items-center gap-7">
+            <Link href="/inbound" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Inbound</Link>
+            <Link href="/outbound" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Outbound</Link>
             <Link href="/pricing" className="text-sm font-medium text-brand-600">Pricing</Link>
-            <Link href="/demo" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Demo</Link>
+            <Link href="/demo" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Demo</Link>
           </nav>
           <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+            <Link href="/login" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">
               Sign in
             </Link>
             <Link
@@ -87,155 +104,189 @@ export default function PricingPage() {
         </div>
       </header>
 
-      {/* ── Hero ── */}
-      <section className="mesh-gradient pt-20 pb-16 text-center px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 shimmer-badge bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-semibold px-4 py-2 rounded-full mb-6">
-            <Zap size={13} />
+      {/* ── Hero ──────────────────────────────────────────── */}
+      <section className="mesh-gradient-light pt-24 pb-16 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold px-4 py-2 rounded-full mb-7">
+            <Sparkles size={13} />
             Simple, transparent pricing
           </div>
-          <h1 className="text-5xl font-extrabold tracking-tight mb-4">
-            Pay for what you use.{' '}
+          <h1 className="font-serif text-5xl md:text-7xl text-cream-900 tracking-tight leading-[1.05]">
+            Pay for what you use.
+            <br />
             <span className="gradient-text">Cancel anytime.</span>
           </h1>
-          <p className="text-lg text-gray-400 max-w-xl mx-auto">
+          <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
             14-day free trial on every paid plan. No setup fees. No long-term contract. Outbound + Spanish + API included on every tier.
           </p>
         </div>
       </section>
 
       {/* ── Pricing cards (client — has monthly/annual toggle) ── */}
-      <section className="max-w-6xl mx-auto px-6 pb-12 -mt-8">
+      <section className="max-w-6xl mx-auto px-6 pb-12 pt-6">
         <PricingCards plans={PLANS.filter((p) => p.key !== 'enterprise')} />
       </section>
 
-      {/* ── Pay-as-you-go strip ── */}
+      {/* ── Pay-as-you-go strip ────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-6 pb-8">
-        <div className="glass-card rounded-2xl px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="rounded-2xl bg-white border border-cream-200 px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <h3 className="text-lg font-bold text-white">{PAY_AS_YOU_GO.name}</h3>
-            <p className="text-sm text-gray-400 mt-1">
-              {PAY_AS_YOU_GO.description} <span className="font-semibold text-white">${PAY_AS_YOU_GO.perMinute.toFixed(2)}/min</span> + ${PAY_AS_YOU_GO.phoneNumberMonthly}/mo per number.
+            <h3 className="text-lg font-semibold text-cream-900">{PAY_AS_YOU_GO.name}</h3>
+            <p className="text-sm text-cream-600 mt-1">
+              {PAY_AS_YOU_GO.description} <span className="font-semibold text-cream-900">${PAY_AS_YOU_GO.perMinute.toFixed(2)}/min</span> + ${PAY_AS_YOU_GO.phoneNumberMonthly}/mo per number.
             </p>
           </div>
           <Link
             href="/signup?plan=payg"
-            className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/20 text-white font-semibold text-sm hover:bg-white/10 transition-colors"
+            className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-cream-300 text-cream-800 font-semibold text-sm hover:bg-cream-50 transition-colors"
           >
             Start pay-as-you-go →
           </Link>
         </div>
       </section>
 
-      {/* ── Enterprise row ── */}
-      <section className="max-w-6xl mx-auto px-6 pb-24">
-        <div className="glass-card rounded-2xl px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* ── Enterprise row ────────────────────────────────── */}
+      <section className="max-w-6xl mx-auto px-6 pb-20">
+        <div className="rounded-2xl bg-cream-100 border border-cream-200 px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <h3 className="text-lg font-bold text-white">Enterprise</h3>
-            <p className="text-sm text-gray-400 mt-1">
+            <h3 className="text-lg font-semibold text-cream-900">Enterprise</h3>
+            <p className="text-sm text-cream-600 mt-1">
               Custom pricing for groups, DSOs, or networks with 5+ locations. White-label available. Dedicated success manager + SLA.
             </p>
           </div>
           <a
             href="mailto:hello@aireceptionist.ai"
-            className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/20 text-white font-semibold text-sm hover:bg-white/10 transition-colors"
+            className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-cream-300 text-cream-800 font-semibold text-sm hover:bg-cream-50 transition-colors"
           >
             Contact sales →
           </a>
         </div>
       </section>
 
-      {/* ── After-hours value block ── */}
-      <section className="bg-gray-900 py-16 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center mb-5">
-                <Moon size={22} className="text-brand-400" />
+      {/* ── Dashboard preview ─────────────────────────────── */}
+      <section className="bg-white border-y border-cream-200 py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">What you get inside</p>
+            <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
+              One dashboard. Every call, contact, and campaign.
+            </h2>
+            <p className="text-cream-600 mt-3 max-w-xl mx-auto">
+              Recordings + transcripts on every call. Live activity feed. Public API + webhooks on every plan.
+            </p>
+          </div>
+          <DashboardTeaser />
+        </div>
+      </section>
+
+      {/* ── After-hours value block ──────────────────────── */}
+      <section className="max-w-5xl mx-auto px-6 py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div>
+            <div className="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center mb-5">
+              <Moon size={22} className="text-brand-600" />
+            </div>
+            <h2 className="font-serif text-4xl text-cream-900 tracking-tight">
+              Your AI never sleeps.
+            </h2>
+            <p className="text-cream-600 mt-3 leading-relaxed">
+              67% of callers reach out outside business hours. Every missed call is a missed appointment — often worth $150–$600 in revenue. Your AI receptionist answers every call, 24 hours a day, and books the appointment on the spot.
+            </p>
+            <Link href="/signup" className="glow-btn mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-6 py-3 text-sm font-semibold text-white transition-colors">
+              <Phone size={16} /> Start your free trial
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { stat: '24/7', label: 'Always available' },
+              { stat: '< 2s', label: 'Answer time' },
+              { stat: '94%', label: 'Booking success rate' },
+              { stat: '$0', label: 'Missed call cost' },
+            ].map(({ stat, label }) => (
+              <div key={label} className="rounded-xl bg-white border border-cream-200 p-5 text-center">
+                <p className="font-serif text-3xl text-cream-900">{stat}</p>
+                <p className="text-xs text-cream-600 mt-1">{label}</p>
               </div>
-              <h2 className="text-3xl font-bold text-white mb-4">
-                Your AI never sleeps
-              </h2>
-              <p className="text-gray-400 text-base leading-relaxed">
-                67% of callers reach out outside business hours. Every missed call is a missed appointment — often worth $150–$600 in revenue. Your AI receptionist answers every call, 24 hours a day, and books the appointment on the spot.
-              </p>
-              <Link href="/signup" className="glow-btn mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-6 py-3 text-sm font-semibold text-white transition-colors">
-                <Phone size={16} /> Start your free trial
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { stat: '24/7', label: 'Always available' },
-                { stat: '< 2s', label: 'Answer time' },
-                { stat: '94%', label: 'Booking success rate' },
-                { stat: '$0', label: 'Missed call cost' },
-              ].map(({ stat, label }) => (
-                <div key={label} className="glass-card rounded-xl p-5 text-center">
-                  <p className="text-3xl font-extrabold text-white">{stat}</p>
-                  <p className="text-xs text-gray-400 mt-1">{label}</p>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── ROI Calculator ── */}
-      <div className="bg-gray-950">
+      {/* ── ROI Calculator ────────────────────────────────── */}
+      <div className="bg-cream-100 border-y border-cream-200">
         <RoiSection />
       </div>
 
-      {/* ── FAQ ── */}
+      {/* ── FAQ ──────────────────────────────────────────── */}
       <section className="max-w-3xl mx-auto px-6 py-20">
-        <h2 className="text-3xl font-bold text-white text-center mb-10">Frequently asked questions</h2>
+        <h2 className="font-serif text-4xl text-cream-900 text-center mb-10">Frequently asked questions</h2>
         <div className="space-y-3">
           {FAQS.map(({ q, a }) => (
-            <details key={q} className="glass-card rounded-xl group">
-              <summary className="flex items-center justify-between px-6 py-4 cursor-pointer list-none select-none font-medium text-white text-sm">
+            <details key={q} className="rounded-xl bg-white border border-cream-200 group">
+              <summary className="flex items-center justify-between px-6 py-4 cursor-pointer list-none select-none font-medium text-cream-900 text-sm">
                 {q}
-                <span className="faq-icon text-gray-400 text-xl leading-none">+</span>
+                <span className="faq-icon text-cream-400 text-xl leading-none">+</span>
               </summary>
-              <p className="px-6 pb-5 text-sm text-gray-400 leading-relaxed">{a}</p>
+              <p className="px-6 pb-5 text-sm text-cream-600 leading-relaxed">{a}</p>
             </details>
           ))}
         </div>
       </section>
 
-      {/* ── Become a partner ── */}
+      {/* ── Become a partner ──────────────────────────────── */}
       <section className="max-w-3xl mx-auto px-6 pb-16">
-        <div className="glass-card rounded-2xl px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="rounded-2xl bg-cream-100 border border-cream-200 px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <h3 className="text-lg font-bold text-white">Become a partner</h3>
-            <p className="text-sm text-gray-400 mt-1">
-              Resell AI Receptionist to your clients and earn a recurring commission on every customer you refer. Get a unique referral link + transparent commission reporting.
+            <h3 className="text-lg font-semibold text-cream-900">Become a partner</h3>
+            <p className="text-sm text-cream-600 mt-1">
+              Resell AI Receptionist to your clients and earn a recurring commission on every customer you refer.
             </p>
           </div>
           <a
             href="mailto:partners@aireceptionist.ai?subject=Partner%20program%20interest"
-            className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/20 text-white font-semibold text-sm hover:bg-white/10 transition-colors"
+            className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-cream-300 text-cream-800 font-semibold text-sm hover:bg-cream-50 transition-colors"
           >
             Join the program →
           </a>
         </div>
       </section>
 
-      {/* ── Footer CTA ── */}
-      <section className="text-center py-16 px-6 border-t border-white/5">
-        <h2 className="text-2xl font-bold text-white mb-3">Ready to stop missing calls?</h2>
-        <p className="text-gray-400 mb-6">Start your 14-day free trial today — no credit card required.</p>
-        <Link
-          href="/signup"
-          className="glow-btn inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-8 py-4 text-base font-bold text-white transition-colors"
-        >
-          <Zap size={18} /> Get started free →
-        </Link>
-        <p className="text-xs text-gray-600 mt-4">
-          Questions?{' '}
-          <a href="mailto:hello@aireceptionist.ai" className="text-brand-400 hover:underline">
-            hello@aireceptionist.ai
-          </a>
-        </p>
+      {/* ── Footer CTA ───────────────────────────────────── */}
+      <section className="bg-cream-900 text-white py-20 px-6 border-t border-white/5">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="font-serif text-4xl text-white mb-3">Ready to stop missing calls?</h2>
+          <p className="text-cream-300 mb-8 max-w-xl mx-auto">Start your 14-day free trial today — no credit card required.</p>
+          <Link
+            href="/signup"
+            className="glow-btn inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-8 py-4 text-base font-bold text-white transition-colors"
+          >
+            <CheckCircle size={18} /> Get started free →
+          </Link>
+          <p className="text-xs text-cream-400 mt-6">
+            Questions?{' '}
+            <a href="mailto:hello@aireceptionist.ai" className="text-brand-300 hover:underline">
+              hello@aireceptionist.ai
+            </a>
+          </p>
+        </div>
       </section>
+
+      {/* ── Footer ───────────────────────────────────────── */}
+      <footer className="border-t border-cream-200 py-10 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-cream-500">
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center text-white font-serif text-sm">ar</div>
+            <span className="font-serif text-cream-700">{BRAND_NAME}</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <Link href="/" className="hover:text-cream-900 transition-colors">Home</Link>
+            <Link href="/inbound" className="hover:text-cream-900 transition-colors">Inbound</Link>
+            <Link href="/outbound" className="hover:text-cream-900 transition-colors">Outbound</Link>
+            <Link href="/demo" className="hover:text-cream-900 transition-colors">Demo</Link>
+            <a href="mailto:hello@aireceptionist.ai" className="hover:text-cream-900 transition-colors">Contact</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

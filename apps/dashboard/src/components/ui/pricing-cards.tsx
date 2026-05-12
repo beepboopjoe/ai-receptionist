@@ -1,12 +1,12 @@
 'use client';
 // ============================================================
-// Pricing card grid with monthly/annual toggle.
+// Pricing card grid with monthly/annual toggle. Cream theme to
+// match /inbound, /outbound, /demo, /pricing.
 //
-// Used on the public /pricing page. CTAs always send the visitor
-// to /signup with ?plan + ?cycle so the dashboard can resume the
-// upgrade flow after they create their account. Authenticated
-// users go through the in-app /billing page which calls Stripe
-// Checkout directly.
+// CTAs always send the visitor to /signup with ?plan + ?cycle so
+// the dashboard can resume the upgrade flow after they create
+// their account. Authenticated users go through the in-app
+// /billing page which calls Stripe Checkout directly.
 // ============================================================
 import Link from 'next/link';
 import { useState } from 'react';
@@ -24,12 +24,12 @@ export function PricingCards({ plans }: PricingCardsProps) {
     <div>
       {/* Cycle toggle */}
       <div className="flex justify-center mb-8">
-        <div className="inline-flex bg-white/5 border border-white/10 rounded-full p-1">
+        <div className="inline-flex bg-white border border-cream-200 rounded-full p-1 shadow-sm">
           <button
             type="button"
             onClick={() => setCycle('monthly')}
             className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
-              cycle === 'monthly' ? 'bg-brand-600 text-white' : 'text-gray-400 hover:text-white'
+              cycle === 'monthly' ? 'bg-brand-600 text-white' : 'text-cream-600 hover:text-cream-900'
             }`}
           >
             Monthly
@@ -38,7 +38,7 @@ export function PricingCards({ plans }: PricingCardsProps) {
             type="button"
             onClick={() => setCycle('annual')}
             className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
-              cycle === 'annual' ? 'bg-brand-600 text-white' : 'text-gray-400 hover:text-white'
+              cycle === 'annual' ? 'bg-brand-600 text-white' : 'text-cream-600 hover:text-cream-900'
             }`}
           >
             Annual <span className="text-xs ml-1 opacity-80">save 15%</span>
@@ -53,42 +53,42 @@ export function PricingCards({ plans }: PricingCardsProps) {
           return (
             <div
               key={plan.key}
-              className={`glass-card rounded-2xl p-8 flex flex-col relative ${
-                plan.popular ? 'ring-2 ring-brand-500' : ''
+              className={`rounded-2xl bg-white border p-8 flex flex-col relative shadow-sm ${
+                plan.popular ? 'border-brand-400 ring-2 ring-brand-200' : 'border-cream-200'
               }`}
             >
               {plan.popular && (
-                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-brand-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
+                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
                   MOST POPULAR
                 </span>
               )}
 
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-white mb-3">{plan.name}</h2>
+                <h2 className="font-serif text-2xl text-cream-900 tracking-tight mb-3">{plan.name}</h2>
                 <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-4xl font-extrabold text-white">${price}</span>
-                  <span className="text-gray-400 text-sm">/mo</span>
+                  <span className="font-serif text-5xl text-cream-900">${price}</span>
+                  <span className="text-cream-500 text-sm">/mo</span>
                 </div>
-                <p className="text-xs text-gray-500 italic">
+                <p className="text-xs text-cream-500 italic">
                   {cycle === 'annual'
                     ? `Billed yearly at $${price * 12} — save $${(plan.monthlyPrice - plan.annualMonthlyPrice) * 12}/yr`
                     : plan.tagline}
                 </p>
-                <p className="text-sm text-gray-400 mt-3">{plan.description}</p>
+                <p className="text-sm text-cream-600 mt-3 leading-relaxed">{plan.description}</p>
               </div>
 
               <ul className="space-y-3 flex-1 mb-6">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-gray-300">
-                    <CheckCircle size={15} className="text-brand-400 shrink-0 mt-0.5" />
+                  <li key={f} className="flex items-start gap-2.5 text-sm text-cream-700">
+                    <CheckCircle size={15} className="text-brand-500 shrink-0 mt-0.5" />
                     {f}
                   </li>
                 ))}
               </ul>
 
-              <p className="text-xs text-gray-500 mb-4">
+              <p className="text-xs text-cream-500 mb-4">
                 Overage:{' '}
-                <span className="font-semibold text-gray-400">${plan.overagePerMin.toFixed(2)}/min</span>
+                <span className="font-semibold text-cream-700">${plan.overagePerMin.toFixed(2)}/min</span>
                 {' '}after {plan.monthlyMinutes.toLocaleString()} min
               </p>
 
@@ -97,7 +97,7 @@ export function PricingCards({ plans }: PricingCardsProps) {
                 className={`flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl font-semibold text-sm transition-colors ${
                   plan.popular
                     ? 'bg-brand-600 hover:bg-brand-700 text-white'
-                    : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
+                    : 'bg-cream-100 hover:bg-cream-200 text-cream-900 border border-cream-200'
                 }`}
               >
                 Start free trial →

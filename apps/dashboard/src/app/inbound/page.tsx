@@ -14,6 +14,14 @@ const SampleCallPlayer = dynamic(
   () => import('@/components/ui/sample-call-player').then((m) => m.SampleCallPlayer),
   { ssr: false }
 );
+const DemoVideoPlayer = dynamic(
+  () => import('@/components/ui/demo-video-player').then((m) => m.DemoVideoPlayer),
+  { ssr: false }
+);
+const DashboardTeaser = dynamic(
+  () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
+  { ssr: false }
+);
 
 export const metadata = {
   title: 'AI Receptionist — answer every call, 24/7',
@@ -331,19 +339,45 @@ export default function InboundPage() {
         </div>
       </section>
 
-      {/* ── Sample Call Demo ──────────────────────────── */}
-      <section className="max-w-4xl mx-auto px-6 pb-12 pt-8">
+      {/* ── Video Demos ────────────────────────────────── */}
+      <section className="max-w-5xl mx-auto px-6 pb-12 pt-8">
         <div className="text-center mb-6">
-          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-2">Hear it yourself</p>
-          <h2 className="font-serif text-3xl text-cream-900 tracking-tight">Listen to real AI inbound calls</h2>
-          <p className="text-cream-600 mt-2 text-sm">Pre-scripted samples — press play to hear voice quality and natural conversation flow.</p>
+          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-2">See it yourself</p>
+          <h2 className="font-serif text-3xl text-cream-900 tracking-tight">Watch the AI handle real inbound calls</h2>
+          <p className="text-cream-600 mt-2 text-sm">Recorded scenarios — voice quality and conversation flow you can sell to your team in one minute.</p>
         </div>
-        <SampleCallPlayer />
+        <DemoVideoPlayer max={4} />
         <p className="text-center mt-5">
           <Link href="/demo" className="text-sm font-semibold text-brand-600 hover:underline">
-            Talk to the AI yourself in real time →
+            See all demo videos →
           </Link>
         </p>
+      </section>
+
+      {/* ── Dashboard preview ───────────────────────────── */}
+      <section className="bg-white border-y border-cream-200 py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">What you get inside</p>
+            <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
+              Every inbound call. One dashboard.
+            </h2>
+            <p className="text-cream-600 mt-3 max-w-xl mx-auto">
+              Recording, transcript, caller info, outcome — all in one place. Push to your CRM via webhook or email.
+            </p>
+          </div>
+          <DashboardTeaser />
+        </div>
+      </section>
+
+      {/* ── Audio Samples (secondary fallback) ─────────── */}
+      <section className="max-w-4xl mx-auto px-6 pb-12 pt-12">
+        <div className="text-center mb-6">
+          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-2">Hear the voice</p>
+          <h2 className="font-serif text-3xl text-cream-900 tracking-tight">Audio samples</h2>
+          <p className="text-cream-600 mt-2 text-sm">If you'd rather just hear it — same scripts, audio only.</p>
+        </div>
+        <SampleCallPlayer />
       </section>
 
       {/* ── After-hours value strip ─────────────────────── */}
