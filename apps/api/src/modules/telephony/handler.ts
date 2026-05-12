@@ -180,6 +180,17 @@ async function onCallEnded(params: {
     entityId: existing.id,
     metadata: { durationSeconds },
   });
+
+  // Track minute usage for billing — fire-and-forget (never blocks
+  // call completion). Missed calls don't bill (no agent voice time).
+  if (!missed && durationSeconds && durationSeconds > 0) {
+    const minutes = durationSeconds / 60;
+    void import('../billing/usage.service.js').then(({ incrementMinuteUsage }) =>
+      incrementMinuteUsage(existing.tenantId, minutes).catch((err) => {
+        console.error('[telephony] incrementMinuteUsage failed:', err);
+      })
+    );
+  }
 }
 
 // ---- Helper: find tenant by phone number ----

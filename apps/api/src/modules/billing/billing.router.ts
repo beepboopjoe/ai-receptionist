@@ -13,6 +13,7 @@ import { tenants } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '../../lib/errors.js';
 import { createCheckoutSession, createPortalSession } from './billing.service.js';
+import { getCurrentUsage } from './usage.service.js';
 import { getStripe } from './stripe.client.js';
 import { PLANS, getPlan, type PlanKey, type BillingCycle } from '@ai-receptionist/shared';
 
@@ -58,6 +59,16 @@ export async function billingPlugin(app: FastifyInstance): Promise<void> {
     }
     const session = await createPortalSession(request.user!.tenantId);
     return reply.send(session);
+  });
+
+  // ── Current period usage ────────────────────────────────────
+  // Returns minutes used vs included for the active billing window,
+  // with overage and pct_used precomputed so the dashboard can
+  // render the progress bar without doing math.
+  app.get('/billing/usage', { onRequest: [app.requireRole('staff')] }, async (request, reply) => {
+    const usage = await getCurrentUsage(request.user!.tenantId);
+    if (!usage) throw new NotFoundError('Tenant', request.user!.tenantId);
+    return reply.send(usage);
   });
 
   // ── Current subscription ────────────────────────────────────

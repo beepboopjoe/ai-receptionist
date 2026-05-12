@@ -357,6 +357,19 @@ export const billingApi = {
   // Open the Stripe Customer Portal (manage card, view invoices, cancel)
   openPortal: () =>
     apiFetch<{ url: string }>('/billing/portal', { method: 'POST' }),
+
+  // Current billing-period minute usage + overage
+  getUsage: () =>
+    apiFetch<{
+      periodStart: string;
+      periodEnd: string;
+      minutesUsed: number;
+      minutesIncluded: number;
+      overageMinutes: number;
+      overageChargedCents: number;
+      pctUsed: number;
+      warningSent: boolean;
+    }>('/billing/usage'),
 };
 
 // ---- Campaigns ----

@@ -1,10 +1,14 @@
 // ============================================================
 // BullMQ Worker Bootstrap
-// Processes all queues: notifications, reminders, crm-sync, outbound-dialer
+// Processes all queues: notifications, reminders, crm-sync, outbound-dialer.
+// Also runs the usage-warning cron (hourly) so the worker is the single
+// long-lived process responsible for both queue work and scheduled tasks.
 // Run as a separate process: node dist/queue/worker.js
 // ============================================================
 import { Worker, type Job } from 'bullmq';
+import cron from 'node-cron';
 import { redis } from '../db/redis.js';
+import { runUsageWarningSweep } from './jobs/usage-warning.job.js';
 import { processSendNotification, type SendNotificationJobData } from './jobs/send-reminder.job.js';
 import { processMissedCallRecovery, type MissedCallRecoveryJobData } from './jobs/missed-call-recovery.job.js';
 import { processCrmSync, type CrmSyncJobData } from './jobs/crm-sync.job.js';
@@ -109,9 +113,25 @@ outboundDialerWorker.on('failed', (job, err) => {
   console.error(`[worker:outbound-dialer] ❌ job ${job?.id} (${job?.name}) failed:`, err.message);
 });
 
+// ---- Scheduled tasks (node-cron) ----
+// Hourly sweep of minute_usage rows looking for tenants who crossed
+// 80% of their plan's included minutes — sends a one-time warning
+// email per period. Idempotent via the warning_sent_at column.
+const usageWarningTask = cron.schedule('17 * * * *', async () => {
+  try {
+    const result = await runUsageWarningSweep();
+    if (result.sent > 0) {
+      console.log(`[cron:usage-warning] checked ${result.checked}, sent ${result.sent} warnings`);
+    }
+  } catch (err) {
+    console.error('[cron:usage-warning] sweep failed:', err);
+  }
+});
+
 // ---- Graceful shutdown ----
 async function shutdown() {
   console.log('[worker] Shutting down workers...');
+  usageWarningTask.stop();
   await Promise.all([
     notificationsWorker.close(),
     remindersWorker.close(),

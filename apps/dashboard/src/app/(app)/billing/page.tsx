@@ -135,19 +135,21 @@ function PlanComparisonCards({ currentPlan, onCheckoutError }: { currentPlan: st
 }
 
 // ── Main page ───────────────────────────────────────────────────────────────
+type UsageData = Awaited<ReturnType<typeof billingApi.getUsage>>;
+
 export default function BillingPage() {
   const [billing, setBilling] = useState<BillingData | null>(null);
+  const [usage, setUsage] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
 
   useEffect(() => {
-    billingApi
-      .get()
-      .then((data) => {
-        setBilling(data);
-      })
-      .catch((err: Error) => {
-        toast.error(err.message ?? 'Failed to load billing data');
+    Promise.allSettled([billingApi.get(), billingApi.getUsage()])
+      .then(([billingRes, usageRes]) => {
+        if (billingRes.status === 'fulfilled') setBilling(billingRes.value);
+        else toast.error(billingRes.reason?.message ?? 'Failed to load billing data');
+        if (usageRes.status === 'fulfilled') setUsage(usageRes.value);
+        // Usage 404s on truly fresh tenants (no period yet) — silent fallback OK.
       })
       .finally(() => {
         setLoading(false);
@@ -190,9 +192,18 @@ export default function BillingPage() {
     }
   }
 
-  const usagePercent = billing?.usagePercent ?? 0;
+  // Prefer the real /billing/usage endpoint when it returned. Fall
+  // back to the legacy /billing aggregate (which mocks values during
+  // dev) when usage isn't available yet — fresh tenants with no calls.
+  const minutesUsed = usage?.minutesUsed ?? billing?.minutesUsed ?? 0;
+  const minutesIncluded = usage?.minutesIncluded ?? billing?.minutesIncluded ?? planConfig?.minutes ?? 0;
+  const overageMinutes = usage?.overageMinutes ?? 0;
+  const overageDollars = (usage?.overageChargedCents ?? 0) / 100;
+  const usagePercent = usage?.pctUsed ?? billing?.usagePercent ?? 0;
   const progressColor =
-    usagePercent >= 80 ? '#f59e0b' : '#c96442';
+    usagePercent >= 95 ? '#dc2626'      // red — already in overage
+      : usagePercent >= 80 ? '#f59e0b'  // yellow — warning
+      : '#c96442';                       // brand
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
@@ -263,9 +274,9 @@ export default function BillingPage() {
             <div className="card p-6 space-y-3">
               <p className="text-sm font-medium text-gray-500">AI Minutes Used</p>
               <p className="text-2xl font-bold text-gray-900">
-                {billing.minutesUsed.toLocaleString()}
+                {Math.round(minutesUsed).toLocaleString()}
                 <span className="text-base font-normal text-gray-400">
-                  {' '}/ {billing.minutesIncluded.toLocaleString()}
+                  {' '}/ {minutesIncluded === -1 ? '∞' : minutesIncluded.toLocaleString()}
                 </span>
               </p>
               <div>
@@ -278,7 +289,17 @@ export default function BillingPage() {
                     }}
                   />
                 </div>
-                <p className="text-xs text-gray-400 mt-1.5">{usagePercent}% used</p>
+                <p className="text-xs text-gray-400 mt-1.5">{usagePercent}% used this period</p>
+                {overageMinutes > 0 && (
+                  <p className="text-xs text-amber-600 mt-0.5 font-medium">
+                    +{Math.round(overageMinutes)} overage min · ${overageDollars.toFixed(2)} added to next invoice
+                  </p>
+                )}
+                {usagePercent >= 80 && usagePercent < 100 && overageMinutes === 0 && (
+                  <p className="text-xs text-amber-600 mt-0.5 font-medium">
+                    ⚠ Approaching plan limit
+                  </p>
+                )}
               </div>
             </div>
 

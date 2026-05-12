@@ -61,6 +61,8 @@ export const minuteUsage = pgTable(
     minutesUsed: numeric('minutes_used', { precision: 12, scale: 4 }).notNull().default('0'),
     overageMinutes: numeric('overage_minutes', { precision: 12, scale: 4 }).notNull().default('0'),
     overageChargedCents: integer('overage_charged_cents').notNull().default(0),
+    /** Set when the 80%-of-plan warning email goes out. Per-period flag. */
+    warningSentAt: timestamp('warning_sent_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
