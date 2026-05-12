@@ -29,24 +29,6 @@ export const metadata = {
     'Your AI receptionist answers every inbound call, books appointments, and qualifies leads — in English and Spanish, around the clock.',
 };
 
-const PROBLEMS = [
-  {
-    stat: '67%',
-    label: 'of business calls happen outside office hours',
-    note: 'After-hours, lunch breaks, weekends — every one of those callers reaches voicemail or hangs up.',
-  },
-  {
-    stat: '$2.4K',
-    label: 'avg lifetime value of a single new client',
-    note: 'A missed first call usually means a missed first appointment. The math compounds fast.',
-  },
-  {
-    stat: '< 15s',
-    label: 'how long callers wait before hanging up',
-    note: 'Voicemail isn\'t the second-best option — it\'s no option. Most callers move on to the next listing.',
-  },
-];
-
 const USE_CASES = [
   {
     title: 'Appointment Booking',
@@ -171,27 +153,6 @@ export default function InboundPage() {
         </div>
       </section>
 
-      {/* ── The problem ───────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
-        <div className="text-center mb-12">
-          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">The reality</p>
-          <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
-            Your phone rings around the clock.
-            <br />
-            <span className="text-cream-500">Your team only works business hours.</span>
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PROBLEMS.map((p) => (
-            <div key={p.stat} className="rounded-2xl bg-white border border-cream-200 p-7">
-              <p className="font-serif text-5xl text-brand-600 tracking-tight">{p.stat}</p>
-              <p className="font-semibold text-cream-900 mt-3">{p.label}</p>
-              <p className="text-sm text-cream-600 mt-2 leading-relaxed">{p.note}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ── How it works ──────────────────────────────────── */}
       <section className="bg-white border-y border-cream-200 py-20 px-6">
         <div className="max-w-5xl mx-auto">
@@ -257,35 +218,6 @@ export default function InboundPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ── ROI rough math ───────────────────────────────── */}
-      <section className="max-w-5xl mx-auto px-6 py-20">
-        <div className="rounded-3xl bg-gradient-to-br from-brand-50 to-cream-50 border border-brand-100 p-10">
-          <div className="text-center mb-8">
-            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">The math</p>
-            <h2 className="font-serif text-3xl md:text-4xl text-cream-900 tracking-tight">
-              Recover one missed call a week. Pay for the year.
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="text-center">
-              <p className="font-serif text-4xl text-brand-600">8</p>
-              <p className="text-sm text-cream-700 mt-2 leading-snug">missed calls / week<br /><span className="text-xs text-cream-500">average for SMBs without 24/7 coverage</span></p>
-            </div>
-            <div className="text-center">
-              <p className="font-serif text-4xl text-brand-600">$300</p>
-              <p className="text-sm text-cream-700 mt-2 leading-snug">avg first appointment value<br /><span className="text-xs text-cream-500">across our customer base</span></p>
-            </div>
-            <div className="text-center">
-              <p className="font-serif text-4xl text-brand-600">$2,400</p>
-              <p className="text-sm text-cream-700 mt-2 leading-snug">recovered revenue / week<br /><span className="text-xs text-cream-500">just from previously-missed calls</span></p>
-            </div>
-          </div>
-          <p className="text-center text-xs text-cream-500 mt-6">
-            Math is conservative — assumes only 1 in 8 missed callers actually books. Real-world is closer to 4 in 8.
-          </p>
         </div>
       </section>
 

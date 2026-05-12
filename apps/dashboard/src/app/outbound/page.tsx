@@ -8,7 +8,6 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { CheckCircle, Phone, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
 import { CampaignFlowDiagram } from '@/components/ui/campaign-flow-diagram';
-import { OutboundRoi } from '@/components/ui/outbound-roi';
 import { BRAND_NAME } from '@/lib/brand';
 
 // SampleCallPlayer uses Web Speech API at click-time. Lazy-load it
@@ -31,24 +30,6 @@ export const metadata = {
   description:
     'Reactivate inactive contacts, follow up on leads, and run recall campaigns — all on autopilot. AI outbound for any appointment-based business.',
 };
-
-const PROBLEMS = [
-  {
-    stat: '32%',
-    label: 'of contacts never return after a single visit',
-    note: 'They go cold. Most businesses never follow up — and revenue walks out the door.',
-  },
-  {
-    stat: '$2.4K',
-    label: 'avg value left on the table per missed follow-up',
-    note: "Leads who said yes but never scheduled — the most painful kind of pipeline leak.",
-  },
-  {
-    stat: '64%',
-    label: 'of inactive contact lists are never touched',
-    note: 'Staff don\'t have bandwidth for outbound. Outsourced callers cost more than they recover.',
-  },
-];
 
 const CAMPAIGN_TYPES = [
   {
@@ -171,27 +152,6 @@ export default function OutboundPage() {
         </div>
       </section>
 
-      {/* ── The problem ───────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
-        <div className="text-center mb-12">
-          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">The reality</p>
-          <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
-            Most businesses already have a six-figure pipeline.
-            <br />
-            <span className="text-cream-500">It's just not getting called.</span>
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PROBLEMS.map((p) => (
-            <div key={p.stat} className="rounded-2xl bg-white border border-cream-200 p-7">
-              <p className="font-serif text-5xl text-brand-600 tracking-tight">{p.stat}</p>
-              <p className="font-semibold text-cream-900 mt-3">{p.label}</p>
-              <p className="text-sm text-cream-600 mt-2 leading-relaxed">{p.note}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ── How it works ──────────────────────────────────── */}
       <CampaignFlowDiagram />
 
@@ -234,9 +194,6 @@ export default function OutboundPage() {
           </div>
         </div>
       </section>
-
-      {/* ── ROI calculator ────────────────────────────────── */}
-      <OutboundRoi />
 
       {/* ── Compliance ────────────────────────────────────── */}
       <section className="max-w-5xl mx-auto px-6 py-20">
