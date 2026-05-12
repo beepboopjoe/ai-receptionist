@@ -17,7 +17,8 @@ type PrefKey =
   | 'reminder2h'
   | 'recallReminder'
   | 'escalationAlerts'
-  | 'dailyDigest';
+  | 'dailyDigest'
+  | 'emailOnEveryCall';
 
 type Preferences = Record<PrefKey, boolean>;
 
@@ -28,6 +29,7 @@ const DEFAULT_PREFS: Preferences = {
   recallReminder: true,
   escalationAlerts: true,
   dailyDigest: false,
+  emailOnEveryCall: false,
 };
 
 export default function NotificationsSettingsPage() {
@@ -37,6 +39,8 @@ export default function NotificationsSettingsPage() {
   const vertical = useVertical();
 
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFS);
+  /** Email address to receive call-summary emails when `emailOnEveryCall` is on. */
+  const [callSummaryEmail, setCallSummaryEmail] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Hydrate from server on first load — fall back to defaults if the field
@@ -45,6 +49,7 @@ export default function NotificationsSettingsPage() {
     if (settings?.notificationPreferences) {
       setPrefs({ ...DEFAULT_PREFS, ...settings.notificationPreferences });
     }
+    if (settings?.callSummaryEmail) setCallSummaryEmail(settings.callSummaryEmail);
   }, [settings]);
 
   function toggle(key: PrefKey) {
@@ -54,7 +59,10 @@ export default function NotificationsSettingsPage() {
   async function save() {
     setSaving(true);
     try {
-      await settingsApi.update({ notificationPreferences: prefs });
+      await settingsApi.update({
+        notificationPreferences: prefs,
+        callSummaryEmail: callSummaryEmail.trim() || null,
+      } as any);
       await mutate('settings');
       toast.success('Notification preferences saved');
     } catch (err) {
@@ -106,6 +114,12 @@ export default function NotificationsSettingsPage() {
       detail: `Summary of yesterday's calls, ${cn}, and ${vertical.appointmentNounPlural}`,
       show: true,
     },
+    {
+      key: 'emailOnEveryCall',
+      label: 'Email me after every call',
+      detail: 'Caller, duration, outcome, summary, and a link to the recording — pushed to your inbox the moment a call ends',
+      show: true,
+    },
   ];
 
   return (
@@ -145,6 +159,25 @@ export default function NotificationsSettingsPage() {
             );
           })}
         </div>
+
+        {/* Email recipient input — shown only when call-summary emails are on. */}
+        {prefs.emailOnEveryCall && (
+          <div className="pt-4 border-t border-gray-100">
+            <label className="block text-sm font-medium text-gray-900 mb-1.5">
+              Send call-summary emails to
+            </label>
+            <input
+              type="email"
+              value={callSummaryEmail}
+              onChange={(e) => setCallSummaryEmail(e.target.value)}
+              placeholder="alerts@yourbusiness.com"
+              className="form-input w-full"
+            />
+            <p className="text-xs text-gray-500 mt-1.5">
+              Leave blank to use the account owner's email. Tip: forward this to a shared inbox so your team gets notified.
+            </p>
+          </div>
+        )}
 
         <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
           <p className="text-xs text-gray-500">

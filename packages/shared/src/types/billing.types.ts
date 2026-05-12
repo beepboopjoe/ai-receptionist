@@ -136,14 +136,22 @@ export const PLANS: readonly Plan[] = [
   },
 ] as const;
 
-/** Pay-as-you-go option — alternative to subscriptions. No monthly commit. */
+/** Pay-as-you-go option — alternative to subscriptions. No monthly commit.
+ *
+ * Priced deliberately HIGHER than the lowest-tier overage rate ($0.20/min
+ * on Starter) so that subscribing is a clear discount per minute. At
+ * $0.39/min PAYG, even a customer burning only ~200 min/mo saves money
+ * by subscribing to Starter ($79/200 min = $0.395/min effective, with
+ * overage at $0.20 thereafter). Above ~200 min, the subscription wins
+ * by a wide margin. This pushes conversion to subscriptions while
+ * keeping PAYG profitable for truly spiky low-volume use cases. */
 export const PAY_AS_YOU_GO = {
   key: 'payg' as const,
   name: 'Pay as you go',
-  perMinute: 0.25,
+  perMinute: 0.39,
   /** Phone number costs $5/mo even on PAYG; not included free. */
   phoneNumberMonthly: 5,
-  description: 'Test the platform or handle spiky volumes. Billed only for minutes used + your phone number.',
+  description: 'Test the platform or handle spiky volumes. Billed only for minutes used + your phone number. Subscribing saves 50%+ per minute once you cross ~150 min/mo.',
 };
 
 /** A la carte add-ons — separate Stripe SKUs, billed alongside the subscription. */

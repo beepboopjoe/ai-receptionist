@@ -49,6 +49,8 @@ export interface UpdateSettingsInput {
   provisionedNumberSid?: string;
   appointmentTypes?: AppointmentType[];
   recallIntervalMonths?: number;
+  notificationPreferences?: Record<string, boolean>;
+  callSummaryEmail?: string | null;
 }
 
 export async function updateSettings(tenantId: string, input: UpdateSettingsInput) {

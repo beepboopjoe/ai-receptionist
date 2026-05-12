@@ -193,4 +193,13 @@ async function markCallCompleted(callId: string, result: FlowResult): Promise<vo
       updatedAt: new Date(),
     })
     .where(eq(calls.id, callId));
+
+  // Fire-and-forget per-call summary email — gated by the tenant's
+  // notificationPreferences.emailOnEveryCall toggle. Lazy import keeps
+  // the orchestrator's hot path free of SendGrid initialization.
+  void import('../notifications/call-summary-email.js').then(({ sendCallSummaryEmail }) =>
+    sendCallSummaryEmail(callId).catch((err) => {
+      console.error('[orchestrator] sendCallSummaryEmail failed:', err);
+    })
+  );
 }
