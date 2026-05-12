@@ -101,11 +101,51 @@ export const tenantPhoneNumbers = pgTable(
     purchasedAt: timestamp('purchased_at', { withTimezone: true }).notNull().defaultNow(),
     releasedAt: timestamp('released_at', { withTimezone: true }),
     stripeSubscriptionItemId: text('stripe_subscription_item_id'),
+    /** True when this number was acquired via porting (vs new purchase). */
+    isPorted: boolean('is_ported').notNull().default(false),
+    /** FK to phone_port_requests when this came from a port; null for new buys. */
+    portRequestId: uuid('port_request_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     tenantIdx: index('tenant_phone_numbers_tenant_idx').on(t.tenantId, t.releasedAt),
+  })
+);
+
+// ---- Number Port Requests ----
+// Customer fills out an LOA form to move their existing business
+// number from another carrier onto our Telnyx account. The port goes
+// through pending → submitted → in_progress → completed (or failed)
+// statuses. A successful port creates a corresponding tenant_phone_numbers
+// row with is_ported=true.
+export const phonePortRequests = pgTable(
+  'phone_port_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    phoneE164: text('phone_e164').notNull(),
+    currentCarrier: text('current_carrier').notNull(),
+    accountNumber: text('account_number').notNull(),
+    accountPin: text('account_pin'),
+    authorizedName: text('authorized_name').notNull(),
+    authorizedTitle: text('authorized_title'),
+    serviceAddress: text('service_address').notNull(),
+    serviceCity: text('service_city').notNull(),
+    serviceState: text('service_state').notNull(),
+    serviceZip: text('service_zip').notNull(),
+    desiredCompleteDate: date('desired_complete_date'),
+    status: text('status').notNull().default('pending'),
+    telnyxPortRequestId: text('telnyx_port_request_id'),
+    rejectionReason: text('rejection_reason'),
+    notes: text('notes'),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tenantStatusIdx: index('phone_port_requests_tenant_idx').on(t.tenantId, t.status),
   })
 );
 

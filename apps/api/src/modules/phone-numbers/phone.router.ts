@@ -10,6 +10,12 @@ import {
   purchaseTenantNumber,
   releaseTenantNumber,
 } from './phone.service.js';
+import {
+  createPortRequest,
+  listTenantPortRequests,
+  cancelPortRequest,
+  type PortRequestInput,
+} from './port.service.js';
 import { config } from '../../config.js';
 
 export async function phoneNumbersPlugin(app: FastifyInstance): Promise<void> {
@@ -70,6 +76,36 @@ export async function phoneNumbersPlugin(app: FastifyInstance): Promise<void> {
       await releaseTenantNumber({
         tenantId: request.user!.tenantId,
         numberId: request.params.id,
+      });
+      return reply.code(204).send();
+    }
+  );
+
+  // ── Number porting (LOA form submission) ──────────────────
+  // Customer fills the form in /settings/phone-numbers; we capture
+  // it here. An operator then submits to Telnyx separately and
+  // updates the status. Auto-submission is a V2 nicety.
+  app.post('/phone-numbers/port', { onRequest: [app.requireRole('admin')] }, async (request, reply) => {
+    const body = (request.body ?? {}) as PortRequestInput;
+    const created = await createPortRequest({
+      tenantId: request.user!.tenantId,
+      input: body,
+    });
+    return reply.code(201).send(created);
+  });
+
+  app.get('/phone-numbers/port-requests', { onRequest: [app.requireRole('staff')] }, async (request, reply) => {
+    const requests = await listTenantPortRequests(request.user!.tenantId);
+    return reply.send({ data: requests });
+  });
+
+  app.delete<{ Params: { id: string } }>(
+    '/phone-numbers/port-requests/:id',
+    { onRequest: [app.requireRole('admin')] },
+    async (request, reply) => {
+      await cancelPortRequest({
+        tenantId: request.user!.tenantId,
+        portRequestId: request.params.id,
       });
       return reply.code(204).send();
     }

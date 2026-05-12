@@ -396,6 +396,30 @@ export interface AvailableNumber {
   numberType: 'local' | 'toll_free';
   monthlyCostCents: number;
 }
+export interface PortRequestInput {
+  phoneE164: string;
+  currentCarrier: string;
+  accountNumber: string;
+  accountPin?: string;
+  authorizedName: string;
+  authorizedTitle?: string;
+  serviceAddress: string;
+  serviceCity: string;
+  serviceState: string;
+  serviceZip: string;
+  desiredCompleteDate?: string;
+}
+export interface PortRequestRow {
+  id: string;
+  phoneE164: string;
+  currentCarrier: string;
+  status: 'pending' | 'submitted' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
+  desiredCompleteDate: string | null;
+  rejectionReason: string | null;
+  submittedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
 export const phoneNumbersApi = {
   list: () => apiFetch<{ data: OwnedNumber[] }>('/phone-numbers'),
   search: (params: { areaCode?: string; locality?: string; type?: 'local' | 'toll_free' }) =>
@@ -410,6 +434,17 @@ export const phoneNumbersApi = {
     }),
   release: (id: string) =>
     apiFetch<void>(`/phone-numbers/${id}`, { method: 'DELETE' }),
+
+  // Number porting (LOA submission + tracking)
+  port: (input: PortRequestInput) =>
+    apiFetch<PortRequestRow>('/phone-numbers/port', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  listPortRequests: () =>
+    apiFetch<{ data: PortRequestRow[] }>('/phone-numbers/port-requests'),
+  cancelPortRequest: (id: string) =>
+    apiFetch<void>(`/phone-numbers/port-requests/${id}`, { method: 'DELETE' }),
 };
 
 // ---- Campaigns ----
