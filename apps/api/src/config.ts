@@ -71,6 +71,20 @@ const envSchema = z.object({
   SENDGRID_API_KEY: z.string().default(''),
   SENDGRID_FROM_EMAIL: z.string().email().default('noreply@example.com'),
   SENDGRID_FROM_NAME: z.string().default('AI Receptionist'),
+
+  // Stripe billing — optional. Webhook + checkout endpoints respond
+  // 503 with setup instructions when STRIPE_SECRET_KEY is unset.
+  STRIPE_SECRET_KEY: z.string().default(''),
+  STRIPE_WEBHOOK_SECRET: z.string().default(''),
+  // Per-plan price IDs. Each plan has both a monthly and an annual price
+  // (the customer sees a 15% annual discount). All optional so dev works
+  // without Stripe configured.
+  STRIPE_PRICE_STARTER_MONTHLY: z.string().default(''),
+  STRIPE_PRICE_STARTER_ANNUAL:  z.string().default(''),
+  STRIPE_PRICE_GROWTH_MONTHLY:  z.string().default(''),
+  STRIPE_PRICE_GROWTH_ANNUAL:   z.string().default(''),
+  STRIPE_PRICE_SCALE_MONTHLY:   z.string().default(''),
+  STRIPE_PRICE_SCALE_ANNUAL:    z.string().default(''),
 });
 
 function loadConfig() {

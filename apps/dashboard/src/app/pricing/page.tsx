@@ -1,105 +1,57 @@
 // Public pricing page — no auth required, no sidebar
 // Uses root layout (apps/dashboard/src/app/layout.tsx)
+//
+// Plan data is the single shared catalog from @ai-receptionist/shared.
+// CTA buttons send the user to /signup with ?plan + ?cycle so the
+// dashboard knows what to upsell post-signup. Authenticated users
+// who land here go to /billing to upgrade through the Stripe Checkout
+// flow.
 import Link from 'next/link';
 import { CheckCircle, Moon, Phone, Zap } from 'lucide-react';
 import { RoiSection } from '@/components/ui/roi-section';
-
-// ── Plan data (source of truth aligned with billing page PLANS constant) ──
-const PLANS = [
-  {
-    key: 'starter',
-    name: 'Starter',
-    emoji: '🟢',
-    price: 199,
-    tagline: 'Never miss a call again',
-    description: 'Perfect for single-location businesses that want 24/7 AI call handling.',
-    minutes: '1,000',
-    phones: '1 phone number',
-    outbound: false,
-    multiLocation: false,
-    overage: '$0.14/min',
-    popular: false,
-    features: [
-      '1,000 AI minutes/month',
-      '1 phone number',
-      'Inbound calls only',
-      'Appointment booking & cancellation',
-      'SMS confirmations',
-      'Email + chat support',
-    ],
-  },
-  {
-    key: 'growth',
-    name: 'Growth',
-    emoji: '🔵',
-    price: 399,
-    tagline: 'Turn calls into customers',
-    description: 'Inbound reception plus AI outbound campaigns that dial and book automatically.',
-    minutes: '3,000',
-    phones: '2 phone numbers',
-    outbound: true,
-    multiLocation: false,
-    overage: '$0.13/min',
-    popular: true,
-    features: [
-      '3,000 AI minutes/month',
-      '2 phone numbers',
-      'Inbound + Outbound calling',
-      'Lead qualification & CRM sync',
-      'Outbound campaign manager',
-      'Full analytics dashboard',
-      'Priority support',
-    ],
-  },
-  {
-    key: 'pro',
-    name: 'Pro',
-    emoji: '🔥',
-    price: 799,
-    tagline: 'Full automation system',
-    description: 'Complete AI phone operations across up to 5 locations with advanced analytics.',
-    minutes: '8,000',
-    phones: '5 phone numbers',
-    outbound: true,
-    multiLocation: true,
-    overage: '$0.12/min',
-    popular: false,
-    features: [
-      '8,000 AI minutes/month',
-      '5 phone numbers',
-      'Multi-location (up to 5)',
-      'Custom workflows & AI tuning',
-      'Advanced analytics & reporting',
-      'Dedicated account manager',
-      'SLA uptime guarantee',
-    ],
-  },
-] as const;
+import { PLANS, PAY_AS_YOU_GO } from '@ai-receptionist/shared';
+import { PricingCards } from '@/components/ui/pricing-cards';
 
 const FAQS = [
   {
     q: 'Is there a free trial?',
-    a: 'Yes — every new account starts with a 14-day trial that includes 200 AI minutes. No credit card required.',
+    a: 'Yes — every paid plan starts with a 14-day free trial. No charges until day 15. Cancel any time during the trial and you pay nothing.',
   },
   {
     q: 'What happens if I exceed my minutes?',
-    a: 'Calls continue uninterrupted. Overage minutes are billed at your plan rate ($0.14/min on Starter, $0.13 on Growth, $0.12 on Pro) and added to your next invoice.',
+    a: 'Your AI keeps answering — calls never drop. Overage minutes are added to your next invoice at $0.20/min on Starter, $0.18/min on Growth, and $0.15/min on Scale. We email you at 80% of plan minutes so there are no surprises.',
+  },
+  {
+    q: 'What about a phone number?',
+    a: 'Every plan includes one local US number free. Need extras? $5/mo per local number, $10/mo per toll-free. Already have a number? We port it free.',
+  },
+  {
+    q: 'Inbound, outbound — both included?',
+    a: 'Yes, all plans include inbound and outbound calling. Most competitors charge for outbound separately ($99–$199/mo extra). We don\'t.',
+  },
+  {
+    q: 'Can I switch between monthly and annual?',
+    a: 'Yes. Annual billing saves 15% (about 1.8 months free). Switch at any renewal cycle from your billing page.',
   },
   {
     q: 'Can I change plans at any time?',
-    a: 'Yes. Upgrades take effect immediately and are prorated. Downgrades apply at the next billing cycle.',
+    a: 'Yes. Upgrades are prorated and effective immediately. Downgrades apply at the next billing cycle. No fees either way.',
+  },
+  {
+    q: 'Spanish bilingual?',
+    a: 'Included on every plan. Your AI greets in English and switches to Spanish automatically when the caller does.',
+  },
+  {
+    q: 'API access?',
+    a: 'Public REST API with read + write endpoints is included on every plan, including Starter. No "enterprise tier" gate.',
   },
   {
     q: 'Do I need to sign a long-term contract?',
-    a: 'No contracts — all plans are month-to-month. Cancel any time from your billing page.',
-  },
-  {
-    q: 'What CRM and calendar systems do you integrate with?',
-    a: 'We support Google Calendar, Outlook, HubSpot, Salesforce, Clio (legal), Follow Up Boss (real estate), ServiceTitan (home services), and more. New integrations are added regularly.',
+    a: 'Never. Monthly plans are month-to-month. Annual plans are paid up front but you can cancel auto-renew any time.',
   },
   {
     q: 'Is my data secure?',
-    a: 'Yes. All call recordings and contact data are encrypted at rest and in transit. For healthcare customers, we sign a BAA and maintain full HIPAA compliance. All customers receive SOC 2-aligned data handling.',
+    a: 'All call recordings and contact data are encrypted at rest and in transit. For healthcare customers, we sign a BAA and maintain HIPAA compliance.',
   },
 ];
 
@@ -126,7 +78,7 @@ export default function PricingPage() {
               Sign in
             </Link>
             <Link
-              href="/onboarding/plan"
+              href="/signup"
               className="glow-btn inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors"
             >
               Start free trial →
@@ -147,77 +99,41 @@ export default function PricingPage() {
             <span className="gradient-text">Cancel anytime.</span>
           </h1>
           <p className="text-lg text-gray-400 max-w-xl mx-auto">
-            No setup fees. No annual lock-in. Every plan includes a 14-day free trial with 200 AI minutes.
+            14-day free trial on every paid plan. No setup fees. No long-term contract. Outbound + Spanish + API included on every tier.
           </p>
         </div>
       </section>
 
-      {/* ── Pricing cards ── */}
-      <section className="max-w-6xl mx-auto px-6 pb-24 -mt-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PLANS.map((plan) => (
-            <div
-              key={plan.key}
-              className={`glass-card rounded-2xl p-8 flex flex-col relative ${
-                plan.popular ? 'ring-2 ring-brand-500' : ''
-              }`}
-            >
-              {plan.popular && (
-                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-brand-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
-                  MOST POPULAR
-                </span>
-              )}
+      {/* ── Pricing cards (client — has monthly/annual toggle) ── */}
+      <section className="max-w-6xl mx-auto px-6 pb-12 -mt-8">
+        <PricingCards plans={PLANS.filter((p) => p.key !== 'enterprise')} />
+      </section>
 
-              {/* Header */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-2xl">{plan.emoji}</span>
-                  <h2 className="text-xl font-bold text-white">{plan.name}</h2>
-                </div>
-                <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-4xl font-extrabold text-white">${plan.price}</span>
-                  <span className="text-gray-400 text-sm">/mo</span>
-                </div>
-                <p className="text-xs text-gray-500 italic">{plan.tagline}</p>
-                <p className="text-sm text-gray-400 mt-3">{plan.description}</p>
-              </div>
-
-              {/* Features */}
-              <ul className="space-y-3 flex-1 mb-6">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-gray-300">
-                    <CheckCircle size={15} className="text-brand-400 shrink-0 mt-0.5" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              {/* Overage */}
-              <p className="text-xs text-gray-500 mb-4">
-                Overage: <span className="font-semibold text-gray-400">{plan.overage}</span>
-              </p>
-
-              {/* CTA */}
-              <Link
-                href="/onboarding/plan"
-                className={`flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl font-semibold text-sm transition-colors ${
-                  plan.popular
-                    ? 'bg-brand-600 hover:bg-brand-700 text-white'
-                    : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
-                }`}
-              >
-                Start free trial →
-              </Link>
-            </div>
-          ))}
+      {/* ── Pay-as-you-go strip ── */}
+      <section className="max-w-6xl mx-auto px-6 pb-8">
+        <div className="glass-card rounded-2xl px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-white">{PAY_AS_YOU_GO.name}</h3>
+            <p className="text-sm text-gray-400 mt-1">
+              {PAY_AS_YOU_GO.description} <span className="font-semibold text-white">${PAY_AS_YOU_GO.perMinute.toFixed(2)}/min</span> + ${PAY_AS_YOU_GO.phoneNumberMonthly}/mo per number.
+            </p>
+          </div>
+          <Link
+            href="/signup?plan=payg"
+            className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/20 text-white font-semibold text-sm hover:bg-white/10 transition-colors"
+          >
+            Start pay-as-you-go →
+          </Link>
         </div>
+      </section>
 
-        {/* Enterprise row */}
-        <div className="mt-6 glass-card rounded-2xl px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* ── Enterprise row ── */}
+      <section className="max-w-6xl mx-auto px-6 pb-24">
+        <div className="glass-card rounded-2xl px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-bold text-white">Enterprise</h3>
             <p className="text-sm text-gray-400 mt-1">
-              Custom pricing for large groups, DSOs, or networks with 5+ locations and dedicated support needs.
+              Custom pricing for groups, DSOs, or networks with 5+ locations. White-label available. Dedicated success manager + SLA.
             </p>
           </div>
           <a
@@ -243,7 +159,7 @@ export default function PricingPage() {
               <p className="text-gray-400 text-base leading-relaxed">
                 67% of callers reach out outside business hours. Every missed call is a missed appointment — often worth $150–$600 in revenue. Your AI receptionist answers every call, 24 hours a day, and books the appointment on the spot.
               </p>
-              <Link href="/onboarding/plan" className="glow-btn mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-6 py-3 text-sm font-semibold text-white transition-colors">
+              <Link href="/signup" className="glow-btn mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-6 py-3 text-sm font-semibold text-white transition-colors">
                 <Phone size={16} /> Start your free trial
               </Link>
             </div>
@@ -290,7 +206,7 @@ export default function PricingPage() {
         <h2 className="text-2xl font-bold text-white mb-3">Ready to stop missing calls?</h2>
         <p className="text-gray-400 mb-6">Start your 14-day free trial today — no credit card required.</p>
         <Link
-          href="/onboarding/plan"
+          href="/signup"
           className="glow-btn inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-8 py-4 text-base font-bold text-white transition-colors"
         >
           <Zap size={18} /> Get started free →

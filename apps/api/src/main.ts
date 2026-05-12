@@ -31,6 +31,8 @@ import { adminPlugin } from './modules/admin/router.js';
 import { teamPlugin } from './modules/admin/team.router.js';
 import { googleAuthPlugin } from './modules/admin/auth-google.router.js';
 import { makeResolveGoogleUser } from './modules/admin/google-auth.service.js';
+import { billingPlugin } from './modules/billing/billing.router.js';
+import { stripeWebhookPlugin } from './modules/billing/stripe.webhook.js';
 import { campaignsPlugin } from './modules/campaigns/campaign.router.js';
 import { demoPlugin } from './modules/voice-agent/demo.router.js';
 import { webhookPlugin } from './modules/webhooks/webhook.router.js';
@@ -154,6 +156,11 @@ async function buildApp() {
   await app.register(webhookPlugin, { prefix: '/api/v1' });
   await app.register(apiKeyAdminPlugin, { prefix: '/api/v1' });
   await app.register(publicApiPlugin, { prefix: '/api/v1' });
+  await app.register(billingPlugin, { prefix: '/api/v1' });
+  // Stripe webhook lives at the root (no /api/v1) so the URL the
+  // customer enters in the Stripe dashboard is short and stable.
+  // It also needs raw-body capture which the plugin sets up itself.
+  await app.register(stripeWebhookPlugin);
   // Activity gateway is mounted at the root (no /api/v1 prefix) so
   // the dashboard's `useActivityFeed` hook can connect to /ws/activity.
   await app.register(activityGatewayPlugin);

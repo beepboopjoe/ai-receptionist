@@ -14,6 +14,7 @@ import {
   date,
   index,
   unique,
+  numeric,
 } from 'drizzle-orm/pg-core';
 
 // ---- Tenants ----
@@ -26,9 +27,47 @@ export const tenants = pgTable('tenants', {
   timezone: text('timezone').notNull().default('America/New_York'),
   isActive: boolean('is_active').notNull().default(false),
   onboardingStep: smallint('onboarding_step').notNull().default(1),
+  // ---- Stripe billing ----
+  // Populated by the /billing/checkout flow + the Stripe webhook handler.
+  // All nullable so trial / not-yet-paying tenants are valid.
+  stripeCustomerId: text('stripe_customer_id'),
+  stripeSubscriptionId: text('stripe_subscription_id'),
+  stripePriceId: text('stripe_price_id'),
+  subscriptionStatus: text('subscription_status'), // mirrors Stripe's status enum
+  currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
+  trialEnd: timestamp('trial_end', { withTimezone: true }),
+  billingCycle: text('billing_cycle'), // 'monthly' | 'annual'
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ---- Stripe Webhook Idempotency ----
+export const stripeWebhookEvents = pgTable('stripe_webhook_events', {
+  eventId: text('event_id').primaryKey(),
+  eventType: text('event_type').notNull(),
+  receivedAt: timestamp('received_at', { withTimezone: true }).notNull().defaultNow(),
+  processedAt: timestamp('processed_at', { withTimezone: true }),
+  payload: jsonb('payload').notNull(),
+});
+
+// ---- Per-period minute usage rollup ----
+export const minuteUsage = pgTable(
+  'minute_usage',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    periodStart: timestamp('period_start', { withTimezone: true }).notNull(),
+    periodEnd: timestamp('period_end', { withTimezone: true }).notNull(),
+    minutesUsed: numeric('minutes_used', { precision: 12, scale: 4 }).notNull().default('0'),
+    overageMinutes: numeric('overage_minutes', { precision: 12, scale: 4 }).notNull().default('0'),
+    overageChargedCents: integer('overage_charged_cents').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tenantPeriodUniq: unique().on(t.tenantId, t.periodStart),
+  })
+);
 
 // ---- Tenant Settings ----
 export const tenantSettings = pgTable('tenant_settings', {

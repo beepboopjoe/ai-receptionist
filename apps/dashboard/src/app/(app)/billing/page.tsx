@@ -2,20 +2,28 @@
 
 import { useEffect, useState } from 'react';
 import { billingApi } from '@/lib/api';
-import { Phone, Calendar, Zap, CheckCircle } from 'lucide-react';
+import { Phone, Calendar, Zap, CheckCircle, ExternalLink } from 'lucide-react';
 import { Skeleton as UiSkeleton, StatCardSkeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
+import { PLANS as SHARED_PLANS, type BillingCycle } from '@ai-receptionist/shared';
 
-// ── Plan tier config ────────────────────────────────────────────────────────
-const PLANS = {
-  trial:      { label: 'Trial',      price: 0,    minutes: 200,   color: 'gray',   overagePerMin: 0.14 },
-  starter:    { label: 'Starter',    price: 199,  minutes: 1000,  color: 'blue',   overagePerMin: 0.14 },
-  growth:     { label: 'Growth',     price: 399,  minutes: 3000,  color: 'indigo', overagePerMin: 0.13 },
-  pro:        { label: 'Pro',        price: 799,  minutes: 8000,  color: 'purple', overagePerMin: 0.12 },
-  enterprise: { label: 'Enterprise', price: 1500, minutes: 99999, color: 'gray',   overagePerMin: 0.10 },
-} as const;
-
-type PlanKey = keyof typeof PLANS;
+// Local view-model overlay for the badge color + the legacy "trial" tier
+// (Stripe doesn't sell a trial — it's the pre-checkout state).
+const PLAN_DISPLAY: Record<string, { label: string; color: string; price: number; minutes: number; overagePerMin: number }> = {
+  trial: { label: 'Trial', color: 'gray', price: 0, minutes: 200, overagePerMin: 0.20 },
+  ...Object.fromEntries(
+    SHARED_PLANS.map((p) => [
+      p.key,
+      {
+        label: p.name,
+        color: p.popular ? 'indigo' : p.key === 'scale' ? 'purple' : 'blue',
+        price: p.monthlyPrice,
+        minutes: p.monthlyMinutes === -1 ? 99999 : p.monthlyMinutes,
+        overagePerMin: p.overagePerMin,
+      },
+    ])
+  ),
+};
 
 // ── Billing data shape ──────────────────────────────────────────────────────
 interface BillingData {
@@ -56,47 +64,34 @@ function LoadingSkeleton() {
 }
 
 // ── Plan comparison table ───────────────────────────────────────────────────
-function PlanComparisonCards({ currentPlan }: { currentPlan: string }) {
-  const comparisonPlans = [
-    {
-      key: 'starter',
-      name: '🟢 Starter',
-      price: '$199/mo',
-      tagline: 'Never miss a call again',
-      overage: '$0.14/min',
-      features: ['1,000 AI minutes', '1 phone number', 'Inbound calls only', 'Message taking & booking', 'SMS confirmations'],
-      popular: false,
-    },
-    {
-      key: 'growth',
-      name: '🔵 Growth',
-      price: '$399/mo',
-      tagline: 'Turn calls into customers',
-      overage: '$0.13/min',
-      features: ['3,000 AI minutes', '2 phone numbers', 'Inbound + Outbound', 'Lead qualification & CRM sync', 'Full analytics dashboard'],
-      popular: true,
-    },
-    {
-      key: 'pro',
-      name: '🔥 Pro',
-      price: '$799/mo',
-      tagline: 'Full automation system',
-      overage: '$0.12/min',
-      features: ['8,000 AI minutes', '5 phone numbers', 'Multi-location (5)', 'Custom workflows & AI tuning', 'Dedicated account manager'],
-      popular: false,
-    },
-  ];
+// Each "Switch to X" button hits Stripe Checkout via billingApi.checkout()
+// and redirects to the URL Stripe returns. Cycle defaults to monthly here;
+// users get the annual upsell on the public /pricing page.
+function PlanComparisonCards({ currentPlan, onCheckoutError }: { currentPlan: string; onCheckoutError: (msg: string) => void }) {
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const cycle: BillingCycle = 'monthly';
+  const sellable = SHARED_PLANS.filter((p) => p.key !== 'enterprise');
+
+  async function startCheckout(planKey: string) {
+    setPendingKey(planKey);
+    try {
+      const { url } = await billingApi.checkout(planKey, cycle);
+      window.location.href = url;
+    } catch (err) {
+      setPendingKey(null);
+      onCheckoutError(err instanceof Error ? err.message : 'Checkout failed');
+    }
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      {comparisonPlans.map((plan) => {
+      {sellable.map((plan) => {
         const isCurrentPlan = currentPlan === plan.key;
+        const isPending = pendingKey === plan.key;
         return (
           <div
             key={plan.key}
-            className={`card p-6 relative flex flex-col ${
-              plan.popular ? 'ring-2 ring-brand-500' : ''
-            }`}
+            className={`card p-6 relative flex flex-col ${plan.popular ? 'ring-2 ring-brand-500' : ''}`}
           >
             {plan.popular && (
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
@@ -105,25 +100,31 @@ function PlanComparisonCards({ currentPlan }: { currentPlan: string }) {
             )}
             <div className="mb-4">
               <h3 className="text-base font-bold text-gray-900">{plan.name}</h3>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{plan.price}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">${plan.monthlyPrice}/mo</p>
               <p className="text-xs text-gray-400 italic mt-0.5">{plan.tagline}</p>
             </div>
             <ul className="space-y-2 flex-1 mb-3">
-              {plan.features.map((feature) => (
+              {plan.features.slice(0, 5).map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-sm text-gray-600">
                   <CheckCircle size={15} className="text-green-500 mt-0.5 shrink-0" />
                   {feature}
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-gray-400 mb-4">Overage: <span className="font-semibold text-gray-600">{plan.overage}</span></p>
+            <p className="text-xs text-gray-400 mb-4">
+              Overage: <span className="font-semibold text-gray-600">${plan.overagePerMin.toFixed(2)}/min</span>
+            </p>
             {isCurrentPlan ? (
               <span className="block text-center text-sm font-medium text-brand-600 border border-brand-200 rounded-lg py-2">
                 Current plan
               </span>
             ) : (
-              <button className="btn-primary w-full text-sm py-2">
-                Switch to {plan.name}
+              <button
+                onClick={() => startCheckout(plan.key)}
+                disabled={isPending}
+                className="btn-primary w-full text-sm py-2 disabled:opacity-60"
+              >
+                {isPending ? 'Redirecting…' : `Switch to ${plan.name} →`}
               </button>
             )}
           </div>
@@ -155,8 +156,39 @@ export default function BillingPage() {
   }, []);
 
   const planConfig = billing
-    ? (PLANS[billing.plan as PlanKey] ?? PLANS.trial)
+    ? (PLAN_DISPLAY[billing.plan] ?? PLAN_DISPLAY['trial'])
     : null;
+  // Suggest the next-tier upgrade — Starter→Growth→Scale.
+  const nextUpgrade =
+    billing?.plan === 'trial' || billing?.plan === 'starter'
+      ? { key: 'growth', label: 'Growth' }
+      : billing?.plan === 'growth'
+        ? { key: 'scale', label: 'Scale' }
+        : null;
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+
+  async function openPortal() {
+    setPortalLoading(true);
+    try {
+      const { url } = await billingApi.openPortal();
+      window.location.href = url;
+    } catch (err) {
+      setPortalLoading(false);
+      toast.error(err instanceof Error ? err.message : 'Could not open billing portal');
+    }
+  }
+
+  async function upgradeTo(planKey: string) {
+    setUpgradeLoading(true);
+    try {
+      const { url } = await billingApi.checkout(planKey, 'monthly');
+      window.location.href = url;
+    } catch (err) {
+      setUpgradeLoading(false);
+      toast.error(err instanceof Error ? err.message : 'Checkout failed');
+    }
+  }
 
   const usagePercent = billing?.usagePercent ?? 0;
   const progressColor =
@@ -203,15 +235,26 @@ export default function BillingPage() {
                 })}
               </p>
             </div>
-            {billing.plan === 'trial' || billing.plan === 'starter' ? (
-              <button className="btn-primary shrink-0">
-                Upgrade to Growth →
+            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+              {nextUpgrade && (
+                <button
+                  onClick={() => upgradeTo(nextUpgrade.key)}
+                  disabled={upgradeLoading}
+                  className="btn-primary disabled:opacity-60"
+                >
+                  {upgradeLoading ? 'Redirecting…' : `Upgrade to ${nextUpgrade.label} →`}
+                </button>
+              )}
+              <button
+                onClick={openPortal}
+                disabled={portalLoading}
+                className="btn-secondary inline-flex items-center gap-2 disabled:opacity-60"
+                title="Manage payment method, view invoices, or cancel"
+              >
+                <ExternalLink size={14} />
+                {portalLoading ? 'Opening…' : 'Manage billing'}
               </button>
-            ) : billing.plan === 'growth' ? (
-              <button className="btn-primary shrink-0">
-                Upgrade to Pro →
-              </button>
-            ) : null}
+            </div>
           </div>
 
           {/* ── Stats row ── */}
@@ -271,7 +314,10 @@ export default function BillingPage() {
           {/* ── Plan comparison ── */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">Compare Plans</h2>
-            <PlanComparisonCards currentPlan={billing.plan} />
+            <PlanComparisonCards
+              currentPlan={billing.plan}
+              onCheckoutError={(msg) => toast.error(msg)}
+            />
           </div>
 
           {/* ── Footer CTA ── */}

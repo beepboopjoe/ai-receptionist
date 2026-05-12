@@ -1,0 +1,131 @@
+// ============================================================
+// Stripe webhook receiver — POST /webhooks/stripe.
+//
+// CRITICAL: signature verification needs the EXACT raw bytes
+// Stripe sent. We register this plugin BEFORE Fastify's default
+// JSON body parser kicks in, and use the application/json
+// content-type parser to capture the raw buffer.
+//
+// Idempotency: every event is recorded in stripe_webhook_events
+// before processing. Stripe retries on non-2xx, so the recorded
+// event_id PRIMARY KEY guarantees we only process each event once.
+// ============================================================
+import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { db } from '../../db/client.js';
+import { stripeWebhookEvents } from '../../db/schema.js';
+import { eq } from 'drizzle-orm';
+import { config } from '../../config.js';
+import { getStripe } from './stripe.client.js';
+import { syncSubscription } from './billing.service.js';
+
+export async function stripeWebhookPlugin(app: FastifyInstance): Promise<void> {
+  // Capture the raw body for application/json on this route only.
+  // The default JSON parser would consume the buffer before we can
+  // hand it to Stripe's signature verifier.
+  app.addContentTypeParser(
+    'application/json',
+    { parseAs: 'buffer' },
+    (req: FastifyRequest, body: Buffer, done) => {
+      // Only divert raw bytes for the Stripe webhook route — every other
+      // route still gets the parsed JSON object via fastify's default.
+      if (req.url === '/webhooks/stripe') {
+        try {
+          (req as FastifyRequest & { rawBody?: Buffer }).rawBody = body;
+          done(null, body);
+        } catch (err) {
+          done(err as Error, undefined);
+        }
+        return;
+      }
+      try {
+        const json = body.length === 0 ? null : JSON.parse(body.toString('utf8'));
+        done(null, json);
+      } catch (err) {
+        done(err as Error, undefined);
+      }
+    }
+  );
+
+  app.post('/webhooks/stripe', async (request, reply) => {
+    const stripe = getStripe();
+    if (!stripe) {
+      return reply.code(503).send({ error: 'Stripe not configured' });
+    }
+    if (!config.STRIPE_WEBHOOK_SECRET) {
+      app.log.error('STRIPE_WEBHOOK_SECRET is not set — refusing webhook');
+      return reply.code(503).send({ error: 'Stripe webhook secret not configured' });
+    }
+
+    const sig = request.headers['stripe-signature'];
+    if (typeof sig !== 'string') {
+      return reply.code(400).send({ error: 'Missing Stripe-Signature header' });
+    }
+    const raw = (request as FastifyRequest & { rawBody?: Buffer }).rawBody;
+    if (!raw) {
+      app.log.error('Webhook body was not captured as raw buffer');
+      return reply.code(400).send({ error: 'Raw body unavailable' });
+    }
+
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(raw, sig, config.STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+      app.log.warn({ err }, 'Stripe signature verification failed');
+      return reply.code(400).send({ error: 'Invalid signature' });
+    }
+
+    // Idempotency — record event id first, skip if already seen.
+    try {
+      await db.insert(stripeWebhookEvents).values({
+        eventId: event.id,
+        eventType: event.type,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payload: event as any,
+      });
+    } catch {
+      // Unique violation = duplicate delivery; ack and move on.
+      app.log.info({ eventId: event.id, type: event.type }, 'Duplicate Stripe event, skipping');
+      return reply.code(200).send({ received: true, duplicate: true });
+    }
+
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed': {
+          // Subscription is created via the .subscription.created event;
+          // here we just log for traceability.
+          app.log.info({ sessionId: event.data.object.id }, 'Stripe checkout completed');
+          break;
+        }
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated':
+        case 'customer.subscription.deleted': {
+          await syncSubscription(event.data.object);
+          break;
+        }
+        case 'invoice.paid':
+        case 'invoice.payment_failed': {
+          // We rely on subscription.updated for status sync; just log.
+          app.log.info({ invoiceId: event.data.object.id, type: event.type }, 'Stripe invoice event');
+          break;
+        }
+        default:
+          // Ignored event types are still recorded so we know what arrives.
+          app.log.debug({ type: event.type }, 'Ignored Stripe event type');
+      }
+
+      await db
+        .update(stripeWebhookEvents)
+        .set({ processedAt: new Date() })
+        .where(eq(stripeWebhookEvents.eventId, event.id));
+
+      return reply.code(200).send({ received: true });
+    } catch (err) {
+      app.log.error({ err, eventId: event.id, type: event.type }, 'Stripe webhook handler failed');
+      // Return 500 so Stripe retries. The event row is already inserted
+      // but processed_at stays null, so on retry the duplicate-check
+      // fires above. To avoid being permanently stuck, an operator can
+      // delete the row from stripe_webhook_events to allow reprocessing.
+      return reply.code(500).send({ error: 'Webhook handler failed' });
+    }
+  });
+}

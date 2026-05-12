@@ -333,6 +333,30 @@ export const billingApi = {
       monthlyPrice: number;
       outboundEnabled: boolean;
     }>('/billing'),
+
+  // Current Stripe subscription (plan, status, period end)
+  getSubscription: () =>
+    apiFetch<{
+      planKey: string;
+      plan: unknown;
+      status: string | null;
+      currentPeriodEnd: string | null;
+      trialEnd: string | null;
+      billingCycle: 'monthly' | 'annual' | null;
+      isStripeCustomer: boolean;
+    }>('/billing/subscription'),
+
+  // Start Stripe Checkout — returns the URL to redirect to.
+  // 503 if Stripe isn't configured on the API.
+  checkout: (planKey: string, cycle: 'monthly' | 'annual') =>
+    apiFetch<{ url: string }>('/billing/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ planKey, cycle }),
+    }),
+
+  // Open the Stripe Customer Portal (manage card, view invoices, cancel)
+  openPortal: () =>
+    apiFetch<{ url: string }>('/billing/portal', { method: 'POST' }),
 };
 
 // ---- Campaigns ----

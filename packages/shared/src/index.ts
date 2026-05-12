@@ -16,3 +16,4 @@ export * from './types/voice.types.js';
 export * from './types/telephony.types.js';
 export * from './types/vertical.types.js';
 export * from './types/webhook.types.js';
+export * from './types/billing.types.js';
