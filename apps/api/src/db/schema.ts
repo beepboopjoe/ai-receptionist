@@ -223,6 +223,11 @@ export const tenantSettings = pgTable('tenant_settings', {
   voiceName: text('voice_name').notNull().default('eve'),
   voiceProvider: text('voice_provider').notNull().default('grok'),
   telephonyProvider: text('telephony_provider').notNull().default('telnyx'),
+  // ---- Custom voice clone (ElevenLabs IVC) ----
+  // voiceCloneStatus: 'none' | 'uploading' | 'ready' | 'failed'
+  voiceCloneId: text('voice_clone_id'),
+  voiceCloneStatus: text('voice_clone_status').notNull().default('none'),
+  voiceCloneName: text('voice_clone_name'),
   provisionedNumber: text('twilio_number'),      // column kept for migration compat; name is provider-agnostic
   provisionedNumberSid: text('twilio_number_sid'), // ditto
   appointmentTypes: jsonb('appointment_types').notNull().default([]),
