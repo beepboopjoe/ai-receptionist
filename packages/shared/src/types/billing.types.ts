@@ -50,6 +50,24 @@ export interface Plan {
  */
 export const PLANS: readonly Plan[] = [
   {
+    key: 'trial',
+    name: 'Free Trial',
+    tagline: 'Try AI receptionist for free',
+    description: 'A 10-minute free trial to explore the platform.',
+    monthlyPrice: 0,
+    annualMonthlyPrice: 0,
+    monthlyMinutes: 10,
+    overagePerMin: 0,
+    includedPhoneNumbers: 0,
+    outbound: false,
+    features: [
+      '10 AI minutes included',
+      'Uses platform phone number',
+      'Inbound calls only',
+      'No credit card required',
+    ],
+  },
+  {
     key: 'starter',
     name: 'Starter',
     tagline: 'Never miss a call again',
@@ -158,7 +176,7 @@ export const PAY_AS_YOU_GO = {
 export const ADDONS = {
   extra_local_number: { name: 'Extra local number', monthlyPrice: 5 },
   toll_free_number:   { name: 'Toll-free number',   monthlyPrice: 10 },
-  custom_voice_clone: { name: 'Custom voice clone', monthlyPrice: 99 },
+  custom_voice_clone: { name: 'Custom voice clone', monthlyPrice: 49 },
 } as const;
 
 /** Minute packs — one-time purchase, never expire. */

@@ -1,18 +1,31 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onboardingApi } from '@/lib/api';
-import { CheckCircle, ArrowRight } from 'lucide-react';
+import { usePlan } from '@/lib/usePlan';
+import { CheckCircle, ArrowRight, Info } from 'lucide-react';
 import { useVertical } from '@/lib/useVertical';
 
 export default function Step1PhonePage() {
   const vertical = useVertical();
   const router = useRouter();
+  const { plan } = usePlan();
+  const isTrial = plan === 'trial';
+
   const [areaCode, setAreaCode] = useState('');
   const [provisioned, setProvisioned] = useState<{ phoneNumber: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [option, setOption] = useState<'twilio' | 'ringcentral' | null>(null);
+  const [trialStepDone, setTrialStepDone] = useState(false);
+
+  // Auto-complete step 1 for trial users — they don't need to provision a number
+  useEffect(() => {
+    if (isTrial && option === 'twilio' && !trialStepDone) {
+      setTrialStepDone(true);
+      void onboardingApi.completeStep(1);
+    }
+  }, [isTrial, option, trialStepDone]);
 
   async function handleProvision() {
     setLoading(true);
@@ -37,7 +50,7 @@ export default function Step1PhonePage() {
         </p>
       </div>
 
-      {/* Option A — Twilio forwarding (recommended) */}
+      {/* Option A — Forwarding number (recommended) */}
       <div
         onClick={() => setOption('twilio')}
         className={`card p-6 cursor-pointer transition-all ${
@@ -61,7 +74,20 @@ export default function Step1PhonePage() {
 
         {option === 'twilio' && (
           <div className="mt-5 space-y-3">
-            {!provisioned ? (
+            {isTrial ? (
+              /* ── Trial: platform shared number — no Telnyx provisioning ── */
+              <div className="rounded-xl bg-brand-50 border border-brand-200 px-5 py-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Info size={16} className="text-brand-600 shrink-0" />
+                  <p className="text-sm font-semibold text-brand-900">Using platform shared number</p>
+                </div>
+                <p className="text-sm text-brand-700">
+                  During your free trial, inbound calls are routed through our shared platform number.
+                  When you subscribe to a paid plan, you&apos;ll get your own dedicated local number.
+                </p>
+                <p className="text-xs text-brand-500">✓ No setup required · ✓ Upgrade anytime for a dedicated number</p>
+              </div>
+            ) : !provisioned ? (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -130,8 +156,8 @@ export default function Step1PhonePage() {
         )}
       </div>
 
-      {/* Next */}
-      {(provisioned || option === 'ringcentral') && (
+      {/* Next — shown once user has made a valid selection */}
+      {(provisioned || (isTrial && option === 'twilio') || option === 'ringcentral') && (
         <button
           onClick={() => router.push('/onboarding/step-2-calendar')}
           className="btn-primary w-full justify-center"

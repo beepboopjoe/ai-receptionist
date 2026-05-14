@@ -108,7 +108,7 @@ export default function DashboardPage() {
     (c: any) => c.status === 'running'
   ).length;
 
-  const recentCalls = ((calls as any)?.data ?? []).slice(0, 8);
+  const recentCalls = ((calls as any)?.data ?? []).filter(Boolean).slice(0, 8);
   const recentCampaigns = ((campaigns as any)?.data ?? []).slice(0, 5);
 
   return (
@@ -191,7 +191,7 @@ export default function DashboardPage() {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {call.fromNumber}
+                      {call?.fromNumber ?? '—'}
                     </p>
                     <p className="text-xs text-gray-500 truncate">{call.summary ?? 'No summary'}</p>
                   </div>

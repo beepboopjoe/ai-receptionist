@@ -93,7 +93,7 @@ export default function ApiKeysPage() {
         <p className="font-semibold text-gray-900">Quick start</p>
         <pre className="bg-white border border-gray-200 rounded-md p-3 text-xs font-mono overflow-x-auto">
 {`curl -H "Authorization: Bearer ark_live_…" \\
-  https://<your-api-host>/api/v1/public/whoami`}
+  https://ai-receptionist-production-de7b.up.railway.app/api/v1/public/whoami`}
         </pre>
         <a href="/docs" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline text-xs">
           Full API reference <ExternalLink size={11} />

@@ -164,7 +164,7 @@ function VoiceCloneSection() {
       </div>
 
       <p className="text-xs text-gray-500 leading-relaxed">
-        Upload 1–5 audio samples of your voice (30s–3 min each) and we&apos;ll clone it using ElevenLabs AI. Your cloned voice will be used for AI-generated audio messages and ElevenLabs-powered calls.
+        Upload 1–5 audio samples of your voice (30s–3 min each) and we&apos;ll clone it using our AI voice engine. Your cloned voice will be used for all AI-generated calls and audio messages.
       </p>
 
       {isLocked ? (
@@ -376,7 +376,7 @@ export default function VoiceAgentPage() {
             onChange={(e) => setVoiceProvider(e.target.value)}
             className="input"
           >
-            <option value="grok">Grok Voice (xAI) — $0.05/min — Recommended</option>
+            <option value="grok">Standard AI Voice — $0.05/min — Recommended</option>
             <option value="elevenlabs">ElevenLabs — supports custom voice clone</option>
           </select>
         </div>
