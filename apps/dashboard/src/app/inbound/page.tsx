@@ -8,6 +8,8 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { CheckCircle, Phone, ShieldCheck, Sparkles, Moon, Globe } from 'lucide-react';
 import { BRAND_NAME } from '@/lib/brand';
+import { MarketingHeader } from '@/components/ui/marketing-header';
+import { MarketingFooter } from '@/components/ui/marketing-footer';
 
 // Lazy-load — TTS audio code shouldn't block initial paint.
 const SampleCallPlayer = dynamic(
@@ -87,34 +89,7 @@ const QUALITY = [
 export default function InboundPage() {
   return (
     <div className="min-h-screen bg-cream-50 text-cream-900">
-      {/* ── Nav ───────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 glass-nav border-b border-cream-200">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-serif text-lg shadow-sm">
-              ar
-            </div>
-            <span className="font-serif text-lg text-cream-900">{BRAND_NAME}</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-7">
-            <Link href="/inbound" className="text-sm font-medium text-brand-600">Inbound</Link>
-            <Link href="/outbound" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Outbound</Link>
-            <Link href="/pricing" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Pricing</Link>
-            <Link href="/demo" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Demo</Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">
-              Sign in
-            </Link>
-            <Link
-              href="/signup"
-              className="glow-btn inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors"
-            >
-              Start free trial →
-            </Link>
-          </div>
-        </div>
-      </header>
+      <MarketingHeader />
 
       {/* ── Hero ──────────────────────────────────────────── */}
       <section className="mesh-gradient-light pt-24 pb-20 px-6">
@@ -371,24 +346,7 @@ export default function InboundPage() {
         </Link>
       </section>
 
-      {/* ── Footer ───────────────────────────────────── */}
-      <footer className="border-t border-cream-200 py-10 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-cream-500">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center text-white font-serif text-sm">ar</div>
-            <span className="font-serif text-cream-700">{BRAND_NAME}</span>
-          </div>
-          <div className="flex items-center gap-6">
-            <Link href="/" className="hover:text-cream-900 transition-colors">Home</Link>
-            <Link href="/inbound" className="hover:text-cream-900 transition-colors">Inbound</Link>
-            <Link href="/outbound" className="hover:text-cream-900 transition-colors">Outbound</Link>
-            <Link href="/pricing" className="hover:text-cream-900 transition-colors">Pricing</Link>
-            <Link href="/demo" className="hover:text-cream-900 transition-colors">Demo</Link>
-            <Link href="/legal/privacy" className="hover:text-cream-900 transition-colors">Privacy</Link>
-            <Link href="/legal/terms" className="hover:text-cream-900 transition-colors">Terms</Link>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }
