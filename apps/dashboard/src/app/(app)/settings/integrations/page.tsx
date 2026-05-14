@@ -1,9 +1,10 @@
 'use client';
 import useSWR, { mutate } from 'swr';
 import { integrationsApi } from '@/lib/api';
-import { CheckCircle, ExternalLink, Trash2, Phone, Mail } from 'lucide-react';
+import { CheckCircle, ExternalLink, Trash2, Phone, Mail, RefreshCw } from 'lucide-react';
 import { useVertical } from '@/lib/useVertical';
 import type { Vertical } from '@/lib/verticals';
+import { useState } from 'react';
 
 const PROVIDERS = [
   { id: 'telnyx', label: 'Telnyx (Phone)', description: 'AI-powered inbound and outbound calling', icon: '☎️' },
@@ -43,8 +44,13 @@ const CRM_PROVIDERS: CrmProvider[] = [
 export default function IntegrationsPage() {
   const vertical = useVertical();
   const { data } = useSWR('integrations', () => integrationsApi.list());
-  const connected = ((data as any)?.data ?? []) as { provider: string; status: string }[];
+  const connected = ((data as any)?.data ?? []) as {
+    provider: string;
+    status: string;
+    lastSyncedAt?: string;
+  }[];
   const connectedMap = Object.fromEntries(connected.map((i) => [i.provider, i]));
+  const [syncing, setSyncing] = useState(false);
 
   // Show universal CRMs always; vertical-specific only when relevant.
   const visibleCrmProviders = CRM_PROVIDERS.filter(
@@ -56,6 +62,18 @@ export default function IntegrationsPage() {
     await integrationsApi.disconnect(provider);
     await mutate('integrations');
   }
+
+  async function handleHubSpotSync() {
+    setSyncing(true);
+    try {
+      await integrationsApi.syncHubspot();
+      setTimeout(() => mutate('integrations'), 3000);
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
 
   return (
     <div className="space-y-6">
@@ -145,31 +163,76 @@ export default function IntegrationsPage() {
           Connect your CRM or {vertical.businessNoun} management system for two-way {vertical.contactNoun} and {vertical.appointmentNoun} sync.
         </p>
         <div className="space-y-4">
-          {visibleCrmProviders.map((provider) => (
-            <div key={provider.id} className="card p-5 flex items-center gap-5">
-              <div className="text-3xl">{provider.icon}</div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold text-gray-900">{provider.label}</p>
-                  <span className="badge badge-gray">Custom setup</span>
-                  {provider.badge && (
-                    <span className={`badge ${provider.badge === 'Popular' ? 'badge-green' : 'badge-blue'}`}>
-                      {provider.badge}
-                    </span>
+          {visibleCrmProviders.map((provider) => {
+            const integration = connectedMap[provider.id];
+            const isConnected = integration?.status === 'connected';
+            const isHubSpot = provider.id === 'hubspot';
+
+            return (
+              <div key={provider.id} className="card p-5 flex items-center gap-5">
+                <div className="text-3xl">{provider.icon}</div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-semibold text-gray-900">{provider.label}</p>
+                    {isConnected ? (
+                      <span className="badge badge-green flex items-center gap-1">
+                        <CheckCircle size={11} /> Connected
+                      </span>
+                    ) : (
+                      <span className="badge badge-gray">{isHubSpot ? 'Not connected' : 'Custom setup'}</span>
+                    )}
+                    {provider.badge && !isConnected && (
+                      <span className={`badge ${provider.badge === 'Popular' ? 'badge-green' : 'badge-blue'}`}>
+                        {provider.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-0.5">{provider.description}</p>
+                  {isConnected && integration?.lastSyncedAt && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Last synced {new Date(integration.lastSyncedAt).toLocaleString()}
+                    </p>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 mt-0.5">{provider.description}</p>
+                <div className="flex items-center gap-2 shrink-0">
+                  {isHubSpot ? (
+                    isConnected ? (
+                      <>
+                        <button
+                          onClick={handleHubSpotSync}
+                          disabled={syncing}
+                          className="btn-secondary text-sm flex items-center gap-1.5"
+                        >
+                          <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
+                          {syncing ? 'Syncing…' : 'Sync now'}
+                        </button>
+                        <button
+                          onClick={() => handleDisconnect('hubspot')}
+                          className="btn-danger text-sm"
+                        >
+                          <Trash2 size={14} /> Disconnect
+                        </button>
+                      </>
+                    ) : (
+                      <a
+                        href={`${apiBase}/api/v1/integrations/hubspot/connect`}
+                        className="btn-primary text-sm flex items-center gap-1.5"
+                      >
+                        <ExternalLink size={13} /> Connect HubSpot
+                      </a>
+                    )
+                  ) : (
+                    <a
+                      href={`mailto:hello@aireceptionist.ai?subject=Integration — ${provider.label}`}
+                      className="btn-primary text-sm flex items-center gap-1.5"
+                    >
+                      <Mail size={13} /> Request access
+                    </a>
+                  )}
+                </div>
               </div>
-              <div className="shrink-0">
-                <a
-                  href={`mailto:hello@aireceptionist.ai?subject=EHR Integration — ${provider.label}`}
-                  className="btn-primary text-sm flex items-center gap-1.5"
-                >
-                  <Mail size={13} /> Request access
-                </a>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

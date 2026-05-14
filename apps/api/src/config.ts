@@ -86,6 +86,11 @@ const envSchema = z.object({
   STRIPE_PRICE_SCALE_MONTHLY:   z.string().default(''),
   STRIPE_PRICE_SCALE_ANNUAL:    z.string().default(''),
 
+  // HubSpot CRM integration (optional — only required when a tenant connects HubSpot)
+  HUBSPOT_CLIENT_ID: z.string().default(''),
+  HUBSPOT_CLIENT_SECRET: z.string().default(''),
+  HUBSPOT_REDIRECT_URI: z.string().default('http://localhost:3001/api/v1/integrations/hubspot/callback'),
+
   // Comma-separated list of admin emails for the platform-owner-only
   // admin endpoints (currently: affiliate management). Used as a
   // simple gate above and beyond the per-tenant role system.

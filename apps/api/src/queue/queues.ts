@@ -17,3 +17,6 @@ export const crmSyncQueue = new Queue('crm-sync', { connection: redis });
 
 /** Outbound dialer queue — campaign dial jobs, voicemail drops, timeout guards */
 export const outboundDialerQueue = new Queue('outbound-dialer', { connection: redis });
+
+/** HubSpot sync queue — bidirectional contact sync per tenant */
+export const hubspotSyncQueue = new Queue('hubspot-sync', { connection: redis });

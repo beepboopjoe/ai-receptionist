@@ -292,6 +292,8 @@ export const integrationsApi = {
   list: () => apiFetch<{ data: unknown[] }>('/integrations'),
   disconnect: (provider: string) =>
     apiFetch(`/integrations/${provider}`, { method: 'DELETE' }),
+  syncHubspot: () =>
+    apiFetch<{ jobId: string; message: string }>('/integrations/hubspot/sync', { method: 'POST' }),
 };
 
 // ---- Onboarding ----

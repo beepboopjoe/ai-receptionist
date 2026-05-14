@@ -28,16 +28,25 @@ type FlowExecutor = { execute: (state: any) => Promise<FlowResult> };
 
 /**
  * Optional per-vertical overrides. Key shape: `<workflow>__<vertical>`.
- * Empty today — every vertical uses the generic flow. Add entries when a
- * vertical genuinely needs different post-call logic (e.g. legal new-client
- * intake might trigger a conflict-of-interest check that dental doesn't).
+ * Resolution rule: try the override first, fall back to the generic flow.
+ *
+ * legal       — conflict-of-interest check before booking (new contacts only)
+ * insurance   — capture policy type; book as "insurance_consultation"
+ * home_services — triage by urgency; urgent → escalation, scheduled → book with 2-day buffer
  */
 const VERTICAL_FLOW_OVERRIDES: Record<string, () => Promise<FlowExecutor>> = {
-  // Example shape — uncomment when a real variant ships:
-  // 'new_contact__legal': async () => {
-  //   const { LegalNewClientFlow } = await import('./flows/legal-new-client.flow.js');
-  //   return new LegalNewClientFlow();
-  // },
+  'new_contact__legal': async () => {
+    const { LegalNewContactFlow } = await import('./flows/legal-new-contact.flow.js');
+    return new LegalNewContactFlow();
+  },
+  'new_contact__insurance': async () => {
+    const { InsuranceNewContactFlow } = await import('./flows/insurance-new-contact.flow.js');
+    return new InsuranceNewContactFlow();
+  },
+  'new_contact__home_services': async () => {
+    const { HomeServicesNewContactFlow } = await import('./flows/home-services-new-contact.flow.js');
+    return new HomeServicesNewContactFlow();
+  },
 };
 
 /** Generic, vertical-agnostic flow loaders. */

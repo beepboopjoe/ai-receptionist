@@ -12,6 +12,7 @@ import { runUsageWarningSweep } from './jobs/usage-warning.job.js';
 import { processSendNotification, type SendNotificationJobData } from './jobs/send-reminder.job.js';
 import { processMissedCallRecovery, type MissedCallRecoveryJobData } from './jobs/missed-call-recovery.job.js';
 import { processCrmSync, type CrmSyncJobData } from './jobs/crm-sync.job.js';
+import { processHubSpotSync, type HubSpotSyncJobData } from './jobs/hubspot-sync.job.js';
 import { processRecallReminder, type RecallReminderJobData } from './jobs/recall-reminder.job.js';
 import {
   processOutboundDial,
@@ -86,6 +87,22 @@ crmSyncWorker.on('failed', (job, err) => {
   console.error(`[worker:crm-sync] ❌ job ${job?.id} failed:`, err.message);
 });
 
+// ---- HubSpot sync worker ----
+const hubspotSyncWorker = new Worker<HubSpotSyncJobData>(
+  'hubspot-sync',
+  async (job: Job<HubSpotSyncJobData>) => {
+    await processHubSpotSync(job);
+  },
+  { connection: redis, concurrency: 3 }
+);
+
+hubspotSyncWorker.on('completed', (job) => {
+  console.log(`[worker:hubspot-sync] ✅ job ${job.id} completed`);
+});
+hubspotSyncWorker.on('failed', (job, err) => {
+  console.error(`[worker:hubspot-sync] ❌ job ${job?.id} failed:`, err.message);
+});
+
 // ---- Outbound dialer worker ----
 type OutboundDialerJobData = OutboundDialJobData | OutboundVoicemailDropJobData | OutboundDialTimeoutJobData;
 
@@ -136,6 +153,7 @@ async function shutdown() {
     notificationsWorker.close(),
     remindersWorker.close(),
     crmSyncWorker.close(),
+    hubspotSyncWorker.close(),
     outboundDialerWorker.close(),
   ]);
   await redis.quit();
