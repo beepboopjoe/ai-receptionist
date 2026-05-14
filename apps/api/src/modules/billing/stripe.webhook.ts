@@ -18,7 +18,9 @@ import { config } from '../../config.js';
 import { getStripe } from './stripe.client.js';
 import { syncSubscription, tenantIdForStripeCustomer } from './billing.service.js';
 import { recordCommissionEvent } from '../affiliates/affiliate.service.js';
-import { tenants } from '../../db/schema.js';
+import { tenants, tenantPhoneNumbers } from '../../db/schema.js';
+import { isNull } from 'drizzle-orm';
+import { TelnyxAdapter } from '../telephony/adapters/telnyx.adapter.js';
 
 export async function stripeWebhookPlugin(app: FastifyInstance): Promise<void> {
   // Capture the raw body for application/json on this route only.
@@ -127,6 +129,39 @@ export async function stripeWebhookPlugin(app: FastifyInstance): Promise<void> {
                 .update(tenants)
                 .set({ voiceCloneAddon: false, voiceCloneStripeSub: null, updatedAt: new Date() })
                 .where(eq(tenants.voiceCloneStripeSub, subId));
+            }
+
+            // Release any provisioned Telnyx phone numbers for this tenant.
+            // Numbers cost money on Telnyx even when unused — release them
+            // on cancellation so you're not billed for churned customers.
+            const customerId =
+              typeof sub.customer === 'string' ? sub.customer : sub.customer?.id ?? null;
+            if (customerId) {
+              const tenantId = await tenantIdForStripeCustomer(customerId);
+              if (tenantId) {
+                const activeNumbers = await db
+                  .select({ id: tenantPhoneNumbers.id, telnyxPhoneId: tenantPhoneNumbers.telnyxPhoneId })
+                  .from(tenantPhoneNumbers)
+                  .where(eq(tenantPhoneNumbers.tenantId, tenantId) && isNull(tenantPhoneNumbers.releasedAt));
+
+                if (activeNumbers.length > 0) {
+                  const telnyx = new TelnyxAdapter();
+                  for (const num of activeNumbers) {
+                    try {
+                      if (num.telnyxPhoneId) {
+                        await telnyx.releaseNumber(num.telnyxPhoneId);
+                      }
+                      await db
+                        .update(tenantPhoneNumbers)
+                        .set({ releasedAt: new Date(), updatedAt: new Date() })
+                        .where(eq(tenantPhoneNumbers.id, num.id));
+                    } catch (err) {
+                      app.log.error({ err, numId: num.id, tenantId }, 'Failed to release Telnyx number on cancellation');
+                    }
+                  }
+                  app.log.info({ tenantId, count: activeNumbers.length }, 'Released Telnyx numbers on subscription cancellation');
+                }
+              }
             }
           }
           break;

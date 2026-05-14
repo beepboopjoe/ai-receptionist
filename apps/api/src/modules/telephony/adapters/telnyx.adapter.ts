@@ -146,6 +146,32 @@ export class TelnyxAdapter implements ITelephonyAdapter {
   }
 
   /**
+   * Release a purchased Telnyx phone number back to the pool.
+   * Call this when a tenant cancels their subscription.
+   * Uses the Telnyx phone ID (not the E.164 number string).
+   */
+  async releaseNumber(telnyxPhoneId: string): Promise<void> {
+    try {
+      const url = `https://api.telnyx.com/v2/phone_numbers/${telnyxPhoneId}`;
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: this.headers,
+      });
+      // 404 means already released — treat as success
+      if (!response.ok && response.status !== 404) {
+        const errText = await response.text();
+        throw new IntegrationError(
+          'telnyx',
+          `Telnyx number release error ${response.status}: ${errText}`
+        );
+      }
+    } catch (err) {
+      if (err instanceof IntegrationError) throw err;
+      throw new IntegrationError('telnyx', `Number release failed: ${String(err)}`);
+    }
+  }
+
+  /**
    * Retrieve the recording URL for a completed Telnyx call.
    * Returns null if no recording is available.
    */
