@@ -34,7 +34,7 @@ export default function EscalationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Escalations</h1>
           <p className="text-gray-500 mt-1">Calls that require staff follow-up</p>
