@@ -18,6 +18,7 @@ import { config } from '../../config.js';
 import { getStripe } from './stripe.client.js';
 import { syncSubscription, tenantIdForStripeCustomer } from './billing.service.js';
 import { recordCommissionEvent } from '../affiliates/affiliate.service.js';
+import { tenants } from '../../db/schema.js';
 
 export async function stripeWebhookPlugin(app: FastifyInstance): Promise<void> {
   // Capture the raw body for application/json on this route only.
@@ -92,15 +93,42 @@ export async function stripeWebhookPlugin(app: FastifyInstance): Promise<void> {
     try {
       switch (event.type) {
         case 'checkout.session.completed': {
-          // Subscription is created via the .subscription.created event;
-          // here we just log for traceability.
-          app.log.info({ sessionId: event.data.object.id }, 'Stripe checkout completed');
+          // Voice clone add-on checkout: activate the addon flag immediately
+          // on checkout completion so the tenant doesn't have to wait for the
+          // subscription event.
+          const session = event.data.object;
+          if (session.metadata?.['addonType'] === 'voice_clone' && session.metadata?.['tenantId']) {
+            const tenantId = session.metadata['tenantId'];
+            const subId = typeof session.subscription === 'string'
+              ? session.subscription
+              : (session.subscription as { id?: string } | null)?.id ?? null;
+            await db
+              .update(tenants)
+              .set({ voiceCloneAddon: true, voiceCloneStripeSub: subId, updatedAt: new Date() })
+              .where(eq(tenants.id, tenantId));
+            app.log.info({ tenantId, subId }, 'Voice clone add-on activated via checkout');
+          } else {
+            app.log.info({ sessionId: session.id }, 'Stripe checkout completed');
+          }
           break;
         }
         case 'customer.subscription.created':
         case 'customer.subscription.updated':
         case 'customer.subscription.deleted': {
           await syncSubscription(event.data.object);
+
+          // If this subscription deletion is for a voice-clone add-on,
+          // revoke the flag. We detect it by matching the stored sub ID.
+          if (event.type === 'customer.subscription.deleted') {
+            const sub = event.data.object;
+            const subId = sub.id;
+            if (subId) {
+              await db
+                .update(tenants)
+                .set({ voiceCloneAddon: false, voiceCloneStripeSub: null, updatedAt: new Date() })
+                .where(eq(tenants.voiceCloneStripeSub, subId));
+            }
+          }
           break;
         }
         case 'invoice.paid': {

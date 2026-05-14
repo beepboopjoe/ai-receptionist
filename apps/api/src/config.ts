@@ -83,8 +83,11 @@ const envSchema = z.object({
   STRIPE_PRICE_STARTER_ANNUAL:  z.string().default(''),
   STRIPE_PRICE_GROWTH_MONTHLY:  z.string().default(''),
   STRIPE_PRICE_GROWTH_ANNUAL:   z.string().default(''),
-  STRIPE_PRICE_SCALE_MONTHLY:   z.string().default(''),
-  STRIPE_PRICE_SCALE_ANNUAL:    z.string().default(''),
+  STRIPE_PRICE_SCALE_MONTHLY:        z.string().default(''),
+  STRIPE_PRICE_SCALE_ANNUAL:         z.string().default(''),
+  // Add-on: Voice Clone ($49/mo flat). Set this to the Stripe price_id after
+  // creating the product in your Stripe dashboard.
+  STRIPE_PRICE_VOICE_CLONE_MONTHLY:  z.string().default(''),
 
   // HubSpot CRM integration (optional — only required when a tenant connects HubSpot)
   HUBSPOT_CLIENT_ID: z.string().default(''),

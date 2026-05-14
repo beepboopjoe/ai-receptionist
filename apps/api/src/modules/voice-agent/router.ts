@@ -15,21 +15,20 @@ import {
   type VoiceCloneFile,
 } from './voice-clone.service.js';
 
-// ---- Plan gate helpers ----
-// Voice cloning is available on growth and scale plans only.
-const VOICE_CLONE_PLANS = new Set(['growth', 'scale']);
-
-async function assertVoiceClonePlan(tenantId: string): Promise<void> {
+// ---- Add-on gate ----
+// Voice cloning requires the Voice Clone add-on subscription ($49/mo).
+// The flag is set by the Stripe webhook on checkout.session.completed.
+async function assertVoiceCloneAddon(tenantId: string): Promise<void> {
   const [tenant] = await db
-    .select({ plan: tenants.plan })
+    .select({ voiceCloneAddon: tenants.voiceCloneAddon })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
     .limit(1);
 
   if (!tenant) throw new NotFoundError('Tenant', tenantId);
-  if (!VOICE_CLONE_PLANS.has(tenant.plan)) {
+  if (!tenant.voiceCloneAddon) {
     throw new ValidationError(
-      'Voice cloning is available on Growth and Scale plans. Upgrade at /billing to unlock.'
+      'Voice cloning requires the Voice Clone add-on ($49/mo). Subscribe at Settings → Voice Agent.'
     );
   }
 }
@@ -95,7 +94,7 @@ async function voiceAgentRoutes(
     preHandler: [app.authenticate],
   }, async (request, reply) => {
     const { tenantId } = request.user as { tenantId: string };
-    await assertVoiceClonePlan(tenantId);
+    await assertVoiceCloneAddon(tenantId);
 
     // Collect multipart parts
     const parts = request.parts();

@@ -37,6 +37,11 @@ export const tenants = pgTable('tenants', {
   currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
   trialEnd: timestamp('trial_end', { withTimezone: true }),
   billingCycle: text('billing_cycle'), // 'monthly' | 'annual'
+  // ---- Add-ons ----
+  // voice_clone_addon: true when the tenant has an active Stripe subscription
+  // for the Voice Clone add-on ($49/mo). Managed by the Stripe webhook.
+  voiceCloneAddon: boolean('voice_clone_addon').notNull().default(false),
+  voiceCloneStripeSub: text('voice_clone_stripe_sub_id'),
   // Affiliate attribution — set on signup when ?ref= was present.
   // FK declared in migration 0015 (we can't reference `affiliates`
   // here because it's declared below this tenants table).

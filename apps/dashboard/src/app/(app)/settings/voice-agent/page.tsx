@@ -2,7 +2,7 @@
 import useSWR, { mutate } from 'swr';
 import { settingsApi, tenantsApi } from '@/lib/api';
 import { useState, useEffect, useRef } from 'react';
-import { Save, Mic, Upload, Trash2, CheckCircle, AlertCircle, Loader2, Lock } from 'lucide-react';
+import { Save, Mic, Upload, Trash2, CheckCircle, AlertCircle, Loader2, CreditCard } from 'lucide-react';
 import { VERTICALS } from '@/lib/verticals';
 import { useToast } from '@/components/ui/toast';
 
@@ -10,9 +10,6 @@ const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/api
 
 // xAI Voice Agent voices (current spec: lowercase, eve is the recommended default)
 const GROK_VOICES = ['eve', 'ara', 'rex', 'sal', 'leo'];
-
-// Plans that include voice cloning
-const VOICE_CLONE_PLANS = new Set(['growth', 'scale']);
 
 // ---- Voice clone status badge ----
 type CloneStatus = 'none' | 'uploading' | 'ready' | 'failed';
@@ -43,34 +40,70 @@ function StatusBadge({ status }: { status: CloneStatus }) {
 }
 
 // ---- Voice Clone section ----
-function VoiceCloneSection({ tenantPlan }: { tenantPlan: string }) {
+function VoiceCloneSection() {
   const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [cloneName, setCloneName] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
+
+  // Show toast based on Stripe redirect query params (safe: only runs client-side)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('addon') === 'activated') {
+      toast.success('Voice Clone add-on activated! Upload your voice samples below.');
+    } else if (params.get('addon') === 'cancelled') {
+      toast.error('Voice clone checkout cancelled. No charge was made.');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const authHeader = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const { data: addonData, mutate: mutateAddon } = useSWR('voice-clone-addon', async () => {
+    const res = await fetch(`${API_URL}/billing/voice-clone`, { headers: authHeader() });
+    if (!res.ok) return { active: false };
+    return res.json();
+  });
 
   const { data: cloneData, mutate: mutateClone } = useSWR('voice-clone-status', async () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-    const res = await fetch(`${API_URL}/settings/voice/clone`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const res = await fetch(`${API_URL}/settings/voice/clone`, { headers: authHeader() });
     if (!res.ok) return { status: 'none', voiceCloneId: null, voiceCloneName: null };
     return res.json();
   });
 
+  const addonActive: boolean = addonData?.active ?? false;
   const cloneStatus: CloneStatus = cloneData?.status ?? 'none';
   const hasClone = cloneStatus === 'ready';
-  const isLocked = !VOICE_CLONE_PLANS.has(tenantPlan);
+  const isLocked = !addonActive;
+
+  async function handleSubscribe() {
+    setSubscribing(true);
+    try {
+      const res = await fetch(`${API_URL}/billing/voice-clone/checkout`, {
+        method: 'POST',
+        headers: authHeader(),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? 'Could not start checkout');
+      if (data.url) window.location.href = data.url;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Checkout failed');
+    } finally {
+      setSubscribing(false);
+    }
+  }
 
   async function handleUpload() {
     if (!selectedFiles.length) {
       toast.error('Select at least one audio file first');
       return;
     }
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     const form = new FormData();
     form.append('name', cloneName.trim() || 'My Custom Voice');
     for (const f of selectedFiles) form.append('files', f);
@@ -79,7 +112,7 @@ function VoiceCloneSection({ tenantPlan }: { tenantPlan: string }) {
     try {
       const res = await fetch(`${API_URL}/settings/voice/clone`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: authHeader(),
         body: form,
       });
       const data = await res.json();
@@ -97,12 +130,11 @@ function VoiceCloneSection({ tenantPlan }: { tenantPlan: string }) {
 
   async function handleDelete() {
     if (!confirm('Remove your custom voice clone? This cannot be undone.')) return;
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     setDeleting(true);
     try {
       const res = await fetch(`${API_URL}/settings/voice/clone`, {
         method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: authHeader(),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -127,7 +159,7 @@ function VoiceCloneSection({ tenantPlan }: { tenantPlan: string }) {
           {cloneStatus === 'uploading' && <StatusBadge status="uploading" />}
         </div>
         <span className="text-xs font-medium text-brand-600 bg-brand-50 border border-brand-200 rounded-full px-2.5 py-0.5">
-          Growth &amp; Scale
+          Add-on · $49/mo
         </span>
       </div>
 
@@ -136,16 +168,30 @@ function VoiceCloneSection({ tenantPlan }: { tenantPlan: string }) {
       </p>
 
       {isLocked ? (
-        // ── Plan gate ──────────────────────────────────────────────────────
-        <div className="flex items-center gap-3 rounded-xl bg-gray-50 border border-gray-200 px-4 py-3">
-          <Lock size={16} className="text-gray-400 shrink-0" />
+        // ── Stripe subscribe CTA ───────────────────────────────────────────
+        <div className="rounded-xl bg-brand-50 border border-brand-200 px-5 py-4 space-y-3">
           <div>
-            <p className="text-sm font-medium text-gray-700">Upgrade to unlock voice cloning</p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Available on Growth ($149/mo) and Scale ($299/mo) plans.{' '}
-              <a href="/billing" className="text-brand-600 hover:underline font-medium">Upgrade now →</a>
+            <p className="text-sm font-semibold text-brand-900">Add Voice Clone — $49/mo</p>
+            <p className="text-xs text-brand-700 mt-0.5">
+              Upload your voice once. The AI receptionist speaks in your voice on every call.
             </p>
           </div>
+          <ul className="text-xs text-brand-700 space-y-1">
+            {['Powered by ElevenLabs AI', 'Ready in under 60 seconds', 'Cancel anytime'].map((f) => (
+              <li key={f} className="flex items-center gap-1.5">
+                <CheckCircle size={11} className="text-brand-500 shrink-0" /> {f}
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={handleSubscribe}
+            disabled={subscribing}
+            className="btn-primary w-full justify-center"
+          >
+            {subscribing
+              ? <><Loader2 size={15} className="animate-spin" /> Redirecting to checkout…</>
+              : <><CreditCard size={15} /> Add Voice Clone — $49/mo</>}
+          </button>
         </div>
       ) : hasClone ? (
         // ── Active clone ───────────────────────────────────────────────────
@@ -397,7 +443,7 @@ export default function VoiceAgentPage() {
       </div>
 
       {/* ── Custom Voice Clone ─────────────────────────────── */}
-      <VoiceCloneSection tenantPlan={tenant?.plan ?? 'trial'} />
+      <VoiceCloneSection />
     </div>
   );
 }
