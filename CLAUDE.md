@@ -36,6 +36,8 @@ Don't re-do any of this. Verify before adding what you think might be missing.
 
 **Phase 9 — Revenue + integrations.** Stripe subscriptions + metered billing (starter/growth/scale + pay-as-you-go at $0.39/min). Overage invoice items + 80% usage warning email. Telnyx phone number purchase + LOA porting. Reseller affiliate MVP (attribution via `?ref=`, commission events). Real-audio sample voice player (HTML5 audio, xAI TTS MP3s). `/inbound` + `/outbound` marketing pages (cream theme). `/demo` + `/pricing` unified cream theme. `DashboardTeaser` + `DemoVideoPlayer` components. Email-on-call notifications. Google OAuth sign-in. HubSpot OAuth + bidirectional contact sync (`crm/adapters/hubspot.adapter.ts`, `crm/hubspot-oauth.router.ts`, `queue/jobs/hubspot-sync.job.ts`). Per-vertical workflow overrides — `legal` (conflict-check escalation), `insurance` (consultation booking), `home_services` (urgency triage). DB rename patients→contacts (migration 0009). Obsidian knowledge vault at `AI Receptionist Notes/`.
 
+**Phase 10 — Partner portal V2.** Partner self-signup at `/partners` (cream theme, bcrypt password). Login at `/partners/login` (stores `partner_token` JWT with `role:'partner'`). Commission dashboard at `/partners/dashboard` (stats cards, referral link copy, commission history, payout request modal). `requirePartner` middleware. `partner.router.ts` endpoints: apply, login, me, commissions, payout-requests, profile. `affiliate.service.ts`: `applyAsPartner`, `loginPartner`, `getPartnerProfile` (SQL aggregate stats), `createPayoutRequest` (validates pending balance), `approvePartner`. Migration 0018: `status`/`password_hash`/`payout_email`/`payout_method` on affiliates + `payout_requests` table. HubSpot OAuth production activation (credentials in Railway). `/pricing` partner CTA now links to `/partners`.
+
 ---
 
 ## Where to find things
@@ -63,10 +65,10 @@ The README has a longer table; these are the high-leverage entry points:
 These were deliberately punted, not forgotten. If you propose work, check this list first.
 
 1. **Google OAuth env vars in prod.** Code is complete (`auth-google.router.ts`). Needs `GOOGLE_AUTH_CLIENT_ID` + `GOOGLE_AUTH_CLIENT_SECRET` + `API_PUBLIC_URL` set on Railway, and the Railway callback URL added to Google Cloud Console authorized redirect URIs.
-2. **HubSpot Developer App registration.** OAuth code is shipped. Needs a HubSpot Developer account → app → OAuth scopes (`crm.objects.contacts.read/write`) → `HUBSPOT_CLIENT_ID` + `HUBSPOT_CLIENT_SECRET` + `HUBSPOT_REDIRECT_URI` set on Railway.
+2. **HubSpot credentials in prod.** ✅ Done (2026-05-13). `HUBSPOT_CLIENT_ID`, `HUBSPOT_CLIENT_SECRET`, `HUBSPOT_REDIRECT_URI` set in Railway. HubSpot Developer app created with `crm.objects.contacts.read/write` scopes.
 3. **Generate sample voice MP3s.** Script exists at `scripts/generate-sample-voices.ts`. Run: `XAI_API_KEY=xxx pnpm tsx scripts/generate-sample-voices.ts`. Output → `apps/dashboard/public/audio/samples/*.mp3`. Cost ~$0.05.
 4. **Record demo videos.** `DemoVideoPlayer` component + catalog exist. Need screen-recorded MP4s at `apps/dashboard/public/videos/<vertical>-demo.mp4`.
-5. **Reseller partner portal V2.** V1 commission tracking ships. V2 = partner self-signup page, commission dashboard, Stripe Connect payouts.
+5. **Partner portal — Stripe Connect payouts.** V2 self-signup + dashboard shipped (Phase 10). Remaining: Stripe Connect Express onboarding for automated payouts (`stripe.transfers.create` on `invoice.paid`), KYC/bank account flow.
 6. **Spanish i18n for remaining verticals.** Dental only has Spanish prompts. Need `es` entries in `vertical-prompts.ts` for legal, insurance, real_estate, home_services.
 7. **Sentry / PostHog.** User preference: no new SaaS accounts. Use OpenTelemetry (Phase 8) instead — self-hostable Jaeger/SigNoz.
 8. **Public API idempotency + bulk ops.** Phase 9 shipped CRUD write endpoints. Idempotency keys for POSTs and bulk operations are deferred.
@@ -90,7 +92,7 @@ These were deliberately punted, not forgotten. If you propose work, check this l
 ```bash
 cp .env.example .env       # fill DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, ENCRYPTION_KEY, XAI_API_KEY
 pnpm install
-pnpm --filter @ai-receptionist/api migrate   # applies through 0008
+pnpm --filter @ai-receptionist/api migrate   # applies through 0018
 pnpm --filter @ai-receptionist/api seed      # one tenant per vertical
 pnpm dev                                     # api on :3001, dashboard on :3000
 ```
