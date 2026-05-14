@@ -20,6 +20,9 @@ import {
   attributeTenant,
   listAffiliatesWithStats,
   generateAffiliateCode,
+  listAllPayoutRequests,
+  updatePayoutRequest,
+  approvePartner,
 } from './affiliate.service.js';
 
 /** Allow only emails in ADMIN_EMAILS (comma-separated). */
@@ -118,6 +121,47 @@ export async function affiliatePlugin(app: FastifyInstance): Promise<void> {
         .where(eq(commissionEvents.id, id))
         .returning();
       if (!row) throw new NotFoundError('CommissionEvent', id);
+      return reply.send(row);
+    }
+  );
+
+  // ── Platform admin: approve a pending partner application ────
+  app.post<{ Params: { id: string } }>(
+    '/admin/affiliates/:id/approve',
+    { onRequest: [requirePlatformAdmin] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const row = await approvePartner(id);
+      if (!row) throw new NotFoundError('Affiliate', id);
+      return reply.send(row);
+    }
+  );
+
+  // ── Platform admin: list all payout requests ─────────────────
+  app.get(
+    '/admin/payout-requests',
+    { onRequest: [requirePlatformAdmin] },
+    async (_req, reply) => {
+      const rows = await listAllPayoutRequests();
+      return reply.send({ data: rows });
+    }
+  );
+
+  // ── Platform admin: update payout request status ─────────────
+  app.patch<{ Params: { id: string } }>(
+    '/admin/payout-requests/:id',
+    { onRequest: [requirePlatformAdmin] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { status, adminNote } = (request.body ?? {}) as {
+        status?: 'approved' | 'paid' | 'rejected';
+        adminNote?: string;
+      };
+      if (!status || !['approved', 'paid', 'rejected'].includes(status)) {
+        throw new ValidationError('status must be approved | paid | rejected');
+      }
+      const row = await updatePayoutRequest(id, { status, adminNote });
+      if (!row) throw new NotFoundError('PayoutRequest', id);
       return reply.send(row);
     }
   );

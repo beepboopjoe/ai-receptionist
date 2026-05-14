@@ -242,12 +242,12 @@ export default function PricingPage() {
               Resell AI Receptionist to your clients and earn a recurring commission on every customer you refer.
             </p>
           </div>
-          <a
-            href="mailto:partners@aireceptionist.ai?subject=Partner%20program%20interest"
+          <Link
+            href="/partners"
             className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-cream-300 text-cream-800 font-semibold text-sm hover:bg-cream-50 transition-colors"
           >
             Join the program →
-          </a>
+          </Link>
         </div>
       </section>
 

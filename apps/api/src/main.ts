@@ -35,6 +35,7 @@ import { billingPlugin } from './modules/billing/billing.router.js';
 import { stripeWebhookPlugin } from './modules/billing/stripe.webhook.js';
 import { phoneNumbersPlugin } from './modules/phone-numbers/phone.router.js';
 import { affiliatePlugin } from './modules/affiliates/affiliate.router.js';
+import { partnerPlugin } from './modules/affiliates/partner.router.js';
 import { hubspotOAuthPlugin } from './modules/crm/hubspot-oauth.router.js';
 import { campaignsPlugin } from './modules/campaigns/campaign.router.js';
 import { demoPlugin } from './modules/voice-agent/demo.router.js';
@@ -162,6 +163,7 @@ async function buildApp() {
   await app.register(billingPlugin, { prefix: '/api/v1' });
   await app.register(phoneNumbersPlugin, { prefix: '/api/v1' });
   await app.register(affiliatePlugin, { prefix: '/api/v1' });
+  await app.register(partnerPlugin, { prefix: '/api/v1' });
   await app.register(hubspotOAuthPlugin, { prefix: '/api/v1' });
   // Stripe webhook lives at the root (no /api/v1) so the URL the
   // customer enters in the Stripe dashboard is short and stable.

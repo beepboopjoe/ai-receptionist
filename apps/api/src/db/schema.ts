@@ -46,9 +46,10 @@ export const tenants = pgTable('tenants', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-// ---- Affiliates (reseller MVP) ----
+// ---- Affiliates (reseller MVP → V2 partner portal) ----
 // One affiliate row per partner. Their `code` is the URL param
-// (?ref=ABC123) used during signup attribution.
+// (?ref=ABC123) used during signup attribution. V2 adds self-serve
+// registration (passwordHash) and payout fields.
 export const affiliates = pgTable('affiliates', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: text('code').notNull().unique(),
@@ -57,8 +58,36 @@ export const affiliates = pgTable('affiliates', {
   commissionPct: numeric('commission_pct', { precision: 5, scale: 2 }).notNull().default('20.00'),
   stripeConnectAccountId: text('stripe_connect_account_id'),
   isActive: boolean('is_active').notNull().default(true),
+  // V2: self-registration + payout
+  // status: 'pending_review' | 'active' | 'suspended'
+  status: text('status').notNull().default('active'),
+  passwordHash: text('password_hash'),
+  payoutEmail: text('payout_email'),
+  payoutMethod: text('payout_method').notNull().default('paypal'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ---- Payout Requests ----
+// Partner-initiated requests to be paid their pending commissions.
+// Admin reviews + marks paid manually (V2); Stripe Connect automates in V3.
+export const payoutRequests = pgTable(
+  'payout_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    affiliateId: uuid('affiliate_id').notNull().references(() => affiliates.id, { onDelete: 'cascade' }),
+    requestedAmountCents: integer('requested_amount_cents').notNull(),
+    // status: 'pending' | 'approved' | 'paid' | 'rejected'
+    status: text('status').notNull().default('pending'),
+    note: text('note'),       // partner's message to admin
+    adminNote: text('admin_note'), // admin's reply
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+  },
+  (t) => ({
+    affiliateIdx: index('payout_requests_affiliate_idx').on(t.affiliateId),
+    statusIdx: index('payout_requests_status_idx').on(t.status),
+  })
+);
 
 // One row per Stripe invoice.paid event for an affiliated tenant.
 // Unique on (stripe_invoice_id, affiliate_id) guards against duplicate
@@ -666,3 +695,6 @@ export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type NewPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 export type TenantApiKey = typeof tenantApiKeys.$inferSelect;
 export type NewTenantApiKey = typeof tenantApiKeys.$inferInsert;
+export type Affiliate = typeof affiliates.$inferSelect;
+export type PayoutRequest = typeof payoutRequests.$inferSelect;
+export type NewPayoutRequest = typeof payoutRequests.$inferInsert;
