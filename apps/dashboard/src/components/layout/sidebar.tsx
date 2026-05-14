@@ -185,7 +185,7 @@ export function Sidebar() {
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             <span className="flex-1 text-left">Search…</span>
-            <kbd className="text-[10px] font-mono bg-white border border-gray-200 rounded px-1.5 py-0.5">⌘K</kbd>
+            <kbd className="hidden sm:inline text-[10px] font-mono bg-white border border-gray-200 rounded px-1.5 py-0.5">⌘K</kbd>
           </button>
         </div>
 

@@ -13,7 +13,7 @@ export default function CallsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Call Log</h1>
           <p className="text-gray-500 mt-1">All inbound calls handled by your AI receptionist</p>
@@ -34,7 +34,7 @@ export default function CallsPage() {
       </div>
 
       <div className="card">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="font-semibold text-gray-900">Recent Calls</h2>
           <span className="text-sm text-gray-500">{(data as any)?.total ?? 0} total</span>
         </div>

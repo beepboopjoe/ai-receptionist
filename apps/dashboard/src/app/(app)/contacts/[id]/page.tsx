@@ -94,7 +94,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
         </div>
 
         {editing ? (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               { key: 'firstName', label: 'First Name' },
               { key: 'lastName', label: 'Last Name' },
@@ -126,7 +126,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               { label: 'Phone', value: c.phoneE164 },
               { label: 'Email', value: c.email ?? '—' },

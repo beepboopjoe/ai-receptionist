@@ -55,7 +55,7 @@ export default function CampaignsPage() {
     <div className="space-y-6">
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} reason="outbound_locked" />
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Campaigns</h1>
           <p className="text-sm text-gray-500 mt-0.5">Outbound calling campaigns to qualify and book new {vertical.contactNounPlural}</p>

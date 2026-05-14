@@ -40,7 +40,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
       </div>
 
       {/* Meta */}
-      <div className="card p-6 grid grid-cols-2 gap-4">
+      <div className="card p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <p className="text-xs text-gray-500 uppercase">From</p>
           <p className="font-medium">{c.fromNumber}</p>

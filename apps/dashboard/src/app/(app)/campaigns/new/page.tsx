@@ -86,7 +86,7 @@ export default function NewCampaignPage() {
         {/* Dial window */}
         <div className="space-y-4 border-t border-gray-100 pt-6">
           <h2 className="font-semibold text-gray-900 text-sm uppercase tracking-wide">Dial Window</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Start Time</label>
               <input
@@ -112,7 +112,7 @@ export default function NewCampaignPage() {
         {/* Retry settings */}
         <div className="space-y-4 border-t border-gray-100 pt-6">
           <h2 className="font-semibold text-gray-900 text-sm uppercase tracking-wide">Retry Settings</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Max Retries</label>
               <input
