@@ -251,14 +251,14 @@ export default function OutboundPage() {
         </div>
       </section>
 
-      {/* ── Audio Samples (secondary) ────────────────── */}
+      {/* ── Audio Samples (outbound) ─────────────────── */}
       <section className="max-w-4xl mx-auto px-6 pb-12 pt-12">
         <div className="text-center mb-6">
-          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-2">Hear the voice</p>
-          <h2 className="font-serif text-3xl text-cream-900 tracking-tight">Audio samples</h2>
-          <p className="text-cream-600 mt-2 text-sm">If you'd rather just hear it — same scripts, audio only.</p>
+          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-2">Hear an outbound call</p>
+          <h2 className="font-serif text-3xl text-cream-900 tracking-tight">Three campaign types. Hear exactly how it sounds.</h2>
+          <p className="text-cream-600 mt-2 text-sm">Reactivation, lead follow-up, and recall — real AI, real conversation flow.</p>
         </div>
-        <SampleCallPlayer />
+        <SampleCallPlayer callType="outbound" />
       </section>
 
       <section className="max-w-3xl mx-auto px-6 pb-16">

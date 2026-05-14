@@ -240,26 +240,34 @@ export function SampleCallPlayer({
   dark = false,
   singleLang,
   vertical,
+  callType,
 }: {
   dark?: boolean;
   /** If provided, only show calls for this language */
   singleLang?: 'en' | 'es';
   /** If provided, show calls for this vertical only */
   vertical?: Vertical;
+  /** If provided, only show inbound or outbound calls */
+  callType?: 'inbound' | 'outbound';
 }) {
-  let calls = SAMPLE_CALLS;
+  // Apply callType filter first — this is the primary partition between pages.
+  let calls = callType ? SAMPLE_CALLS.filter(c => c.callType === callType) : SAMPLE_CALLS;
+
   if (vertical) calls = calls.filter(c => c.vertical === vertical);
   if (singleLang) calls = calls.filter(c => c.lang === singleLang);
 
   // Fallback chain — never show a dental script when the user has Real Estate selected.
   if (calls.length === 0 && vertical) {
-    calls = SAMPLE_CALLS.filter(c => c.vertical === vertical);
+    const base = callType ? SAMPLE_CALLS.filter(c => c.callType === callType) : SAMPLE_CALLS;
+    calls = base.filter(c => c.vertical === vertical);
   }
   if (calls.length === 0) {
-    calls = SAMPLE_CALLS.filter(c => c.vertical === 'generic' && (!singleLang || c.lang === singleLang));
+    const base = callType ? SAMPLE_CALLS.filter(c => c.callType === callType) : SAMPLE_CALLS;
+    calls = base.filter(c => c.vertical === 'generic' && (!singleLang || c.lang === singleLang));
   }
   if (calls.length === 0) {
-    calls = SAMPLE_CALLS.filter(c => c.vertical === 'generic');
+    const base = callType ? SAMPLE_CALLS.filter(c => c.callType === callType) : SAMPLE_CALLS;
+    calls = base.filter(c => c.vertical === 'generic');
   }
 
   return (

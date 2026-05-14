@@ -20,6 +20,7 @@ export interface SampleCall {
   lang: 'en' | 'es';
   vertical: Vertical;
   durationLabel: string;
+  callType: 'inbound' | 'outbound';
   lines: CallLine[];
 }
 
@@ -32,6 +33,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     lang: 'en',
     vertical: 'dental',
     durationLabel: '~45s',
+    callType: 'inbound',
     lines: [
       { role: 'ai',     text: "Hi, this is Aria calling from Riverside Dental. Am I speaking with Sarah Johnson?" },
       { role: 'caller', text: "Yes, this is Sarah." },
@@ -51,6 +53,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     lang: 'es',
     vertical: 'dental',
     durationLabel: '~35s',
+    callType: 'inbound',
     lines: [
       { role: 'ai',     text: "Hola, habla Aria de la Clínica Dental Riverside. ¿Estoy hablando con Carlos Rodríguez?" },
       { role: 'caller', text: "Sí, soy yo." },
@@ -70,6 +73,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     lang: 'en',
     vertical: 'insurance',
     durationLabel: '~50s',
+    callType: 'inbound',
     lines: [
       { role: 'ai',     text: "Hi, this is Aria from Apex Insurance Group. I'm calling for James Miller — is this a good time?" },
       { role: 'caller', text: "Yeah, go ahead." },
@@ -91,6 +95,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     lang: 'en',
     vertical: 'legal',
     durationLabel: '~55s',
+    callType: 'inbound',
     lines: [
       { role: 'ai',     text: "Thank you for calling Smith and Associates Law. This is Aria, the AI assistant. I can help you get started — is this regarding a new matter?" },
       { role: 'caller', text: "Yes, I was just in a car accident and I need to talk to someone." },
@@ -112,6 +117,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     lang: 'en',
     vertical: 'real_estate',
     durationLabel: '~45s',
+    callType: 'inbound',
     lines: [
       { role: 'ai',     text: "Hi, this is Aria from Horizon Realty. I saw you inquired about the property on 42 Maple Street. Are you still interested in scheduling a showing?" },
       { role: 'caller', text: "Yes! I've been looking at it online. Is it still available?" },
@@ -133,6 +139,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     lang: 'en',
     vertical: 'home_services',
     durationLabel: '~40s',
+    callType: 'inbound',
     lines: [
       { role: 'ai',     text: "Thanks for calling ProFix Home Services! This is Aria. What can I help you with today?" },
       { role: 'caller', text: "My AC stopped working and it's 90 degrees in here. Can you send someone?" },
@@ -146,7 +153,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     ],
   },
 
-  // ── Generic ───────────────────────────────────────────────
+  // ── Generic inbound ───────────────────────────────────────
   {
     id: 'generic_en_receptionist',
     title: 'Inbound Call',
@@ -154,6 +161,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     lang: 'en',
     vertical: 'generic',
     durationLabel: '~40s',
+    callType: 'inbound',
     lines: [
       { role: 'ai',     text: "Thank you for calling! This is Aria, the AI assistant. How can I help you today?" },
       { role: 'caller', text: "Hi, I'd like to schedule an appointment." },
@@ -164,6 +172,64 @@ export const SAMPLE_CALLS: SampleCall[] = [
       { role: 'ai',     text: "Perfect! I've booked you for Tuesday at 10 AM. You'll receive a confirmation text shortly. Is there anything else I can help you with?" },
       { role: 'caller', text: "No, that's everything. Thanks!" },
       { role: 'ai',     text: "You're all set! We'll see you Tuesday. Have a wonderful day!" },
+    ],
+  },
+
+  // ── Outbound — Inactive Contact Reactivation ──────────────
+  {
+    id: 'outbound_en_reactivation',
+    title: 'Inactive Contact Reactivation',
+    scenario: 'AI reaches out to a contact who hasn\'t been in for months',
+    lang: 'en',
+    vertical: 'generic',
+    durationLabel: '~45s',
+    callType: 'outbound',
+    lines: [
+      { role: 'ai',     text: "Hi Emma, this is Aria calling from [Your Business Name]. I noticed it's been a while since we last connected — we'd love to get you back in. Do you have any availability this week or next?" },
+      { role: 'caller', text: "Oh hi! Yeah, it has been a while. What days do you have open?" },
+      { role: 'ai',     text: "We have Tuesday at 10 AM or Thursday at 2 PM available right now. Which works better for you?" },
+      { role: 'caller', text: "Thursday at 2 works for me." },
+      { role: 'ai',     text: "Perfect — I've got you booked for Thursday at 2 PM. You'll get a confirmation text shortly. We look forward to seeing you, Emma!" },
+      { role: 'caller', text: "Great, thank you!" },
+      { role: 'ai',     text: "Of course! Have a wonderful rest of your day." },
+    ],
+  },
+
+  // ── Outbound — Lead Follow-Up ─────────────────────────────
+  {
+    id: 'outbound_en_lead_followup',
+    title: 'Lead Follow-Up',
+    scenario: 'AI follows up on an unbooked lead who expressed interest',
+    lang: 'en',
+    vertical: 'generic',
+    durationLabel: '~50s',
+    callType: 'outbound',
+    lines: [
+      { role: 'ai',     text: "Hi Michael, this is Aria from [Your Business Name]. You reached out last week about scheduling a consultation — I just wanted to follow up and see if you'd like to get that on the calendar." },
+      { role: 'caller', text: "Yes actually — I've been meaning to call back." },
+      { role: 'ai',     text: "Great timing! I have a few openings this week — Wednesday at 11 AM or Friday at 3 PM. Would either of those work for you?" },
+      { role: 'caller', text: "Wednesday at 11 is perfect." },
+      { role: 'ai',     text: "Wonderful — I've confirmed you for Wednesday at 11 AM. Is this the best number to send your reminder to?" },
+      { role: 'caller', text: "Yes, this is fine." },
+      { role: 'ai',     text: "You're all set. We'll send a reminder the evening before. See you Wednesday, Michael!" },
+    ],
+  },
+
+  // ── Outbound — Appointment Recall ─────────────────────────
+  {
+    id: 'outbound_en_recall',
+    title: 'Appointment Recall',
+    scenario: 'AI calls a contact who is overdue for their scheduled follow-up',
+    lang: 'en',
+    vertical: 'generic',
+    durationLabel: '~40s',
+    callType: 'outbound',
+    lines: [
+      { role: 'ai',     text: "Hi Sarah, this is Aria from [Your Business Name]. I'm calling because you're coming up on your scheduled follow-up and we want to make sure we get you in on time. Would Tuesday at 2 PM work, or is morning better for you?" },
+      { role: 'caller', text: "Morning is better. Do you have anything around 9?" },
+      { role: 'ai',     text: "I have Tuesday at 9 AM available. Should I go ahead and book that for you?" },
+      { role: 'caller', text: "Yes please." },
+      { role: 'ai',     text: "Done — Tuesday at 9 AM is confirmed. You'll get a text reminder the evening before. Thanks, Sarah — we'll see you then!" },
     ],
   },
 ];

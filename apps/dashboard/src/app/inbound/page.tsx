@@ -284,7 +284,7 @@ export default function InboundPage() {
           <h2 className="font-serif text-3xl text-cream-900 tracking-tight">Audio samples</h2>
           <p className="text-cream-600 mt-2 text-sm">If you'd rather just hear it — same scripts, audio only.</p>
         </div>
-        <SampleCallPlayer />
+        <SampleCallPlayer callType="inbound" />
       </section>
 
       {/* ── After-hours value strip ─────────────────────── */}
