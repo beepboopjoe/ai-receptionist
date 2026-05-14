@@ -16,10 +16,6 @@ const SampleCallPlayer = dynamic(
   () => import('@/components/ui/sample-call-player').then((m) => m.SampleCallPlayer),
   { ssr: false }
 );
-const DemoVideoPlayer = dynamic(
-  () => import('@/components/ui/demo-video-player').then((m) => m.DemoVideoPlayer),
-  { ssr: false }
-);
 const DashboardTeaser = dynamic(
   () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
   { ssr: false }
@@ -246,20 +242,6 @@ export default function InboundPage() {
         </div>
       </section>
 
-      {/* ── Video Demos ────────────────────────────────── */}
-      <section className="max-w-5xl mx-auto px-6 pb-12 pt-8">
-        <div className="text-center mb-6">
-          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-2">See it yourself</p>
-          <h2 className="font-serif text-3xl text-cream-900 tracking-tight">Watch the AI handle real inbound calls</h2>
-          <p className="text-cream-600 mt-2 text-sm">Recorded scenarios — voice quality and conversation flow you can sell to your team in one minute.</p>
-        </div>
-        <DemoVideoPlayer max={4} />
-        <p className="text-center mt-5">
-          <Link href="/demo" className="text-sm font-semibold text-brand-600 hover:underline">
-            See all demo videos →
-          </Link>
-        </p>
-      </section>
 
       {/* ── Dashboard preview ───────────────────────────── */}
       <section className="bg-white border-y border-cream-200 py-20 px-6">
