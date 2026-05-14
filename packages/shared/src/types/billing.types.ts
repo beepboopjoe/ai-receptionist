@@ -106,7 +106,7 @@ export const PLANS: readonly Plan[] = [
       'Inbound + Outbound calling',
       'Unlimited outbound campaigns',
       'Lead qualification & CRM sync',
-      'Custom voice clone available (+$99/mo)',
+      'Custom voice clone available (+$49/mo)',
       'Priority email support',
     ],
   },
