@@ -4,11 +4,17 @@
 // Uses shared MarketingHeader + MarketingFooter.
 // ============================================================
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { CheckCircle, Phone, Megaphone, ArrowRight, Sparkles } from 'lucide-react';
 import { BRAND_NAME } from '@/lib/brand';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { PLANS } from '@ai-receptionist/shared';
+
+const HomepageVoiceSamples = dynamic(
+  () => import('@/components/ui/homepage-voice-samples').then((m) => m.HomepageVoiceSamples),
+  { ssr: false }
+);
 
 const FAQS = [
   {
@@ -144,25 +150,9 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════
-          WORKS WITH STRIP
+          VOICE SAMPLES
       ══════════════════════════════════════════════════════ */}
-      <section className="bg-white border-y border-cream-200 py-8 px-6">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-center text-xs font-semibold text-cream-500 uppercase tracking-[0.2em] mb-5">
-            Works with
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {['HubSpot', 'Google Calendar', 'Outlook', 'Telnyx', 'Salesforce', 'Clio', 'Follow Up Boss', 'ServiceTitan', 'SendGrid'].map((name) => (
-              <span
-                key={name}
-                className="inline-flex items-center px-4 py-2 rounded-full border border-cream-200 bg-cream-50 text-xs font-semibold text-cream-600 tracking-wide"
-              >
-                {name}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HomepageVoiceSamples />
 
       {/* ══════════════════════════════════════════════════════
           INBOUND + OUTBOUND — TWO PRODUCTS
@@ -431,6 +421,27 @@ export default function LandingPage() {
                 </summary>
                 <p className="px-6 pb-6 text-cream-600 text-sm leading-relaxed">{faq.a}</p>
               </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════
+          WORKS WITH STRIP
+      ══════════════════════════════════════════════════════ */}
+      <section className="bg-white border-y border-cream-200 py-8 px-6">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-center text-xs font-semibold text-cream-500 uppercase tracking-[0.2em] mb-5">
+            Works with
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {['HubSpot', 'Google Calendar', 'Outlook', 'Telnyx', 'Salesforce', 'Clio', 'Follow Up Boss', 'ServiceTitan', 'SendGrid'].map((name) => (
+              <span
+                key={name}
+                className="inline-flex items-center px-4 py-2 rounded-full border border-cream-200 bg-cream-50 text-xs font-semibold text-cream-600 tracking-wide"
+              >
+                {name}
+              </span>
             ))}
           </div>
         </div>
