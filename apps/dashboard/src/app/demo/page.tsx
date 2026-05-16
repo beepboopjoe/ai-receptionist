@@ -20,6 +20,7 @@ import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { VERTICALS, type Vertical } from '@/lib/verticals';
 import { DemoVideoPlayer } from '@/components/ui/demo-video-player';
+import { SampleCallPlayer } from '@/components/ui/sample-call-player';
 
 // Lazy-load — heavy mockup of the dashboard UI shouldn't block paint.
 const DashboardTeaser = dynamic(
@@ -41,6 +42,7 @@ const VERTICAL_FILTERS: { key: 'all' | Vertical; label: string; emoji: string }[
 export default function DemoPage() {
   const [filter, setFilter] = useState<'all' | Vertical>('all');
   const verticalFilter = filter === 'all' ? undefined : filter;
+  const [sampleLang, setSampleLang] = useState<'en' | 'es'>('en');
 
   return (
     <div className="min-h-screen bg-cream-50 text-cream-900">
@@ -107,6 +109,45 @@ export default function DemoPage() {
         <p className="text-center text-xs text-cream-500 mt-6">
           Every video uses the same Aria voice (xAI Grok TTS) — the exact same agent your customers hear.
         </p>
+      </section>
+
+      {/* ── Hear the AI ───────────────────────────────────── */}
+      <section className="max-w-5xl mx-auto px-6 py-16">
+        <div className="text-center mb-8">
+          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Voice samples</p>
+          <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
+            Hear the AI in action.
+          </h2>
+          <p className="text-cream-600 mt-3 max-w-xl mx-auto">
+            Real scripts. Same voice your customers hear. Press play to listen — no account required.
+          </p>
+        </div>
+
+        {/* EN / ES language toggle */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          {([
+            { lang: 'en', flag: '🇺🇸', label: 'English' },
+            { lang: 'es', flag: '🇪🇸', label: 'Español' },
+          ] as const).map(({ lang, flag, label }) => (
+            <button
+              key={lang}
+              onClick={() => setSampleLang(lang)}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 ${
+                sampleLang === lang
+                  ? 'bg-brand-600 text-white shadow-sm'
+                  : 'bg-white border border-cream-200 text-cream-700 hover:bg-cream-100'
+              }`}
+            >
+              {flag} {label}
+            </button>
+          ))}
+        </div>
+
+        <SampleCallPlayer
+          singleLang={sampleLang}
+          {...(verticalFilter ? { vertical: verticalFilter } : {})}
+          callType="inbound"
+        />
       </section>
 
       {/* ── Dashboard preview ─────────────────────────────── */}

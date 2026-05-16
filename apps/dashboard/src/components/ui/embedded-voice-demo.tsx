@@ -6,6 +6,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { getVertical, type Vertical } from '@/lib/verticals';
+import { SAMPLE_CALLS, type SampleCall } from '@/lib/sample-calls';
 
 interface TranscriptEntry {
   role: 'ai' | 'user';
@@ -45,6 +46,53 @@ const VOICES = [
   { id: 'sal', label: 'Sal', description: 'Versatile & neutral' },
   { id: 'leo', label: 'Leo', description: 'Decisive & commanding' },
 ];
+
+// ── Compact mini audio row (for sidebar) ─────────────────────
+function MiniSampleRow({ call }: { call: SampleCall }) {
+  const [playing, setPlaying] = useState(false);
+  const [missing, setMissing] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const toggle = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || missing) return;
+    if (playing) {
+      audio.pause();
+      setPlaying(false);
+    } else {
+      audio.play().then(() => setPlaying(true), () => setMissing(true));
+    }
+  }, [playing, missing]);
+
+  return (
+    <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/5 last:border-0">
+      <audio
+        ref={audioRef}
+        src={`/audio/samples/${call.id}.mp3`}
+        preload="none"
+        onEnded={() => setPlaying(false)}
+        onError={() => setMissing(true)}
+      />
+      <span className="text-base shrink-0">{call.lang === 'en' ? '🇺🇸' : '🇪🇸'}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-white/80 truncate">{call.title}</p>
+        <p className="text-[10px] text-white/30">{call.durationLabel}</p>
+      </div>
+      <button
+        onClick={toggle}
+        disabled={missing}
+        className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors bg-brand-600/20 hover:bg-brand-600/40 text-brand-400 disabled:opacity-30"
+        title={missing ? 'Sample not available' : playing ? 'Pause' : 'Play'}
+      >
+        {playing ? (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        ) : (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        )}
+      </button>
+    </div>
+  );
+}
 
 const API_WS_BASE =
   (process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/api/v1')
@@ -141,6 +189,11 @@ export function EmbeddedVoiceDemo({ vertical: verticalProp = 'dental' }: { verti
 
   const [selectedUseCase, setSelectedUseCase] = useState(useCases[0]?.id ?? 'dental_receptionist');
   const [selectedVoice, setSelectedVoice] = useState('eve');
+
+  // Sidebar voice samples — up to 3 inbound calls for this vertical (EN first, then ES)
+  const verticalSamples = SAMPLE_CALLS
+    .filter(c => c.vertical === verticalProp && c.callType === 'inbound')
+    .slice(0, 3);
 
   // When the parent switches verticals, reset the selected use case to the first
   // one for that vertical so we don't try to use a stale ID across industries.
@@ -379,6 +432,19 @@ export function EmbeddedVoiceDemo({ vertical: verticalProp = 'dental' }: { verti
               </button>
             ))}
           </div>
+
+          {/* Voice sample mini-players */}
+          {verticalSamples.length > 0 && (
+            <div className="rounded-xl border border-white/10 bg-white/5 overflow-hidden font-mono">
+              <div className="px-4 py-2.5 border-b border-white/10 flex items-center justify-between">
+                <p className="text-xs text-white/40 uppercase tracking-widest">Sample Calls</p>
+                <span className="text-[10px] text-white/20">▶ press to hear</span>
+              </div>
+              {verticalSamples.map(sample => (
+                <MiniSampleRow key={sample.id} call={sample} />
+              ))}
+            </div>
+          )}
 
           {/* Signup CTA (desktop) */}
           <div className="hidden lg:block rounded-xl border border-brand-500/30 bg-brand-600/10 p-4 text-center">

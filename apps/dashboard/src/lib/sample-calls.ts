@@ -175,6 +175,88 @@ export const SAMPLE_CALLS: SampleCall[] = [
     ],
   },
 
+  // ── Insurance (Spanish) ───────────────────────────────────
+  {
+    id: 'insurance_es_consulta',
+    title: 'Consulta de Seguro',
+    scenario: 'Cliente solicita cotización — el AI agenda la consulta',
+    lang: 'es',
+    vertical: 'insurance',
+    durationLabel: '~45s',
+    callType: 'inbound',
+    lines: [
+      { role: 'ai',     text: "Hola, habla Aria de Apex Insurance Group. ¿Estoy hablando con Elena García?" },
+      { role: 'caller', text: "Sí, soy yo." },
+      { role: 'ai',     text: "¡Hola Elena! Veo que solicitó una cotización para seguro de auto esta semana. Me gustaría agendar una llamada rápida con uno de nuestros agentes para darle los mejores precios. ¿Tiene disponibilidad mañana por la tarde?" },
+      { role: 'caller', text: "Sí, en la tarde está bien." },
+      { role: 'ai',     text: "Perfecto. La agendo para mañana a las tres de la tarde con el agente Martínez. Le llegará una confirmación por mensaje de texto. ¿Tiene alguna pregunta?" },
+      { role: 'caller', text: "No, muchas gracias." },
+      { role: 'ai',     text: "¡Con gusto, Elena! Hasta mañana." },
+    ],
+  },
+
+  // ── Legal (Spanish) ────────────────────────────────────────
+  {
+    id: 'legal_es_consulta',
+    title: 'Consulta Legal',
+    scenario: 'Nuevo cliente llama para asesoría — el AI califica y agenda',
+    lang: 'es',
+    vertical: 'legal',
+    durationLabel: '~50s',
+    callType: 'inbound',
+    lines: [
+      { role: 'ai',     text: "Gracias por llamar a Smith y Asociados. Soy Aria, la asistente de IA. ¿En qué le puedo ayudar hoy?" },
+      { role: 'caller', text: "Hola, tuve un accidente de auto y quisiera hablar con un abogado." },
+      { role: 'ai',     text: "Lo siento mucho. Nuestros abogados se especializan en accidentes de tráfico y podemos agendar una consulta gratuita. ¿Resultó usted lesionado en el accidente?" },
+      { role: 'caller', text: "Sí, me lastimé el cuello. El otro conductor se pasó la luz roja." },
+      { role: 'ai',     text: "Entiendo, eso suena como un caso que nuestro equipo querría revisar. ¿Puedo tomar su nombre para agendar la consulta?" },
+      { role: 'caller', text: "Soy Roberto Sánchez." },
+      { role: 'ai',     text: "Gracias Roberto. Tengo disponible mañana a las diez de la mañana o a las dos de la tarde. ¿Cuál le funciona mejor?" },
+      { role: 'caller', text: "Las diez está bien." },
+      { role: 'ai',     text: "¡Perfecto! Lo agendo para mañana a las diez. Recibirá un mensaje de confirmación pronto. ¡Hasta mañana, Roberto!" },
+    ],
+  },
+
+  // ── Home Services (Spanish) ──────────────────────────────────
+  {
+    id: 'home_services_es_servicio',
+    title: 'Solicitud de Servicio',
+    scenario: 'Propietario llama por reparación de AC — el AI agenda',
+    lang: 'es',
+    vertical: 'home_services',
+    durationLabel: '~40s',
+    callType: 'inbound',
+    lines: [
+      { role: 'ai',     text: "¡Gracias por llamar a ProFix! Soy Aria. ¿En qué le puedo ayudar hoy?" },
+      { role: 'caller', text: "Mi aire acondicionado no está funcionando y hace mucho calor." },
+      { role: 'ai',     text: "Entiendo, eso es urgente. Puedo enviarle un técnico hoy mismo. ¿Es una casa o apartamento? ¿Y está disponible esta tarde?" },
+      { role: 'caller', text: "Es casa, y sí, puedo estar en la tarde." },
+      { role: 'ai',     text: "Tengo un técnico disponible hoy entre las tres y las cinco de la tarde. ¿Le funciona ese horario?" },
+      { role: 'caller', text: "Sí, perfecto." },
+      { role: 'ai',     text: "¡Listo! Lo agendé para hoy de tres a cinco. Le avisaremos por mensaje cuando el técnico esté en camino. ¡Que pase buen día!" },
+    ],
+  },
+
+  // ── Real Estate (Spanish) ────────────────────────────────────
+  {
+    id: 'real_estate_es_visita',
+    title: 'Solicitud de Visita',
+    scenario: 'Comprador pide ver una propiedad — el AI agenda al instante',
+    lang: 'es',
+    vertical: 'real_estate',
+    durationLabel: '~40s',
+    callType: 'inbound',
+    lines: [
+      { role: 'ai',     text: "Hola, habla Aria de Horizon Realty. Vi que se interesó en la propiedad de la Calle Maple 42. ¿Sigue disponible para agendar una visita?" },
+      { role: 'caller', text: "Sí, quiero verla. ¿Todavía está disponible?" },
+      { role: 'ai',     text: "¡Claro que sí! La propiedad sigue activa. Tengo disponibilidad este sábado por la tarde con la agente Kim. ¿Le funciona a las dos?" },
+      { role: 'caller', text: "Sí, el sábado a las dos está perfecto." },
+      { role: 'ai',     text: "¡Confirmado! Lo agendo para el sábado a las dos de la tarde en Calle Maple 42. La agente Kim lo estará esperando. Le enviaré la confirmación en un momento." },
+      { role: 'caller', text: "Muchas gracias." },
+      { role: 'ai',     text: "¡Con gusto! Nos vemos el sábado." },
+    ],
+  },
+
   // ── Outbound — Inactive Contact Reactivation ──────────────
   {
     id: 'outbound_en_reactivation',

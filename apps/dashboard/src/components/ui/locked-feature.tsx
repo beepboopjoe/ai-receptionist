@@ -16,7 +16,7 @@ import { UpgradeModal } from './upgrade-modal';
 import type { UpgradeReason } from './upgrade-modal';
 
 interface LockedFeatureProps {
-  requiredPlan: 'growth' | 'pro';
+  requiredPlan: 'growth' | 'pro' | 'scale';
   reason: UpgradeReason;
   /** Optional override for the lock overlay label */
   label?: string;
