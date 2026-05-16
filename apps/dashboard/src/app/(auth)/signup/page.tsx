@@ -30,9 +30,9 @@ interface PlanInfo {
 }
 
 const PLANS: Record<AiUseCase, PlanInfo> = {
-  inbound:  { name: 'Starter', price: '$199/mo' },
-  outbound: { name: 'Growth',  price: '$399/mo' },
-  both:     { name: 'Growth',  price: '$399/mo' },
+  inbound:  { name: 'Starter', price: '$79/mo' },
+  outbound: { name: 'Growth',  price: '$179/mo' },
+  both:     { name: 'Growth',  price: '$179/mo' },
 };
 
 const USE_CASE_OPTIONS: { value: AiUseCase; label: string; description: string; icon: string; recommended?: boolean }[] = [

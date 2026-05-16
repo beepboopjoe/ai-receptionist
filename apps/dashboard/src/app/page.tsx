@@ -10,6 +10,7 @@ import { BRAND_NAME } from '@/lib/brand';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
+import { PLANS } from '@ai-receptionist/shared';
 
 const DashboardTeaser = dynamic(
   () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
@@ -101,32 +102,15 @@ const INDUSTRIES = [
   },
 ];
 
-const PLANS_PREVIEW = [
-  {
-    name: 'Starter',
-    price: '$199',
-    tagline: 'Never miss a call again',
-    features: ['1,000 AI minutes / mo', '1 phone number', 'Inbound calls + booking', 'Call transcripts & recordings'],
-    cta: 'Start with Starter',
-    popular: false,
-  },
-  {
-    name: 'Growth',
-    price: '$399',
-    tagline: 'Turn calls into customers',
-    features: ['3,000 AI minutes / mo', '2 phone numbers', 'Inbound & outbound', 'CRM sync & analytics'],
-    cta: 'Start with Growth',
-    popular: true,
-  },
-  {
-    name: 'Pro',
-    price: '$799',
-    tagline: 'Full automation system',
-    features: ['8,000 AI minutes / mo', '5 phone numbers', 'Multi-location (5 sites)', 'Dedicated account manager'],
-    cta: 'Start with Pro',
-    popular: false,
-  },
-];
+// Derived from shared catalog — single source of truth.
+const PLANS_PREVIEW = PLANS.filter((p) => ['starter', 'growth', 'scale'].includes(p.key)).map((p) => ({
+  name: p.name,
+  price: `$${p.monthlyPrice}`,
+  tagline: p.tagline,
+  features: p.features.slice(0, 4),
+  cta: `Start with ${p.name}`,
+  popular: !!p.popular,
+}));
 
 // ─────────────────────────────────────────────────────────────
 // Page

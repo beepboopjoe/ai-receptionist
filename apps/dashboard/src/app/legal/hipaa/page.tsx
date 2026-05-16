@@ -41,7 +41,7 @@ export default function HipaaPage() {
           </p>
 
           <h2 className="font-serif text-xl text-cream-900 mt-8 mb-3">Business Associate Agreement</h2>
-          <p className="leading-relaxed">We provide a signed BAA to all customers on Growth and Pro plans. The BAA outlines our obligations to protect PHI and the permitted uses of PHI in delivering our services.</p>
+          <p className="leading-relaxed">We provide a signed BAA to all customers on Growth and Scale plans. The BAA outlines our obligations to protect PHI and the permitted uses of PHI in delivering our services.</p>
 
           <h2 className="font-serif text-xl text-cream-900 mt-8 mb-3">Technical Safeguards</h2>
           <ul className="list-disc list-inside space-y-2 text-sm leading-relaxed">

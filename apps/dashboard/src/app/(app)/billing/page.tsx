@@ -10,7 +10,7 @@ import { PLANS as SHARED_PLANS, type BillingCycle } from '@ai-receptionist/share
 // Local view-model overlay for the badge color + the legacy "trial" tier
 // (Stripe doesn't sell a trial — it's the pre-checkout state).
 const PLAN_DISPLAY: Record<string, { label: string; color: string; price: number; minutes: number; overagePerMin: number }> = {
-  trial: { label: 'Trial', color: 'gray', price: 0, minutes: 200, overagePerMin: 0.20 },
+  trial: { label: 'Trial', color: 'gray', price: 0, minutes: 10, overagePerMin: 0 },
   ...Object.fromEntries(
     SHARED_PLANS.map((p) => [
       p.key,

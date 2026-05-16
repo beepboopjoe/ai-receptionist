@@ -118,7 +118,7 @@ export default function OutboundPage() {
             </Link>
           </div>
           <p className="text-xs text-cream-500 mt-5">
-            Included on Growth and Pro plans · 14-day free trial · No contracts
+            Included on Growth and Scale plans · 14-day free trial · No contracts
           </p>
         </div>
       </section>
@@ -262,7 +262,7 @@ export default function OutboundPage() {
             Outbound is included on Growth.
           </h2>
           <p className="text-cream-300 mt-4 max-w-xl mx-auto">
-            Growth ($399/mo) covers inbound and outbound on one number. Pro ($799/mo) adds multi-location, advanced analytics, and a dedicated success manager.
+            Growth ($179/mo) covers inbound and outbound on one number. Scale ($399/mo) adds multi-location, advanced analytics, and a dedicated success manager.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link

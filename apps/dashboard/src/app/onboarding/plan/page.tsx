@@ -44,8 +44,8 @@ const USE_CASES: UseCase[] = [
       'AI handles inbound calls, books appointments, and escalates urgencies to your team.',
     icon: Phone,
     recommendedPlan: 'Starter Plan',
-    recommendedPrice: '$199/mo',
-    perks: ['1,000 AI minutes included', 'Inbound calls only', '1 phone number'],
+    recommendedPrice: '$79/mo',
+    perks: ['200 AI minutes included', 'Inbound calls + booking', '1 phone number'],
   },
   {
     key: 'outbound',
@@ -54,8 +54,8 @@ const USE_CASES: UseCase[] = [
       'AI dials outbound campaigns, qualifies prospects, and books appointments automatically.',
     icon: MegaphoneIcon,
     recommendedPlan: 'Growth Plan',
-    recommendedPrice: '$399/mo',
-    perks: ['3,000 AI minutes included', 'Outbound campaigns included', '2 phone numbers'],
+    recommendedPrice: '$179/mo',
+    perks: ['600 AI minutes included', 'Outbound campaigns included', '1 phone number'],
   },
   {
     key: 'both',
@@ -65,18 +65,18 @@ const USE_CASES: UseCase[] = [
     icon: Zap,
     badge: 'Most Popular',
     recommendedPlan: 'Growth Plan',
-    recommendedPrice: '$399/mo',
-    perks: ['3,000 AI minutes included', 'Outbound campaigns included', '2 phone numbers'],
+    recommendedPrice: '$179/mo',
+    perks: ['600 AI minutes included', 'Outbound campaigns included', '1 phone number'],
   },
   {
     key: 'multi_location',
     title: 'Multiple Locations',
     description:
-      'AI reception across up to 5 locations — each with its own phone number and AI configuration.',
+      'AI reception across multiple locations — each with its own phone number and AI configuration.',
     icon: Building2,
-    recommendedPlan: 'Pro Plan',
-    recommendedPrice: '$799/mo',
-    perks: ['8,000 AI minutes included', 'Up to 5 locations', 'Outbound campaigns included'],
+    recommendedPlan: 'Scale Plan',
+    recommendedPrice: '$399/mo',
+    perks: ['2,000 AI minutes included', '2 phone numbers included', 'Outbound campaigns included'],
   },
 ];
 

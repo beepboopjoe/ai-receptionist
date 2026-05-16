@@ -67,14 +67,16 @@ const PLAN_LABELS: Record<string, string> = {
   trial: 'Trial',
   starter: 'Starter',
   growth: 'Growth',
-  pro: 'Pro',
+  scale: 'Scale',
+  enterprise: 'Enterprise',
 };
 
 const PLAN_COLORS: Record<string, string> = {
   trial: 'bg-gray-100 text-gray-600',
   starter: 'bg-blue-50 text-blue-700',
   growth: 'bg-brand-50 text-brand-700',
-  pro: 'bg-purple-50 text-purple-700',
+  scale: 'bg-purple-50 text-purple-700',
+  enterprise: 'bg-amber-50 text-amber-700',
 };
 
 export function Sidebar() {
@@ -216,7 +218,7 @@ export function Sidebar() {
                 type="button"
                 onClick={() => setUpgradeReason(reason)}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-50 w-full text-left transition-colors"
-                title={`${label} — requires Pro plan`}
+                title={`${label} — requires Scale plan`}
               >
                 <Icon size={18} className="opacity-50" />
                 <span className="flex-1">{label}</span>

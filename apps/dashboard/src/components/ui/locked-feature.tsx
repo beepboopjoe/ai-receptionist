@@ -30,7 +30,7 @@ export function LockedFeature({
   children,
 }: LockedFeatureProps) {
   const [open, setOpen] = useState(false);
-  const planLabel = requiredPlan === 'pro' ? 'Pro' : 'Growth';
+  const planLabel = requiredPlan === 'scale' ? 'Scale' : requiredPlan === 'pro' ? 'Scale' : 'Growth';
 
   return (
     <>

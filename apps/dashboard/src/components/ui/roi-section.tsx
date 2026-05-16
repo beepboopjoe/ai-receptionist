@@ -7,9 +7,9 @@ import { useState, useMemo } from 'react';
 
 // ── Plan options for the calculator ─────────────────────────
 const PLAN_OPTIONS = [
-  { key: 'starter', label: 'Starter',    price: 199 },
-  { key: 'growth',  label: 'Growth',     price: 399 },
-  { key: 'pro',     label: 'Pro',        price: 799 },
+  { key: 'starter', label: 'Starter', price: 79 },
+  { key: 'growth',  label: 'Growth',  price: 179 },
+  { key: 'scale',   label: 'Scale',   price: 399 },
 ];
 
 // ── After-hours benefits ─────────────────────────────────────
@@ -228,7 +228,7 @@ export function RoiSection() {
             A full-time receptionist costs<br />
             <span className="text-red-400 line-through decoration-2 opacity-70">$3,800–$4,800/mo</span>
             <span className="text-gray-600"> &nbsp;&nbsp;</span>
-            <span className="gradient-text">We start at $199.</span>
+            <span className="gradient-text">We start at $79.</span>
           </h2>
           <p className="text-gray-500 text-lg max-w-2xl mx-auto leading-relaxed">
             And the AI works nights, weekends, and holidays — without overtime, sick days, or benefits.
@@ -302,8 +302,8 @@ export function RoiSection() {
               </div>
 
               <div className="flex items-end gap-2">
-                <span className="text-5xl font-black text-white">$199</span>
-                <span className="text-gray-500 mb-1.5 text-sm">– $799<span className="text-gray-600">/mo</span></span>
+                <span className="text-5xl font-black text-white">$79</span>
+                <span className="text-gray-500 mb-1.5 text-sm">– $399<span className="text-gray-600">/mo</span></span>
               </div>
               <p className="text-xs text-gray-600 mt-1">Flat monthly rate — no surprises, no overhead</p>
             </div>
