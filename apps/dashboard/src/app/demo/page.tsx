@@ -1,25 +1,16 @@
 // ============================================================
 // /demo — Public marketing demo page. Cream theme to match
-// /inbound and /outbound. Shows pre-recorded video demos of the
-// AI handling calls across all 6 verticals + a DashboardTeaser
-// so visitors see exactly what they'll get inside.
-//
-// Note: the previous version of this page streamed live audio
-// to xAI's Realtime WS. We swapped to video per product
-// decision — video plays instantly, doesn't burn xAI minutes
-// per page-view, and converts better than a live-but-finicky
-// browser-mic flow.
+// /inbound and /outbound. Shows scripted audio samples across
+// all 6 verticals in EN + ES, plus a DashboardTeaser.
 // ============================================================
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Phone, Sparkles, ShieldCheck } from 'lucide-react';
-import { BRAND_NAME } from '@/lib/brand';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { VERTICALS, type Vertical } from '@/lib/verticals';
-import { DemoVideoPlayer } from '@/components/ui/demo-video-player';
 import { SampleCallPlayer } from '@/components/ui/sample-call-player';
 
 // Lazy-load — heavy mockup of the dashboard UI shouldn't block paint.
@@ -56,13 +47,13 @@ export default function DemoPage() {
             See it before you sign up
           </div>
           <h1 className="font-serif text-5xl md:text-7xl text-cream-900 tracking-tight leading-[1.05]">
-            Watch the AI handle
+            Hear the AI handle
             <br />
             <span className="gradient-text">real calls, one ring at a time.</span>
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
-            Pre-recorded scenarios from real customers. Pick your industry, hear the voice quality,
-            and see the natural conversation flow. No sign-up required.
+            Scripted scenarios across six industries — in English and Spanish. Press play,
+            hear the voice quality, and see the conversation unfold. No sign-up required.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -101,14 +92,6 @@ export default function DemoPage() {
             );
           })}
         </div>
-      </section>
-
-      {/* ── Video grid ────────────────────────────────────── */}
-      <section className="max-w-5xl mx-auto px-6 pb-16">
-        <DemoVideoPlayer vertical={verticalFilter} max={4} />
-        <p className="text-center text-xs text-cream-500 mt-6">
-          Every video uses the same Aria voice (xAI Grok TTS) — the exact same agent your customers hear.
-        </p>
       </section>
 
       {/* ── Hear the AI ───────────────────────────────────── */}
