@@ -49,7 +49,7 @@ function hashResetToken(raw: string): string {
 
 // Plan tier config
 const PLAN_TIERS: Record<string, { minutesIncluded: number; price: number; outbound: boolean; overagePerMin: number }> = {
-  trial:      { minutesIncluded: 200,   price: 0,    outbound: false, overagePerMin: 0.14 },
+  trial:      { minutesIncluded: 10,    price: 0,    outbound: false, overagePerMin: 0 },
   starter:    { minutesIncluded: 1000,  price: 199,  outbound: false, overagePerMin: 0.14 },
   growth:     { minutesIncluded: 3000,  price: 399,  outbound: true,  overagePerMin: 0.13 },
   pro:        { minutesIncluded: 8000,  price: 799,  outbound: true,  overagePerMin: 0.12 },
