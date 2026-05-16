@@ -312,9 +312,9 @@ export async function adminPlugin(app: FastifyInstance) {
       });
 
       const resetUrl = `${config.DASHBOARD_URL}/reset-password/${rawToken}`;
-      // In development, log the URL; in production, send via SendGrid
+      // In development, log the URL; in production, send via Resend
       app.log.info({ resetUrl, userId: user.id }, 'Password reset link generated');
-      // TODO: send via SendGrid when SENDGRID_API_KEY is configured
+      // TODO: send via Resend when RESEND_API_KEY is configured
     }
 
     return reply.status(204).send();

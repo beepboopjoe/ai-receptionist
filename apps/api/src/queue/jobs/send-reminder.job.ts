@@ -3,7 +3,7 @@
 // ============================================================
 import type { Job } from 'bullmq';
 import { sendSms } from '../../modules/notifications/adapters/telnyx-sms.adapter.js';
-import { sendEmail } from '../../modules/notifications/adapters/sendgrid-email.adapter.js';
+import { sendEmail } from '../../modules/notifications/adapters/email.adapter.js';
 import {
   markNotificationSent,
   markNotificationFailed,

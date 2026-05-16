@@ -3,18 +3,18 @@
 // the tenant has notificationPreferences.emailOnEveryCall enabled.
 //
 // Fire-and-forget; never throws. Email failures shouldn't affect
-// the call's orchestration. SendGrid is the transport.
+// the call's orchestration. Resend is the transport.
 // ============================================================
 import { db } from '../../db/client.js';
 import { calls, tenantSettings, tenants, adminUsers, contacts } from '../../db/schema.js';
 import { and, eq } from 'drizzle-orm';
-import { sendEmail } from './adapters/sendgrid-email.adapter.js';
+import { sendEmail } from './adapters/email.adapter.js';
 import { config } from '../../config.js';
 
 /** Best-effort: send the call-summary email if the tenant opted in. */
 export async function sendCallSummaryEmail(callId: string): Promise<void> {
   try {
-    if (!config.SENDGRID_API_KEY) return;
+    if (!config.RESEND_API_KEY) return;
 
     const [row] = await db
       .select({

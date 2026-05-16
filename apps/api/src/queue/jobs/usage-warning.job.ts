@@ -10,7 +10,7 @@ import { db } from '../../db/client.js';
 import { tenants, adminUsers, minuteUsage } from '../../db/schema.js';
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { getPlan } from '@ai-receptionist/shared';
-import { sendEmail } from '../../modules/notifications/adapters/sendgrid-email.adapter.js';
+import { sendEmail } from '../../modules/notifications/adapters/email.adapter.js';
 import { config } from '../../config.js';
 
 const WARNING_THRESHOLD = 0.80;
@@ -46,8 +46,8 @@ export async function runUsageWarningSweep(): Promise<{ checked: number; sent: n
       .limit(1);
     if (!owner) continue;
 
-    if (!config.SENDGRID_API_KEY) {
-      console.warn(`[usage-warning] SENDGRID_API_KEY unset — skipping ${row.tenantId}`);
+    if (!config.RESEND_API_KEY) {
+      console.warn(`[usage-warning] RESEND_API_KEY unset — skipping ${row.tenantId}`);
       continue;
     }
 

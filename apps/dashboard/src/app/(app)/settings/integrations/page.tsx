@@ -12,7 +12,7 @@ const PROVIDERS = [
   { id: 'ringcentral', label: 'RingCentral', description: 'Enterprise phone integration', icon: '🔔' },
   { id: 'google_calendar', label: 'Google Calendar', description: 'Appointment scheduling', icon: '📅' },
   { id: 'microsoft_calendar', label: 'Microsoft 365', description: 'Outlook calendar integration', icon: '📆' },
-  { id: 'sendgrid', label: 'SendGrid', description: 'Email notifications', icon: '✉️' },
+  { id: 'resend', label: 'Resend', description: 'Email notifications', icon: '✉️' },
 ];
 
 interface CrmProvider {

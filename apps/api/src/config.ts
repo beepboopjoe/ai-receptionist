@@ -67,10 +67,10 @@ const envSchema = z.object({
   /** Messaging Profile ID from the Telnyx portal — optional, for compliance routing */
   TELNYX_MESSAGING_PROFILE_ID: z.string().default(''),
 
-  // SendGrid
-  SENDGRID_API_KEY: z.string().default(''),
-  SENDGRID_FROM_EMAIL: z.string().email().default('noreply@example.com'),
-  SENDGRID_FROM_NAME: z.string().default('AI Receptionist'),
+  // Resend (transactional email)
+  RESEND_API_KEY: z.string().default(''),
+  RESEND_FROM_EMAIL: z.string().default('noreply@example.com'),
+  RESEND_FROM_NAME: z.string().default('AI Receptionist'),
 
   // Stripe billing — optional. Webhook + checkout endpoints respond
   // 503 with setup instructions when STRIPE_SECRET_KEY is unset.
