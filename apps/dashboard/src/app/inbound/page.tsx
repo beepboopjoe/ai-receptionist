@@ -16,10 +16,6 @@ const SampleCallPlayer = dynamic(
   () => import('@/components/ui/sample-call-player').then((m) => m.SampleCallPlayer),
   { ssr: false }
 );
-const DashboardTeaser = dynamic(
-  () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
-  { ssr: false }
-);
 
 export const metadata = {
   title: 'AI Receptionist — answer every call, 24/7',
@@ -242,22 +238,6 @@ export default function InboundPage() {
         </div>
       </section>
 
-
-      {/* ── Dashboard preview ───────────────────────────── */}
-      <section className="bg-white border-y border-cream-200 py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">What you get inside</p>
-            <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
-              Every inbound call. One dashboard.
-            </h2>
-            <p className="text-cream-600 mt-3 max-w-xl mx-auto">
-              Recording, transcript, caller info, outcome — all in one place. Push to your CRM via webhook or email.
-            </p>
-          </div>
-          <DashboardTeaser />
-        </div>
-      </section>
 
       {/* ── Audio Samples (secondary fallback) ─────────── */}
       <section className="max-w-4xl mx-auto px-6 pb-12 pt-12">
