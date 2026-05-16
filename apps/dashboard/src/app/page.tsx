@@ -4,31 +4,11 @@
 // Uses shared MarketingHeader + MarketingFooter.
 // ============================================================
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { CheckCircle, Phone, Megaphone, ArrowRight, Sparkles } from 'lucide-react';
 import { BRAND_NAME } from '@/lib/brand';
-import { Skeleton } from '@/components/ui/skeleton';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { PLANS } from '@ai-receptionist/shared';
-
-const DashboardTeaser = dynamic(
-  () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
-  {
-    ssr: false,
-    loading: () => <Skeleton width="w-full" height="h-[480px]" rounded="lg" />,
-  }
-);
-
-// ─────────────────────────────────────────────────────────────
-// Static data
-// ─────────────────────────────────────────────────────────────
-const STATS = [
-  { value: '500+', label: 'Businesses live',            emoji: '🏢' },
-  { value: '89%',  label: 'Calls handled by AI',        emoji: '🤖' },
-  { value: '0',    label: 'Missed calls reported',      emoji: '✅' },
-  { value: '35h',  label: 'Staff hours saved / week',   emoji: '⏱️' },
-];
 
 const FAQS = [
   {
@@ -185,22 +165,6 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════
-          STATS BAR
-      ══════════════════════════════════════════════════════ */}
-      <section className="bg-cream-100 border-b border-cream-200 py-10 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {STATS.map((s) => (
-              <div key={s.label} className="text-center">
-                <div className="text-3xl font-black text-cream-900 mb-1">{s.value}</div>
-                <div className="text-sm text-cream-600">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════
           INBOUND + OUTBOUND — TWO PRODUCTS
       ══════════════════════════════════════════════════════ */}
       <section className="py-24 px-6 bg-cream-50">
@@ -330,24 +294,6 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════
-          DASHBOARD TEASER
-      ══════════════════════════════════════════════════════ */}
-      <section className="py-16 px-6 bg-cream-50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">What you get inside</p>
-            <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
-              Every call. One dashboard.
-            </h2>
-            <p className="text-cream-600 mt-3 max-w-xl mx-auto">
-              Recording, transcript, caller info, outcome — all in one place. Push to your CRM via webhook.
-            </p>
-          </div>
-          <DashboardTeaser />
         </div>
       </section>
 
