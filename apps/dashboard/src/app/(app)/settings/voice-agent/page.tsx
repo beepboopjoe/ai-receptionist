@@ -9,7 +9,101 @@ import { useToast } from '@/components/ui/toast';
 const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/api/v1';
 
 // xAI Voice Agent voices (current spec: lowercase, eve is the recommended default)
-const GROK_VOICES = ['eve', 'ara', 'rex', 'sal', 'leo'];
+const GROK_VOICES = [
+  { id: 'eve', label: 'Eve', description: 'Engaging & enthusiastic', isDefault: true },
+  { id: 'ara', label: 'Ara', description: 'Balanced & conversational', isDefault: false },
+  { id: 'rex', label: 'Rex', description: 'Professional & articulate', isDefault: false },
+  { id: 'sal', label: 'Sal', description: 'Versatile & neutral',       isDefault: false },
+  { id: 'leo', label: 'Leo', description: 'Decisive & commanding',     isDefault: false },
+];
+
+// ---- Voice preview card ----
+function VoiceCard({
+  voice,
+  selected,
+  onSelect,
+}: {
+  voice: typeof GROK_VOICES[0];
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const [playing, setPlaying] = useState(false);
+  const [missing, setMissing] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  function togglePlay(e: React.MouseEvent) {
+    e.stopPropagation(); // don't also trigger card selection
+    const audio = audioRef.current;
+    if (!audio || missing) return;
+    if (playing) {
+      audio.pause();
+      setPlaying(false);
+    } else {
+      audio.play().then(() => setPlaying(true), () => setMissing(true));
+    }
+  }
+
+  return (
+    <div
+      onClick={onSelect}
+      className={`flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition-colors ${
+        selected
+          ? 'border-brand-400 bg-brand-50'
+          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+      }`}
+    >
+      <audio
+        ref={audioRef}
+        src={`/audio/voices/${voice.id}-preview.mp3`}
+        preload="none"
+        onEnded={() => setPlaying(false)}
+        onError={() => setMissing(true)}
+      />
+      {/* Radio dot */}
+      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+        selected ? 'border-brand-600' : 'border-gray-300'
+      }`}>
+        {selected && <div className="w-2 h-2 rounded-full bg-brand-600" />}
+      </div>
+      {/* Voice info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-gray-900">{voice.label}</span>
+          {voice.isDefault && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-700 font-semibold">
+              Default
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-gray-500">{voice.description}</p>
+      </div>
+      {/* Play preview button */}
+      <button
+        type="button"
+        onClick={togglePlay}
+        disabled={missing}
+        title={missing ? 'Preview not available' : playing ? 'Pause preview' : 'Play preview'}
+        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+          missing
+            ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+            : playing
+              ? 'bg-brand-600 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-brand-100 hover:text-brand-600'
+        }`}
+      >
+        {playing ? (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+          </svg>
+        ) : (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        )}
+      </button>
+    </div>
+  );
+}
 
 // ---- Voice clone status badge ----
 type CloneStatus = 'none' | 'uploading' | 'ready' | 'failed';
@@ -376,35 +470,39 @@ export default function VoiceAgentPage() {
             onChange={(e) => setVoiceProvider(e.target.value)}
             className="input"
           >
-            <option value="grok">Standard AI Voice — $0.05/min — Recommended</option>
+            <option value="grok">Standard AI Voice — Recommended</option>
             <option value="elevenlabs">ElevenLabs — supports custom voice clone</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Voice Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Voice</label>
           {voiceProvider === 'grok' ? (
-            <select
-              value={voiceName}
-              onChange={(e) => setVoiceName(e.target.value)}
-              className="input"
-            >
+            <div className="space-y-2">
               {GROK_VOICES.map((v) => (
-                <option key={v} value={v}>{v}</option>
+                <VoiceCard
+                  key={v.id}
+                  voice={v}
+                  selected={voiceName === v.id}
+                  onSelect={() => setVoiceName(v.id)}
+                />
               ))}
-            </select>
+              <p className="text-xs text-gray-400 mt-1">
+                Click ▶ on any voice to hear a short preview before choosing.
+              </p>
+            </div>
           ) : (
-            <input
-              value={voiceName}
-              onChange={(e) => setVoiceName(e.target.value)}
-              placeholder="ElevenLabs voice name or ID"
-              className="input"
-            />
-          )}
-          {voiceProvider === 'elevenlabs' && (
-            <p className="text-xs text-gray-400 mt-1">
-              Leave blank to use your custom voice clone (if active), or enter an ElevenLabs voice ID.
-            </p>
+            <>
+              <input
+                value={voiceName}
+                onChange={(e) => setVoiceName(e.target.value)}
+                placeholder="ElevenLabs voice name or ID"
+                className="input"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Leave blank to use your custom voice clone (if active), or enter an ElevenLabs voice ID.
+              </p>
+            </>
           )}
         </div>
 
