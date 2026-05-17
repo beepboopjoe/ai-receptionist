@@ -11,6 +11,9 @@ export default function Step1PhonePage() {
   const router = useRouter();
   const { plan } = usePlan();
   const isTrial = plan === 'trial';
+  // Starter is BYO by default — no auto-provision, customer forwards an
+  // existing line or buys a dedicated number from Settings → Phone Numbers.
+  const isStarter = plan === 'starter';
 
   const [areaCode, setAreaCode] = useState('');
   const [provisioned, setProvisioned] = useState<{ phoneNumber: string } | null>(null);
@@ -18,6 +21,7 @@ export default function Step1PhonePage() {
   const [error, setError] = useState('');
   const [option, setOption] = useState<'twilio' | 'ringcentral' | null>(null);
   const [trialStepDone, setTrialStepDone] = useState(false);
+  const [starterStepDone, setStarterStepDone] = useState(false);
 
   // Auto-complete step 1 for trial users — they don't need to provision a number
   useEffect(() => {
@@ -26,6 +30,14 @@ export default function Step1PhonePage() {
       void onboardingApi.completeStep(1);
     }
   }, [isTrial, option, trialStepDone]);
+
+  // Auto-complete step 1 for Starter once they confirm the BYO path
+  useEffect(() => {
+    if (isStarter && option === 'twilio' && !starterStepDone) {
+      setStarterStepDone(true);
+      void onboardingApi.completeStep(1);
+    }
+  }, [isStarter, option, starterStepDone]);
 
   async function handleProvision() {
     setLoading(true);
@@ -86,6 +98,24 @@ export default function Step1PhonePage() {
                   When you subscribe to a paid plan, you&apos;ll get your own dedicated local number.
                 </p>
                 <p className="text-xs text-brand-500">✓ No setup required · ✓ Upgrade anytime for a dedicated number</p>
+              </div>
+            ) : isStarter ? (
+              /* ── Starter: BYO number — no provisioning, forward existing line ── */
+              <div className="rounded-xl bg-brand-50 border border-brand-200 px-5 py-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Info size={16} className="text-brand-600 shrink-0" />
+                  <p className="text-sm font-semibold text-brand-900">Bring your own number</p>
+                </div>
+                <p className="text-sm text-brand-700">
+                  Starter plans don&apos;t include a dedicated line. Forward your existing business number
+                  to the AI, or port your number to us for free.
+                </p>
+                <ul className="text-sm text-brand-700 list-disc list-inside space-y-1">
+                  <li>Set call forwarding on your current carrier to the AI line</li>
+                  <li>Or port your number free in <a className="underline" href="/settings/phone-numbers">Settings → Phone Numbers</a></li>
+                  <li>Need a fresh line? Add one for $5/mo any time</li>
+                </ul>
+                <p className="text-xs text-brand-500">✓ Works with any phone system · ✓ Add a dedicated line whenever you want</p>
               </div>
             ) : !provisioned ? (
               <>
@@ -157,7 +187,7 @@ export default function Step1PhonePage() {
       </div>
 
       {/* Next — shown once user has made a valid selection */}
-      {(provisioned || (isTrial && option === 'twilio') || option === 'ringcentral') && (
+      {(provisioned || (isTrial && option === 'twilio') || (isStarter && option === 'twilio') || option === 'ringcentral') && (
         <button
           onClick={() => router.push('/onboarding/step-2-calendar')}
           className="btn-primary w-full justify-center"

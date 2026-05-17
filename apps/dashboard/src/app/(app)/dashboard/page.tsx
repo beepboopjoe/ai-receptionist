@@ -1,8 +1,8 @@
 'use client';
 import useSWR from 'swr';
 import Link from 'next/link';
-import { callsApi, appointmentsApi, escalationsApi, campaignsApi } from '@/lib/api';
-import { Phone, Calendar, AlertCircle, PhoneMissed, Wifi, WifiOff, Megaphone, Zap, TrendingUp } from 'lucide-react';
+import { callsApi, appointmentsApi, escalationsApi, campaignsApi, smsApi } from '@/lib/api';
+import { Phone, Calendar, AlertCircle, PhoneMissed, Wifi, WifiOff, Megaphone, MessageSquare, Zap, TrendingUp } from 'lucide-react';
 import { useActivityFeed, type ActivityEvent } from '@/lib/useActivityFeed';
 import { usePlan } from '@/lib/usePlan';
 import { useFeatureFlags } from '@/lib/featureFlags';
@@ -94,6 +94,12 @@ export default function DashboardPage() {
   const { isHighUsage, usagePercent, minutesUsed, minutesIncluded } = usePlan();
   const { has } = useFeatureFlags();
   const outboundEnabled = has('outbound_campaigns');
+  const smsEnabled = has('two_way_sms');
+  const { data: smsConvs } = useSWR(
+    smsEnabled ? 'sms-conversations' : null,
+    () => smsApi.listConversations(),
+    { refreshInterval: 30000 }
+  );
   const vertical = useVertical();
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const eventLabels = buildEventLabels(vertical.appointmentNoun);
@@ -107,6 +113,10 @@ export default function DashboardPage() {
   const activeCampaigns = ((campaigns as any)?.data ?? []).filter(
     (c: any) => c.status === 'running'
   ).length;
+  const unreadMessages = ((smsConvs as any)?.data ?? []).reduce(
+    (sum: number, c: any) => sum + (c.inboundCount ?? 0),
+    0
+  );
 
   const recentCalls = ((calls as any)?.data ?? []).filter(Boolean).slice(0, 8);
   const recentCampaigns = ((campaigns as any)?.data ?? []).slice(0, 5);
@@ -146,14 +156,25 @@ export default function DashboardPage() {
       )}
 
       {/* ── Stats grid ── */}
-      <div className="grid grid-cols-2 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-7 gap-4">
         <StatCard label="Total Calls" value={totalCalls} icon={Phone} color="bg-brand-600" />
         <StatCard label={`Upcoming ${cap(vertical.appointmentNounPlural)}`} value={upcomingAppts} icon={Calendar} color="bg-emerald-500" />
         <StatCard label="Open Escalations" value={openEscalations} icon={AlertCircle} color="bg-amber-500" />
         <StatCard label="Missed Calls" value={missedCount} icon={PhoneMissed} color="bg-red-500" />
         <StatCard label="Recall Rate" value="68%" icon={TrendingUp} color="bg-sky-500" />
 
-        {/* 6th card — Campaign stat or locked */}
+        {/* Messages stat — locked on Starter/Trial */}
+        {smsEnabled ? (
+          <Link href="/messages" className="block">
+            <StatCard label="Unread Messages" value={unreadMessages} icon={MessageSquare} color="bg-indigo-500" />
+          </Link>
+        ) : (
+          <LockedFeature requiredPlan="growth" reason="sms_locked" label="Two-way SMS">
+            <LockedStatCard label="Unread Messages" />
+          </LockedFeature>
+        )}
+
+        {/* Campaign stat or locked */}
         {outboundEnabled ? (
           <StatCard label="Active Campaigns" value={activeCampaigns} icon={Megaphone} color="bg-purple-500" />
         ) : (

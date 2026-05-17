@@ -6,7 +6,7 @@
 // ============================================================
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { CheckCircle, Phone, ShieldCheck, Sparkles, Moon, Globe } from 'lucide-react';
+import { CheckCircle, Phone, ShieldCheck, Sparkles, Moon, Globe, MessageSquare, Clock, Reply } from 'lucide-react';
 import { BRAND_NAME } from '@/lib/brand';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
@@ -14,6 +14,14 @@ import { MarketingFooter } from '@/components/ui/marketing-footer';
 // Lazy-load — TTS audio code shouldn't block initial paint.
 const SampleCallPlayer = dynamic(
   () => import('@/components/ui/sample-call-player').then((m) => m.SampleCallPlayer),
+  { ssr: false }
+);
+const VoiceLanguageDemo = dynamic(
+  () => import('@/components/ui/voice-language-demo').then((m) => m.VoiceLanguageDemo),
+  { ssr: false }
+);
+const DashboardTeaser = dynamic(
+  () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
   { ssr: false }
 );
 
@@ -102,10 +110,10 @@ export default function InboundPage() {
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/signup"
+              href="/pricing#plans"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              Start free trial →
+              See plans &amp; pricing →
             </Link>
             <Link
               href="/demo"
@@ -115,7 +123,7 @@ export default function InboundPage() {
             </Link>
           </div>
           <p className="text-xs text-cream-500 mt-5">
-            Included on every plan · 14-day free trial · No contracts
+            Included on every plan · Pay monthly or annual · No contracts
           </p>
         </div>
       </section>
@@ -239,6 +247,22 @@ export default function InboundPage() {
       </section>
 
 
+      {/* ── Dashboard preview ─────────────────────────── */}
+      <section className="bg-white border-y border-cream-200 py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">What you get inside</p>
+            <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
+              Every call captured. Every booking tracked.
+            </h2>
+            <p className="text-cream-600 mt-3 max-w-xl mx-auto">
+              Live call log, real-time activity feed, two-way SMS, and every appointment pushed to your calendar.
+            </p>
+          </div>
+          <DashboardTeaser />
+        </div>
+      </section>
+
       {/* ── Audio Samples (secondary fallback) ─────────── */}
       <section className="max-w-4xl mx-auto px-6 pb-12 pt-12">
         <div className="text-center mb-6">
@@ -247,6 +271,91 @@ export default function InboundPage() {
           <p className="text-cream-600 mt-2 text-sm">If you'd rather just hear it — same scripts, audio only.</p>
         </div>
         <SampleCallPlayer callType="inbound" />
+      </section>
+
+      {/* ── Voice × Language demo ───────────────────────── */}
+      <section className="py-16 bg-cream-50 border-t border-cream-200">
+        <VoiceLanguageDemo />
+      </section>
+
+      {/* ── SMS follow-up section ─────────────────────── */}
+      <section className="max-w-5xl mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Every call gets a text</p>
+          <h2 className="font-serif text-4xl text-cream-900 tracking-tight">
+            Every call gets a text follow-up.
+          </h2>
+          <p className="text-cream-600 mt-3 max-w-2xl mx-auto leading-relaxed">
+            Built-in SMS handles the moments your voice AI can&apos;t reach. Included on every paid plan — sent from your business number.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            {
+              icon: Reply,
+              title: 'Missed-call text-back',
+              desc: 'If a caller hangs up before the AI can help, they get a text within 10 seconds: "We missed you — how can we help?"',
+              tag: 'Under 10s',
+            },
+            {
+              icon: Clock,
+              title: 'Appointment reminders',
+              desc: 'Automated reminders at 24 hours and 2 hours before every booked appointment. Reply CONFIRM or CANCEL to manage the booking.',
+              tag: '24h + 2h',
+            },
+            {
+              icon: MessageSquare,
+              title: 'Two-way SMS inbox',
+              desc: 'Your team picks up the thread right where the AI left off — full history, one inbox, sent from the same number callers already know.',
+              tag: 'Shared inbox',
+            },
+          ].map(({ icon: Icon, title, desc, tag }) => (
+            <div key={title} className="rounded-2xl bg-white border border-cream-200 p-7">
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center">
+                  <Icon size={20} className="text-indigo-600" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-full px-2.5 py-0.5">
+                  {tag}
+                </span>
+              </div>
+              <h3 className="font-serif text-xl text-cream-900 mb-2">{title}</h3>
+              <p className="text-sm text-cream-600 leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Phone bubble illustration */}
+        <div className="mt-12 max-w-md mx-auto rounded-3xl bg-cream-50 border border-cream-200 p-6">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-cream-500 mb-3 text-center">
+            Sample missed-call text-back
+          </p>
+          <div className="flex justify-start mb-2">
+            <div className="bg-gray-100 text-gray-900 rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm max-w-[80%] leading-relaxed">
+              Hi! We missed your call at Downtown Dental. How can we help? Reply here or call us back anytime.
+            </div>
+          </div>
+          <div className="flex justify-end mb-2">
+            <div className="bg-brand-600 text-white rounded-2xl rounded-br-sm px-4 py-2.5 text-sm max-w-[80%] leading-relaxed">
+              I&apos;d like to book a cleaning for next week
+            </div>
+          </div>
+          <div className="flex justify-start">
+            <div className="bg-gray-100 text-gray-900 rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm max-w-[80%] leading-relaxed">
+              Done — Tuesday at 10 AM works. Reply CONFIRM to lock it in.
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10 text-center">
+          <Link
+            href="/pricing#plans"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition-colors"
+          >
+            See plans →
+          </Link>
+        </div>
       </section>
 
       {/* ── After-hours value strip ─────────────────────── */}
@@ -266,27 +375,27 @@ export default function InboundPage() {
       <section className="bg-cream-900 text-white py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="font-serif text-4xl md:text-5xl tracking-tight">
-            Inbound is included on every plan.
+            Inbound + SMS included on every plan.
           </h2>
           <p className="text-cream-300 mt-4 max-w-xl mx-auto">
-            Starter ($79/mo) covers 200 minutes/month. Growth ($179/mo) goes to 600. Scale ($399/mo) handles 2,000. Outbound + Spanish + API are included on all of them.
+            Starter ($79/mo) covers 200 minutes. Growth ($199/mo) adds outbound campaigns and 750 minutes. Scale ($399/mo) handles 1,500. Bilingual + SMS + transcripts included on all of them.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/signup"
+              href="/pricing#plans"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              <Phone size={15} /> Start free trial
+              <Phone size={15} /> Choose your plan
             </Link>
             <Link
-              href="/pricing"
+              href="/pricing#compare"
               className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-cream-100 border border-white/20 rounded-xl hover:bg-white/5 transition-colors"
             >
               Compare all plans →
             </Link>
           </div>
           <p className="text-xs text-cream-400 mt-5">
-            14-day free trial · No credit card required · Cancel anytime
+            Pay monthly or annual · Cancel anytime · 30-day money-back guarantee
           </p>
         </div>
       </section>

@@ -62,10 +62,10 @@ export function MarketingHeader() {
               Sign in
             </Link>
             <Link
-              href="/signup"
+              href="/pricing#plans"
               className="glow-btn inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors"
             >
-              Start free trial →
+              See plans →
             </Link>
           </div>
 
@@ -131,11 +131,11 @@ export function MarketingHeader() {
               Sign in
             </Link>
             <Link
-              href="/signup"
+              href="/pricing#plans"
               onClick={() => setMobileOpen(false)}
               className="block w-full text-center py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 transition-colors"
             >
-              Start free trial →
+              See plans →
             </Link>
           </div>
         </nav>

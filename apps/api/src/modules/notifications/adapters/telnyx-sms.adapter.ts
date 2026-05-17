@@ -15,20 +15,24 @@ interface TelnyxMessageResponse {
 /**
  * Send an SMS via Telnyx.
  *
- * @param to   Destination phone number in E.164 format (e.g. +12125551234)
- * @param body SMS body text
- * @returns    Telnyx message UUID
+ * @param to    Destination phone number in E.164 format (e.g. +12125551234)
+ * @param body  SMS body text
+ * @param from  Optional E.164 sender number. When omitted, falls back to the
+ *              global TELNYX_FROM_NUMBER env var (single-tenant / dev mode).
+ *              Pass the tenant's provisioned number for multi-tenant routing.
+ * @returns     Telnyx message UUID
  */
-export async function sendSms(to: string, body: string): Promise<string> {
+export async function sendSms(to: string, body: string, from?: string): Promise<string> {
   if (!config.TELNYX_API_KEY) {
     throw new IntegrationError('telnyx', 'TELNYX_API_KEY is not configured');
   }
-  if (!config.TELNYX_FROM_NUMBER) {
-    throw new IntegrationError('telnyx', 'TELNYX_FROM_NUMBER is not configured');
+  const fromNumber = from ?? config.TELNYX_FROM_NUMBER;
+  if (!fromNumber) {
+    throw new IntegrationError('telnyx', 'No sender number provided and TELNYX_FROM_NUMBER is not configured');
   }
 
   const payload: Record<string, string> = {
-    from: config.TELNYX_FROM_NUMBER,
+    from: fromNumber,
     to,
     text: body,
   };

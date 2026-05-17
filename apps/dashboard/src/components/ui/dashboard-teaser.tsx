@@ -10,6 +10,7 @@ import { useState } from 'react';
 const TABS = [
   { id: 'dashboard',    label: '📊 Dashboard' },
   { id: 'calls',        label: '📞 Call Log' },
+  { id: 'messages',     label: '💬 Messages' },
   { id: 'integrations', label: '🔌 Integrations' },
   { id: 'campaigns',    label: '📡 Campaigns' },
 ];
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { icon: '🔔', label: 'Reminders',    id: null },
   { icon: '⚠️', label: 'Escalations',  id: null },
   { icon: '📡', label: 'Campaigns',    id: 'campaigns' },
+  { icon: '💬', label: 'Messages',     id: 'messages' },
   { icon: '💳', label: 'Billing',      id: null },
 ];
 
@@ -317,6 +319,106 @@ function CampaignsView() {
   );
 }
 
+// ── Mock message data ─────────────────────────────────────────
+const MOCK_CONVERSATIONS = [
+  { name: 'James T.',     initials: 'JT', preview: 'Can I reschedule my appointment?',           time: '14m ago', unread: 2, active: true },
+  { name: 'Sarah M.',     initials: 'SM', preview: 'You: Great! See you tomorrow at 2pm',        time: '32m ago', unread: 0, active: false },
+  { name: 'Maria R.',     initials: 'MR', preview: 'CONFIRM',                                    time: '1h ago',  unread: 1, active: false },
+  { name: '(213) 555-0088', initials: '88', preview: 'You: We missed your call! How can we help?', time: '2h ago',  unread: 0, active: false },
+];
+
+const MOCK_THREAD = [
+  { dir: 'outbound', body: 'Hi James! We missed your call at Smith Dental. How can we help? Reply here or call us back.', time: '9:02 AM' },
+  { dir: 'inbound',  body: 'Hi! I need to reschedule my cleaning appointment for next week if possible.',                time: '9:15 AM' },
+  { dir: 'outbound', body: 'Of course! We have openings Mon 10am, Tue 2pm, or Thu 4pm. Which works best for you?',      time: '9:16 AM' },
+  { dir: 'inbound',  body: 'Can I reschedule my appointment?',                                                           time: '9:47 AM' },
+];
+
+function MessagesView() {
+  return (
+    <div className="flex gap-3 h-[480px]">
+      {/* Conversation list */}
+      <div className="w-52 shrink-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+        <div className="px-3 py-2.5 border-b border-gray-100 flex items-center justify-between">
+          <span className="text-xs font-semibold text-gray-900">Messages</span>
+          <span className="text-[10px] bg-brand-100 text-brand-700 font-bold px-1.5 py-0.5 rounded-full">3 new</span>
+        </div>
+        <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
+          {MOCK_CONVERSATIONS.map((conv) => (
+            <div
+              key={conv.name}
+              className={`flex items-center gap-2.5 px-3 py-2.5 cursor-pointer ${conv.active ? 'bg-brand-50' : 'hover:bg-gray-50'}`}
+            >
+              <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
+                <span className="text-[10px] font-bold text-brand-700">{conv.initials}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-1">
+                  <span className={`text-[11px] font-semibold truncate ${conv.active ? 'text-brand-700' : 'text-gray-900'}`}>{conv.name}</span>
+                  {conv.unread > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-brand-600 text-white text-[9px] font-bold flex items-center justify-center shrink-0">
+                      {conv.unread}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-gray-400 truncate mt-0.5">{conv.preview}</p>
+                <p className="text-[9px] text-gray-300 mt-0.5">{conv.time}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Thread view */}
+      <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+        {/* Thread header */}
+        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100 shrink-0">
+          <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center">
+            <span className="text-[10px] font-bold text-brand-700">JT</span>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-900">James T.</p>
+            <p className="text-[10px] text-gray-400">(424) 555-0147</p>
+          </div>
+          <span className="ml-auto text-[10px] bg-amber-50 text-amber-600 font-semibold px-2 py-0.5 rounded-full">2 unread</span>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex items-center gap-2 my-2">
+            <div className="flex-1 h-px bg-gray-100" />
+            <span className="text-[9px] font-medium text-gray-400">Today</span>
+            <div className="flex-1 h-px bg-gray-100" />
+          </div>
+          {MOCK_THREAD.map((msg, i) => (
+            <div key={i} className={`flex ${msg.dir === 'outbound' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-[11px] leading-relaxed ${
+                msg.dir === 'outbound'
+                  ? 'bg-brand-600 text-white rounded-br-sm'
+                  : 'bg-gray-100 text-gray-900 rounded-bl-sm'
+              }`}>
+                {msg.body}
+                <p className={`text-[9px] mt-1 opacity-70 ${msg.dir === 'outbound' ? 'text-right' : 'text-left'}`}>{msg.time}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Send box */}
+        <div className="border-t border-gray-100 p-3 shrink-0">
+          <div className="flex items-center gap-2 bg-gray-50 rounded-lg border border-gray-200 px-3 py-2">
+            <span className="text-[11px] text-gray-400 flex-1">Reply to James…</span>
+            <div className="w-6 h-6 rounded-lg bg-brand-600 flex items-center justify-center shrink-0">
+              <span className="text-white text-[10px]">↑</span>
+            </div>
+          </div>
+          <p className="text-[9px] text-gray-400 mt-1.5 text-center">SMS sent from your Telnyx number</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main export ───────────────────────────────────────────────
 export function DashboardTeaser() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -445,6 +547,7 @@ export function DashboardTeaser() {
             <div className="animate-in fade-in duration-200">
               {activeTab === 'dashboard'    && <DashboardView />}
               {activeTab === 'calls'        && <CallsView />}
+              {activeTab === 'messages'     && <MessagesView />}
               {activeTab === 'integrations' && <IntegrationsView />}
               {activeTab === 'campaigns'    && <CampaignsView />}
             </div>

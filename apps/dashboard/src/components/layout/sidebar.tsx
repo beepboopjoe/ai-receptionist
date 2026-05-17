@@ -13,6 +13,7 @@ import {
   Settings,
   LogOut,
   Megaphone,
+  MessageSquare,
   CreditCard,
   Zap,
   BarChart2,
@@ -33,15 +34,16 @@ import type { UpgradeReason } from '@/components/ui/upgrade-modal';
 
 function buildNav(contactsLabel: string, appointmentsLabel: string) {
   return [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/calls', label: 'Call Log', icon: Phone },
-    { href: '/appointments', label: appointmentsLabel, icon: Calendar },
-    { href: '/contacts', label: contactsLabel, icon: Users },
-    { href: '/missed-calls', label: 'Missed Calls', icon: PhoneMissed },
-    { href: '/reminders', label: 'Reminders', icon: Bell },
-    { href: '/escalations', label: 'Escalations', icon: AlertCircle },
-    { href: '/campaigns', label: 'Campaigns', icon: Megaphone },
-    { href: '/billing', label: 'Billing', icon: CreditCard },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/calls', label: 'Call Log', icon: Phone, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/appointments', label: appointmentsLabel, icon: Calendar, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/contacts', label: contactsLabel, icon: Users, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/missed-calls', label: 'Missed Calls', icon: PhoneMissed, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/reminders', label: 'Reminders', icon: Bell, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/escalations', label: 'Escalations', icon: AlertCircle, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/campaigns', label: 'Campaigns', icon: Megaphone, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/messages', label: 'Messages', icon: MessageSquare, requires: 'two_way_sms' as const },
+    { href: '/billing', label: 'Billing', icon: CreditCard, requires: undefined as undefined | 'two_way_sms' },
   ];
 }
 
@@ -193,22 +195,40 @@ export function Sidebar() {
 
         {/* Main nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {nav.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setMobileOpen(false)}
-              className={clsx(
-                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                pathname === href || pathname.startsWith(href + '/')
-                  ? 'bg-brand-50 text-brand-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              )}
-            >
-              <Icon size={18} />
-              {label}
-            </Link>
-          ))}
+          {nav.map(({ href, label, icon: Icon, requires }) => {
+            const locked = requires && !has(requires);
+            if (locked) {
+              return (
+                <button
+                  key={href}
+                  type="button"
+                  onClick={() => setUpgradeReason('sms_locked')}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-50 w-full text-left transition-colors"
+                  title={`${label} — requires Growth plan`}
+                >
+                  <Icon size={18} className="opacity-50" />
+                  <span className="flex-1">{label}</span>
+                  <Lock size={13} className="opacity-40" />
+                </button>
+              );
+            }
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMobileOpen(false)}
+                className={clsx(
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                  pathname === href || pathname.startsWith(href + '/')
+                    ? 'bg-brand-50 text-brand-700'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                )}
+              >
+                <Icon size={18} />
+                {label}
+              </Link>
+            );
+          })}
 
           {/* Pro-locked nav items */}
           {proNavItems.map(({ label, icon: Icon, reason }) =>

@@ -2,44 +2,104 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { authApi } from '@/lib/api';
+import { authApi, billingApi } from '@/lib/api';
 import { BRAND_NAME } from '@/lib/brand';
+import type { BillingCycle } from '@ai-receptionist/shared';
 
-// Stash the ?ref= attribution code in localStorage so it survives the
-// signup form submission (and the OAuth round-trip for Google signups).
-function StashRefCode() {
+// Stash the ?ref= attribution code and ?plan=/?cycle= pricing-page params
+// in localStorage so they survive the form submission round-trip.
+function StashUrlParams({
+  onPricingParams,
+}: {
+  onPricingParams: (plan: string, cycle: BillingCycle) => void;
+}) {
   const params = useSearchParams();
   useEffect(() => {
+    // Referral code
     const code = params.get('ref');
     if (code) {
-      try {
-        localStorage.setItem('referral_code', code);
-      } catch {
-        /* ignore — private browsing or quota */
-      }
+      try { localStorage.setItem('referral_code', code); } catch { /* ignore */ }
     }
+    // Pricing-page plan/cycle — signals the user wants to buy immediately
+    const plan = params.get('plan');
+    const cycle = params.get('cycle');
+    if (plan && (plan === 'starter' || plan === 'growth' || plan === 'scale')) {
+      const validCycle: BillingCycle = cycle === 'annual' ? 'annual' : 'monthly';
+      onPricingParams(plan, validCycle);
+      try {
+        localStorage.setItem('pricing_plan', plan);
+        localStorage.setItem('pricing_cycle', validCycle);
+      } catch { /* ignore */ }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
   return null;
 }
 
-type AiUseCase = 'inbound' | 'outbound' | 'both';
+// ── Plan options shown in the picker ──────────────────────────
+type SignupPlanKey = 'trial' | 'starter' | 'growth' | 'scale';
 
-interface PlanInfo {
+const PLAN_OPTIONS: {
+  key: SignupPlanKey;
   name: string;
-  price: string;
-}
-
-const PLANS: Record<AiUseCase, PlanInfo> = {
-  inbound:  { name: 'Starter', price: '$79/mo' },
-  outbound: { name: 'Growth',  price: '$179/mo' },
-  both:     { name: 'Growth',  price: '$179/mo' },
-};
-
-const USE_CASE_OPTIONS: { value: AiUseCase; label: string; description: string; icon: string; recommended?: boolean }[] = [
-  { value: 'inbound', label: 'Answer my calls', description: 'Inbound', icon: '📞' },
-  { value: 'outbound', label: 'Call my leads', description: 'Outbound', icon: '📣' },
-  { value: 'both', label: 'Both', description: 'Inbound & Outbound', icon: '⚡', recommended: true },
+  priceDisplay: string;
+  minutes: string;
+  numbers: string;
+  badge: string | null;
+  popular: boolean;
+  note: string;
+  paid: boolean;
+}[] = [
+  {
+    key: 'trial',
+    name: 'Free Access',
+    priceDisplay: 'Free',
+    minutes: '10',
+    numbers: '1',
+    badge: null,
+    popular: false,
+    note: 'No credit card required',
+    paid: false,
+  },
+  {
+    key: 'starter',
+    name: 'Starter',
+    priceDisplay: '$79/mo',
+    minutes: '200',
+    numbers: 'BYO',
+    badge: 'Solo offices',
+    popular: false,
+    note: 'Activates immediately after payment',
+    paid: true,
+  },
+  {
+    key: 'growth',
+    name: 'Growth',
+    priceDisplay: '$199/mo',
+    minutes: '750',
+    numbers: '2',
+    badge: 'Most Popular',
+    popular: true,
+    note: 'Activates immediately after payment',
+    paid: true,
+  },
+  {
+    key: 'scale',
+    name: 'Scale',
+    priceDisplay: '$399/mo',
+    minutes: '1,500',
+    numbers: '5',
+    badge: null,
+    popular: false,
+    note: 'Activates immediately after payment',
+    paid: true,
+  },
 ];
+
+// Derive aiUseCase for the register API from the plan chosen
+function aiUseCaseForPlan(plan: SignupPlanKey): 'inbound' | 'both' {
+  return plan === 'trial' || plan === 'starter' ? 'inbound' : 'both';
+}
 
 export default function SignupPage() {
   const router = useRouter();
@@ -47,11 +107,24 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [aiUseCase, setAiUseCase] = useState<AiUseCase>('inbound');
+  const [selectedPlan, setSelectedPlan] = useState<SignupPlanKey>('growth');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Set when user arrives from the pricing page with ?plan=&cycle= — triggers
+  // direct Stripe checkout after account creation rather than free trial.
+  const [fromPricingPage, setFromPricingPage] = useState(false);
+  const [pricingCycle, setPricingCycle] = useState<BillingCycle>('monthly');
 
-  const selectedPlan = PLANS[aiUseCase];
+  const planInfo = PLAN_OPTIONS.find((p) => p.key === selectedPlan)!;
+
+  function handlePricingParams(plan: string, cycle: BillingCycle) {
+    const key = plan as SignupPlanKey;
+    if (PLAN_OPTIONS.find((p) => p.key === key)) {
+      setSelectedPlan(key);
+    }
+    setPricingCycle(cycle);
+    setFromPricingPage(true);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -63,9 +136,9 @@ export default function SignupPage() {
     }
 
     setLoading(true);
+
     try {
-      // If the visitor already picked a vertical on the landing page demo, pass
-      // it to register so the tenant is created with the right defaults.
+      // Carry any vertical hint from the demo page into onboarding defaults
       let preselectedVertical: string | undefined;
       try {
         const v = localStorage.getItem('onboarding_vertical');
@@ -76,41 +149,56 @@ export default function SignupPage() {
         businessName,
         email,
         password,
-        aiUseCase,
+        aiUseCase: aiUseCaseForPlan(selectedPlan),
         ...(preselectedVertical ? { vertical: preselectedVertical } : {}),
       });
       localStorage.setItem('auth_token', data.token);
       localStorage.setItem('auth_refresh_token', data.refreshToken);
 
-      // Attribute to an affiliate if a referral code is sitting in storage.
-      // Best-effort: a failure here shouldn't block the user from onboarding.
+      // Attribute affiliate — best-effort, never blocks signup
       try {
         const referralCode = localStorage.getItem('referral_code');
         if (referralCode) {
           await authApi.attributeAffiliate(referralCode);
           localStorage.removeItem('referral_code');
         }
-      } catch {
-        /* swallow */
+      } catch { /* swallow */ }
+
+      // If the user came from the pricing page with a paid plan selected,
+      // send them straight to Stripe Checkout to subscribe immediately.
+      if (fromPricingPage && planInfo.paid) {
+        try {
+          localStorage.removeItem('pricing_plan');
+          localStorage.removeItem('pricing_cycle');
+          const { url } = await billingApi.checkout(selectedPlan, pricingCycle);
+          window.location.href = url;
+          return; // navigation happening — don't call router.replace
+        } catch {
+          // Checkout failed — fall through to onboarding, they can upgrade from billing page
+        }
       }
 
+      // Store the plan preference so the billing page can pre-select it
+      if (planInfo.paid) {
+        try { localStorage.setItem('signup_plan_preference', selectedPlan); } catch { /* ignore */ }
+      }
+
+      // Default: start on free trial, billing page handles upgrade
       router.replace('/onboarding/step-0-industry');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
-    } finally {
       setLoading(false);
     }
   }
 
   return (
     <div className="min-h-screen bg-cream-50 flex items-center justify-center p-4">
-      {/* Stash any ?ref= affiliate code in localStorage before form
-          submission, so it survives the API round-trip. */}
       <Suspense fallback={null}>
-        <StashRefCode />
+        <StashUrlParams onPricingParams={handlePricingParams} />
       </Suspense>
+
       <div className="w-full max-w-md">
-        {/* Logo */}
+        {/* Logo / header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-600 mb-4 text-white font-serif text-2xl">
             ar
@@ -119,9 +207,8 @@ export default function SignupPage() {
           <p className="text-cream-600 mt-1">Create your account</p>
         </div>
 
-        {/* Form */}
         <div className="card p-8">
-          {/* Google sign-up */}
+          {/* Google OAuth */}
           <a
             href={`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1'}/auth/google`}
             className="flex items-center justify-center gap-3 w-full py-2.5 px-4 mb-4 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors"
@@ -134,11 +221,13 @@ export default function SignupPage() {
             </svg>
             Sign up with Google
           </a>
-          <div className="flex items-center gap-3 mb-4">
+
+          <div className="flex items-center gap-3 mb-5">
             <div className="flex-1 h-px bg-gray-200" />
             <span className="text-xs text-gray-400 uppercase tracking-wide">or</span>
             <div className="flex-1 h-px bg-gray-200" />
           </div>
+
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 ring-1 ring-red-200">
@@ -146,7 +235,7 @@ export default function SignupPage() {
               </div>
             )}
 
-            {/* Business Name */}
+            {/* Business name */}
             <div>
               <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 mb-1">
                 Business / practice name
@@ -198,7 +287,7 @@ export default function SignupPage() {
               />
             </div>
 
-            {/* Confirm Password */}
+            {/* Confirm password */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                 Confirm password
@@ -216,55 +305,97 @@ export default function SignupPage() {
               />
             </div>
 
-            {/* AI Use Case selector */}
+            {/* ── Plan picker ────────────────────────────────── */}
             <div>
-              <p className="block text-sm font-medium text-gray-700 mb-2">
-                What do you want AI to do?
+              <p className="text-sm font-semibold text-gray-800 mb-1">Which plan fits you best?</p>
+              <p className="text-xs text-gray-400 mb-3">
+                {fromPricingPage && planInfo.paid
+                  ? "Confirm your plan — you'll continue to secure payment after creating your account."
+                  : "Pick a plan. Paid plans charge immediately via Stripe; the free trial activates on signup."}
               </p>
-              <div className="grid grid-cols-3 gap-2">
-                {USE_CASE_OPTIONS.map((option) => {
-                  const isSelected = aiUseCase === option.value;
+
+              <div className="space-y-2">
+                {PLAN_OPTIONS.map((plan) => {
+                  const active = selectedPlan === plan.key;
                   return (
                     <button
-                      key={option.value}
+                      key={plan.key}
                       type="button"
-                      onClick={() => setAiUseCase(option.value)}
+                      onClick={() => setSelectedPlan(plan.key)}
                       className={[
-                        'relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
-                        isSelected
-                          ? 'border-brand-600 bg-brand-50 text-brand-700'
-                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50',
+                        'w-full flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                        active
+                          ? plan.popular
+                            ? 'border-brand-600 bg-brand-50'
+                            : 'border-brand-500 bg-brand-50/50'
+                          : 'border-gray-200 bg-white hover:border-gray-300',
                       ].join(' ')}
                     >
-                      {option.recommended && (
-                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                          Recommended
+                      {/* Radio dot */}
+                      <span className={[
+                        'w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors',
+                        active ? 'border-brand-600 bg-brand-600' : 'border-gray-300 bg-white',
+                      ].join(' ')}>
+                        {active && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </span>
+
+                      {/* Plan name + badge */}
+                      <span className="flex-1 min-w-0">
+                        <span className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-sm font-semibold ${active ? 'text-brand-900' : 'text-gray-800'}`}>
+                            {plan.name}
+                          </span>
+                          {plan.badge && (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${
+                              plan.popular
+                                ? 'bg-brand-600 text-white'
+                                : 'bg-gray-100 text-gray-500'
+                            }`}>
+                              {plan.badge}
+                            </span>
+                          )}
                         </span>
-                      )}
-                      <span className="text-2xl">{option.icon}</span>
-                      <span className="text-xs font-medium leading-tight">{option.label}</span>
+                        <span className={`text-xs mt-0.5 block ${active ? 'text-brand-700' : 'text-gray-400'}`}>
+                          {plan.minutes} min&thinsp;·&thinsp;
+                          {plan.numbers === 'BYO'
+                            ? 'Bring your own number'
+                            : `${plan.numbers} phone ${plan.numbers === '1' ? 'number' : 'numbers'}`}
+                          &thinsp;·&thinsp;{plan.note}
+                        </span>
+                      </span>
+
+                      {/* Price */}
+                      <span className={`text-sm font-bold shrink-0 ${
+                        plan.paid
+                          ? active ? 'text-brand-700' : 'text-gray-700'
+                          : active ? 'text-emerald-700' : 'text-emerald-600'
+                      }`}>
+                        {plan.priceDisplay}
+                      </span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Recommended plan */}
-            <div className="rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Recommended plan</p>
-                <p className="text-sm font-semibold text-gray-900 mt-0.5">{selectedPlan.name}</p>
-              </div>
-              <p className="text-lg font-bold text-brand-600">{selectedPlan.price}</p>
-            </div>
-
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full justify-center"
+              className="btn-primary w-full justify-center disabled:opacity-60"
             >
-              {loading ? 'Creating account…' : 'Create account →'}
+              {loading
+                ? (fromPricingPage && planInfo.paid ? 'Redirecting to checkout…' : 'Creating account…')
+                : (fromPricingPage && planInfo.paid ? `Create account & subscribe →` : 'Get started free →')}
             </button>
+
+            <p className="text-center text-xs text-gray-400">
+              {fromPricingPage && planInfo.paid
+                ? `You'll be taken to Stripe to complete your ${planInfo.name} (${planInfo.priceDisplay}) subscription.`
+                : planInfo.paid
+                  ? `You'll start on the free 10-minute trial; upgrade to ${planInfo.name} (${planInfo.priceDisplay}) any time from the dashboard.`
+                  : 'No credit card required. 10 AI minutes to explore.'}
+            </p>
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-500">
@@ -274,6 +405,13 @@ export default function SignupPage() {
             </Link>
           </p>
         </div>
+
+        <p className="text-center text-xs text-gray-400 mt-4">
+          By creating an account you agree to our{' '}
+          <Link href="/terms" className="underline hover:text-gray-600">Terms</Link>
+          {' '}and{' '}
+          <Link href="/privacy" className="underline hover:text-gray-600">Privacy Policy</Link>.
+        </p>
       </div>
     </div>
   );

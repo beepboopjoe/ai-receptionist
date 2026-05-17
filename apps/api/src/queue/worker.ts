@@ -9,6 +9,7 @@ import { Worker, type Job } from 'bullmq';
 import cron from 'node-cron';
 import { redis } from '../db/redis.js';
 import { runUsageWarningSweep } from './jobs/usage-warning.job.js';
+import { runAppointmentReminderSweep } from './jobs/appointment-reminder.job.js';
 import { processSendNotification, type SendNotificationJobData } from './jobs/send-reminder.job.js';
 import { processMissedCallRecovery, type MissedCallRecoveryJobData } from './jobs/missed-call-recovery.job.js';
 import { processCrmSync, type CrmSyncJobData } from './jobs/crm-sync.job.js';
@@ -145,10 +146,28 @@ const usageWarningTask = cron.schedule('17 * * * *', async () => {
   }
 });
 
+// Every 15 min — send 24h and 2h appointment SMS reminders.
+// Idempotent: the reminder_24h_sent / reminder_2h_sent boolean flags
+// on the appointments table prevent double-sends.
+const appointmentReminderTask = cron.schedule('*/15 * * * *', async () => {
+  try {
+    const result = await runAppointmentReminderSweep();
+    if (result.sent > 0) {
+      console.log(`[cron:appointment-reminder] sent ${result.sent} SMS reminders`);
+    }
+    if (result.errors > 0) {
+      console.warn(`[cron:appointment-reminder] ${result.errors} errors`);
+    }
+  } catch (err) {
+    console.error('[cron:appointment-reminder] sweep failed:', err);
+  }
+});
+
 // ---- Graceful shutdown ----
 async function shutdown() {
   console.log('[worker] Shutting down workers...');
   usageWarningTask.stop();
+  appointmentReminderTask.stop();
   await Promise.all([
     notificationsWorker.close(),
     remindersWorker.close(),

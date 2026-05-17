@@ -6,18 +6,12 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { Phone, Sparkles, ShieldCheck } from 'lucide-react';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { VERTICALS, type Vertical } from '@/lib/verticals';
 import { SampleCallPlayer } from '@/components/ui/sample-call-player';
-
-// Lazy-load — heavy mockup of the dashboard UI shouldn't block paint.
-const DashboardTeaser = dynamic(
-  () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
-  { ssr: false }
-);
+import { VoiceLanguageDemo } from '@/components/ui/voice-language-demo';
 
 // Vertical pills order — keep "all" first for default-shown state.
 const VERTICAL_FILTERS: { key: 'all' | Vertical; label: string; emoji: string }[] = [
@@ -133,20 +127,9 @@ export default function DemoPage() {
         />
       </section>
 
-      {/* ── Dashboard preview ─────────────────────────────── */}
-      <section className="bg-white border-y border-cream-200 py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Behind the scenes</p>
-            <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
-              Every call lands in one dashboard.
-            </h2>
-            <p className="text-cream-600 mt-3 max-w-xl mx-auto">
-              Recordings, transcripts, structured data. Searchable, exportable, webhook-pushable to your CRM.
-            </p>
-          </div>
-          <DashboardTeaser />
-        </div>
+      {/* ── Voice × Language demo ──────────────────────────── */}
+      <section className="py-16 bg-cream-50 border-t border-cream-200">
+        <VoiceLanguageDemo />
       </section>
 
       {/* ── What's different about ours ───────────────────── */}

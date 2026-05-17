@@ -676,6 +676,32 @@ export const webhookDeliveries = pgTable(
   })
 );
 
+// ---- SMS Messages ----
+// Stores both inbound and outbound SMS per tenant so they appear in the
+// unified two-way inbox. Missed-call text-backs and appointment reminders
+// also write here so they appear in the conversation thread view.
+export const smsMessages = pgTable(
+  'sms_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    /** 'inbound' = external → tenant number; 'outbound' = tenant → external. */
+    direction: text('direction').notNull(),
+    fromNumber: text('from_number').notNull(),
+    toNumber: text('to_number').notNull(),
+    body: text('body').notNull(),
+    telnyxMessageId: text('telnyx_message_id'),
+    status: text('status').notNull().default('delivered'),
+    contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tenantCreatedIdx: index('sms_messages_tenant_created_idx').on(t.tenantId, t.createdAt),
+    tenantFromIdx:    index('sms_messages_tenant_from_idx').on(t.tenantId, t.fromNumber),
+    tenantToIdx:      index('sms_messages_tenant_to_idx').on(t.tenantId, t.toNumber),
+  })
+);
+
 // ---- Type inference helpers ----
 export type Tenant = typeof tenants.$inferSelect;
 export type NewTenant = typeof tenants.$inferInsert;
@@ -708,3 +734,5 @@ export type NewTenantApiKey = typeof tenantApiKeys.$inferInsert;
 export type Affiliate = typeof affiliates.$inferSelect;
 export type PayoutRequest = typeof payoutRequests.$inferSelect;
 export type NewPayoutRequest = typeof payoutRequests.$inferInsert;
+export type SmsMessage = typeof smsMessages.$inferSelect;
+export type NewSmsMessage = typeof smsMessages.$inferInsert;

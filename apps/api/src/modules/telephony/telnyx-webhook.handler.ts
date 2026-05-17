@@ -18,8 +18,8 @@
 // ============================================================
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../../db/client.js';
-import { calls, tenants, campaignContacts, outboundCampaigns } from '../../db/schema.js';
-import { eq, sql } from 'drizzle-orm';
+import { calls, tenants, campaignContacts, outboundCampaigns, contacts, smsMessages, tenantPhoneNumbers, notifications } from '../../db/schema.js';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import {
   answerCall,
   startMediaStream,
@@ -27,12 +27,33 @@ import {
   dropVoicemail,
 } from '../campaigns/telnyx-dialer.service.js';
 import { outboundDialerQueue } from '../../queue/queues.js';
+import { sendSms } from '../notifications/adapters/telnyx-sms.adapter.js';
+import { getTenantFromNumber } from '../sms/tenant-from-number.js';
 import { config } from '../../config.js';
 import pino from 'pino';
 
 const logger = pino({ name: 'telnyx-webhook' });
 
-// ---- Telnyx event shape ----
+// ---- Telnyx message event shape (message.received) ----
+// These payloads are structurally different from call payloads.
+
+interface TelnyxMessagePayload {
+  id?: string;
+  direction?: string;
+  from?: { phone_number?: string };
+  to?: Array<{ phone_number?: string }>;
+  text?: string;
+  type?: string;
+}
+
+interface TelnyxMessageEventData {
+  event_type: string;
+  id: string;
+  occurred_at: string;
+  payload: TelnyxMessagePayload;
+}
+
+// ---- Telnyx call event shape ----
 
 interface TelnyxEventPayload {
   call_control_id: string;
@@ -108,7 +129,15 @@ export async function handleTelnyxWebhook(
   // Acknowledge immediately — Telnyx expects a sub-second 200
   reply.status(200).send({ ok: true });
 
-  // Process the event asynchronously so we never time out
+  // Route message events separately — they have a different payload structure
+  if (eventType === 'message.received') {
+    void onMessageReceived(event.data as unknown as TelnyxMessageEventData).catch((err) => {
+      logger.error({ err, eventType }, 'Unhandled message.received error');
+    });
+    return;
+  }
+
+  // Process the call event asynchronously so we never time out
   void dispatch(eventType, payload).catch((err) => {
     logger.error({ err, eventType, callControlId: payload.call_control_id }, 'Unhandled Telnyx event error');
   });
@@ -327,6 +356,17 @@ async function onCallHangup(
     }
   }
 
+  // ── Missed-call text-back ─────────────────────────────────────────────────
+  // Fire for inbound calls that ended quickly (< 15 s from creation), indicating
+  // the caller hung up before the AI could help. Best-effort — never throws.
+  // The text-back routes through the tenant's own provisioned number; the helper
+  // skips if no number is provisioned.
+  if (!state.isOutbound && state.callId && state.tenantId && state.fromNumber && config.TELNYX_API_KEY) {
+    void sendMissedCallTextBack(state.callId, state.tenantId, state.fromNumber).catch((err) => {
+      logger.warn({ err, callControlId }, 'Missed-call text-back failed');
+    });
+  }
+
   logger.info({ callControlId, cause: payload.hangup_cause }, 'Call hung up');
 }
 
@@ -391,6 +431,133 @@ async function handleMachineDetected(
       logger.warn({ err, callControlId }, 'Could not hang up voicemail call');
     }
   }
+}
+
+// ── Missed-call text-back ──────────────────────────────────────────────────
+// Checks whether the call was truly short (< 15 s) and, if so, sends
+// a text to the caller so they know we'll follow up.
+async function sendMissedCallTextBack(
+  callId: string,
+  tenantId: string,
+  callerPhone: string
+): Promise<void> {
+  // Retrieve call record to check duration
+  const [call] = await db
+    .select({ startedAt: calls.startedAt })
+    .from(calls)
+    .where(eq(calls.id, callId))
+    .limit(1);
+
+  if (!call?.startedAt) return; // no start time — can't determine duration
+
+  const durationMs = Date.now() - call.startedAt.getTime();
+  if (durationMs >= 15_000) return; // call lasted long enough — not a missed call
+
+  // Look up tenant name for the message
+  const [tenant] = await db
+    .select({ name: tenants.name })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1);
+
+  // Resolve the tenant's own provisioned number — required to send and to
+  // attribute the outbound thread to the right tenant inbox.
+  const fromNumber = await getTenantFromNumber(tenantId);
+  if (!fromNumber) {
+    logger.info({ tenantId, callId }, 'Missed-call text-back skipped — tenant has no phone number');
+    return;
+  }
+
+  const businessName = tenant?.name ?? 'our team';
+  const body = `Hi! We missed your call at ${businessName}. How can we help? Reply here or call us back anytime.`;
+
+  const msgId = await sendSms(callerPhone, body, fromNumber);
+  logger.info({ tenantId, callerPhone, callId }, 'Missed-call text-back sent');
+
+  // Match contact for the thread
+  const [contact] = await db
+    .select({ id: contacts.id })
+    .from(contacts)
+    .where(and(eq(contacts.tenantId, tenantId), eq(contacts.phoneE164, callerPhone)))
+    .limit(1);
+
+  await db.insert(smsMessages).values({
+    tenantId,
+    direction:       'outbound',
+    fromNumber,
+    toNumber:        callerPhone,
+    body,
+    telnyxMessageId: msgId,
+    status:          'delivered',
+    contactId:       contact?.id ?? null,
+  });
+
+  await db.insert(notifications).values({
+    tenantId,
+    callId,
+    contactId:  contact?.id ?? null,
+    type:       'missed_call_sms',
+    channel:    'sms',
+    toAddress:  callerPhone,
+    status:     'sent',
+    templateId: 'missed-call-text-back',
+    body,
+    providerMsgId: msgId,
+    sentAt:     new Date(),
+  });
+}
+
+// ── Inbound SMS handler (message.received) ─────────────────────────────────
+// Identifies tenant by the `to` number → tenant_phone_numbers lookup.
+// Stores the message in sms_messages for the two-way inbox.
+async function onMessageReceived(event: TelnyxMessageEventData): Promise<void> {
+  const p = event.payload;
+  const fromPhone = p.from?.phone_number ?? '';
+  const toPhone   = p.to?.[0]?.phone_number ?? '';
+  const body      = p.text ?? '';
+  const msgId     = p.id ?? event.id;
+
+  if (!fromPhone || !toPhone || !body) {
+    logger.warn({ event }, 'message.received payload missing from/to/text — skipping');
+    return;
+  }
+
+  // Resolve tenant from the destination (tenant's Telnyx number)
+  const [tpn] = await db
+    .select({ tenantId: tenantPhoneNumbers.tenantId })
+    .from(tenantPhoneNumbers)
+    .where(and(eq(tenantPhoneNumbers.phoneE164, toPhone), isNull(tenantPhoneNumbers.releasedAt)))
+    .limit(1);
+
+  // Fall back to the first tenant (dev / single-tenant deployments)
+  const tenantId: string = tpn?.tenantId ?? (
+    await db.select({ id: tenants.id }).from(tenants).limit(1).then((rows) => rows[0]?.id ?? '')
+  );
+
+  if (!tenantId) {
+    logger.warn({ toPhone }, 'No tenant found for inbound SMS — discarding');
+    return;
+  }
+
+  // Match contact by phone number
+  const [contact] = await db
+    .select({ id: contacts.id })
+    .from(contacts)
+    .where(and(eq(contacts.tenantId, tenantId), eq(contacts.phoneE164, fromPhone)))
+    .limit(1);
+
+  await db.insert(smsMessages).values({
+    tenantId,
+    direction:       'inbound',
+    fromNumber:      fromPhone,
+    toNumber:        toPhone,
+    body,
+    telnyxMessageId: msgId,
+    status:          'delivered',
+    contactId:       contact?.id ?? null,
+  });
+
+  logger.info({ tenantId, fromPhone, toPhone, contactId: contact?.id }, 'Inbound SMS stored');
 }
 
 async function handleNoAnswer(

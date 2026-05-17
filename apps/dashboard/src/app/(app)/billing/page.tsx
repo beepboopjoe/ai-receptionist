@@ -67,15 +67,28 @@ function LoadingSkeleton() {
 // Each "Switch to X" button hits Stripe Checkout via billingApi.checkout()
 // and redirects to the URL Stripe returns. Cycle defaults to monthly here;
 // users get the annual upsell on the public /pricing page.
-function PlanComparisonCards({ currentPlan, onCheckoutError }: { currentPlan: string; onCheckoutError: (msg: string) => void }) {
+// signupPreference — plan key stored at signup (localStorage 'signup_plan_preference')
+// — shown as "Your chosen plan" if the user is still on trial.
+function PlanComparisonCards({
+  currentPlan,
+  signupPreference,
+  onCheckoutError,
+}: {
+  currentPlan: string;
+  signupPreference: string | null;
+  onCheckoutError: (msg: string) => void;
+}) {
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const cycle: BillingCycle = 'monthly';
   const sellable = SHARED_PLANS.filter((p) => p.key !== 'enterprise');
+  const isOnTrial = currentPlan === 'trial';
 
   async function startCheckout(planKey: string) {
     setPendingKey(planKey);
     try {
       const { url } = await billingApi.checkout(planKey, cycle);
+      // Clear the preference once they've initiated checkout
+      try { localStorage.removeItem('signup_plan_preference'); } catch { /* ignore */ }
       window.location.href = url;
     } catch (err) {
       setPendingKey(null);
@@ -88,16 +101,31 @@ function PlanComparisonCards({ currentPlan, onCheckoutError }: { currentPlan: st
       {sellable.map((plan) => {
         const isCurrentPlan = currentPlan === plan.key;
         const isPending = pendingKey === plan.key;
+        const isPreferred = isOnTrial && signupPreference === plan.key;
+
         return (
           <div
             key={plan.key}
-            className={`card p-6 relative flex flex-col ${plan.popular ? 'ring-2 ring-brand-500' : ''}`}
+            className={`card p-6 relative flex flex-col ${
+              isPreferred
+                ? 'ring-2 ring-brand-500 shadow-md'
+                : plan.popular
+                  ? 'ring-2 ring-brand-500'
+                  : ''
+            }`}
           >
-            {plan.popular && (
+            {/* Preferred plan badge (signup preference, trial users only) */}
+            {isPreferred && (
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap">
+                Your chosen plan
+              </span>
+            )}
+            {!isPreferred && plan.popular && (
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
                 POPULAR
               </span>
             )}
+
             <div className="mb-4">
               <h3 className="text-base font-bold text-gray-900">{plan.name}</h3>
               <p className="text-2xl font-bold text-gray-900 mt-1">${plan.monthlyPrice}/mo</p>
@@ -122,9 +150,13 @@ function PlanComparisonCards({ currentPlan, onCheckoutError }: { currentPlan: st
               <button
                 onClick={() => startCheckout(plan.key)}
                 disabled={isPending}
-                className="btn-primary w-full text-sm py-2 disabled:opacity-60"
+                className={`w-full text-sm py-2 disabled:opacity-60 rounded-lg font-semibold transition-colors ${
+                  isPreferred
+                    ? 'bg-brand-600 hover:bg-brand-700 text-white'
+                    : 'btn-primary'
+                }`}
               >
-                {isPending ? 'Redirecting…' : `Switch to ${plan.name} →`}
+                {isPending ? 'Redirecting…' : isPreferred ? `Upgrade to ${plan.name} →` : `Switch to ${plan.name} →`}
               </button>
             )}
           </div>
@@ -141,7 +173,16 @@ export default function BillingPage() {
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [signupPreference, setSignupPreference] = useState<string | null>(null);
   const toast = useToast();
+
+  // Read plan preference set at signup — only relevant while still on trial
+  useEffect(() => {
+    try {
+      const pref = localStorage.getItem('signup_plan_preference');
+      if (pref) setSignupPreference(pref);
+    } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => {
     Promise.allSettled([billingApi.get(), billingApi.getUsage()])
@@ -337,6 +378,7 @@ export default function BillingPage() {
             <h2 className="text-lg font-semibold text-gray-900">Compare Plans</h2>
             <PlanComparisonCards
               currentPlan={billing.plan}
+              signupPreference={signupPreference}
               onCheckoutError={(msg) => toast.error(msg)}
             />
           </div>

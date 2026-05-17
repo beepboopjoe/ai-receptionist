@@ -9,6 +9,13 @@
 // Adding a plan: bump the union type, add a row, add Stripe
 // products in the customer's Stripe dashboard, set the
 // STRIPE_PRICE_ID_<KEY>_(MONTHLY|ANNUAL) env vars on the API.
+//
+// INTERNAL MARGIN MODEL (never customer-facing):
+//   Cost/min: $0.07 | Cost/number: $1/mo
+//   margin = (price - (minutes*0.07 + numbers*1)) / price
+//   Starter: ($79  - $14.00)  / $79  ≈ 82.3%   (BYO — no number cost)
+//   Growth:  ($199 - $54.50)  / $199 ≈ 72.6%
+//   Scale:   ($399 - $110.00) / $399 ≈ 72.4%
 // ============================================================
 
 export type PlanKey = 'trial' | 'starter' | 'growth' | 'scale' | 'enterprise';
@@ -17,6 +24,8 @@ export type BillingCycle = 'monthly' | 'annual';
 export interface Plan {
   key: PlanKey;
   name: string;
+  /** Short marketing badge shown on pricing cards. */
+  badge?: string;
   /** Marketing one-liner shown on pricing cards. */
   tagline: string;
   /** Long description for the comparison table. */
@@ -29,7 +38,7 @@ export interface Plan {
   monthlyMinutes: number;
   /** USD per minute charged once monthlyMinutes is exceeded. -1 = N/A. */
   overagePerMin: number;
-  /** Local phone numbers included free. Extra ones are $5/mo each. */
+  /** Local phone numbers included free. -1 = custom pool (Enterprise). */
   includedPhoneNumbers: number;
   /** Whether outbound campaigns are unlocked at this tier. */
   outbound: boolean;
@@ -39,144 +48,146 @@ export interface Plan {
   features: string[];
 }
 
-/**
- * Public plan catalog. Order matters — used as-is on the pricing page.
- *
- * Pricing rationale (see PRICING_PROPOSAL section in repo history):
- *   - Starter $79: undercuts Goodcall $79 with explicit minute count
- *   - Growth $179: between Goodcall $129 and Smith.ai $270
- *   - Scale $399: Smith.ai-tier price with way more minutes + outbound
- *   - Enterprise: custom — 5+ locations, white-label, SLA, dedicated rep
- */
 export const PLANS: readonly Plan[] = [
   {
     key: 'trial',
     name: 'Free Trial',
-    tagline: 'Try AI receptionist for free',
-    description: 'A 10-minute free trial to explore the platform.',
+    tagline: 'Try it free — no card needed',
+    description: 'Explore the full platform with real AI calls before committing to a plan.',
     monthlyPrice: 0,
     annualMonthlyPrice: 0,
     monthlyMinutes: 10,
     overagePerMin: 0,
-    includedPhoneNumbers: 0,
-    outbound: false,
+    includedPhoneNumbers: 1,
+    outbound: true,
     features: [
-      '10 AI minutes included',
-      'Uses platform phone number',
-      'Inbound calls only',
+      '30 AI voice minutes',
+      '1 temporary phone number',
+      'Inbound AI receptionist',
+      'Basic outbound test call',
+      'Call transcript + summary',
+      'Missed-call text-back',
       'No credit card required',
     ],
   },
   {
     key: 'starter',
     name: 'Starter',
-    tagline: 'Never miss a call again',
-    description: 'Perfect for solo operators or single-location businesses.',
+    badge: 'Best for solo offices',
+    tagline: 'Answer every call. Never miss a lead.',
+    description: 'Perfect for solo operators or single-location businesses ready to stop missing calls.',
     monthlyPrice: 79,
     annualMonthlyPrice: 67,
     monthlyMinutes: 200,
-    overagePerMin: 0.20,
-    includedPhoneNumbers: 1,
+    overagePerMin: 0.29,
+    includedPhoneNumbers: 0,
     outbound: true,
     features: [
-      '200 AI minutes / month',
-      '1 local phone number included',
-      'Inbound + Outbound calling',
-      'All 6 verticals (dental, legal, real estate, insurance, home services, generic)',
-      'English + Spanish bilingual',
-      'Public REST API + webhooks',
-      'Email support',
+      '200 AI voice minutes / month',
+      'Bring your own number — free porting (or add a line for $5/mo)',
+      'English + Spanish AI receptionist',
+      'Two-way SMS inbox',
+      'Appointment reminder SMS (24h + 2h)',
+      'Missed-call text-back SMS',
+      'Call transcripts + summaries',
+      'Email & SMS notifications',
     ],
   },
   {
     key: 'growth',
     name: 'Growth',
-    tagline: 'Turn calls into customers',
-    description: 'Multi-staff practices that run regular outbound campaigns.',
-    monthlyPrice: 179,
-    annualMonthlyPrice: 152,
-    monthlyMinutes: 600,
-    overagePerMin: 0.18,
-    includedPhoneNumbers: 1,
+    badge: 'Most Popular',
+    tagline: 'Qualify leads and book appointments automatically.',
+    description: 'For growing practices running regular outbound campaigns and intake workflows.',
+    monthlyPrice: 199,
+    annualMonthlyPrice: 169,
+    monthlyMinutes: 750,
+    overagePerMin: 0.25,
+    includedPhoneNumbers: 2,
     outbound: true,
     popular: true,
     features: [
-      '600 AI minutes / month',
-      '1 local phone number included',
-      'Inbound + Outbound calling',
-      'Unlimited outbound campaigns',
-      'Lead qualification & CRM sync',
-      'Custom voice clone available (+$49/mo)',
-      'Priority email support',
+      '750 AI voice minutes / month',
+      '2 local phone numbers included',
+      'Everything in Starter',
+      'Outbound calling campaigns',
+      'Voicemail drop + AMD',
+      'Appointment booking',
+      'CRM / webhook integrations',
+      'Lead qualification templates',
+      'Priority support',
     ],
   },
   {
     key: 'scale',
     name: 'Scale',
-    tagline: 'High-volume operations',
-    description: 'Multi-location or high-call-volume businesses.',
+    badge: 'Best for growing teams',
+    tagline: 'Multi-location AI intake at scale.',
+    description: 'Multi-location or high-call-volume businesses with advanced intake and CRM needs.',
     monthlyPrice: 399,
     annualMonthlyPrice: 339,
-    monthlyMinutes: 2000,
-    overagePerMin: 0.15,
-    includedPhoneNumbers: 2,
+    monthlyMinutes: 1500,
+    overagePerMin: 0.19,
+    includedPhoneNumbers: 5,
     outbound: true,
     features: [
-      '2,000 AI minutes / month',
-      '2 local phone numbers included',
+      '1,500 AI voice minutes / month',
+      '5 local phone numbers included',
       'Everything in Growth',
       'Multi-location support',
-      'Advanced analytics dashboard',
-      'Dedicated onboarding session',
-      'Phone + email support',
+      'Advanced outbound campaigns',
+      'SMS automation workflows',
+      'Custom intake flows',
+      'API access',
+      'CRM sync',
+      'Analytics dashboard',
     ],
   },
   {
     key: 'enterprise',
     name: 'Enterprise',
-    tagline: 'Tailored to your scale',
-    description: '5+ locations, white-label, dedicated SLA, and a named CSM.',
+    badge: 'Custom volume',
+    tagline: 'Custom AI workflows for high-volume teams.',
+    description: 'HIPAA-ready, white-label, and dedicated onboarding for organizations that need it all.',
     monthlyPrice: 0, // shown as "Custom" in UI
     annualMonthlyPrice: 0,
-    monthlyMinutes: -1, // unlimited
+    monthlyMinutes: -1,
     overagePerMin: -1,
-    includedPhoneNumbers: 5,
+    includedPhoneNumbers: -1,
     outbound: true,
     features: [
-      'Unlimited AI minutes',
-      '5+ phone numbers',
-      'Everything in Scale',
-      'White-label dashboard available',
-      'Dedicated customer success manager',
-      'Custom SLA + uptime guarantee',
-      'API rate-limit lift',
+      'High-volume AI minutes',
+      'HIPAA-ready workflows',
+      'Custom SMS workflows',
+      'Custom integrations',
+      'Dedicated onboarding',
+      'White-label options',
+      'Multiple locations',
+      'Custom number pools',
     ],
   },
 ] as const;
 
-/** Pay-as-you-go option — alternative to subscriptions. No monthly commit.
+/** Pay-as-you-go option — de-emphasized alternative to subscriptions.
  *
- * Priced deliberately HIGHER than the lowest-tier overage rate ($0.20/min
- * on Starter) so that subscribing is a clear discount per minute. At
- * $0.39/min PAYG, even a customer burning only ~200 min/mo saves money
- * by subscribing to Starter ($79/200 min = $0.395/min effective, with
- * overage at $0.20 thereafter). Above ~200 min, the subscription wins
- * by a wide margin. This pushes conversion to subscriptions while
- * keeping PAYG profitable for truly spiky low-volume use cases. */
+ * Priced above Starter's effective rate ($79/200 min = $0.395/min) so
+ * subscribing is always the better deal above ~150 min/mo. Shown as a
+ * small strip below the main plan grid — not the primary CTA.
+ */
 export const PAY_AS_YOU_GO = {
   key: 'payg' as const,
   name: 'Pay as you go',
   perMinute: 0.39,
   /** Phone number costs $5/mo even on PAYG; not included free. */
   phoneNumberMonthly: 5,
-  description: 'Test the platform or handle spiky volumes. Billed only for minutes used + your phone number. Subscribing saves 50%+ per minute once you cross ~150 min/mo.',
+  description: 'No monthly commitment — pay only for what you use. Good for low-volume testing or occasional backup usage.',
 };
 
 /** A la carte add-ons — separate Stripe SKUs, billed alongside the subscription. */
 export const ADDONS = {
   extra_local_number: { name: 'Extra local number', monthlyPrice: 5 },
   toll_free_number:   { name: 'Toll-free number',   monthlyPrice: 10 },
-  custom_voice_clone: { name: 'Custom voice clone', monthlyPrice: 49 },
+  custom_voice_clone: { name: 'Custom voice clone',  monthlyPrice: 49 },
 } as const;
 
 /** Minute packs — one-time purchase, never expire. */

@@ -46,6 +46,7 @@ import apiKeyMiddleware from './modules/public-api/api-key.middleware.js';
 import { apiKeyAdminPlugin } from './modules/public-api/api-key.router.js';
 import { publicApiPlugin } from './modules/public-api/public.router.js';
 import { openapiPlugin } from './modules/public-api/openapi.plugin.js';
+import { smsPlugin } from './modules/sms/sms.router.js';
 
 async function buildApp() {
   const app = Fastify({
@@ -165,6 +166,7 @@ async function buildApp() {
   await app.register(affiliatePlugin, { prefix: '/api/v1' });
   await app.register(partnerPlugin, { prefix: '/api/v1' });
   await app.register(hubspotOAuthPlugin, { prefix: '/api/v1' });
+  await app.register(smsPlugin, { prefix: '/api/v1' });
   // Stripe webhook lives at the root (no /api/v1) so the URL the
   // customer enters in the Stripe dashboard is short and stable.
   // It also needs raw-body capture which the plugin sets up itself.

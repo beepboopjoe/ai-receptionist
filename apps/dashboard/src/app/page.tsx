@@ -5,7 +5,7 @@
 // ============================================================
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { CheckCircle, Phone, Megaphone, ArrowRight, Sparkles } from 'lucide-react';
+import { CheckCircle, Phone, Megaphone, MessageSquare, ArrowRight, Sparkles } from 'lucide-react';
 import { BRAND_NAME } from '@/lib/brand';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
@@ -40,6 +40,10 @@ const FAQS = [
   {
     q: 'Is Spanish bilingual included?',
     a: 'Yes, on every plan. Your AI greets in English and switches to Spanish automatically when the caller does. No extra charge.',
+  },
+  {
+    q: 'Does SMS come included?',
+    a: 'The two-way SMS inbox and automated appointment reminders (24h + 2h) are included on Growth and Scale plans. Starter sends missed-call text-backs only. SMS is sent from your provisioned business number.',
   },
 ];
 
@@ -90,11 +94,12 @@ const INDUSTRIES = [
 
 // Derived from shared catalog — single source of truth.
 const PLANS_PREVIEW = PLANS.filter((p) => ['starter', 'growth', 'scale'].includes(p.key)).map((p) => ({
+  key: p.key,
   name: p.name,
   price: `$${p.monthlyPrice}`,
   tagline: p.tagline,
   features: p.features.slice(0, 4),
-  cta: `Start with ${p.name}`,
+  cta: `Subscribe to ${p.name}`,
   popular: !!p.popular,
 }));
 
@@ -124,16 +129,16 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
-            Book appointments, handle missed calls, and run outbound campaigns — all on autopilot.
+            Book appointments, handle missed calls, send two-way SMS, and run outbound campaigns — all on autopilot.
             Never miss a call again.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/signup"
+              href="/pricing#plans"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              Start free trial →
+              See plans &amp; pricing →
             </Link>
             <Link
               href="/demo"
@@ -144,7 +149,7 @@ export default function LandingPage() {
           </div>
 
           <p className="text-xs text-cream-500 mt-5">
-            No contracts · 14-day free trial · Setup in 10 minutes
+            No contracts · Voice + SMS · Setup in 10 minutes
           </p>
         </div>
       </section>
@@ -160,16 +165,16 @@ export default function LandingPage() {
       <section className="py-24 px-6 bg-cream-50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Two products. One platform.</p>
+            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Three products. One platform.</p>
             <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
               Handle every caller touchpoint.
             </h2>
             <p className="text-cream-600 mt-3 max-w-xl mx-auto">
-              Inbound for answering every call 24/7. Outbound for proactively filling your calendar.
+              Inbound answers every call. Outbound fills your calendar. Messaging follows up — automatically.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
             {/* Inbound card */}
             <Link
@@ -238,6 +243,41 @@ export default function LandingPage() {
               </ul>
               <div className="flex items-center gap-2 text-sm font-semibold text-brand-600 group-hover:gap-3 transition-all">
                 Learn more about Outbound <ArrowRight size={15} />
+              </div>
+            </Link>
+
+            {/* Messaging card */}
+            <Link
+              href="/pricing#plans"
+              className="group block rounded-3xl bg-white border border-cream-200 p-8 hover:border-brand-300 hover:shadow-md transition-all"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center">
+                  <MessageSquare size={22} className="text-indigo-600" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-[0.2em]">Messaging</p>
+                  <h3 className="font-serif text-2xl text-cream-900 tracking-tight">Two-way SMS</h3>
+                </div>
+              </div>
+              <p className="text-cream-600 text-sm mb-6 leading-relaxed">
+                Your AI texts back missed callers in seconds, sends appointment reminders, and your team picks up the thread from a shared inbox — all from your business number.
+              </p>
+              <ul className="space-y-3 mb-6">
+                {[
+                  'Two-way SMS inbox tied to every contact',
+                  'Appointment reminder SMS (24h + 2h)',
+                  'Missed-call text-back under 10 seconds',
+                  'Reply CONFIRM / CANCEL to manage bookings',
+                ].map((feat) => (
+                  <li key={feat} className="flex items-start gap-2.5 text-sm text-cream-700">
+                    <CheckCircle size={15} className="text-indigo-500 shrink-0 mt-0.5" />
+                    {feat}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex items-center gap-2 text-sm font-semibold text-brand-600 group-hover:gap-3 transition-all">
+                Included on Growth & Scale <ArrowRight size={15} />
               </div>
             </Link>
 
@@ -338,7 +378,7 @@ export default function LandingPage() {
             <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
               Simple pricing.<br />No surprises.
             </h2>
-            <p className="text-cream-600 mt-3 text-lg">14-day free trial on all plans. No credit card required.</p>
+            <p className="text-cream-600 mt-3 text-lg">Monthly or annual. Cancel anytime.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
@@ -373,7 +413,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href="/signup"
+                  href={`/signup?plan=${plan.key}&cycle=monthly`}
                   className={`block w-full text-center py-2.5 px-5 rounded-xl text-sm font-semibold transition-colors ${
                     plan.popular
                       ? 'bg-brand-600 text-white hover:bg-brand-700'
@@ -462,10 +502,10 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/signup"
+              href="/pricing#plans"
               className="glow-btn inline-flex items-center gap-2 px-9 py-4 text-base font-bold text-white bg-brand-600 rounded-2xl"
             >
-              Start your free trial →
+              See plans &amp; pricing →
             </Link>
             <Link
               href="/demo"
@@ -474,7 +514,7 @@ export default function LandingPage() {
               See a live demo
             </Link>
           </div>
-          <p className="mt-6 text-sm text-cream-500">No credit card required · Setup takes under 10 minutes</p>
+          <p className="mt-6 text-sm text-cream-500">Pay monthly or annual · Cancel anytime · Setup under 10 minutes</p>
         </div>
       </section>
 

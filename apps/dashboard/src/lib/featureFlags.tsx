@@ -21,6 +21,7 @@ import { usePlan, type PlanTier } from './usePlan';
 /** Every capability that can be gated. Add new entries here. */
 export type FeatureFlag =
   | 'outbound_campaigns'
+  | 'two_way_sms'
   | 'analytics'
   | 'multi_location'
   | 'webhooks'
@@ -33,6 +34,7 @@ export type FeatureFlag =
 /** Lowest plan tier required for each flag. Anything above also gets it. */
 const PLAN_REQUIREMENT: Record<FeatureFlag, PlanTier> = {
   outbound_campaigns:  'growth',
+  two_way_sms:         'starter',
   analytics:           'pro',
   multi_location:      'pro',
   webhooks:            'growth',
@@ -55,6 +57,7 @@ const TIER_RANK: Record<PlanTier, number> = {
 /** Human-readable labels for upgrade modals/locked feature CTAs. */
 export const FLAG_LABELS: Record<FeatureFlag, string> = {
   outbound_campaigns: 'Outbound campaigns',
+  two_way_sms:        'Two-way SMS inbox',
   analytics:          'Advanced analytics',
   multi_location:     'Multi-location management',
   webhooks:           'Outbound webhooks',

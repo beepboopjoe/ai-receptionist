@@ -496,3 +496,49 @@ export const campaignsApi = {
       body: JSON.stringify(update),
     }),
 };
+
+// ---- SMS (two-way inbox) ----
+export interface SmsMessage {
+  id: string;
+  direction: 'inbound' | 'outbound';
+  fromNumber: string;
+  toNumber: string;
+  body: string;
+  status: string;
+  contactId: string | null;
+  createdAt: string;
+}
+
+export interface SmsConversation {
+  externalPhone: string;
+  lastMessage: string;
+  lastDirection: string;
+  lastAt: string;
+  inboundCount: number;
+  contactId: string | null;
+  contactName: string | null;
+}
+
+export interface SmsThread {
+  phone: string;
+  contactId: string | null;
+  contactName: string | null;
+  messages: SmsMessage[];
+}
+
+export const smsApi = {
+  /** List all conversation threads for the tenant, sorted by most recent. */
+  listConversations: () =>
+    apiFetch<{ data: SmsConversation[] }>('/sms/conversations'),
+
+  /** Full message thread for a single external phone number. */
+  getThread: (phone: string) =>
+    apiFetch<SmsThread>(`/sms/conversations/${encodeURIComponent(phone)}`),
+
+  /** Send an outbound SMS from the dashboard. */
+  send: (to: string, body: string) =>
+    apiFetch<{ ok: boolean; messageId: string }>('/sms/send', {
+      method: 'POST',
+      body: JSON.stringify({ to, body }),
+    }),
+};

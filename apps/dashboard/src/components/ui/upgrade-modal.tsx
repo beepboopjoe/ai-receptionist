@@ -10,6 +10,7 @@ import { X, Zap, CheckCircle } from 'lucide-react';
 export type UpgradeReason =
   | 'usage_limit'
   | 'outbound_locked'
+  | 'sms_locked'
   | 'second_number'
   | 'pro_analytics'
   | 'multi_location';
@@ -45,8 +46,20 @@ const MODAL_CONTENT: Record<
       'AI dials and qualifies automatically',
       'Books appointments from cold leads',
     ],
-    cta: 'Upgrade to Growth · $179/mo',
+    cta: 'Upgrade to Growth · $199/mo',
     targetPlan: 'Growth',
+  },
+  sms_locked: {
+    icon: '💬',
+    title: 'Two-way SMS requires a paid plan',
+    description: 'Upgrade to Starter (or any paid plan) to send and receive SMS with your contacts, plus automated 24h + 2h appointment reminders.',
+    features: [
+      'Two-way SMS inbox with your contacts',
+      'Automated appointment reminders (24h + 2h)',
+      'Missed-call text-back replies under 10s',
+    ],
+    cta: 'Upgrade to Starter · $79/mo',
+    targetPlan: 'Starter',
   },
   second_number: {
     icon: '📱',

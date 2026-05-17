@@ -6,7 +6,7 @@
 // ============================================================
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { CheckCircle, Phone, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
+import { CheckCircle, Phone, ShieldCheck, Sparkles, AlertCircle, MessageSquare, Clock, Bell } from 'lucide-react';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { CampaignFlowDiagram } from '@/components/ui/campaign-flow-diagram';
@@ -16,6 +16,10 @@ import { BRAND_NAME } from '@/lib/brand';
 // so the marketing page's first paint isn't blocked on its TTS code.
 const SampleCallPlayer = dynamic(
   () => import('@/components/ui/sample-call-player').then((m) => m.SampleCallPlayer),
+  { ssr: false }
+);
+const VoiceLanguageDemo = dynamic(
+  () => import('@/components/ui/voice-language-demo').then((m) => m.VoiceLanguageDemo),
   { ssr: false }
 );
 const DashboardTeaser = dynamic(
@@ -105,10 +109,10 @@ export default function OutboundPage() {
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/onboarding/plan"
+              href="/pricing#plans"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              Start free trial →
+              See plans &amp; pricing →
             </Link>
             <Link
               href="/demo"
@@ -118,7 +122,7 @@ export default function OutboundPage() {
             </Link>
           </div>
           <p className="text-xs text-cream-500 mt-5">
-            Included on Growth and Scale plans · 14-day free trial · No contracts
+            Included on Growth and Scale plans · Pay monthly or annual · No contracts
           </p>
         </div>
       </section>
@@ -243,6 +247,90 @@ export default function OutboundPage() {
         <SampleCallPlayer callType="outbound" />
       </section>
 
+      {/* ── Voice × Language demo ───────────────────────── */}
+      <section className="py-16 bg-cream-50 border-t border-cream-200">
+        <VoiceLanguageDemo />
+      </section>
+
+      {/* ── SMS reminders + outbound texting ─────────────── */}
+      <section className="max-w-5xl mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Outbound isn&apos;t just calls</p>
+          <h2 className="font-serif text-4xl text-cream-900 tracking-tight">
+            Every booking gets a text — automatically.
+          </h2>
+          <p className="text-cream-600 mt-3 max-w-2xl mx-auto leading-relaxed">
+            Appointment reminders fire 24 hours and 2 hours before every booked slot. Two-way replies route to the same inbox your team is already using. Included on every plan.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          {[
+            {
+              icon: Bell,
+              title: '24-hour reminder',
+              desc: 'Confirms the appointment the day before. Reply CONFIRM and the AI logs it; reply CANCEL and the slot reopens.',
+              tag: 'T-24h',
+            },
+            {
+              icon: Clock,
+              title: '2-hour reminder',
+              desc: 'Quick nudge two hours before the appointment so no-shows drop. Same number, same thread, no friction.',
+              tag: 'T-2h',
+            },
+            {
+              icon: MessageSquare,
+              title: 'Two-way inbox',
+              desc: 'Replies land in a shared inbox in your dashboard. Pick up where the AI left off — full history, no copy-paste.',
+              tag: 'Shared',
+            },
+          ].map(({ icon: Icon, title, desc, tag }) => (
+            <div key={title} className="rounded-2xl bg-white border border-cream-200 p-7">
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center">
+                  <Icon size={20} className="text-indigo-600" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-full px-2.5 py-0.5">
+                  {tag}
+                </span>
+              </div>
+              <h3 className="font-serif text-xl text-cream-900 mb-2">{title}</h3>
+              <p className="text-sm text-cream-600 leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Today's reminders mock stat */}
+        <div className="rounded-3xl bg-cream-50 border border-cream-200 p-6 max-w-xl mx-auto">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-cream-500 mb-3 text-center">
+            Today&apos;s reminders (sample)
+          </p>
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="font-serif text-3xl text-cream-900">32</p>
+              <p className="text-xs text-cream-500 mt-0.5">sent</p>
+            </div>
+            <div className="border-x border-cream-200">
+              <p className="font-serif text-3xl text-emerald-600">28</p>
+              <p className="text-xs text-cream-500 mt-0.5">confirmed</p>
+            </div>
+            <div>
+              <p className="font-serif text-3xl text-cream-900">0</p>
+              <p className="text-xs text-cream-500 mt-0.5">errors</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10 text-center">
+          <Link
+            href="/pricing#plans"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition-colors"
+          >
+            See plans →
+          </Link>
+        </div>
+      </section>
+
       <section className="max-w-3xl mx-auto px-6 pb-16">
         <div className="rounded-2xl bg-amber-50 border border-amber-200 p-6 flex gap-4">
           <AlertCircle size={20} className="text-amber-700 shrink-0 mt-0.5" />
@@ -262,24 +350,24 @@ export default function OutboundPage() {
             Outbound is included on Growth.
           </h2>
           <p className="text-cream-300 mt-4 max-w-xl mx-auto">
-            Growth ($179/mo) covers inbound and outbound on one number. Scale ($399/mo) adds multi-location, advanced analytics, and a dedicated success manager.
+            Growth ($199/mo) covers inbound, outbound, and SMS on one number. Scale ($399/mo) adds multi-location, advanced analytics, and a dedicated success manager.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/onboarding/plan"
+              href="/pricing#plans"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              <Phone size={15} /> Start free trial
+              <Phone size={15} /> Choose your plan
             </Link>
             <Link
-              href="/pricing"
+              href="/pricing#compare"
               className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-cream-100 border border-white/20 rounded-xl hover:bg-white/5 transition-colors"
             >
               Compare all plans →
             </Link>
           </div>
           <p className="text-xs text-cream-400 mt-5">
-            14-day free trial · 200 minutes included · No credit card required
+            Pay monthly or annual · Cancel anytime · 30-day money-back guarantee
           </p>
         </div>
       </section>
