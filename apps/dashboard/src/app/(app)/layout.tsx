@@ -1,6 +1,6 @@
 'use client';
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { isAuthenticated } from '@/lib/auth';
 import { Sidebar } from '@/components/layout/sidebar';
 import { TenantProvider } from '@/lib/TenantProvider';
@@ -12,6 +12,7 @@ import { CommandPalette } from '@/components/ui/command-palette';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -29,8 +30,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <main className="flex-1 overflow-y-auto">
             <OnboardingBanner />
             {/* pt-16 on mobile leaves room for the fixed mobile top bar */}
+            {/* key={pathname} resets the error boundary on every navigation */}
             <div className="max-w-7xl mx-auto px-4 md:px-6 pt-20 md:pt-8 pb-8">
-              <ErrorBoundary>{children}</ErrorBoundary>
+              <ErrorBoundary key={pathname}>{children}</ErrorBoundary>
             </div>
           </main>
         </div>

@@ -258,8 +258,9 @@ export default function DashboardPage() {
                 const style = EVENT_STYLES[evt.type] ?? { color: 'text-gray-700 bg-gray-50', dot: 'bg-gray-400' };
                 const label = eventLabels[evt.type] ?? evt.type;
                 const meta = { ...style, label };
-                const phone = (evt.data['fromNumber'] ?? evt.data['toNumber'] ?? evt.data['phone'] ?? '') as string;
-                const name = (evt.data['contactName'] ?? '') as string;
+                const d = evt.data ?? {};
+                const phone = (d['fromNumber'] ?? d['toNumber'] ?? d['phone'] ?? '') as string;
+                const name = (d['contactName'] ?? '') as string;
                 return (
                   <div key={i} className="px-5 py-3 flex items-start gap-3">
                     <div className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${meta.dot}`} />
