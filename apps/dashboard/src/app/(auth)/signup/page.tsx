@@ -55,7 +55,7 @@ const PLAN_OPTIONS: {
     name: 'Free Access',
     priceDisplay: 'Free',
     minutes: '10',
-    numbers: '1',
+    numbers: 'BYO',
     badge: null,
     popular: false,
     note: 'No credit card required',

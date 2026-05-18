@@ -53,7 +53,7 @@ const FAQS = [
   },
   {
     q: 'Is there a free trial?',
-    a: 'You can sign up for a 10-minute trial on a temporary platform number for testing the voice. For real business usage with your own number and the full SMS + outbound toolkit, pick a paid plan.',
+    a: 'Yes — sign up free and bring your own number (free porting). You get 10 AI minutes to test the voice and flows with no credit card required. Upgrade to a paid plan for full SMS, outbound campaigns, and more minutes.',
   },
   {
     q: 'Is my data secure? What about HIPAA?',
