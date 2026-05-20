@@ -6,12 +6,19 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Phone, Sparkles, ShieldCheck } from 'lucide-react';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { VERTICALS, type Vertical } from '@/lib/verticals';
 import { SampleCallPlayer } from '@/components/ui/sample-call-player';
 import { VoiceLanguageDemo } from '@/components/ui/voice-language-demo';
+
+// Heavy interactive widget — load on demand, no SSR needed.
+const DashboardTeaser = dynamic(
+  () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
+  { ssr: false }
+);
 
 // Vertical pills order — keep "all" first for default-shown state.
 const VERTICAL_FILTERS: { key: 'all' | Vertical; label: string; emoji: string }[] = [
@@ -130,6 +137,11 @@ export default function DemoPage() {
       {/* ── Voice × Language demo ──────────────────────────── */}
       <section className="py-16 bg-cream-50 border-t border-cream-200">
         <VoiceLanguageDemo />
+      </section>
+
+      {/* ── Interactive dashboard preview ──────────────────── */}
+      <section className="bg-white border-t border-cream-200">
+        <DashboardTeaser />
       </section>
 
       {/* ── What's different about ours ───────────────────── */}

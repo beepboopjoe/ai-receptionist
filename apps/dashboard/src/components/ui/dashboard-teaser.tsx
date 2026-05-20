@@ -1,40 +1,68 @@
 'use client';
 // ============================================================
-// DashboardTeaser — interactive browser-mockup preview of the
-// actual client dashboard for the landing page
+// DashboardTeaser — fully-interactive browser-mockup preview of
+// the real client dashboard. Every sidebar item is clickable
+// and shows a representative sample view. Used on /inbound,
+// /outbound, and /demo as a "command-centre" teaser.
 // ============================================================
 import { BRAND_NAME } from '@/lib/brand';
 import { useState } from 'react';
 
-// ── Tab definitions ──────────────────────────────────────────
-const TABS = [
-  { id: 'dashboard',    label: '📊 Dashboard' },
-  { id: 'calls',        label: '📞 Call Log' },
-  { id: 'messages',     label: '💬 Messages' },
-  { id: 'integrations', label: '🔌 Integrations' },
-  { id: 'campaigns',    label: '📡 Campaigns' },
+// ── Tab + view IDs ───────────────────────────────────────────
+type TabId =
+  | 'dashboard'
+  | 'calls'
+  | 'appointments'
+  | 'contacts'
+  | 'missed'
+  | 'reminders'
+  | 'escalations'
+  | 'campaigns'
+  | 'messages'
+  | 'billing'
+  | 'integrations'
+  | 'office_hours'
+  | 'voice_agent'
+  | 'notifications';
+
+// ── Sidebar nav (matches the real /sidebar component) ────────
+const NAV_ITEMS: { icon: string; label: string; id: TabId }[] = [
+  { icon: '▦',  label: 'Dashboard',    id: 'dashboard'    },
+  { icon: '📞', label: 'Call Log',     id: 'calls'        },
+  { icon: '📅', label: 'Appointments', id: 'appointments' },
+  { icon: '👥', label: 'Contacts',     id: 'contacts'     },
+  { icon: '📵', label: 'Missed Calls', id: 'missed'       },
+  { icon: '🔔', label: 'Reminders',    id: 'reminders'    },
+  { icon: '⚠️', label: 'Escalations',  id: 'escalations'  },
+  { icon: '📡', label: 'Campaigns',    id: 'campaigns'    },
+  { icon: '💬', label: 'Messages',     id: 'messages'     },
+  { icon: '💳', label: 'Billing',      id: 'billing'      },
 ];
 
-// ── Sidebar nav items (matches real sidebar) ─────────────────
-const NAV_ITEMS = [
-  { icon: '▦',  label: 'Dashboard',    id: 'dashboard' },
-  { icon: '📞', label: 'Call Log',     id: 'calls' },
-  { icon: '📅', label: 'Appointments', id: null },
-  { icon: '👥', label: 'Patients',     id: null },
-  { icon: '📵', label: 'Missed Calls', id: null },
-  { icon: '🔔', label: 'Reminders',    id: null },
-  { icon: '⚠️', label: 'Escalations',  id: null },
-  { icon: '📡', label: 'Campaigns',    id: 'campaigns' },
-  { icon: '💬', label: 'Messages',     id: 'messages' },
-  { icon: '💳', label: 'Billing',      id: null },
+const SETTINGS_NAV: { label: string; id: TabId }[] = [
+  { label: 'Integrations',  id: 'integrations'  },
+  { label: 'Office Hours',  id: 'office_hours'  },
+  { label: 'Voice Agent',   id: 'voice_agent'   },
+  { label: 'Notifications', id: 'notifications' },
 ];
 
-const SETTINGS_NAV = [
-  { label: 'Integrations', id: 'integrations' },
-  { label: 'Office Hours',  id: null },
-  { label: 'Voice Agent',   id: null },
-  { label: 'Notifications', id: null },
-];
+// Friendly labels for the breadcrumb header.
+const TAB_LABELS: Record<TabId, string> = {
+  dashboard:    'Dashboard',
+  calls:        'Call Log',
+  appointments: 'Appointments',
+  contacts:     'Contacts',
+  missed:       'Missed Calls',
+  reminders:    'Reminders',
+  escalations:  'Escalations',
+  campaigns:    'Campaigns',
+  messages:     'Messages',
+  billing:      'Billing',
+  integrations: 'Integrations',
+  office_hours: 'Office Hours',
+  voice_agent:  'Voice Agent',
+  notifications:'Notifications',
+};
 
 // ── Mock data ────────────────────────────────────────────────
 const MOCK_CALLS = [
@@ -74,7 +102,7 @@ const INTEGRATIONS = [
     items: [
       { icon: '🗄️', name: 'Built-in CRM', desc: 'Contact profiles, call history, notes', status: 'connected', color: 'bg-green-50 border-green-200' },
       { icon: '📊', name: 'CSV Import', desc: 'Bulk import from any system', status: 'connected', color: 'bg-green-50 border-green-200' },
-      { icon: '🔗', name: 'HubSpot', desc: 'CRM sync and lead management (Growth+)', status: 'coming_soon', color: 'bg-gray-50 border-gray-200' },
+      { icon: '🔗', name: 'HubSpot', desc: 'CRM sync and lead management', status: 'connected', color: 'bg-orange-50 border-orange-200' },
       { icon: '☁️', name: 'Salesforce', desc: 'Enterprise CRM integration', status: 'coming_soon', color: 'bg-gray-50 border-gray-200' },
     ],
   },
@@ -87,44 +115,115 @@ const INTEGRATIONS = [
   },
 ];
 
+const MOCK_APPOINTMENTS = [
+  { name: 'James Park',     phone: '(310) 555-0192', when: 'Today · 2:30 PM',  service: 'New patient exam',     status: 'confirmed' },
+  { name: 'Maria Torres',   phone: '(424) 555-0147', when: 'Today · 3:15 PM',  service: 'Cleaning',             status: 'confirmed' },
+  { name: 'Linda Davis',    phone: '(213) 555-0088', when: 'Tomorrow · 9:00 AM',service:'Crown fitting',         status: 'confirmed' },
+  { name: 'Robert Chen',    phone: '(818) 555-0321', when: 'Tomorrow · 11:30 AM',service:'Consultation',         status: 'pending'   },
+  { name: 'Anna Petrov',    phone: '(626) 555-0055', when: 'Thu · 8:30 AM',    service: 'Cleaning + checkup',    status: 'confirmed' },
+  { name: 'Marcus Lopez',   phone: '(310) 555-0274', when: 'Thu · 2:00 PM',    service: 'Whitening follow-up',   status: 'confirmed' },
+];
+
+const MOCK_CONTACTS = [
+  { name: 'James Park',     phone: '(310) 555-0192', email: 'james@example.com',  bookings: 4, lastCall: '2m ago'  },
+  { name: 'Maria Torres',   phone: '(424) 555-0147', email: 'maria@example.com',  bookings: 2, lastCall: '8m ago'  },
+  { name: 'Linda Davis',    phone: '(213) 555-0088', email: 'linda@example.com',  bookings: 7, lastCall: '15m ago' },
+  { name: 'Robert Chen',    phone: '(818) 555-0321', email: 'robert@example.com', bookings: 1, lastCall: '22m ago' },
+  { name: 'Anna Petrov',    phone: '(626) 555-0055', email: 'anna@example.com',   bookings: 3, lastCall: '31m ago' },
+  { name: 'Marcus Lopez',   phone: '(310) 555-0274', email: 'marcus@example.com', bookings: 5, lastCall: '45m ago' },
+];
+
+const MOCK_MISSED = [
+  { phone: '(626) 555-0055', time: '12:32 PM',  textBack: 'Sent · awaiting reply',     status: 'pending'  },
+  { phone: '(310) 555-0489', time: '11:18 AM',  textBack: 'Replied — booked Tue 2pm',  status: 'resolved' },
+  { phone: '(818) 555-1234', time: '10:47 AM',  textBack: 'Sent · no reply yet',       status: 'pending'  },
+  { phone: '(424) 555-9981', time: 'Yesterday', textBack: 'Replied — wrong number',    status: 'resolved' },
+];
+
+const MOCK_REMINDERS = [
+  { name: 'James Park',   when: 'Today 1:30 PM',  type: '1-hour reminder',  channel: 'SMS', status: 'queued' },
+  { name: 'Maria Torres', when: 'Today 2:15 PM',  type: '1-hour reminder',  channel: 'SMS', status: 'queued' },
+  { name: 'Linda Davis',  when: 'Tomorrow 9 AM',  type: '24-hour reminder', channel: 'SMS', status: 'queued' },
+  { name: 'Robert Chen',  when: 'Today 9:00 AM',  type: '24-hour reminder', channel: 'SMS', status: 'sent'   },
+  { name: 'Anna Petrov',  when: 'Yesterday',      type: '24-hour reminder', channel: 'SMS', status: 'sent'   },
+];
+
+const MOCK_ESCALATIONS = [
+  { caller: 'Sarah Kim',      issue: 'Dental emergency — wisdom tooth pain',   priority: 'high',   age: '3m ago',  status: 'open'       },
+  { caller: '(213) 555-0088', issue: 'Insurance verification needed urgently', priority: 'medium', age: '12m ago', status: 'in_progress'},
+  { caller: 'Michael Reyes',  issue: 'Caller asked for the dentist directly',  priority: 'low',    age: '47m ago', status: 'resolved'   },
+];
+
 // ── Helper components ─────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    completed:   'bg-green-100 text-green-700',
-    transferred: 'bg-amber-100 text-amber-700',
-    missed:      'bg-red-100 text-red-700',
-    booked:      'bg-emerald-100 text-emerald-700',
-    rescheduled: 'bg-blue-100 text-blue-700',
-    escalated:   'bg-amber-100 text-amber-700',
-    cancelled:   'bg-gray-100 text-gray-600',
-    voicemail:   'bg-gray-100 text-gray-600',
-    running:     'bg-green-100 text-green-700',
-    paused:      'bg-amber-100 text-amber-700',
-    draft:       'bg-gray-100 text-gray-600',
-    connected:   'bg-green-100 text-green-700',
-    available:   'bg-gray-100 text-gray-500',
-    coming_soon: 'bg-purple-50 text-purple-600',
+    completed:    'bg-green-100 text-green-700',
+    transferred:  'bg-amber-100 text-amber-700',
+    missed:       'bg-red-100 text-red-700',
+    booked:       'bg-emerald-100 text-emerald-700',
+    rescheduled:  'bg-blue-100 text-blue-700',
+    escalated:    'bg-amber-100 text-amber-700',
+    cancelled:    'bg-gray-100 text-gray-600',
+    voicemail:    'bg-gray-100 text-gray-600',
+    running:      'bg-green-100 text-green-700',
+    paused:       'bg-amber-100 text-amber-700',
+    draft:        'bg-gray-100 text-gray-600',
+    connected:    'bg-green-100 text-green-700',
+    available:    'bg-gray-100 text-gray-500',
+    coming_soon:  'bg-purple-50 text-purple-600',
+    confirmed:    'bg-emerald-100 text-emerald-700',
+    pending:      'bg-amber-100 text-amber-700',
+    resolved:     'bg-green-100 text-green-700',
+    queued:       'bg-blue-100 text-blue-700',
+    sent:         'bg-emerald-100 text-emerald-700',
+    open:         'bg-red-100 text-red-700',
+    in_progress:  'bg-amber-100 text-amber-700',
+    high:         'bg-red-100 text-red-700',
+    medium:       'bg-amber-100 text-amber-700',
+    low:          'bg-gray-100 text-gray-600',
   };
   const label: Record<string, string> = {
-    completed:   'Completed',
-    transferred: 'Transferred',
-    missed:      'Missed',
-    booked:      'Booked',
-    rescheduled: 'Rescheduled',
-    escalated:   'Escalated',
-    cancelled:   'Cancelled',
-    voicemail:   'Voicemail',
-    running:     'Running',
-    paused:      'Paused',
-    draft:       'Draft',
-    connected:   '✓ Connected',
-    available:   'Connect',
-    coming_soon: 'Coming soon',
+    completed:    'Completed',
+    transferred:  'Transferred',
+    missed:       'Missed',
+    booked:       'Booked',
+    rescheduled:  'Rescheduled',
+    escalated:    'Escalated',
+    cancelled:    'Cancelled',
+    voicemail:    'Voicemail',
+    running:      'Running',
+    paused:       'Paused',
+    draft:        'Draft',
+    connected:    '✓ Connected',
+    available:    'Connect',
+    coming_soon:  'Coming soon',
+    confirmed:    'Confirmed',
+    pending:      'Pending',
+    resolved:     'Resolved',
+    queued:       'Queued',
+    sent:         'Sent',
+    open:         'Open',
+    in_progress:  'In progress',
+    high:         'High',
+    medium:       'Medium',
+    low:          'Low',
   };
   return (
     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${map[status] ?? 'bg-gray-100 text-gray-600'}`}>
       {label[status] ?? status}
     </span>
+  );
+}
+
+function SectionCard({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <span className="font-semibold text-gray-900 text-sm">{title}</span>
+        {action}
+      </div>
+      {children}
+    </div>
   );
 }
 
@@ -135,10 +234,10 @@ function DashboardView() {
       {/* Stat cards */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Calls Today',           value: '47',  color: 'bg-brand-600', icon: '📞' },
+          { label: 'Calls Today',           value: '47',  color: 'bg-brand-600',   icon: '📞' },
           { label: 'Appointments Booked',   value: '12',  color: 'bg-emerald-500', icon: '📅' },
-          { label: 'Open Escalations',      value: '2',   color: 'bg-amber-500', icon: '⚠️' },
-          { label: 'Missed Calls',          value: '3',   color: 'bg-red-500', icon: '📵' },
+          { label: 'Open Escalations',      value: '2',   color: 'bg-amber-500',   icon: '⚠️' },
+          { label: 'Missed Calls',          value: '3',   color: 'bg-red-500',     icon: '📵' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
             <p className="text-xs text-gray-500 mb-1">{s.label}</p>
@@ -183,11 +282,11 @@ function DashboardView() {
           </div>
           <div className="p-3 space-y-2">
             {[
-              { type: 'appointment_booked',   text: 'Cleaning booked — J. Park',  t: '0:12' },
-              { type: 'call_started',          text: 'Inbound call from (310)…',   t: '0:34' },
-              { type: 'escalation_created',    text: 'Pain emergency — transferred', t: '1:05' },
-              { type: 'appointment_booked',   text: 'Exam booked — M. Torres',    t: '2:18' },
-              { type: 'call_completed',        text: 'Call ended — 2m 11s',        t: '3:40' },
+              { type: 'appointment_booked',  text: 'Cleaning booked — J. Park',     t: '0:12' },
+              { type: 'call_started',         text: 'Inbound call from (310)…',      t: '0:34' },
+              { type: 'escalation_created',   text: 'Pain emergency — transferred',  t: '1:05' },
+              { type: 'appointment_booked',  text: 'Exam booked — M. Torres',       t: '2:18' },
+              { type: 'call_completed',       text: 'Call ended — 2m 11s',           t: '3:40' },
             ].map((ev, i) => {
               const color = ev.type === 'appointment_booked' ? 'bg-emerald-500' :
                 ev.type === 'call_started' ? 'bg-blue-500' :
@@ -209,16 +308,16 @@ function DashboardView() {
 
 function CallsView() {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <span className="font-semibold text-gray-900">Call Log</span>
+    <SectionCard
+      title="Call Log"
+      action={
         <div className="flex gap-2">
           {['All', 'Completed', 'Missed', 'Escalated'].map(f => (
             <button key={f} className={`text-xs px-3 py-1 rounded-full font-medium ${f === 'All' ? 'bg-brand-100 text-brand-700' : 'text-gray-500 hover:bg-gray-100'}`}>{f}</button>
           ))}
         </div>
-      </div>
-      {/* Table header */}
+      }
+    >
       <div className="grid grid-cols-12 px-5 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-50">
         <span className="col-span-3">Caller</span>
         <span className="col-span-1">Dir.</span>
@@ -239,7 +338,167 @@ function CallsView() {
           </div>
         ))}
       </div>
+    </SectionCard>
+  );
+}
+
+function AppointmentsView() {
+  return (
+    <div className="space-y-4">
+      {/* Mini calendar strip */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="font-semibold text-gray-900 text-sm">This week</span>
+          <div className="flex gap-1">
+            <button className="text-xs text-gray-500 px-2 py-1 rounded hover:bg-gray-100">‹</button>
+            <button className="text-xs text-gray-500 px-2 py-1 rounded hover:bg-gray-100">›</button>
+          </div>
+        </div>
+        <div className="grid grid-cols-7 gap-1.5">
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
+            <div key={d} className={`text-center rounded-lg py-2 ${i === 1 ? 'bg-brand-600 text-white' : 'bg-gray-50 text-gray-600'}`}>
+              <p className="text-[10px] font-semibold opacity-70">{d}</p>
+              <p className="text-sm font-bold mt-0.5">{19 + i}</p>
+              <div className="flex justify-center gap-0.5 mt-1">
+                {[0, 1, 2].slice(0, (i + 2) % 4).map((dot) => (
+                  <span key={dot} className={`w-1 h-1 rounded-full ${i === 1 ? 'bg-white' : 'bg-brand-400'}`} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <SectionCard title="Upcoming appointments" action={<button className="text-xs bg-brand-600 text-white px-3 py-1.5 rounded-lg font-semibold">+ New</button>}>
+        <div className="divide-y divide-gray-50">
+          {MOCK_APPOINTMENTS.map((a, i) => (
+            <div key={i} className="px-5 py-3 grid grid-cols-12 gap-3 items-center text-xs">
+              <span className="col-span-3 font-semibold text-gray-900 truncate">{a.name}</span>
+              <span className="col-span-3 font-mono text-gray-500 text-[11px]">{a.phone}</span>
+              <span className="col-span-3 text-gray-600">{a.when}</span>
+              <span className="col-span-2 text-gray-500 truncate">{a.service}</span>
+              <span className="col-span-1 text-right"><StatusBadge status={a.status} /></span>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
     </div>
+  );
+}
+
+function ContactsView() {
+  return (
+    <SectionCard
+      title="Contacts"
+      action={
+        <div className="flex gap-2 items-center">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1 flex items-center gap-1.5">
+            <span className="text-gray-400 text-xs">🔍</span>
+            <span className="text-[11px] text-gray-400">Search 1,247 contacts…</span>
+          </div>
+          <button className="text-xs bg-brand-600 text-white px-3 py-1.5 rounded-lg font-semibold">+ Add</button>
+        </div>
+      }
+    >
+      <div className="grid grid-cols-12 px-5 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-50">
+        <span className="col-span-3">Name</span>
+        <span className="col-span-3">Phone</span>
+        <span className="col-span-3">Email</span>
+        <span className="col-span-2">Bookings</span>
+        <span className="col-span-1 text-right">Last call</span>
+      </div>
+      <div className="divide-y divide-gray-50">
+        {MOCK_CONTACTS.map((c, i) => (
+          <div key={i} className="px-5 py-3 grid grid-cols-12 gap-3 items-center text-xs hover:bg-gray-50 cursor-pointer">
+            <span className="col-span-3 flex items-center gap-2 min-w-0">
+              <div className="w-6 h-6 rounded-full bg-brand-100 text-brand-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                {c.name.split(' ').map(p => p[0]).join('').slice(0, 2)}
+              </div>
+              <span className="font-semibold text-gray-900 truncate">{c.name}</span>
+            </span>
+            <span className="col-span-3 font-mono text-gray-500 text-[11px]">{c.phone}</span>
+            <span className="col-span-3 text-gray-500 truncate">{c.email}</span>
+            <span className="col-span-2 text-gray-600">{c.bookings}</span>
+            <span className="col-span-1 text-right text-gray-400">{c.lastCall}</span>
+          </div>
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
+function MissedCallsView() {
+  return (
+    <SectionCard title="Missed calls" action={<span className="text-[10px] text-gray-500">Auto text-back active</span>}>
+      <div className="grid grid-cols-12 px-5 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-50">
+        <span className="col-span-3">Phone</span>
+        <span className="col-span-3">When</span>
+        <span className="col-span-4">Text-back</span>
+        <span className="col-span-2 text-right">Status</span>
+      </div>
+      <div className="divide-y divide-gray-50">
+        {MOCK_MISSED.map((m, i) => (
+          <div key={i} className="px-5 py-3 grid grid-cols-12 gap-3 items-center text-xs">
+            <span className="col-span-3 font-mono text-gray-700">{m.phone}</span>
+            <span className="col-span-3 text-gray-500">{m.time}</span>
+            <span className="col-span-4 text-gray-500 truncate">{m.textBack}</span>
+            <span className="col-span-2 text-right"><StatusBadge status={m.status} /></span>
+          </div>
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
+function RemindersView() {
+  return (
+    <SectionCard title="SMS reminders" action={<span className="text-[10px] text-gray-500">24h + 2h auto-fire</span>}>
+      <div className="grid grid-cols-12 px-5 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-50">
+        <span className="col-span-3">Recipient</span>
+        <span className="col-span-3">When</span>
+        <span className="col-span-3">Type</span>
+        <span className="col-span-2">Channel</span>
+        <span className="col-span-1 text-right">Status</span>
+      </div>
+      <div className="divide-y divide-gray-50">
+        {MOCK_REMINDERS.map((r, i) => (
+          <div key={i} className="px-5 py-3 grid grid-cols-12 gap-3 items-center text-xs">
+            <span className="col-span-3 font-semibold text-gray-900 truncate">{r.name}</span>
+            <span className="col-span-3 text-gray-500">{r.when}</span>
+            <span className="col-span-3 text-gray-500">{r.type}</span>
+            <span className="col-span-2 text-gray-500">{r.channel}</span>
+            <span className="col-span-1 text-right"><StatusBadge status={r.status} /></span>
+          </div>
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
+function EscalationsView() {
+  return (
+    <SectionCard title="Open escalations" action={<span className="text-[10px] text-red-600 font-semibold bg-red-50 px-2 py-1 rounded-full">2 unresolved</span>}>
+      <div className="divide-y divide-gray-50">
+        {MOCK_ESCALATIONS.map((e, i) => (
+          <div key={i} className="px-5 py-3 flex items-start gap-3 text-xs">
+            <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
+              e.priority === 'high' ? 'bg-red-500' : e.priority === 'medium' ? 'bg-amber-500' : 'bg-gray-300'
+            }`} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="font-semibold text-gray-900">{e.caller}</span>
+                <StatusBadge status={e.priority} />
+              </div>
+              <p className="text-gray-500">{e.issue}</p>
+            </div>
+            <div className="text-right shrink-0">
+              <StatusBadge status={e.status} />
+              <p className="text-[10px] text-gray-400 mt-1">{e.age}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </SectionCard>
   );
 }
 
@@ -301,7 +560,7 @@ function CampaignsView() {
                 <div className="grid grid-cols-3 gap-2 text-center">
                   {[
                     { label: 'Connected', value: c.connected, color: 'text-blue-700 bg-blue-50' },
-                    { label: 'Qualified',  value: Math.round(c.connected * 0.6), color: 'text-purple-700 bg-purple-50' },
+                    { label: 'Qualified', value: Math.round(c.connected * 0.6), color: 'text-purple-700 bg-purple-50' },
                     { label: 'Booked',    value: c.booked, color: 'text-emerald-700 bg-emerald-50' },
                   ].map(stat => (
                     <div key={stat.label} className={`rounded-lg px-2 py-1.5 ${stat.color}`}>
@@ -371,7 +630,6 @@ function MessagesView() {
 
       {/* Thread view */}
       <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-        {/* Thread header */}
         <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100 shrink-0">
           <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center">
             <span className="text-[10px] font-bold text-brand-700">JT</span>
@@ -383,7 +641,6 @@ function MessagesView() {
           <span className="ml-auto text-[10px] bg-amber-50 text-amber-600 font-semibold px-2 py-0.5 rounded-full">2 unread</span>
         </div>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <div className="flex items-center gap-2 my-2">
             <div className="flex-1 h-px bg-gray-100" />
@@ -404,7 +661,6 @@ function MessagesView() {
           ))}
         </div>
 
-        {/* Send box */}
         <div className="border-t border-gray-100 p-3 shrink-0">
           <div className="flex items-center gap-2 bg-gray-50 rounded-lg border border-gray-200 px-3 py-2">
             <span className="text-[11px] text-gray-400 flex-1">Reply to James…</span>
@@ -412,16 +668,237 @@ function MessagesView() {
               <span className="text-white text-[10px]">↑</span>
             </div>
           </div>
-          <p className="text-[9px] text-gray-400 mt-1.5 text-center">SMS sent from your Telnyx number</p>
+          <p className="text-[9px] text-gray-400 mt-1.5 text-center">SMS sent from your business number</p>
         </div>
       </div>
     </div>
   );
 }
 
+function BillingView() {
+  return (
+    <div className="space-y-4">
+      {/* Current plan */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Current plan</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-2xl font-bold text-gray-900">Growth</span>
+              <span className="text-[10px] bg-brand-100 text-brand-700 font-bold px-2 py-0.5 rounded-full">$199 / mo</span>
+            </div>
+          </div>
+          <button className="text-xs bg-brand-600 text-white px-3 py-1.5 rounded-lg font-semibold">Upgrade →</button>
+        </div>
+        <div>
+          <div className="flex items-center justify-between text-xs mb-1.5">
+            <span className="text-gray-500">AI voice minutes</span>
+            <span className="font-mono text-gray-900 font-semibold">890 / 1,500 min</span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+            <div className="bg-brand-500 h-2 rounded-full" style={{ width: '59%' }} />
+          </div>
+          <p className="text-[10px] text-gray-400 mt-1.5">Resets June 1 · Overage at $0.25/min</p>
+        </div>
+      </div>
+
+      {/* Invoices */}
+      <SectionCard title="Recent invoices" action={<button className="text-xs text-brand-600 font-semibold hover:underline">View all →</button>}>
+        <div className="divide-y divide-gray-50">
+          {[
+            { id: 'INV-2026-0518', date: 'May 18, 2026', amount: '$199.00', status: 'paid' },
+            { id: 'INV-2026-0418', date: 'Apr 18, 2026', amount: '$214.00', status: 'paid' },
+            { id: 'INV-2026-0318', date: 'Mar 18, 2026', amount: '$199.00', status: 'paid' },
+          ].map((inv, i) => (
+            <div key={i} className="px-5 py-3 grid grid-cols-12 gap-3 items-center text-xs">
+              <span className="col-span-4 font-mono text-gray-600">{inv.id}</span>
+              <span className="col-span-4 text-gray-500">{inv.date}</span>
+              <span className="col-span-2 font-semibold text-gray-900">{inv.amount}</span>
+              <span className="col-span-2 text-right">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">✓ Paid</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+function OfficeHoursView() {
+  const HOURS = [
+    { day: 'Monday',    open: '8:00 AM',  close: '6:00 PM',  closed: false },
+    { day: 'Tuesday',   open: '8:00 AM',  close: '6:00 PM',  closed: false },
+    { day: 'Wednesday', open: '8:00 AM',  close: '6:00 PM',  closed: false },
+    { day: 'Thursday',  open: '8:00 AM',  close: '7:00 PM',  closed: false },
+    { day: 'Friday',    open: '8:00 AM',  close: '5:00 PM',  closed: false },
+    { day: 'Saturday',  open: '9:00 AM',  close: '2:00 PM',  closed: false },
+    { day: 'Sunday',    open: '—',        close: '—',        closed: true  },
+  ];
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-base font-bold text-gray-900">Office Hours</h3>
+        <p className="text-xs text-gray-500 mt-0.5">When your AI greets callers normally vs. with the after-hours flow.</p>
+      </div>
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+        {HOURS.map((h) => (
+          <div key={h.day} className="px-5 py-3 flex items-center justify-between text-xs">
+            <span className="font-semibold text-gray-900 w-24">{h.day}</span>
+            <div className="flex items-center gap-2">
+              <span className={`w-8 h-4 rounded-full ${h.closed ? 'bg-gray-200' : 'bg-brand-500'} relative transition-colors`}>
+                <span className={`absolute top-0.5 ${h.closed ? 'left-0.5' : 'left-4'} w-3 h-3 bg-white rounded-full transition-all`} />
+              </span>
+              <span className={`text-[10px] font-semibold ${h.closed ? 'text-gray-400' : 'text-gray-700'}`}>{h.closed ? 'Closed' : 'Open'}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <span className="bg-gray-50 border border-gray-200 px-2 py-1 rounded font-mono text-[11px]">{h.open}</span>
+              <span className="text-gray-400">–</span>
+              <span className="bg-gray-50 border border-gray-200 px-2 py-1 rounded font-mono text-[11px]">{h.close}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800">
+        <span className="font-semibold">After-hours mode:</span> Voicemail with auto text-back. Calls auto-resume normal flow at the next opening.
+      </div>
+    </div>
+  );
+}
+
+function VoiceAgentView() {
+  const VOICES = [
+    { name: 'Ara', desc: 'Warm & professional', active: true  },
+    { name: 'Eve', desc: 'Clear & friendly',    active: false },
+    { name: 'Leo', desc: 'Confident & calm',    active: false },
+    { name: 'Rex', desc: 'Crisp & precise',     active: false },
+    { name: 'Sal', desc: 'Approachable & warm', active: false },
+  ];
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-base font-bold text-gray-900">Voice Agent</h3>
+        <p className="text-xs text-gray-500 mt-0.5">Pick a voice, set the greeting, choose languages.</p>
+      </div>
+
+      {/* Voice picker */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Voice</p>
+        <div className="grid grid-cols-5 gap-2">
+          {VOICES.map(v => (
+            <div key={v.name} className={`rounded-lg border p-3 text-center cursor-pointer transition-all ${
+              v.active ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-200' : 'border-gray-200 bg-white hover:border-brand-300'
+            }`}>
+              <div className={`w-9 h-9 rounded-full mx-auto mb-2 flex items-center justify-center ${v.active ? 'bg-brand-600' : 'bg-gray-100'}`}>
+                <span className={`text-xs font-bold ${v.active ? 'text-white' : 'text-gray-600'}`}>{v.name[0]}</span>
+              </div>
+              <p className="text-xs font-semibold text-gray-900">{v.name}</p>
+              <p className="text-[9px] text-gray-500 mt-0.5">{v.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Greeting + languages */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Greeting script</p>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-700 leading-relaxed">
+            &ldquo;Hi there! Thanks for calling Smith Dental. This is your AI assistant — how can I help you today?&rdquo;
+          </div>
+          <p className="text-[10px] text-gray-400 mt-2">217 characters · {'<'} 6s spoken</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Languages enabled</p>
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { flag: '🇺🇸', lang: 'English',  on: true  },
+              { flag: '🇲🇽', lang: 'Spanish',  on: true  },
+              { flag: '🇮🇹', lang: 'Italian',  on: false },
+              { flag: '🇸🇦', lang: 'Arabic',   on: false },
+              { flag: '🇮🇷', lang: 'Farsi',    on: false },
+              { flag: '🇦🇲', lang: 'Armenian', on: false },
+              { flag: '🇷🇺', lang: 'Russian',  on: false },
+            ].map(l => (
+              <div key={l.lang} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium ${
+                l.on ? 'bg-brand-50 border-brand-200 text-brand-700' : 'bg-gray-50 border-gray-200 text-gray-500'
+              }`}>
+                <span>{l.flag}</span>
+                <span>{l.lang}</span>
+                {l.on && <span className="text-[9px]">✓</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NotificationsView() {
+  const PREFS = [
+    { event: 'New appointment booked',  email: true,  sms: false, webhook: true  },
+    { event: 'Missed call',             email: true,  sms: true,  webhook: true  },
+    { event: 'Escalation created',      email: true,  sms: true,  webhook: true  },
+    { event: 'Daily summary',           email: true,  sms: false, webhook: false },
+    { event: 'Usage at 80%',            email: true,  sms: false, webhook: false },
+    { event: 'Payment receipt',         email: true,  sms: false, webhook: false },
+  ];
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-base font-bold text-gray-900">Notifications</h3>
+        <p className="text-xs text-gray-500 mt-0.5">Pick which events alert you — and where they land.</p>
+      </div>
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="grid grid-cols-12 px-5 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-50">
+          <span className="col-span-6">Event</span>
+          <span className="col-span-2 text-center">Email</span>
+          <span className="col-span-2 text-center">SMS</span>
+          <span className="col-span-2 text-center">Webhook</span>
+        </div>
+        <div className="divide-y divide-gray-50">
+          {PREFS.map((p) => (
+            <div key={p.event} className="px-5 py-3 grid grid-cols-12 gap-3 items-center text-xs">
+              <span className="col-span-6 text-gray-700">{p.event}</span>
+              {[p.email, p.sms, p.webhook].map((on, i) => (
+                <span key={i} className="col-span-2 flex justify-center">
+                  <span className={`w-8 h-4 rounded-full ${on ? 'bg-brand-500' : 'bg-gray-200'} relative transition-colors`}>
+                    <span className={`absolute top-0.5 ${on ? 'left-4' : 'left-0.5'} w-3 h-3 bg-white rounded-full transition-all`} />
+                  </span>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── View dispatch ─────────────────────────────────────────────
+function ActiveView({ tab }: { tab: TabId }) {
+  switch (tab) {
+    case 'dashboard':    return <DashboardView />;
+    case 'calls':        return <CallsView />;
+    case 'appointments': return <AppointmentsView />;
+    case 'contacts':     return <ContactsView />;
+    case 'missed':       return <MissedCallsView />;
+    case 'reminders':    return <RemindersView />;
+    case 'escalations':  return <EscalationsView />;
+    case 'campaigns':    return <CampaignsView />;
+    case 'messages':     return <MessagesView />;
+    case 'billing':      return <BillingView />;
+    case 'integrations': return <IntegrationsView />;
+    case 'office_hours': return <OfficeHoursView />;
+    case 'voice_agent':  return <VoiceAgentView />;
+    case 'notifications':return <NotificationsView />;
+  }
+}
+
 // ── Main export ───────────────────────────────────────────────
 export function DashboardTeaser() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState<TabId>('dashboard');
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
@@ -430,10 +907,10 @@ export function DashboardTeaser() {
         <div className="inline-flex items-center gap-2 bg-brand-50 border border-brand-100 rounded-full px-4 py-1.5 text-sm text-brand-600 font-medium mb-5">
           ✦ Your command centre
         </div>
-        <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight mb-4">
+        <h2 className="font-serif text-3xl md:text-5xl text-cream-900 tracking-tight mb-4">
           Everything you need,<br />in one dashboard.
         </h2>
-        <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+        <p className="text-cream-600 text-lg max-w-2xl mx-auto">
           Every call logged, every appointment tracked, every integration connected — visible in real time from any device.
         </p>
       </div>
@@ -449,13 +926,13 @@ export function DashboardTeaser() {
             <div className="w-3 h-3 rounded-full bg-green-400" />
           </div>
           <div className="flex-1 bg-white rounded-md px-3 py-1.5 text-xs text-gray-400 border border-gray-200 max-w-sm mx-auto text-center select-none">
-            app.aireceptionist.com/{activeTab}
+            app.aireceptionist.com/{activeTab.replace('_', '-')}
           </div>
           <div className="w-16" />
         </div>
 
         {/* App shell */}
-        <div className="flex h-[600px]">
+        <div className="flex h-[640px]">
           {/* Sidebar */}
           <aside className="w-52 shrink-0 bg-white border-r border-gray-100 flex flex-col">
             {/* Logo */}
@@ -465,20 +942,17 @@ export function DashboardTeaser() {
             </div>
 
             {/* Nav */}
-            <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-hidden">
+            <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
               {NAV_ITEMS.map(item => {
                 const isActive = item.id === activeTab;
-                const isClickable = item.id !== null;
                 return (
                   <button
-                    key={item.label}
-                    onClick={() => item.id && setActiveTab(item.id)}
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
                     className={`w-full text-left flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                       isActive
                         ? 'bg-brand-50 text-brand-700'
-                        : isClickable
-                          ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer'
-                          : 'text-gray-400 cursor-default'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer'
                     }`}
                   >
                     <span className="text-sm">{item.icon}</span>
@@ -492,17 +966,14 @@ export function DashboardTeaser() {
               </div>
               {SETTINGS_NAV.map(item => {
                 const isActive = item.id === activeTab;
-                const isClickable = item.id !== null;
                 return (
                   <button
-                    key={item.label}
-                    onClick={() => item.id && setActiveTab(item.id)}
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
                     className={`w-full text-left flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                       isActive
                         ? 'bg-brand-50 text-brand-700'
-                        : isClickable
-                          ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer'
-                          : 'text-gray-400 cursor-default'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer'
                     }`}
                   >
                     <span className="text-[10px] text-gray-400">⚙</span>
@@ -526,38 +997,26 @@ export function DashboardTeaser() {
 
           {/* Main content */}
           <main className="flex-1 bg-gray-50/60 overflow-y-auto p-5">
-            {/* Tab quick-switcher */}
-            <div className="flex gap-2 mb-5 flex-wrap">
-              {TABS.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`text-xs px-3.5 py-1.5 rounded-full font-semibold transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-brand-600 text-white shadow-sm'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:border-brand-300 hover:text-brand-600'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            {/* Page header */}
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Demo · Sample data</p>
+                <h1 className="text-xl font-bold text-gray-900">{TAB_LABELS[activeTab]}</h1>
+              </div>
+              <span className="text-[10px] text-gray-400 italic">All tabs unlocked — click any sidebar item</span>
             </div>
 
             {/* Content */}
-            <div className="animate-in fade-in duration-200">
-              {activeTab === 'dashboard'    && <DashboardView />}
-              {activeTab === 'calls'        && <CallsView />}
-              {activeTab === 'messages'     && <MessagesView />}
-              {activeTab === 'integrations' && <IntegrationsView />}
-              {activeTab === 'campaigns'    && <CampaignsView />}
+            <div key={activeTab} className="animate-in fade-in duration-200">
+              <ActiveView tab={activeTab} />
             </div>
           </main>
         </div>
       </div>
 
       {/* Caption below */}
-      <p className="text-center text-sm text-gray-400 mt-5">
-        Click the tabs above to explore · Data shown is sample data
+      <p className="text-center text-sm text-cream-500 mt-5">
+        Click any sidebar item to explore · Every panel here is the real dashboard layout with sample data
       </p>
     </div>
   );
