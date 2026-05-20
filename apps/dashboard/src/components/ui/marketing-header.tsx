@@ -12,10 +12,11 @@ import { Menu, X } from 'lucide-react';
 import { BRAND_NAME } from '@/lib/brand';
 
 const NAV_LINKS = [
-  { label: 'Inbound',  href: '/inbound' },
-  { label: 'Outbound', href: '/outbound' },
-  { label: 'Pricing',  href: '/pricing' },
-  { label: 'Demo',     href: '/demo' },
+  { label: 'Inbound',   href: '/inbound' },
+  { label: 'Outbound',  href: '/outbound' },
+  { label: 'Pricing',   href: '/pricing' },
+  { label: 'Demo',      href: '/demo' },
+  { label: 'Resellers', href: '/resellers' },
 ];
 
 export function MarketingHeader() {

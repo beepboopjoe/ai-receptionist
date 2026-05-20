@@ -11,7 +11,7 @@
 import { useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import { phoneNumbersApi, type AvailableNumber, type OwnedNumber, type PortRequestRow } from '@/lib/api';
-import { Phone, Search, Trash2, Star, X, ArrowRight, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Phone, Search, Trash2, Star, X, ArrowRight, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Zap, Shield, BarChart2, MapPin, Layers } from 'lucide-react';
 import { useToast } from '@/components/ui/toast';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton as UiSkeleton } from '@/components/ui/skeleton';
@@ -43,6 +43,7 @@ export default function PhoneNumbersPage() {
   // Port-in flow
   const { data: portsData } = useSWR('phone-port-requests', () => phoneNumbersApi.listPortRequests());
   const portRequests = portsData?.data ?? [];
+  const [whyOpen, setWhyOpen] = useState(false);
   const [portOpen, setPortOpen] = useState(false);
   const [portSubmitting, setPortSubmitting] = useState(false);
   const [portForm, setPortForm] = useState({
@@ -190,6 +191,98 @@ export default function PhoneNumbersPage() {
             <Phone size={14} /> Buy a number
           </button>
         </div>
+      </div>
+
+      {/* ── Why multiple numbers? education panel ─────────────── */}
+      <div className="card overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setWhyOpen((v) => !v)}
+          className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
+              <Zap size={14} className="text-brand-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Why get more than one number?</p>
+              <p className="text-xs text-gray-500 mt-0.5">More numbers = more capacity, better protection, smarter routing</p>
+            </div>
+          </div>
+          {whyOpen
+            ? <ChevronUp size={16} className="text-gray-400 shrink-0" />
+            : <ChevronDown size={16} className="text-gray-400 shrink-0" />
+          }
+        </button>
+
+        {whyOpen && (
+          <div className="border-t border-gray-100 px-5 py-5 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                icon: Layers,
+                title: 'Handle more calls at once',
+                body: 'Each number processes one live call at a time. Two numbers = two simultaneous calls. For busy practices, a second number can be the difference between a booked appointment and a lost patient.',
+                highlight: 'Each plan defaults to 1 concurrent call per number',
+              },
+              {
+                icon: Shield,
+                title: 'Protect your main number',
+                body: 'Outbound campaigns risk being flagged as spam by carriers over time. Dedicate a separate number to campaigns — if it gets flagged, your primary inbound number stays clean and trusted.',
+                highlight: 'Recommended for outbound campaigns',
+              },
+              {
+                icon: MapPin,
+                title: 'Match local area codes',
+                body: 'Calls from a local area code have a 68% higher answer rate than unknown or out-of-state numbers. Add a local number for each market you serve.',
+                highlight: '68% higher pickup rate with matching area code',
+              },
+              {
+                icon: BarChart2,
+                title: 'Track performance by number',
+                body: 'Assign different numbers to different channels (Google Ads, Facebook, website). Your call log shows exactly which source drove each call so you can measure real ROI.',
+                highlight: 'Call-tracking without any extra tool',
+              },
+              {
+                icon: Phone,
+                title: 'Route by department',
+                body: 'One number for scheduling, one for billing inquiries, one for emergencies. The AI handles each with its own script and escalation rules — without needing a full phone tree.',
+                highlight: 'Per-number voice agent configuration',
+              },
+              {
+                icon: Star,
+                title: 'Toll-free builds credibility',
+                body: 'An 800 or 888 number signals an established business. Use it for marketing materials and leave local numbers for patient callbacks — combining reach with personal touch.',
+                highlight: '$10/mo — no per-minute extra',
+              },
+            ].map(({ icon: Icon, title, body, highlight }) => (
+              <div key={title} className="rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
+                    <Icon size={14} className="text-brand-600" />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900">{title}</p>
+                </div>
+                <p className="text-xs text-gray-500 leading-relaxed">{body}</p>
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 border border-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700">
+                  <Zap size={9} /> {highlight}
+                </div>
+              </div>
+            ))}
+
+            <div className="sm:col-span-2 lg:col-span-3 bg-white rounded-xl border border-brand-100 p-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Extra numbers are $5/mo (local) or $10/mo (toll-free)</p>
+                <p className="text-xs text-gray-500 mt-0.5">Charged to your Stripe subscription — cancel any time from this page.</p>
+              </div>
+              <button
+                onClick={() => { setWhyOpen(false); setSearchOpen(true); }}
+                className="btn-primary inline-flex items-center gap-2 text-sm shrink-0"
+              >
+                <Phone size={14} /> Buy a number
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Port requests in progress */}
