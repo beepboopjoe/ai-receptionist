@@ -83,34 +83,77 @@ const MOCK_CAMPAIGNS = [
 
 const INTEGRATIONS = [
   {
-    category: 'Phone & Telephony',
+    category: 'AI Assistants & Drafts',
     items: [
-      { icon: '📞', name: 'Twilio', desc: 'AI phone number, SMS, call recording', status: 'connected', color: 'bg-red-50 border-red-200' },
-      { icon: '🔔', name: 'RingCentral', desc: 'Enterprise VoIP & call routing', status: 'available', color: 'bg-gray-50 border-gray-200' },
-      { icon: '📡', name: 'Telnyx', desc: 'SIP trunking & media streaming', status: 'available', color: 'bg-gray-50 border-gray-200' },
+      { icon: '🤖', name: 'OpenAI · ChatGPT',    desc: 'Drafts email replies, SMS responses, and call summaries',    status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
+      { icon: '🧠', name: 'Anthropic · Claude',  desc: 'Draft messages with safety review + approval queue',         status: 'connected', color: 'bg-amber-50 border-amber-200'   },
+      { icon: '✨', name: 'xAI · Grok',          desc: 'Voice agent core · multilingual TTS · realtime',             status: 'connected', color: 'bg-brand-50 border-brand-200'   },
+      { icon: '📝', name: 'Draft Approval Queue', desc: 'Review every outbound draft before send · 1-click approve', status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
+    ],
+  },
+  {
+    category: 'Email Drafting & Sending',
+    items: [
+      { icon: '📧', name: 'Gmail',              desc: 'AI drafts land in your inbox · OAuth sign-in',     status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
+      { icon: '📨', name: 'Microsoft Outlook',  desc: 'Two-way sync with Outlook 365 + drafts folder',    status: 'connected', color: 'bg-blue-50 border-blue-200'       },
+      { icon: '💌', name: 'Apple Mail',         desc: 'IMAP sync for iCloud + custom domains',            status: 'available', color: 'bg-gray-50 border-gray-200'       },
+      { icon: '📬', name: 'Resend',             desc: 'High-deliverability transactional email',          status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
+      { icon: '✉️', name: 'Postmark',           desc: 'Transactional email backup',                       status: 'available', color: 'bg-gray-50 border-gray-200'       },
+    ],
+  },
+  {
+    category: 'Messaging Channels',
+    items: [
+      { icon: '💬', name: 'SMS Inbox',          desc: 'Two-way SMS from your business number',            status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
+      { icon: '🟢', name: 'WhatsApp Business',  desc: 'Bilingual drafts queued for approval',             status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
+      { icon: '🍎', name: 'Apple Business Chat', desc: 'Reach iPhone users in the Messages app',          status: 'coming_soon', color: 'bg-gray-50 border-gray-200'     },
+      { icon: '📘', name: 'Facebook Messenger', desc: 'Lead capture replies from your Facebook Page',     status: 'available', color: 'bg-gray-50 border-gray-200'       },
+      { icon: '📸', name: 'Instagram DM',       desc: 'Auto-draft replies for Instagram inquiries',       status: 'available', color: 'bg-gray-50 border-gray-200'       },
+    ],
+  },
+  {
+    category: 'Approval Inboxes',
+    items: [
+      { icon: '💼', name: 'Slack',              desc: 'Receive draft approvals + alerts in Slack',        status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
+      { icon: '👥', name: 'Microsoft Teams',    desc: 'Approve email + SMS drafts inside Teams',          status: 'available', color: 'bg-gray-50 border-gray-200'       },
+      { icon: '📲', name: 'Mobile push',        desc: 'Tap-to-approve from your phone (iOS + Android)',   status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
     ],
   },
   {
     category: 'Calendar & Scheduling',
     items: [
-      { icon: '📅', name: 'Google Calendar', desc: 'Appointment slots, event booking', status: 'connected', color: 'bg-blue-50 border-blue-200' },
-      { icon: '📆', name: 'Microsoft 365', desc: 'Outlook calendar integration', status: 'available', color: 'bg-gray-50 border-gray-200' },
+      { icon: '📅', name: 'Google Calendar',    desc: 'Real-time slot lookup + appointment booking',      status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
+      { icon: '📆', name: 'Microsoft 365',      desc: 'Outlook calendar + Teams meeting links',            status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
+      { icon: '🍎', name: 'Apple iCloud',       desc: 'iCal sync for iPhone + Mac calendars',              status: 'available', color: 'bg-gray-50 border-gray-200'       },
+      { icon: '🗓️', name: 'Calendly',          desc: 'Pull live availability from your Calendly links',   status: 'available', color: 'bg-gray-50 border-gray-200'       },
     ],
   },
   {
     category: 'CRM & Contact Records',
     items: [
-      { icon: '🗄️', name: 'Built-in CRM', desc: 'Contact profiles, call history, notes', status: 'connected', color: 'bg-green-50 border-green-200' },
-      { icon: '📊', name: 'CSV Import', desc: 'Bulk import from any system', status: 'connected', color: 'bg-green-50 border-green-200' },
-      { icon: '🔗', name: 'HubSpot', desc: 'CRM sync and lead management', status: 'connected', color: 'bg-orange-50 border-orange-200' },
-      { icon: '☁️', name: 'Salesforce', desc: 'Enterprise CRM integration', status: 'coming_soon', color: 'bg-gray-50 border-gray-200' },
+      { icon: '🗄️', name: 'Built-in CRM',      desc: 'Contact profiles, call history, notes, tags',       status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
+      { icon: '🔗', name: 'HubSpot',           desc: 'Bi-directional contact + deal pipeline sync',        status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
+      { icon: '☁️', name: 'Salesforce',        desc: 'Enterprise contact + opportunity sync',              status: 'available', color: 'bg-gray-50 border-gray-200'       },
+      { icon: '🪈', name: 'Pipedrive',         desc: 'Sales pipeline + activity logging',                  status: 'available', color: 'bg-gray-50 border-gray-200'       },
+      { icon: '🐙', name: 'Zoho CRM',          desc: 'Contacts + activities sync',                         status: 'available', color: 'bg-gray-50 border-gray-200'       },
+      { icon: '📊', name: 'CSV Import',        desc: 'Bulk import from any system',                        status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
     ],
   },
   {
-    category: 'Notifications',
+    category: 'Phone & Voice',
     items: [
-      { icon: '✉️', name: 'SendGrid', desc: 'Email confirmations & reminders', status: 'connected', color: 'bg-blue-50 border-blue-200' },
-      { icon: '💬', name: 'Twilio SMS', desc: 'Text confirmations & recall', status: 'connected', color: 'bg-red-50 border-red-200' },
+      { icon: '📞', name: 'Bring your own number', desc: 'Forward your existing line · free porting',     status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
+      { icon: '🌐', name: 'SIP trunking',       desc: 'Plug in any SIP-compatible carrier',                status: 'available', color: 'bg-gray-50 border-gray-200'       },
+      { icon: '🔔', name: 'RingCentral',        desc: 'Enterprise VoIP + advanced routing',                status: 'available', color: 'bg-gray-50 border-gray-200'       },
+    ],
+  },
+  {
+    category: 'Automation & Webhooks',
+    items: [
+      { icon: '⚡', name: 'Zapier',             desc: 'Connect to 5,000+ apps · trigger on any event',     status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
+      { icon: '🔧', name: 'Make',               desc: 'Visual workflow automation',                        status: 'available', color: 'bg-gray-50 border-gray-200'       },
+      { icon: '🛠️', name: 'n8n',               desc: 'Self-hosted workflow automation',                   status: 'available', color: 'bg-gray-50 border-gray-200'       },
+      { icon: '🔗', name: 'Custom webhooks',    desc: 'Fire on call.completed, appointment.booked, more',  status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
     ],
   },
 ];
@@ -505,9 +548,16 @@ function EscalationsView() {
 function IntegrationsView() {
   return (
     <div className="space-y-5">
-      <div>
-        <h3 className="text-base font-bold text-gray-900">Integrations</h3>
-        <p className="text-xs text-gray-500 mt-0.5">Connect your phone, calendar, CRM, and communication tools</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-bold text-gray-900">Integrations</h3>
+          <p className="text-xs text-gray-500 mt-0.5">
+            AI assistants draft your emails + SMS. You approve. Then they send through your inbox or business number.
+          </p>
+        </div>
+        <span className="text-[10px] bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0">
+          ✓ Draft → Approve workflow live
+        </span>
       </div>
       {INTEGRATIONS.map(group => (
         <div key={group.category}>

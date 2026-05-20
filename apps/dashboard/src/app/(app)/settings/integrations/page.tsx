@@ -7,12 +7,23 @@ import type { Vertical } from '@/lib/verticals';
 import { useState } from 'react';
 
 const PROVIDERS = [
-  { id: 'telnyx', label: 'Telnyx (Phone)', description: 'AI-powered inbound and outbound calling', icon: '☎️' },
-  { id: 'twilio', label: 'Twilio', description: 'Phone number provisioning and SMS notifications', icon: '📞' },
+  { id: 'google_calendar', label: 'Google Calendar', description: 'Appointment scheduling + slot lookup', icon: '📅' },
+  { id: 'microsoft_calendar', label: 'Microsoft 365', description: 'Outlook calendar + Teams sync', icon: '📆' },
   { id: 'ringcentral', label: 'RingCentral', description: 'Enterprise phone integration', icon: '🔔' },
-  { id: 'google_calendar', label: 'Google Calendar', description: 'Appointment scheduling', icon: '📅' },
-  { id: 'microsoft_calendar', label: 'Microsoft 365', description: 'Outlook calendar integration', icon: '📆' },
-  { id: 'resend', label: 'Resend', description: 'Email notifications', icon: '✉️' },
+  { id: 'resend', label: 'Resend', description: 'Email notifications + receipts', icon: '✉️' },
+];
+
+// Coming-soon AI + draft integrations. Shown as a separate group with a
+// "Join waitlist" CTA — they aren't OAuth-connectable yet, just teased.
+const AI_DRAFT_INTEGRATIONS = [
+  { id: 'openai',           label: 'OpenAI · ChatGPT',     description: 'Draft email replies, SMS responses, and call summaries',  icon: '🤖' },
+  { id: 'anthropic',        label: 'Anthropic · Claude',    description: 'Draft messages with safety review + approval queue',     icon: '🧠' },
+  { id: 'draft_approval',   label: 'Draft Approval Queue', description: '1-click approve every outbound draft before send',        icon: '📝' },
+  { id: 'gmail_drafts',     label: 'Gmail (drafts in inbox)',  description: 'AI drafts land in your Gmail Drafts folder',          icon: '📧' },
+  { id: 'outlook_drafts',   label: 'Outlook (drafts in inbox)', description: 'AI drafts land in your Outlook Drafts folder',       icon: '📨' },
+  { id: 'whatsapp_business', label: 'WhatsApp Business',    description: 'Bilingual draft replies queued for your approval',       icon: '🟢' },
+  { id: 'slack_approvals',  label: 'Slack approvals',       description: 'Tap-to-approve drafts inside Slack',                     icon: '💼' },
+  { id: 'teams_approvals',  label: 'Microsoft Teams approvals', description: 'Tap-to-approve drafts inside Teams',                 icon: '👥' },
 ];
 
 interface CrmProvider {
@@ -79,39 +90,12 @@ export default function IntegrationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Integrations</h1>
-        <p className="text-gray-500 mt-1">Connect your phone, calendar, and communication providers</p>
+        <p className="text-gray-500 mt-1">Connect your calendar, CRM, and AI drafting tools</p>
       </div>
 
-      {/* Phone system status banner */}
-      {(() => {
-        const telnyx = connectedMap['telnyx'];
-        if (telnyx?.status === 'connected') {
-          return (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                <Phone size={18} className="text-emerald-700" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-emerald-900">
-                  AI receptionist is answering calls at +1 (626) 517-0214
-                </p>
-                <p className="text-xs text-emerald-700 mt-0.5">
-                  Telnyx is connected — every inbound call is routed to Aria.
-                </p>
-              </div>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Live
-              </span>
-            </div>
-          );
-        }
-        return null;
-      })()}
-
-      {/* ── Phone / Calendar / Email providers ── */}
+      {/* ── Calendar / Email / Phone providers ── */}
       <div>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Phone, Calendar & Messaging</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Calendar, Phone & Email</p>
         <div className="space-y-4">
           {PROVIDERS.map((provider) => {
             const integration = connectedMap[provider.id];
@@ -153,6 +137,37 @@ export default function IntegrationsPage() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* ── AI Drafting & Approvals (waitlist / coming soon) ── */}
+      <div>
+        <div className="flex items-center gap-3 mb-1">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">AI Drafting & Approvals</p>
+          <span className="text-[10px] bg-brand-50 text-brand-700 font-bold px-2 py-0.5 rounded-full">Coming soon</span>
+        </div>
+        <p className="text-sm text-gray-500 mb-3">
+          Your AI will draft email replies, SMS responses, and call summaries — then queue them for your 1-click approval before sending.
+        </p>
+        <div className="space-y-3">
+          {AI_DRAFT_INTEGRATIONS.map((p) => (
+            <div key={p.id} className="card p-4 flex items-center gap-4 opacity-90">
+              <div className="text-2xl">{p.icon}</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-semibold text-gray-900">{p.label}</p>
+                  <span className="badge badge-blue">Waitlist</span>
+                </div>
+                <p className="text-sm text-gray-500 mt-0.5">{p.description}</p>
+              </div>
+              <a
+                href={`mailto:hello@aireceptionist.ai?subject=Waitlist — ${p.label}`}
+                className="btn-secondary text-sm flex items-center gap-1.5 shrink-0"
+              >
+                <Mail size={13} /> Join waitlist
+              </a>
+            </div>
+          ))}
         </div>
       </div>
 

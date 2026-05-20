@@ -238,7 +238,7 @@ export default function ThreadPage() {
           </button>
         </div>
         <p className="text-[10px] text-gray-400 mt-1.5 text-center">
-          SMS sent from your provisioned Telnyx number
+          SMS sent from your business number
         </p>
       </div>
     </div>

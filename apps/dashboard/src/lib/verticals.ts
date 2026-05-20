@@ -142,7 +142,7 @@ export const VERTICAL_CONFIGS: Record<Vertical, VerticalConfig> = {
     useCaseIds: ['generic_receptionist', 'generic_intake', 'generic_reminder', 'generic_lead_followup', 'generic_after_hours'],
     useCaseLabels: ['Receptionist', 'New Client Intake', 'Appointment Reminder', 'Lead Follow-Up', 'After-Hours'],
     campaignTypes: ['Lead Follow-Up', 'Inactive Contact Reactivation', 'Appointment Reminders', 'New Client Outreach'],
-    integrations: ['HubSpot', 'Salesforce', 'Google Calendar', 'Twilio'],
+    integrations: ['HubSpot', 'Salesforce', 'Google Calendar', 'Gmail'],
   },
 };
 

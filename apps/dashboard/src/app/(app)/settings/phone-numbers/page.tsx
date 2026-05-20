@@ -334,7 +334,7 @@ export default function PhoneNumbersPage() {
             <div className="flex-1 overflow-y-auto">
               {results.length === 0 ? (
                 <p className="text-center text-sm text-gray-400 py-10">
-                  {searching ? 'Searching Telnyx…' : 'Pick a type and area code, then search.'}
+                  {searching ? 'Searching available numbers…' : 'Pick a type and area code, then search.'}
                 </p>
               ) : (
                 <ul className="divide-y divide-gray-100">
@@ -502,7 +502,7 @@ export default function PhoneNumbersPage() {
               </div>
 
               <p className="text-xs text-gray-500">
-                By submitting, you authorize us to act as your agent for the purpose of porting {portForm.phoneE164 || 'this number'} from {portForm.currentCarrier || 'your current carrier'} to our Telnyx account on your behalf (LOA).
+                By submitting, you authorize us to act as your agent for the purpose of porting {portForm.phoneE164 || 'this number'} from {portForm.currentCarrier || 'your current carrier'} to our voice infrastructure on your behalf (LOA).
               </p>
             </div>
             <div className="p-5 border-t border-gray-200 flex items-center justify-end gap-2">

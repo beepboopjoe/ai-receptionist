@@ -157,7 +157,7 @@ export default function MessagesPage() {
       {!loading && conversations && conversations.length > 0 && (
         <p className="text-center text-xs text-gray-400 pb-2">
           <Phone size={11} className="inline mr-1" />
-          SMS sent from your provisioned Telnyx number · Configure in{' '}
+          SMS sent from your business number · Configure in{' '}
           <Link href="/settings/phone-numbers" className="underline hover:text-gray-600">
             Phone Numbers
           </Link>

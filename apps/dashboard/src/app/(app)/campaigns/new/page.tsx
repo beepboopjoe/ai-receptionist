@@ -71,7 +71,7 @@ export default function NewCampaignPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Caller ID (Twilio Number) *</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Caller ID *</label>
             <input
               value={form.fromNumber}
               onChange={(e) => set('fromNumber', e.target.value)}
@@ -79,7 +79,7 @@ export default function NewCampaignPage() {
               className="input font-mono"
               required
             />
-            <p className="text-xs text-gray-400 mt-1">Must be a Twilio number provisioned for your account</p>
+            <p className="text-xs text-gray-400 mt-1">Must be a number provisioned for your account</p>
           </div>
         </div>
 

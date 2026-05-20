@@ -475,7 +475,7 @@ export default function LandingPage() {
             Works with
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
-            {['HubSpot', 'Google Calendar', 'Outlook', 'Telnyx', 'Salesforce', 'Clio', 'Follow Up Boss', 'ServiceTitan', 'SendGrid'].map((name) => (
+            {['HubSpot', 'Google Calendar', 'Outlook', 'OpenAI', 'Claude', 'Salesforce', 'Slack', 'Gmail', 'Clio', 'Follow Up Boss', 'ServiceTitan', 'WhatsApp', 'Zapier'].map((name) => (
               <span
                 key={name}
                 className="inline-flex items-center px-4 py-2 rounded-full border border-cream-200 bg-cream-50 text-xs font-semibold text-cream-600 tracking-wide"
