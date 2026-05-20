@@ -11,7 +11,7 @@
 //   XAI_API_KEY=xai-... pnpm tsx scripts/generate-voice-language-samples.ts
 // ============================================================
 
-export type VoiceId = 'ara' | 'eve' | 'leo' | 'rx' | 'sal';
+export type VoiceId = 'ara' | 'eve' | 'leo' | 'rex' | 'sal';
 export type LangCode = 'en' | 'es' | 'it' | 'ar' | 'fa' | 'hy' | 'ru';
 
 export interface VoiceSample {
@@ -25,7 +25,7 @@ export const VOICES: Record<VoiceId, { label: string; description: string }> = {
   ara: { label: 'Ara', description: 'Warm & professional' },
   eve: { label: 'Eve', description: 'Clear & friendly' },
   leo: { label: 'Leo', description: 'Confident & calm' },
-  rx:  { label: 'Rx',  description: 'Crisp & precise' },
+  rex: { label: 'Rex', description: 'Crisp & precise' },
   sal: { label: 'Sal', description: 'Approachable & warm' },
 };
 
