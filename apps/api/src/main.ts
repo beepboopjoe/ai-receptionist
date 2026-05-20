@@ -48,6 +48,8 @@ import { publicApiPlugin } from './modules/public-api/public.router.js';
 import { openapiPlugin } from './modules/public-api/openapi.plugin.js';
 import { smsPlugin } from './modules/sms/sms.router.js';
 import { compliancePlugin } from './modules/compliance/compliance.router.js';
+import { agentPlugin } from './modules/agent/agent.router.js';
+import { startAgentScannerWorker, stopAgentScannerWorker } from './workers/agent-scanner.worker.js';
 
 async function buildApp() {
   const app = Fastify({
@@ -169,6 +171,7 @@ async function buildApp() {
   await app.register(hubspotOAuthPlugin, { prefix: '/api/v1' });
   await app.register(smsPlugin, { prefix: '/api/v1' });
   await app.register(compliancePlugin, { prefix: '/api/v1' });
+  await app.register(agentPlugin, { prefix: '/api/v1' });
   // Stripe webhook lives at the root (no /api/v1) so the URL the
   // customer enters in the Stripe dashboard is short and stable.
   // It also needs raw-body capture which the plugin sets up itself.
@@ -216,11 +219,13 @@ async function main() {
   // 15s, retrying with exponential backoff. Skipped in test mode.
   if (config.NODE_ENV !== 'test') {
     startWebhookDrainWorker();
+    startAgentScannerWorker();
   }
 
   const shutdown = async (signal: string) => {
     app.log.info(`Received ${signal}, shutting down gracefully`);
     stopWebhookDrainWorker();
+    stopAgentScannerWorker();
     await app.close();
     await closeDb();
     process.exit(0);

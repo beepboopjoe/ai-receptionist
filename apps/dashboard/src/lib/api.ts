@@ -559,6 +559,91 @@ export const complianceApi = {
   getEvents: () => apiFetch<{ data: ComplianceEventRecord[] }>('/compliance/events'),
 };
 
+// ── Agent (suggestion queue) ────────────────────────────────────────────────
+
+export type AgentSuggestionType =
+  | 'missed_call_callback'
+  | 'appointment_confirmation'
+  | 'stale_lead_followup'
+  | 'no_show_recapture';
+
+export type AgentSuggestionStatus =
+  | 'pending'
+  | 'approved'
+  | 'executed'
+  | 'skipped'
+  | 'expired'
+  | 'failed';
+
+export interface AgentSuggestion {
+  id: string;
+  tenantId: string;
+  type: AgentSuggestionType;
+  status: AgentSuggestionStatus;
+  dedupeKey: string;
+  payload: {
+    contactName?: string;
+    phone?: string;
+    fromNumber?: string;
+    phoneDisplay?: string;
+    script?: string;
+    callId?: string;
+    appointmentId?: string;
+    contactId?: string;
+    missedAt?: string;
+    startsAtDisplay?: string;
+    appointmentType?: string;
+    [key: string]: unknown;
+  };
+  suggestedAt: string;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  executedAt: string | null;
+  executionResult: { ok: boolean; detail: string } | null;
+  createdAt: string;
+}
+
+export interface AgentSettings {
+  agentEnabled: boolean;
+  agentAutoExecute: boolean;
+  hipaaMode: boolean;
+}
+
+export const agentApi = {
+  /** List suggestions for this tenant (default: pending). */
+  listSuggestions: (status: AgentSuggestionStatus = 'pending') =>
+    apiFetch<{ data: AgentSuggestion[] }>(`/agent/suggestions?status=${status}`),
+
+  approve: (id: string) =>
+    apiFetch<{ data: AgentSuggestion }>(`/agent/suggestions/${id}/approve`, {
+      method: 'POST',
+    }),
+
+  skip: (id: string) =>
+    apiFetch<{ data: AgentSuggestion }>(`/agent/suggestions/${id}/skip`, {
+      method: 'POST',
+    }),
+
+  /** Force a fresh scanner run for this tenant — used by the "Refresh" button. */
+  scan: () =>
+    apiFetch<{
+      data: {
+        tenantId: string;
+        detected: number;
+        inserted: number;
+        byType: Record<AgentSuggestionType, number>;
+      };
+    }>('/agent/scan', { method: 'POST' }),
+
+  getSettings: () => apiFetch<AgentSettings>('/agent/settings'),
+
+  updateSettings: (body: { agentEnabled?: boolean; agentAutoExecute?: boolean }) =>
+    apiFetch<{ ok: boolean }>('/agent/settings', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+};
+
 export const smsApi = {
   /** List all conversation threads for the tenant, sorted by most recent. */
   listConversations: () =>

@@ -9,6 +9,7 @@ import { useFeatureFlags } from '@/lib/featureFlags';
 import { useVertical } from '@/lib/useVertical';
 import { LockedFeature } from '@/components/ui/locked-feature';
 import { EmptyState } from '@/components/ui/empty-state';
+import { AgentSuggestionsCard } from '@/components/dashboard/agent-suggestions-card';
 
 interface EventStyle { color: string; dot: string }
 
@@ -183,6 +184,9 @@ export default function DashboardPage() {
           </LockedFeature>
         )}
       </div>
+
+      {/* ── AI Agent Suggestions ── */}
+      <AgentSuggestionsCard />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Calls */}

@@ -22,6 +22,7 @@ import {
   Menu,
   X,
   Shield,
+  Sparkles,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { logout } from '@/lib/auth';
@@ -67,6 +68,7 @@ const settingsNav = [
   { href: '/settings/team', label: 'Team', icon: null },
   { href: '/settings/audit-log', label: 'Audit Log', icon: null },
   { href: '/settings/compliance', label: 'Compliance', icon: 'shield' as const },
+  { href: '/settings/agent', label: 'AI Agent', icon: 'sparkles' as const },
 ];
 
 const PLAN_LABELS: Record<string, string> = {
@@ -267,7 +269,8 @@ export function Sidebar() {
           </div>
           {settingsNav.map(({ href, label, icon }) => {
             const isCompliance = icon === 'shield';
-            const NavIcon = isCompliance ? Shield : Settings;
+            const isAgent = icon === 'sparkles';
+            const NavIcon = isCompliance ? Shield : isAgent ? Sparkles : Settings;
             const showBadge = isCompliance && showComplianceBadge;
             return (
               <Link

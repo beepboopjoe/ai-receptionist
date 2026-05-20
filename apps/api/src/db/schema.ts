@@ -51,6 +51,12 @@ export const tenants = pgTable('tenants', {
   baaAcceptedBy: uuid('baa_accepted_by'),
   hipaaMode: boolean('hipaa_mode').notNull().default(false),
   dataRetentionDays: integer('data_retention_days').notNull().default(2555),
+  // ---- AI Agent ----
+  // agentEnabled: master switch for the dashboard agent (suggestions feed).
+  // agentAutoExecute: when true, "safe" suggestion types execute without
+  //   human approval. Forced false (and disabled in UI) when hipaaMode is on.
+  agentEnabled: boolean('agent_enabled').notNull().default(true),
+  agentAutoExecute: boolean('agent_auto_execute').notNull().default(false),
   // Affiliate attribution — set on signup when ?ref= was present.
   // FK declared in migration 0015 (we can't reference `affiliates`
   // here because it's declared below this tenants table).
@@ -733,6 +739,34 @@ export const complianceEvents = pgTable(
   })
 );
 
+// ---- Agent Suggestions ----
+// Queue of operator-facing AI recommendations ("call these missed callers",
+// "confirm tomorrow's appointments"). The hourly scanner worker populates it;
+// the dashboard renders pending rows; operator approves → execution runs.
+export const agentSuggestions = pgTable(
+  'agent_suggestions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    // missed_call_callback | appointment_confirmation | stale_lead_followup | no_show_recapture
+    type: text('type').notNull(),
+    // pending | approved | executed | skipped | expired | failed
+    status: text('status').notNull().default('pending'),
+    /** Deterministic hash of the source entity so the scanner is idempotent. */
+    dedupeKey: text('dedupe_key').notNull(),
+    payload: jsonb('payload').notNull().default({}),
+    suggestedAt: timestamp('suggested_at', { withTimezone: true }).notNull().defaultNow(),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+    decidedBy: uuid('decided_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+    executedAt: timestamp('executed_at', { withTimezone: true }),
+    executionResult: jsonb('execution_result'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tenantStatusIdx: index('agent_suggestions_tenant_status_idx').on(t.tenantId, t.status, t.suggestedAt),
+  })
+);
+
 // ---- Type inference helpers ----
 export type Tenant = typeof tenants.$inferSelect;
 export type NewTenant = typeof tenants.$inferInsert;
@@ -769,3 +803,5 @@ export type SmsMessage = typeof smsMessages.$inferSelect;
 export type NewSmsMessage = typeof smsMessages.$inferInsert;
 export type ComplianceEvent = typeof complianceEvents.$inferSelect;
 export type NewComplianceEvent = typeof complianceEvents.$inferInsert;
+export type AgentSuggestion = typeof agentSuggestions.$inferSelect;
+export type NewAgentSuggestion = typeof agentSuggestions.$inferInsert;
