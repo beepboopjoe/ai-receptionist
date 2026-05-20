@@ -35,13 +35,13 @@ export type FeatureFlag =
 const PLAN_REQUIREMENT: Record<FeatureFlag, PlanTier> = {
   outbound_campaigns:  'growth',
   two_way_sms:         'starter',
-  analytics:           'pro',
-  multi_location:      'pro',
+  analytics:           'scale',
+  multi_location:      'scale',
   webhooks:            'growth',
-  api_access:          'pro',
-  custom_voice:        'pro',
+  api_access:          'scale',
+  custom_voice:        'scale',
   sso:                 'enterprise',
-  priority_support:    'pro',
+  priority_support:    'scale',
   crm_integrations:    'growth',
 };
 
@@ -50,7 +50,8 @@ const TIER_RANK: Record<PlanTier, number> = {
   trial: 0,
   starter: 1,
   growth: 2,
-  pro: 3,
+  scale: 3,
+  pro: 3,      // legacy alias — same rank as scale
   enterprise: 4,
 };
 

@@ -8,7 +8,7 @@
 import useSWR from 'swr';
 import { billingApi } from './api';
 
-export type PlanTier = 'trial' | 'starter' | 'growth' | 'pro' | 'enterprise';
+export type PlanTier = 'trial' | 'starter' | 'growth' | 'scale' | 'pro' | 'enterprise';
 
 export interface PlanState {
   plan: PlanTier;
@@ -37,8 +37,8 @@ export function usePlan(): PlanState {
   return {
     plan,
     outboundEnabled: b?.outboundEnabled ?? false,
-    analyticsEnabled: plan === 'pro' || plan === 'enterprise',
-    multiLocationEnabled: plan === 'pro' || plan === 'enterprise',
+    analyticsEnabled: plan === 'scale' || plan === 'pro' || plan === 'enterprise',
+    multiLocationEnabled: plan === 'scale' || plan === 'pro' || plan === 'enterprise',
     minutesUsed: b?.minutesUsed ?? 0,
     minutesIncluded: b?.minutesIncluded ?? 0,
     usagePercent: b?.usagePercent ?? 0,
