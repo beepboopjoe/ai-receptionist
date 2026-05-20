@@ -21,6 +21,7 @@ import {
   Lock,
   Menu,
   X,
+  Shield,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { logout } from '@/lib/auth';
@@ -29,6 +30,8 @@ import { usePlan } from '@/lib/usePlan';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { useVertical } from '@/lib/useVertical';
 import { BRAND_NAME } from '@/lib/brand';
+import { complianceApi } from '@/lib/api';
+import useSWR from 'swr';
 import { UpgradeModal } from '@/components/ui/upgrade-modal';
 import type { UpgradeReason } from '@/components/ui/upgrade-modal';
 
@@ -54,15 +57,16 @@ const proNavItems: { label: string; icon: React.ElementType; reason: UpgradeReas
 ];
 
 const settingsNav = [
-  { href: '/settings/phone-numbers', label: 'Phone Numbers' },
-  { href: '/settings/integrations', label: 'Integrations' },
-  { href: '/settings/office-hours', label: 'Office Hours' },
-  { href: '/settings/voice-agent', label: 'Voice Agent' },
-  { href: '/settings/notifications', label: 'Notifications' },
-  { href: '/settings/webhooks', label: 'Webhooks' },
-  { href: '/settings/api-keys', label: 'API Keys' },
-  { href: '/settings/team', label: 'Team' },
-  { href: '/settings/audit-log', label: 'Audit Log' },
+  { href: '/settings/phone-numbers', label: 'Phone Numbers', icon: null },
+  { href: '/settings/integrations', label: 'Integrations', icon: null },
+  { href: '/settings/office-hours', label: 'Office Hours', icon: null },
+  { href: '/settings/voice-agent', label: 'Voice Agent', icon: null },
+  { href: '/settings/notifications', label: 'Notifications', icon: null },
+  { href: '/settings/webhooks', label: 'Webhooks', icon: null },
+  { href: '/settings/api-keys', label: 'API Keys', icon: null },
+  { href: '/settings/team', label: 'Team', icon: null },
+  { href: '/settings/audit-log', label: 'Audit Log', icon: null },
+  { href: '/settings/compliance', label: 'Compliance', icon: 'shield' as const },
 ];
 
 const PLAN_LABELS: Record<string, string> = {
@@ -95,6 +99,17 @@ export function Sidebar() {
 
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const nav = buildNav(cap(vertical.contactNounPlural), cap(vertical.appointmentNounPlural));
+
+  // Compliance badge — show amber dot on Compliance nav item when BAA is
+  // unsigned. Only fetch when the user is authenticated (window exists).
+  const { data: complianceStatus } = useSWR(
+    typeof window !== 'undefined' ? 'compliance-status' : null,
+    () => complianceApi.getStatus(),
+    { refreshInterval: 5 * 60 * 1000, revalidateOnFocus: false }
+  );
+  // Show badge for dental/healthcare vertical until BAA is accepted
+  const showComplianceBadge =
+    vertical.id === 'dental' && complianceStatus && !complianceStatus.baaAccepted;
 
   const isHighUsage = usagePercent >= 80;
   const showUpgradeCta = !loading && (plan === 'trial' || plan === 'starter');
@@ -250,22 +265,33 @@ export function Sidebar() {
           <div className="pt-4 pb-1">
             <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Settings</p>
           </div>
-          {settingsNav.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setMobileOpen(false)}
-              className={clsx(
-                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                pathname === href
-                  ? 'bg-brand-50 text-brand-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              )}
-            >
-              <Settings size={16} className="opacity-60" />
-              {label}
-            </Link>
-          ))}
+          {settingsNav.map(({ href, label, icon }) => {
+            const isCompliance = icon === 'shield';
+            const NavIcon = isCompliance ? Shield : Settings;
+            const showBadge = isCompliance && showComplianceBadge;
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMobileOpen(false)}
+                className={clsx(
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                  pathname === href
+                    ? 'bg-brand-50 text-brand-700'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                )}
+              >
+                <NavIcon size={16} className="opacity-60 shrink-0" />
+                <span className="flex-1">{label}</span>
+                {showBadge && (
+                  <span
+                    className="w-2 h-2 rounded-full bg-amber-500 shrink-0"
+                    title="Business Associate Agreement not yet signed"
+                  />
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Usage widget */}

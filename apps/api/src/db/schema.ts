@@ -42,6 +42,15 @@ export const tenants = pgTable('tenants', {
   // for the Voice Clone add-on ($49/mo). Managed by the Stripe webhook.
   voiceCloneAddon: boolean('voice_clone_addon').notNull().default(false),
   voiceCloneStripeSub: text('voice_clone_stripe_sub_id'),
+  // ---- HIPAA / Compliance ----
+  // baaAcceptedAt: timestamp when the account owner signed the BAA.
+  // hipaaMode: enforces idle-timeout + stricter audit for healthcare tenants.
+  // dataRetentionDays: how long PHI data is kept (HIPAA min = 2190 / 6yr;
+  //   default 2555 = 7 years which is what most dental practices need).
+  baaAcceptedAt: timestamp('baa_accepted_at', { withTimezone: true }),
+  baaAcceptedBy: uuid('baa_accepted_by'),
+  hipaaMode: boolean('hipaa_mode').notNull().default(false),
+  dataRetentionDays: integer('data_retention_days').notNull().default(2555),
   // Affiliate attribution — set on signup when ?ref= was present.
   // FK declared in migration 0015 (we can't reference `affiliates`
   // here because it's declared below this tenants table).
@@ -702,6 +711,28 @@ export const smsMessages = pgTable(
   })
 );
 
+// ---- Compliance Events ----
+// Immutable audit trail for HIPAA-relevant actions (BAA acceptance, mode
+// changes, retention updates). Separate from audit_log so it can be
+// exported independently for compliance audits or OCR requests.
+export const complianceEvents = pgTable(
+  'compliance_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    // event_type: baa_accepted | hipaa_mode_enabled | hipaa_mode_disabled |
+    //             retention_changed | settings_changed
+    eventType: text('event_type').notNull(),
+    actorId: uuid('actor_id').references(() => adminUsers.id, { onDelete: 'set null' }),
+    actorEmail: text('actor_email'),
+    metadata: jsonb('metadata').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tenantIdx: index('compliance_events_tenant_idx').on(t.tenantId, t.createdAt),
+  })
+);
+
 // ---- Type inference helpers ----
 export type Tenant = typeof tenants.$inferSelect;
 export type NewTenant = typeof tenants.$inferInsert;
@@ -736,3 +767,5 @@ export type PayoutRequest = typeof payoutRequests.$inferSelect;
 export type NewPayoutRequest = typeof payoutRequests.$inferInsert;
 export type SmsMessage = typeof smsMessages.$inferSelect;
 export type NewSmsMessage = typeof smsMessages.$inferInsert;
+export type ComplianceEvent = typeof complianceEvents.$inferSelect;
+export type NewComplianceEvent = typeof complianceEvents.$inferInsert;

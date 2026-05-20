@@ -526,6 +526,39 @@ export interface SmsThread {
   messages: SmsMessage[];
 }
 
+// ---- Compliance (HIPAA) ----
+export interface ComplianceStatus {
+  baaAccepted: boolean;
+  baaAcceptedAt: string | null;
+  baaSignerEmail: string | null;
+  hipaaMode: boolean;
+  dataRetentionDays: number;
+}
+
+export interface ComplianceEventRecord {
+  id: string;
+  tenantId: string;
+  eventType: string;
+  actorId: string | null;
+  actorEmail: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export const complianceApi = {
+  getStatus: () => apiFetch<ComplianceStatus>('/compliance/status'),
+  acceptBaa: () =>
+    apiFetch<{ ok: boolean; acceptedAt: string }>('/compliance/baa/accept', {
+      method: 'POST',
+    }),
+  updateSettings: (body: { hipaaMode?: boolean; dataRetentionDays?: number }) =>
+    apiFetch<{ ok: boolean }>('/compliance/settings', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  getEvents: () => apiFetch<{ data: ComplianceEventRecord[] }>('/compliance/events'),
+};
+
 export const smsApi = {
   /** List all conversation threads for the tenant, sorted by most recent. */
   listConversations: () =>

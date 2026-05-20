@@ -9,6 +9,7 @@ import { ToastProvider } from '@/components/ui/toast';
 import { RouteProgress } from '@/components/ui/route-progress';
 import { OnboardingBanner } from '@/components/layout/onboarding-banner';
 import { CommandPalette } from '@/components/ui/command-palette';
+import { IdleTimeout } from '@/components/ui/idle-timeout';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <TenantProvider>
       <ToastProvider>
+        <IdleTimeout />
         <RouteProgress />
         <CommandPalette />
         <div className="flex h-screen bg-gray-50">
