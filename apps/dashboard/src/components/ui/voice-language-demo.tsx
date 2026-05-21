@@ -222,7 +222,7 @@ function VoicePlayer({ voice, lang }: { voice: VoiceId; lang: LangCode }) {
       {/* Footer */}
       <div className="px-5 py-2 border-t border-cream-100 bg-white">
         <p className="text-[10px] text-cream-400 text-center">
-          Generated with xAI Grok TTS · {voiceMeta.label} voice · {langMeta.label}
+          {voiceMeta.label} voice · {langMeta.label}
         </p>
       </div>
     </div>
@@ -302,10 +302,6 @@ export function VoiceLanguageDemo() {
       {/* Player */}
       <VoicePlayer key={`${activeVoice}_${activeLang}`} voice={activeVoice} lang={activeLang} />
 
-      {/* Caption */}
-      <p className="text-center text-xs text-cream-400 mt-4">
-        5 voices × 7 languages = 35 unique audio samples · All generated with xAI Grok TTS
-      </p>
     </div>
   );
 }

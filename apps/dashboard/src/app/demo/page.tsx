@@ -161,7 +161,7 @@ export default function DemoPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
             {
-              title: 'xAI Grok latest voice model',
+              title: 'State-of-the-art voice model',
               desc: 'Natural cadence, conversational pauses, handles interruption. Callers hang up surprised — not annoyed.',
             },
             {

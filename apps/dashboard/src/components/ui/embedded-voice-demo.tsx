@@ -540,7 +540,7 @@ export function EmbeddedVoiceDemo({ vertical: verticalProp = 'dental' }: { verti
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 text-center">
         {[
           { icon: '🔒', title: 'Completely private',  desc: 'API key stays server-side. Audio is not stored or logged.' },
-          { icon: '⚡', title: 'Real-time voice AI',   desc: 'Sub-300ms latency via xAI Grok Realtime API.' },
+          { icon: '⚡', title: 'Real-time voice AI',   desc: 'Sub-300ms latency, conversational realtime engine.' },
           { icon: verticalConfig.emoji, title: `${verticalConfig.label}-tuned`, desc: `5 pre-built scenarios — fully customizable per ${verticalConfig.businessNoun}.` },
         ].map(item => (
           <div key={item.title} className="rounded-xl border border-white/10 bg-white/5 px-5 py-4">

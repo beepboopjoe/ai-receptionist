@@ -87,7 +87,7 @@ const INTEGRATIONS = [
     items: [
       { icon: '🤖', name: 'OpenAI · ChatGPT',    desc: 'Drafts email replies, SMS responses, and call summaries',    status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
       { icon: '🧠', name: 'Anthropic · Claude',  desc: 'Draft messages with safety review + approval queue',         status: 'connected', color: 'bg-amber-50 border-amber-200'   },
-      { icon: '✨', name: 'xAI · Grok',          desc: 'Voice agent core · multilingual TTS · realtime',             status: 'connected', color: 'bg-brand-50 border-brand-200'   },
+      { icon: '✨', name: 'Voice AI Engine',     desc: 'Voice agent core · multilingual TTS · realtime',             status: 'connected', color: 'bg-brand-50 border-brand-200'   },
       { icon: '📝', name: 'Draft Approval Queue', desc: 'Review every outbound draft before send · 1-click approve', status: 'connected', color: 'bg-emerald-50 border-emerald-200' },
     ],
   },

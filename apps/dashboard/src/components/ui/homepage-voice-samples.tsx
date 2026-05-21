@@ -169,7 +169,7 @@ export function HomepageVoiceSamples() {
         </div>
 
         <p className="text-center text-xs text-cream-400 mt-6">
-          xAI Grok TTS · English + Spanish on every plan · Switch voices any time in settings
+          English + Spanish on every plan · Switch voices any time in settings
         </p>
       </div>
     </section>

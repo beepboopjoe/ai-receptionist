@@ -70,7 +70,7 @@ const USE_CASES = [
 const QUALITY = [
   {
     title: 'Sounds like a real receptionist',
-    desc: 'xAI Grok\'s latest voice model — natural cadence, conversational pauses, handles interruption. Most callers don\'t realize it\'s AI.',
+    desc: "Our latest voice model — natural cadence, conversational pauses, handles interruption. Most callers don't realize it's AI.",
   },
   {
     title: 'No hold music',
