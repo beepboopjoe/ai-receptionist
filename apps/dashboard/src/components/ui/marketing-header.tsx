@@ -16,7 +16,7 @@ const NAV_LINKS = [
   { label: 'Outbound',  href: '/outbound' },
   { label: 'Pricing',   href: '/pricing' },
   { label: 'Demo',      href: '/demo' },
-  { label: 'Resellers', href: '/resellers' },
+  { label: 'Affiliate', href: '/resellers' },
 ];
 
 export function MarketingHeader() {

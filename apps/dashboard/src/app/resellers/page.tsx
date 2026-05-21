@@ -268,7 +268,7 @@ export default function ResellersPage() {
             <Link href="/inbound" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Inbound</Link>
             <Link href="/outbound" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Outbound</Link>
             <Link href="/pricing" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Pricing</Link>
-            <Link href="/resellers" className="text-sm font-medium text-brand-600">Resellers</Link>
+            <Link href="/resellers" className="text-sm font-medium text-brand-600">Affiliate</Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link href="/partners/login" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Partner login</Link>

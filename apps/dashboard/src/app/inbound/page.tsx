@@ -156,6 +156,13 @@ export default function InboundPage() {
         </div>
       </section>
 
+      {/* ── Dashboard preview ─────────────────────────── */}
+      <section className="bg-white border-y border-cream-200 py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <DashboardTeaser />
+        </div>
+      </section>
+
       {/* ── Use cases ─────────────────────────────────────── */}
       <section className="bg-cream-100 py-20 px-6 border-b border-cream-200">
         <div className="max-w-6xl mx-auto">
@@ -246,22 +253,6 @@ export default function InboundPage() {
         </div>
       </section>
 
-
-      {/* ── Dashboard preview ─────────────────────────── */}
-      <section className="bg-white border-y border-cream-200 py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">What you get inside</p>
-            <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
-              Every call captured. Every booking tracked.
-            </h2>
-            <p className="text-cream-600 mt-3 max-w-xl mx-auto">
-              Live call log, real-time activity feed, two-way SMS, and every appointment pushed to your calendar.
-            </p>
-          </div>
-          <DashboardTeaser />
-        </div>
-      </section>
 
       {/* ── Audio Samples (secondary fallback) ─────────── */}
       <section className="max-w-4xl mx-auto px-6 pb-12 pt-12">

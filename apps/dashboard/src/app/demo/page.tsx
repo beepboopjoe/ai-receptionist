@@ -73,70 +73,73 @@ export default function DemoPage() {
         </div>
       </section>
 
-      {/* ── Vertical filter pills ──────────────────────────── */}
-      <section className="max-w-5xl mx-auto px-6 pb-6 pt-10">
-        <div className="flex items-center gap-2 flex-wrap justify-center">
-          {VERTICAL_FILTERS.map((v) => {
-            const active = filter === v.key;
-            return (
-              <button
-                key={v.key}
-                onClick={() => setFilter(v.key)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-1.5 ${
-                  active
-                    ? 'bg-brand-600 text-white shadow-sm'
-                    : 'bg-white border border-cream-200 text-cream-700 hover:bg-cream-100'
-                }`}
-              >
-                <span>{v.emoji}</span> {v.label}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ── Hear the AI ───────────────────────────────────── */}
-      <section className="max-w-5xl mx-auto px-6 py-16">
-        <div className="text-center mb-8">
-          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Voice samples</p>
-          <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
-            Hear the AI in action.
-          </h2>
-          <p className="text-cream-600 mt-3 max-w-xl mx-auto">
-            Real scripts. Same voice your customers hear. Press play to listen — no account required.
-          </p>
-        </div>
-
-        {/* EN / ES language toggle */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {([
-            { lang: 'en', flag: '🇺🇸', label: 'English' },
-            { lang: 'es', flag: '🇪🇸', label: 'Español' },
-          ] as const).map(({ lang, flag, label }) => (
-            <button
-              key={lang}
-              onClick={() => setSampleLang(lang)}
-              className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 ${
-                sampleLang === lang
-                  ? 'bg-brand-600 text-white shadow-sm'
-                  : 'bg-white border border-cream-200 text-cream-700 hover:bg-cream-100'
-              }`}
-            >
-              {flag} {label}
-            </button>
-          ))}
-        </div>
-
-        <SampleCallPlayer
-          singleLang={sampleLang}
-          {...(verticalFilter ? { vertical: verticalFilter } : {})}
-          callType="inbound"
-        />
-      </section>
-
-      {/* ── Voice × Language demo ──────────────────────────── */}
+      {/* ── Voices & Sample Calls (unified) ──────────────────── */}
       <section className="py-16 bg-cream-50 border-t border-cream-200">
+        {/* Voice × Language demo */}
         <VoiceLanguageDemo />
+
+        {/* Sample calls by industry */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 mt-14">
+          <div className="border-t border-cream-200 pt-12">
+            <div className="text-center mb-8">
+              <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-2">
+                Sample calls by industry
+              </p>
+              <h3 className="font-serif text-2xl md:text-3xl text-cream-900 tracking-tight">
+                Hear the AI handle real scenarios.
+              </h3>
+              <p className="text-cream-600 mt-2 text-sm max-w-lg mx-auto">
+                Real scripts. Same voice your customers hear. Press play — no account required.
+              </p>
+            </div>
+
+            {/* Vertical filter pills */}
+            <div className="flex items-center gap-2 flex-wrap justify-center mb-6">
+              {VERTICAL_FILTERS.map((v) => {
+                const active = filter === v.key;
+                return (
+                  <button
+                    key={v.key}
+                    onClick={() => setFilter(v.key)}
+                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-1.5 ${
+                      active
+                        ? 'bg-brand-600 text-white shadow-sm'
+                        : 'bg-white border border-cream-200 text-cream-700 hover:bg-cream-100'
+                    }`}
+                  >
+                    <span>{v.emoji}</span> {v.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* EN / ES language toggle */}
+            <div className="flex items-center justify-center gap-2 mb-8">
+              {([
+                { lang: 'en', flag: '🇺🇸', label: 'English' },
+                { lang: 'es', flag: '🇪🇸', label: 'Español' },
+              ] as const).map(({ lang, flag, label }) => (
+                <button
+                  key={lang}
+                  onClick={() => setSampleLang(lang)}
+                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 ${
+                    sampleLang === lang
+                      ? 'bg-brand-600 text-white shadow-sm'
+                      : 'bg-white border border-cream-200 text-cream-700 hover:bg-cream-100'
+                  }`}
+                >
+                  {flag} {label}
+                </button>
+              ))}
+            </div>
+
+            <SampleCallPlayer
+              singleLang={sampleLang}
+              {...(verticalFilter ? { vertical: verticalFilter } : {})}
+              callType="inbound"
+            />
+          </div>
+        </div>
       </section>
 
       {/* ── Interactive dashboard preview ──────────────────── */}
