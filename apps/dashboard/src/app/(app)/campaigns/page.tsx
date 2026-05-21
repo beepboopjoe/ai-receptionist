@@ -1,7 +1,7 @@
 'use client';
 import useSWR, { mutate } from 'swr';
 import { campaignsApi } from '@/lib/api';
-import { Plus, Play, Pause, XCircle, ChevronRight, Megaphone } from 'lucide-react';
+import { Plus, Play, Pause, XCircle, ChevronRight, Megaphone, Phone, Info } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { UpgradeModal } from '@/components/ui/upgrade-modal';
@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ListRowSkeleton } from '@/components/ui/skeleton';
 import { useVertical } from '@/lib/useVertical';
 import { useFeatureFlags } from '@/lib/featureFlags';
+import { usePlan } from '@/lib/usePlan';
 import { useToast } from '@/components/ui/toast';
 import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 
@@ -30,6 +31,10 @@ export default function CampaignsPage() {
   // Feature flags resolve from plan tier — Growth+ unlocks outbound campaigns.
   const { has, loading: flagsLoading } = useFeatureFlags();
   const outboundEnabled = flagsLoading ? true : has('outbound_campaigns');
+  // Promo-trial tenants see a separate caller-ID notice because their
+  // outbound calls go out from a freshly-provisioned trial number, not
+  // their established business line.
+  const { promoTrial } = usePlan();
 
   async function handleAction(id: string, action: 'start' | 'pause' | 'cancel') {
     setActionId(id);
@@ -97,6 +102,41 @@ export default function CampaignsPage() {
               Upgrade to Growth ($299/mo) to unlock AI calling campaigns.{' '}
               <button onClick={() => setShowUpgrade(true)} className="underline font-medium">See what&apos;s included →</button>
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Caller-ID notice for promo-trial tenants */}
+      {promoTrial && outboundEnabled && (
+        <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 px-5 py-4 flex items-start gap-3">
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
+            <Phone size={15} className="text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-indigo-900">
+              Caller ID during your promo trial
+            </p>
+            <p className="text-sm text-indigo-800 mt-1 leading-relaxed">
+              Your outbound calls go out from the trial number you provisioned in
+              Settings → Phone Numbers — not your existing business line. The
+              prospect&apos;s screen will show <strong>just the number</strong>, with no
+              business name. Some carriers may label brand-new numbers as
+              &ldquo;Spam Likely&rdquo; until they build call history.
+            </p>
+            <p className="text-sm text-indigo-800 mt-2 leading-relaxed">
+              The AI introduces itself with your business name within 2 seconds of
+              pickup, so the conversation lands correctly.
+            </p>
+            <div className="mt-3 flex items-start gap-2 rounded-lg bg-white/70 border border-indigo-200 px-3 py-2.5">
+              <Info size={13} className="text-indigo-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-indigo-900">
+                <strong>After you upgrade,</strong> we can register your business name
+                with the carriers (CNAM) so it appears on the recipient&apos;s lockscreen
+                — typically $1–3/mo extra, 5–15 business days to propagate.
+                Alternatively, port your existing business line to us so caller ID
+                matches your brand directly.
+              </p>
+            </div>
           </div>
         </div>
       )}
