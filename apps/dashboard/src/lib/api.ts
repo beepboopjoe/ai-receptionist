@@ -662,3 +662,61 @@ export const smsApi = {
       body: JSON.stringify({ to, body }),
     }),
 };
+
+// ---- Platform Admin ----
+// Reserved for emails listed in ADMIN_EMAILS on the API. Lets you reach
+// across every tenant in the system: list/search them, grant promo
+// trials, view platform-wide stats. Used by /platform in the dashboard.
+export interface PlatformTenant {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  vertical: string;
+  isActive: boolean;
+  subscriptionStatus: string | null;
+  promoTrial: boolean;
+  minutesOverride: number | null;
+  createdAt: string;
+  ownerEmail: string | null;
+  minutesUsed: number;
+  minutesIncluded: number;
+  capReached: boolean;
+}
+
+export interface PlatformStats {
+  totalTenants: number;
+  activeTenants: number;
+  promoTenants: number;
+  signups7d: number;
+  signups30d: number;
+  mrrCents: number;
+  churnedRecently: number;
+  platformMinutesThisMonth: number;
+  platformCallsThisMonth: number;
+}
+
+export const platformApi = {
+  /** Returns 200 only if the caller is in ADMIN_EMAILS. Used to gate UI. */
+  whoami: () => apiFetch<{ ok: true; email: string }>('/platform/whoami'),
+  stats: () => apiFetch<PlatformStats>('/platform/stats'),
+  listTenants: (search?: string, sort?: 'created_desc' | 'minutes_desc' | 'name_asc') => {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (sort) params.set('sort', sort);
+    const q = params.toString();
+    return apiFetch<{ data: PlatformTenant[]; total: number }>(
+      `/platform/tenants${q ? '?' + q : ''}`
+    );
+  },
+  grantPromoTrial: (tenantId: string, plan: string, minutes: number) =>
+    apiFetch<{ ok: true; tenantId: string; plan: string; minutesOverride: number; promoTrial: true }>(
+      `/admin/tenants/${tenantId}/grant-promo-trial`,
+      { method: 'POST', body: JSON.stringify({ plan, minutes }) }
+    ),
+  revokePromoTrial: (tenantId: string) =>
+    apiFetch<{ ok: true; tenantId: string }>(
+      `/admin/tenants/${tenantId}/revoke-promo-trial`,
+      { method: 'POST' }
+    ),
+};

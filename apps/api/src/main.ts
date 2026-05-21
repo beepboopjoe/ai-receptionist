@@ -49,6 +49,7 @@ import { openapiPlugin } from './modules/public-api/openapi.plugin.js';
 import { smsPlugin } from './modules/sms/sms.router.js';
 import { compliancePlugin } from './modules/compliance/compliance.router.js';
 import { agentPlugin } from './modules/agent/agent.router.js';
+import { platformPlugin } from './modules/platform/platform.router.js';
 import { startAgentScannerWorker, stopAgentScannerWorker } from './workers/agent-scanner.worker.js';
 
 async function buildApp() {
@@ -172,6 +173,7 @@ async function buildApp() {
   await app.register(smsPlugin, { prefix: '/api/v1' });
   await app.register(compliancePlugin, { prefix: '/api/v1' });
   await app.register(agentPlugin, { prefix: '/api/v1' });
+  await app.register(platformPlugin, { prefix: '/api/v1' });
   // Stripe webhook lives at the root (no /api/v1) so the URL the
   // customer enters in the Stripe dashboard is short and stable.
   // It also needs raw-body capture which the plugin sets up itself.

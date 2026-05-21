@@ -31,7 +31,7 @@ import { usePlan } from '@/lib/usePlan';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { useVertical } from '@/lib/useVertical';
 import { BRAND_NAME } from '@/lib/brand';
-import { complianceApi } from '@/lib/api';
+import { complianceApi, platformApi } from '@/lib/api';
 import useSWR from 'swr';
 import { UpgradeModal } from '@/components/ui/upgrade-modal';
 import type { UpgradeReason } from '@/components/ui/upgrade-modal';
@@ -112,6 +112,22 @@ export function Sidebar() {
   // Show badge for dental/healthcare vertical until BAA is accepted
   const showComplianceBadge =
     vertical.id === 'dental' && complianceStatus && !complianceStatus.baaAccepted;
+
+  // Platform-admin check — fetches /platform/whoami. Returns 200 only when
+  // the caller's email is in ADMIN_EMAILS on the API. Used to gate the
+  // "Platform" sidebar link so regular tenants never see it.
+  const { data: platformAdmin } = useSWR(
+    typeof window !== 'undefined' ? 'platform-whoami' : null,
+    async () => {
+      try {
+        await platformApi.whoami();
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { revalidateOnFocus: false, dedupingInterval: 5 * 60 * 1000 }
+  );
 
   const isHighUsage = usagePercent >= 80;
   const showUpgradeCta = !loading && (plan === 'trial' || plan === 'starter');
@@ -212,6 +228,23 @@ export function Sidebar() {
 
         {/* Main nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          {/* Platform-admin link — only visible to emails in ADMIN_EMAILS */}
+          {platformAdmin && (
+            <Link
+              href="/platform"
+              onClick={() => setMobileOpen(false)}
+              className={clsx(
+                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors mb-2 border',
+                pathname === '/platform' || pathname.startsWith('/platform/')
+                  ? 'bg-gradient-to-r from-indigo-50 to-violet-50 text-indigo-700 border-indigo-200'
+                  : 'bg-gradient-to-r from-indigo-50/40 to-violet-50/40 text-indigo-700 border-indigo-100 hover:from-indigo-50 hover:to-violet-50'
+              )}
+            >
+              <Shield size={18} />
+              <span className="flex-1">Platform Admin</span>
+              <Sparkles size={12} className="text-indigo-400" />
+            </Link>
+          )}
           {nav.map(({ href, label, icon: Icon, requires }) => {
             const locked = requires && !has(requires);
             if (locked) {
