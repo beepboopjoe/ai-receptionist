@@ -439,6 +439,16 @@ export const phoneNumbersApi = {
   release: (id: string) =>
     apiFetch<void>(`/phone-numbers/${id}`, { method: 'DELETE' }),
 
+  /**
+   * Returns the active per-month price (in cents) for local + toll-free numbers
+   * for the signed-in tenant. Promo-trial tenants get wholesale Telnyx rates;
+   * everyone else gets the retail $5 / $10.
+   */
+  pricing: () =>
+    apiFetch<{ localCents: number; tollFreeCents: number; isPromoPricing: boolean }>(
+      '/phone-numbers/pricing'
+    ),
+
   // Number porting (LOA submission + tracking)
   port: (input: PortRequestInput) =>
     apiFetch<PortRequestRow>('/phone-numbers/port', {

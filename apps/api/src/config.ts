@@ -98,6 +98,13 @@ const envSchema = z.object({
   // admin endpoints (currently: affiliate management). Used as a
   // simple gate above and beyond the per-tenant role system.
   ADMIN_EMAILS: z.string().default(''),
+
+  // Wholesale Telnyx number rates in CENTS / mo. Charged to promo-trial
+  // tenants (in place of the retail $5/$10) so they pay what we pay.
+  // Defaults track typical Telnyx US pricing; override via env if yours
+  // differs. Retail rates are hardcoded in phone.service.ts.
+  TELNYX_WHOLESALE_LOCAL_CENTS: z.coerce.number().int().min(0).default(100),
+  TELNYX_WHOLESALE_TOLLFREE_CENTS: z.coerce.number().int().min(0).default(200),
 });
 
 function loadConfig() {

@@ -9,6 +9,7 @@ import {
   searchNumbers,
   purchaseTenantNumber,
   releaseTenantNumber,
+  getNumberPricingForTenant,
 } from './phone.service.js';
 import {
   createPortRequest,
@@ -23,6 +24,14 @@ export async function phoneNumbersPlugin(app: FastifyInstance): Promise<void> {
   app.get('/phone-numbers', { onRequest: [app.requireRole('staff')] }, async (request, reply) => {
     const numbers = await listTenantNumbers(request.user!.tenantId);
     return reply.send({ data: numbers });
+  });
+
+  // ── Pricing ────────────────────────────────────────────────
+  // Returns the active monthly rates for this tenant. Promo-trial
+  // tenants get the wholesale Telnyx rate; everyone else gets retail.
+  app.get('/phone-numbers/pricing', { onRequest: [app.requireRole('staff')] }, async (request, reply) => {
+    const pricing = await getNumberPricingForTenant(request.user!.tenantId);
+    return reply.send(pricing);
   });
 
   // ── Search Telnyx ─────────────────────────────────────────

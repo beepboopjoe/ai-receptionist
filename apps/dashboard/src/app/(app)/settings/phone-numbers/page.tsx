@@ -32,6 +32,17 @@ export default function PhoneNumbersPage() {
   const { data, isLoading } = useSWR('phone-numbers', () => phoneNumbersApi.list());
   const owned = data?.data ?? [];
 
+  // Active per-month rates. Promo-trial tenants get wholesale Telnyx
+  // rates ($1 / $2); everyone else gets the retail $5 / $10.
+  const { data: pricing } = useSWR('phone-numbers-pricing', () =>
+    phoneNumbersApi.pricing()
+  );
+  const localCents = pricing?.localCents ?? 500;
+  const tollFreeCents = pricing?.tollFreeCents ?? 1000;
+  const isPromoPricing = pricing?.isPromoPricing ?? false;
+  const costFor = (t: 'local' | 'toll_free') =>
+    t === 'toll_free' ? tollFreeCents : localCents;
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [areaCode, setAreaCode] = useState('');
   const [type, setType] = useState<'local' | 'toll_free'>('local');
@@ -134,7 +145,7 @@ export default function PhoneNumbersPage() {
   }
 
   async function handlePurchase(number: AvailableNumber) {
-    if (!confirm(`Buy ${formatNumber(number.phoneE164)} for ${dollars(number.numberType === 'toll_free' ? 1000 : 500)}/mo?`)) return;
+    if (!confirm(`Buy ${formatNumber(number.phoneE164)} for ${dollars(costFor(number.numberType))}/mo?`)) return;
     setPurchasingE164(number.phoneE164);
     try {
       const res = await phoneNumbersApi.purchase(number.phoneE164, number.numberType);
@@ -173,7 +184,8 @@ export default function PhoneNumbersPage() {
         <div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Phone numbers</h1>
           <p className="text-gray-500 mt-1 text-sm">
-            Numbers your AI receptionist answers on. Each plan includes 1 local number; extras are $5/mo (local) or $10/mo (toll-free).
+            Numbers your AI receptionist answers on. Each plan includes 1 local number;
+            extras are {dollars(localCents)}/mo (local) or {dollars(tollFreeCents)}/mo (toll-free).
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -192,6 +204,27 @@ export default function PhoneNumbersPage() {
           </button>
         </div>
       </div>
+
+      {/* ── Promo-trial at-cost pricing banner ─────────────────── */}
+      {isPromoPricing && (
+        <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
+              <Zap size={15} className="text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-indigo-900">
+                Promo trial · numbers at cost
+              </p>
+              <p className="text-xs text-indigo-700 mt-0.5">
+                You&apos;re paying our wholesale Telnyx rate during the trial — {dollars(localCents)}/mo
+                local, {dollars(tollFreeCents)}/mo toll-free. Standard rates ({dollars(500)} / {dollars(1000)})
+                apply once you subscribe.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Why multiple numbers? education panel ─────────────── */}
       <div className="card overflow-hidden">
@@ -252,7 +285,7 @@ export default function PhoneNumbersPage() {
                 icon: Star,
                 title: 'Toll-free builds credibility',
                 body: 'An 800 or 888 number signals an established business. Use it for marketing materials and leave local numbers for patient callbacks — combining reach with personal touch.',
-                highlight: '$10/mo — no per-minute extra',
+                highlight: `${dollars(tollFreeCents)}/mo — no per-minute extra`,
               },
             ].map(({ icon: Icon, title, body, highlight }) => (
               <div key={title} className="rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-2">
@@ -271,7 +304,7 @@ export default function PhoneNumbersPage() {
 
             <div className="sm:col-span-2 lg:col-span-3 bg-white rounded-xl border border-brand-100 p-4 flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-gray-900">Extra numbers are $5/mo (local) or $10/mo (toll-free)</p>
+                <p className="text-sm font-semibold text-gray-900">Extra numbers are {dollars(localCents)}/mo (local) or {dollars(tollFreeCents)}/mo (toll-free)</p>
                 <p className="text-xs text-gray-500 mt-0.5">Charged to your Stripe subscription — cancel any time from this page.</p>
               </div>
               <button
@@ -389,7 +422,7 @@ export default function PhoneNumbersPage() {
             <div className="p-5 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h2 className="font-serif text-xl text-cream-900">Buy a phone number</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Local = $5/mo · Toll-free = $10/mo</p>
+                <p className="text-xs text-gray-500 mt-0.5">Local = {dollars(localCents)}/mo · Toll-free = {dollars(tollFreeCents)}/mo</p>
               </div>
               <button onClick={() => setSearchOpen(false)} className="p-1.5 rounded hover:bg-gray-100">
                 <X size={18} />
@@ -445,7 +478,7 @@ export default function PhoneNumbersPage() {
                         disabled={purchasingE164 === r.phoneE164}
                         className="btn-primary text-sm disabled:opacity-60"
                       >
-                        {purchasingE164 === r.phoneE164 ? 'Purchasing…' : `Buy ${dollars(r.numberType === 'toll_free' ? 1000 : 500)}/mo`}
+                        {purchasingE164 === r.phoneE164 ? 'Purchasing…' : `Buy ${dollars(costFor(r.numberType))}/mo`}
                       </button>
                     </li>
                   ))}

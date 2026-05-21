@@ -15,13 +15,53 @@ import {
   type AvailableNumber,
 } from './telnyx.client.js';
 import { getStripe } from '../billing/stripe.client.js';
+import { config } from '../../config.js';
 import { IntegrationError, NotFoundError, ValidationError } from '../../lib/errors.js';
 
-/** Monthly rate per number type, in cents. Mirrors the public pricing add-ons. */
-const MONTHLY_COST_CENTS: Record<'local' | 'toll_free', number> = {
+/** Public retail rate per number type, in cents. Mirrors the marketing pricing add-ons. */
+const RETAIL_COST_CENTS: Record<'local' | 'toll_free', number> = {
   local: 500,
   toll_free: 1000,
 };
+
+/**
+ * Resolve the per-month cost in cents for a number type, honoring
+ * promo-trial at-cost pricing. Promo-trial tenants pay the wholesale
+ * Telnyx rate (configurable via TELNYX_WHOLESALE_*_CENTS env vars)
+ * instead of the marked-up retail rate. Used by both the purchase
+ * flow and the read endpoint that the dashboard calls to render prices.
+ */
+export function resolveMonthlyCostCents(
+  numberType: 'local' | 'toll_free',
+  promoTrial: boolean
+): number {
+  if (!promoTrial) return RETAIL_COST_CENTS[numberType];
+  return numberType === 'toll_free'
+    ? config.TELNYX_WHOLESALE_TOLLFREE_CENTS
+    : config.TELNYX_WHOLESALE_LOCAL_CENTS;
+}
+
+/**
+ * Returns the active pricing for a tenant (retail or wholesale) so the
+ * dashboard can render correct prices in the buy/release UI.
+ */
+export async function getNumberPricingForTenant(tenantId: string): Promise<{
+  localCents: number;
+  tollFreeCents: number;
+  isPromoPricing: boolean;
+}> {
+  const [tenant] = await db
+    .select({ promoTrial: tenants.promoTrial })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1);
+  const isPromo = Boolean(tenant?.promoTrial);
+  return {
+    localCents: resolveMonthlyCostCents('local', isPromo),
+    tollFreeCents: resolveMonthlyCostCents('toll_free', isPromo),
+    isPromoPricing: isPromo,
+  };
+}
 
 export interface OwnedNumber {
   id: string;
@@ -70,7 +110,16 @@ export async function purchaseTenantNumber(params: {
   numberType?: 'local' | 'toll_free';
 }): Promise<PurchaseResult> {
   const numberType = params.numberType ?? 'local';
-  const monthlyCostCents = MONTHLY_COST_CENTS[numberType];
+
+  // Promo-trial tenants pay the wholesale Telnyx rate; everyone else
+  // pays the public retail rate.
+  const [tenantPricing] = await db
+    .select({ promoTrial: tenants.promoTrial })
+    .from(tenants)
+    .where(eq(tenants.id, params.tenantId))
+    .limit(1);
+  const isPromo = Boolean(tenantPricing?.promoTrial);
+  const monthlyCostCents = resolveMonthlyCostCents(numberType, isPromo);
 
   // 1. Buy from Telnyx
   const order = await telnyxPurchase(params.phoneE164);
@@ -117,11 +166,12 @@ export async function purchaseTenantNumber(params: {
           customer: tenant.stripeCustomerId,
           amount: monthlyCostCents,
           currency: 'usd',
-          description: `Phone number ${params.phoneE164} (${numberType === 'toll_free' ? 'toll-free' : 'local'}) — monthly`,
+          description: `Phone number ${params.phoneE164} (${numberType === 'toll_free' ? 'toll-free' : 'local'}) — monthly${isPromo ? ' (promo trial · at cost)' : ''}`,
           metadata: {
             tenantId: params.tenantId,
             phoneNumberId: row.id,
             kind: 'phone_number_monthly',
+            pricing: isPromo ? 'wholesale_promo' : 'retail',
           },
         });
         charged = true;
