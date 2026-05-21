@@ -31,6 +31,7 @@ import { eq, and, sql, desc, lt, gte, isNull, inArray } from 'drizzle-orm';
 import { outboundDialerQueue } from '../../queue/queues.js';
 import { sendSms } from '../notifications/adapters/telnyx-sms.adapter.js';
 import { pushActivity } from '../activity/activity.service.js';
+import { isPromoTrialCapped } from '../billing/usage.service.js';
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
 import pino from 'pino';
 
@@ -529,6 +530,13 @@ async function executeOutboundCallback(
   const phone = p.fromNumber ?? p.phone;
   if (!phone) {
     return { ok: false, detail: 'No phone number on suggestion payload' };
+  }
+
+  // Promo-trial cap — refuse to enqueue an outbound call when the tenant
+  // has consumed all allotted minutes. Lets the operator know via the
+  // failed-execution toast that the cap is the reason.
+  if (await isPromoTrialCapped(tenantId)) {
+    return { ok: false, detail: 'Promo trial minute cap reached — upgrade to keep dialing' };
   }
 
   // Use a default placeholder; the actual from-number is resolved by the dial job

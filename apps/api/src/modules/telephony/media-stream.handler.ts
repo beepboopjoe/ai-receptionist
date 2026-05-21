@@ -19,6 +19,7 @@ import { identifyCaller } from '../crm/crm.service.js';
 import { saveCallState } from '../voice-agent/session-manager.js';
 import { emitWebhook } from '../webhooks/webhook.service.js';
 import { pushActivity } from '../activity/activity.service.js';
+import { isPromoTrialCapped } from '../billing/usage.service.js';
 import type { AppointmentType, OfficeHours, Contact } from '@ai-receptionist/shared';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone.js';
@@ -59,6 +60,22 @@ export async function handleMediaStream(
 ): Promise<void> {
   const { callId, tenantId, fromNumber, callSid, campaignContactId, campaignId, streamSid } = params;
   const isOutbound = !!campaignContactId;
+
+  // 0. PROMO-TRIAL CAP CHECK — refuse to open the AI media stream if the
+  //    tenant was granted a hands-on promo trial and has consumed all
+  //    allotted minutes this month. Closes the inbound WS immediately so
+  //    no minutes are billed, and the dashboard logs a "Call blocked" event.
+  if (await isPromoTrialCapped(tenantId)) {
+    logger.info({ tenantId, callId, callSid }, 'Promo-trial cap reached — refusing call');
+    pushActivity(tenantId, 'call_blocked', {
+      callId,
+      callSid,
+      fromNumber,
+      reason: 'promo_trial_cap_reached',
+    });
+    try { providerSocket.close(1008, 'Promo trial cap reached'); } catch { /* socket may already be closed */ }
+    return;
+  }
 
   // 1. Identify caller (inbound only — outbound contacts are already known)
   const contact = isOutbound ? null : await identifyCaller(fromNumber, tenantId);

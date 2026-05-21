@@ -5,6 +5,7 @@ import { eq, and, sql, count } from 'drizzle-orm';
 import { dialLead } from '../../modules/campaigns/telnyx-dialer.service.js';
 import { outboundDialerQueue } from '../queues.js';
 import { checkDialWindow } from '../../lib/dial-window.js';
+import { isPromoTrialCapped } from '../../modules/billing/usage.service.js';
 import pino from 'pino';
 
 const logger = pino({ name: 'outbound-dial-job' });
@@ -34,6 +35,18 @@ export async function processOutboundDial(job: Job<OutboundDialJobData>): Promis
   const { campaignContactId, campaignId, tenantId } = job.data;
 
   logger.info({ campaignContactId, campaignId, attempt: job.attemptsMade }, 'Processing outbound-dial job');
+
+  // 0. Promo-trial cap check — refuse to dial if the tenant was granted a
+  //    hands-on trial and has consumed all allotted minutes. Marks the
+  //    contact 'cap_reached' so the campaign doesn't keep retrying.
+  if (await isPromoTrialCapped(tenantId)) {
+    logger.info({ tenantId, campaignContactId }, 'Promo-trial cap reached — skipping dial');
+    await db
+      .update(campaignContacts)
+      .set({ status: 'cap_reached', updatedAt: new Date() })
+      .where(eq(campaignContacts.id, campaignContactId));
+    return;
+  }
 
   // 1. Fetch contact
   const [cc] = await db

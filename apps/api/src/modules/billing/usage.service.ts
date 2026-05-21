@@ -11,8 +11,8 @@
 // must not break because billing failed.
 // ============================================================
 import { db } from '../../db/client.js';
-import { tenants, minuteUsage } from '../../db/schema.js';
-import { and, eq, sql } from 'drizzle-orm';
+import { tenants, minuteUsage, calls } from '../../db/schema.js';
+import { and, eq, gte, sql } from 'drizzle-orm';
 import { getStripe } from './stripe.client.js';
 import { getPlan } from '@ai-receptionist/shared';
 
@@ -177,6 +177,46 @@ export interface UsageSnapshot {
 }
 
 /**
+ * Promo-trial cap check used by all call entry points.
+ *
+ * Returns true when the tenant was granted a promo trial via
+ * /admin/tenants/:id/grant-promo-trial AND has consumed all allotted
+ * minutes for the current calendar month. Callers (inbound media-stream
+ * handler, outbound dialer worker, agent service) must refuse new calls
+ * when this returns true.
+ *
+ * Returns false for regular paying tenants — overage billing handles them.
+ */
+export async function isPromoTrialCapped(tenantId: string): Promise<boolean> {
+  const [tenant] = await db
+    .select({
+      promoTrial: tenants.promoTrial,
+      minutesOverride: tenants.minutesOverride,
+      plan: tenants.plan,
+    })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1);
+  if (!tenant || !tenant.promoTrial) return false;
+
+  const cap = tenant.minutesOverride ?? 0;
+  if (cap <= 0) return false;
+
+  // Calendar-month usage — matches the /billing endpoint's window.
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const [row] = await db
+    .select({
+      totalSeconds: sql<number>`COALESCE(SUM(${calls.durationSeconds}), 0)`,
+    })
+    .from(calls)
+    .where(and(eq(calls.tenantId, tenantId), gte(calls.startedAt, monthStart)));
+
+  const minutesUsed = Math.ceil((Number(row?.totalSeconds) ?? 0) / 60);
+  return minutesUsed >= cap;
+}
+
+/**
  * Read-only snapshot of the current period's usage for the dashboard.
  * Does NOT create a row if none exists — returns zeros instead.
  */
@@ -187,6 +227,8 @@ export async function getCurrentUsage(tenantId: string): Promise<UsageSnapshot |
       plan: tenants.plan,
       currentPeriodEnd: tenants.currentPeriodEnd,
       createdAt: tenants.createdAt,
+      minutesOverride: tenants.minutesOverride,
+      promoTrial: tenants.promoTrial,
     })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
@@ -195,7 +237,8 @@ export async function getCurrentUsage(tenantId: string): Promise<UsageSnapshot |
 
   const { start, end } = periodBoundsFor(tenant);
   const plan = getPlan(tenant.plan);
-  const includedMinutes = plan?.monthlyMinutes ?? 0;
+  // Promo-trial override wins over the plan default.
+  const includedMinutes = tenant.minutesOverride ?? plan?.monthlyMinutes ?? 0;
 
   const [row] = await db
     .select()

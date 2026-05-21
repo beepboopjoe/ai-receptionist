@@ -57,6 +57,13 @@ export const tenants = pgTable('tenants', {
   //   human approval. Forced false (and disabled in UI) when hipaaMode is on.
   agentEnabled: boolean('agent_enabled').notNull().default(true),
   agentAutoExecute: boolean('agent_auto_execute').notNull().default(false),
+  // ---- Promo trial (manual grant via /admin/tenants/:id/grant-promo-trial) ----
+  // minutesOverride: per-tenant hard minute cap. NULL = use plan default.
+  // promoTrial:      when true, the system HARD-blocks calls at the cap and
+  //                  the dashboard shows the promo-trial banner with Upgrade CTA.
+  // Used to give specific friends/testers full-tier access with a low cap.
+  minutesOverride: integer('minutes_override'),
+  promoTrial:      boolean('promo_trial').notNull().default(false),
   // Affiliate attribution — set on signup when ?ref= was present.
   // FK declared in migration 0015 (we can't reference `affiliates`
   // here because it's declared below this tenants table).

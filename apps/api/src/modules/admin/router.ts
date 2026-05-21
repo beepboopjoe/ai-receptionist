@@ -360,9 +360,14 @@ export async function adminPlugin(app: FastifyInstance) {
     async (request, reply) => {
       const { tenantId } = request.authUser;
 
-      // Get tenant plan
+      // Get tenant plan + promo-trial fields
       const [tenant] = await db
-        .select({ plan: tenants.plan, createdAt: tenants.createdAt })
+        .select({
+          plan: tenants.plan,
+          createdAt: tenants.createdAt,
+          minutesOverride: tenants.minutesOverride,
+          promoTrial: tenants.promoTrial,
+        })
         .from(tenants)
         .where(eq(tenants.id, tenantId))
         .limit(1);
@@ -371,6 +376,9 @@ export async function adminPlugin(app: FastifyInstance) {
 
       const plan = tenant.plan as keyof typeof PLAN_TIERS;
       const tier = PLAN_TIERS[plan] ?? PLAN_TIERS['trial'];
+
+      // Effective cap: promo-trial override wins over the plan default.
+      const minutesIncluded = tenant.minutesOverride ?? tier.minutesIncluded;
 
       // Calculate this month's usage
       const now = new Date();
@@ -397,14 +405,122 @@ export async function adminPlugin(app: FastifyInstance) {
       return reply.send({
         plan,
         minutesUsed,
-        minutesIncluded: tier.minutesIncluded,
-        usagePercent: Math.min(100, Math.round((minutesUsed / tier.minutesIncluded) * 100)),
+        minutesIncluded,
+        usagePercent: Math.min(100, Math.round((minutesUsed / Math.max(1, minutesIncluded)) * 100)),
         callsThisMonth: Number(usageRow?.callCount) ?? 0,
         appointmentsThisMonth: Number(apptRow?.apptCount) ?? 0,
         renewalDate,
         monthlyPrice: tier.price,
         outboundEnabled: tier.outbound,
+        promoTrial: tenant.promoTrial,
+        capReached: tenant.promoTrial && minutesUsed >= minutesIncluded,
       });
+    }
+  );
+
+  // ================================================================
+  // GRANT PROMO TRIAL (owner-only) — manually grant a tenant
+  // full-tier feature access with a custom minute cap. Used to give
+  // friends/testers a hands-on trial without billing them.
+  // ================================================================
+  app.post(
+    '/admin/tenants/:id/grant-promo-trial',
+    { onRequest: [app.requireRole('owner')] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const body = (request.body ?? {}) as { plan?: string; minutes?: number };
+
+      if (!body.plan || !PLAN_TIERS[body.plan]) {
+        throw new ValidationError(
+          `plan must be one of: ${Object.keys(PLAN_TIERS).join(', ')}`
+        );
+      }
+      if (
+        typeof body.minutes !== 'number' ||
+        !Number.isInteger(body.minutes) ||
+        body.minutes < 1 ||
+        body.minutes > 10_000
+      ) {
+        throw new ValidationError('minutes must be an integer between 1 and 10000');
+      }
+
+      // Verify the target tenant exists.
+      const [target] = await db
+        .select({ id: tenants.id, name: tenants.name })
+        .from(tenants)
+        .where(eq(tenants.id, id))
+        .limit(1);
+      if (!target) throw new NotFoundError('Tenant not found');
+
+      await db
+        .update(tenants)
+        .set({
+          plan: body.plan,
+          minutesOverride: body.minutes,
+          promoTrial: true,
+          isActive: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(tenants.id, id));
+
+      auditLog({
+        tenantId: id,
+        actorType: 'admin_user',
+        actorId: request.authUser.id,
+        action: 'tenant.promo_trial_granted',
+        entityType: 'tenant',
+        entityId: id,
+        metadata: {
+          plan: body.plan,
+          minutes: body.minutes,
+          targetName: target.name,
+          grantedBy: request.authUser.email,
+        },
+      });
+
+      return reply.send({
+        ok: true,
+        tenantId: id,
+        plan: body.plan,
+        minutesOverride: body.minutes,
+        promoTrial: true,
+      });
+    }
+  );
+
+  // ================================================================
+  // REVOKE PROMO TRIAL — clears the override + flag. Tenant reverts
+  // to whatever their plan default is.
+  // ================================================================
+  app.post(
+    '/admin/tenants/:id/revoke-promo-trial',
+    { onRequest: [app.requireRole('owner')] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+
+      const [target] = await db
+        .select({ id: tenants.id })
+        .from(tenants)
+        .where(eq(tenants.id, id))
+        .limit(1);
+      if (!target) throw new NotFoundError('Tenant not found');
+
+      await db
+        .update(tenants)
+        .set({ minutesOverride: null, promoTrial: false, updatedAt: new Date() })
+        .where(eq(tenants.id, id));
+
+      auditLog({
+        tenantId: id,
+        actorType: 'admin_user',
+        actorId: request.authUser.id,
+        action: 'tenant.promo_trial_revoked',
+        entityType: 'tenant',
+        entityId: id,
+        metadata: { revokedBy: request.authUser.email },
+      });
+
+      return reply.send({ ok: true, tenantId: id });
     }
   );
 

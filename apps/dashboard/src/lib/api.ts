@@ -340,6 +340,8 @@ export const billingApi = {
       renewalDate: string;
       monthlyPrice: number;
       outboundEnabled: boolean;
+      promoTrial: boolean;
+      capReached: boolean;
     }>('/billing'),
 
   // Current Stripe subscription (plan, status, period end)

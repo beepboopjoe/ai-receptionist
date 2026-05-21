@@ -24,7 +24,8 @@ export type ActivityEventType =
   | 'campaign_lead_connected'
   | 'campaign_lead_qualified'
   | 'campaign_lead_booked'
-  | 'campaign_completed';
+  | 'campaign_completed'
+  | 'call_blocked';
 
 export interface ActivityEvent {
   type: ActivityEventType;

@@ -23,6 +23,10 @@ export interface PlanState {
   usagePercent: number;
   /** true when usagePercent >= 80 */
   isHighUsage: boolean;
+  /** true when the tenant was granted a promo trial via /admin/tenants/:id/grant-promo-trial */
+  promoTrial: boolean;
+  /** true when promoTrial && minutesUsed >= minutesIncluded — call paths are blocked */
+  capReached: boolean;
   loading: boolean;
 }
 
@@ -43,6 +47,8 @@ export function usePlan(): PlanState {
     minutesIncluded: b?.minutesIncluded ?? 0,
     usagePercent: b?.usagePercent ?? 0,
     isHighUsage: (b?.usagePercent ?? 0) >= 80,
+    promoTrial: b?.promoTrial ?? false,
+    capReached: b?.capReached ?? false,
     loading: isLoading,
   };
 }
