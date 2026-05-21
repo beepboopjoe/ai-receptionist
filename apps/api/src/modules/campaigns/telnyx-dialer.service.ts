@@ -43,7 +43,7 @@ async function post(path: string, body: object): Promise<unknown> {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Telnyx ${path} → ${res.status}: ${text}`);
+    throw new Error(`Carrier ${path} → ${res.status}: ${text}`);
   }
 
   const ct = res.headers.get('content-type') ?? '';

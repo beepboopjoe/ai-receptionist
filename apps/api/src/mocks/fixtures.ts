@@ -166,7 +166,7 @@ export const MOCK_CAMPAIGNS = [
 
 export const MOCK_INTEGRATIONS = [
   { id: 'int_001', provider: 'google_calendar', name: 'Google Calendar', status: 'connected', connectedAt: daysAgo(45), accountEmail: 'demo@demobusiness.com' },
-  { id: 'int_002', provider: 'telnyx', name: 'Telnyx (Phone)', status: 'connected', connectedAt: daysAgo(60), phoneNumber: '+16265170214' },
+  { id: 'int_002', provider: 'telnyx', name: 'Phone System', status: 'connected', connectedAt: daysAgo(60), phoneNumber: '+16265170214' },
   { id: 'int_003', provider: 'twilio', name: 'Twilio', status: 'disconnected', connectedAt: null },
   { id: 'int_004', provider: 'hubspot', name: 'HubSpot', status: 'disconnected', connectedAt: null },
   { id: 'int_005', provider: 'salesforce', name: 'Salesforce', status: 'disconnected', connectedAt: null },

@@ -208,7 +208,7 @@ export async function releaseTenantNumber(params: {
   if (!row) throw new NotFoundError('PhoneNumber', params.numberId);
   if (row.releasedAt) throw new ValidationError('Number already released');
   if (!row.telnyxPhoneId) {
-    throw new IntegrationError('telnyx', `Number ${row.phoneE164} has no Telnyx phone id — release manually`);
+    throw new IntegrationError('carrier', `Number ${row.phoneE164} has no carrier phone id — release manually`);
   }
 
   // 1. Telnyx delete

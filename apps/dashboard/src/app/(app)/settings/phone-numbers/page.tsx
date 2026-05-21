@@ -217,7 +217,7 @@ export default function PhoneNumbersPage() {
                 Promo trial · numbers at cost
               </p>
               <p className="text-xs text-indigo-700 mt-0.5">
-                You&apos;re paying our wholesale Telnyx rate during the trial — {dollars(localCents)}/mo
+                You&apos;re paying our wholesale carrier rate during the trial — {dollars(localCents)}/mo
                 local, {dollars(tollFreeCents)}/mo toll-free. Standard rates ({dollars(500)} / {dollars(1000)})
                 apply once you subscribe.
               </p>
