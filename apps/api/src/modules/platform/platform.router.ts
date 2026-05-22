@@ -13,7 +13,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../../db/client.js';
 import { tenants, calls, adminUsers } from '../../db/schema.js';
-import { and, eq, gte, sql, desc, ilike, or } from 'drizzle-orm';
+import { and, eq, gte, sql, desc, ilike, or, inArray } from 'drizzle-orm';
 import { config } from '../../config.js';
 import { AuthError } from '../../lib/errors.js';
 
@@ -202,12 +202,7 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
             totalSeconds: sql<number>`COALESCE(SUM(${calls.durationSeconds}), 0)`,
           })
           .from(calls)
-          .where(
-            and(
-              sql`${calls.tenantId} = ANY(${tenantIds})`,
-              gte(calls.startedAt, monthStart)
-            )
-          )
+          .where(and(inArray(calls.tenantId, tenantIds), gte(calls.startedAt, monthStart)))
           .groupBy(calls.tenantId);
         usageByTenant = new Map(
           rows.map((r) => [r.tenantId, Math.ceil((Number(r.totalSeconds) ?? 0) / 60)])
