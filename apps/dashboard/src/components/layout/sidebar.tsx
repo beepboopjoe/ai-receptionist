@@ -118,14 +118,17 @@ export function Sidebar() {
   // reflects whether the caller is in ADMIN_EMAILS. We never let it
   // throw (would trigger the global 401-interceptor and bounce the
   // user to /login). Used to gate the "Platform" sidebar link.
+  //
+  // Shape matches the /platform page's SWR call so they share cache
+  // cleanly under the same key — returning a different shape here
+  // would cause "ok is undefined" on whichever component mounts second.
   const { data: platformAdmin } = useSWR(
     typeof window !== 'undefined' ? 'platform-whoami' : null,
     async () => {
       try {
-        const res = await platformApi.whoami();
-        return Boolean(res?.ok);
+        return await platformApi.whoami();
       } catch {
-        return false;
+        return { ok: false, email: '' };
       }
     },
     { revalidateOnFocus: false, dedupingInterval: 5 * 60 * 1000 }
@@ -231,7 +234,7 @@ export function Sidebar() {
         {/* Main nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {/* Platform-admin link — only visible to emails in ADMIN_EMAILS */}
-          {platformAdmin && (
+          {platformAdmin?.ok && (
             <Link
               href="/platform"
               onClick={() => setMobileOpen(false)}
