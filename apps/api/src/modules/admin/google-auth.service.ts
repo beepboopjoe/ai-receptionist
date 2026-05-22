@@ -117,7 +117,7 @@ export function makeResolveGoogleUser(app: FastifyInstance) {
           .where(eq(adminUsers.id, byEmail.id));
         auditLog({
           tenantId: byEmail.tenantId,
-          actorType: 'admin',
+          actorType: 'admin_user',
           actorId: byEmail.id,
           action: 'auth.google_linked',
           entityType: 'admin_user',
@@ -198,7 +198,7 @@ export function makeResolveGoogleUser(app: FastifyInstance) {
 
     auditLog({
       tenantId: tenant.id,
-      actorType: 'admin',
+      actorType: 'admin_user',
       actorId: user.id,
       action: 'tenant.registered',
       entityType: 'tenant',

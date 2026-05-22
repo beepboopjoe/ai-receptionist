@@ -55,14 +55,21 @@ const PLAN_MINUTES: Record<string, number> = {
 };
 
 export async function platformPlugin(app: FastifyInstance): Promise<void> {
-  // ── Self-check — returns 200 only if caller is a platform admin ─────
-  // Used by the dashboard to decide whether to show the "Platform" nav link.
+  // ── Self-check — used by the sidebar to decide whether to render the
+  // Platform Admin link. ALWAYS returns 200 (even for non-admins) so the
+  // dashboard's global 401-interceptor doesn't bounce non-admins back to
+  // /login. Non-admins get { ok: false } and the sidebar hides the link.
   app.get(
     '/platform/whoami',
-    { onRequest: [requirePlatformAdmin] },
+    { onRequest: [app.authenticate] },
     async (request, _reply) => {
-      const email = (request.user as { email: string }).email;
-      return { ok: true, email };
+      const allowed = config.ADMIN_EMAILS
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean);
+      const email = request.authUser.email.toLowerCase();
+      const isPlatformAdmin = allowed.length > 0 && allowed.includes(email);
+      return { ok: isPlatformAdmin, email };
     }
   );
 

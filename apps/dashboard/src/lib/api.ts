@@ -707,8 +707,13 @@ export interface PlatformStats {
 }
 
 export const platformApi = {
-  /** Returns 200 only if the caller is in ADMIN_EMAILS. Used to gate UI. */
-  whoami: () => apiFetch<{ ok: true; email: string }>('/platform/whoami'),
+  /**
+   * Always returns 200 for authenticated users. `ok` is true only when the
+   * caller's email is in ADMIN_EMAILS on the API. Used by the sidebar to
+   * gate the Platform Admin link without triggering a 401-redirect on
+   * non-admins.
+   */
+  whoami: () => apiFetch<{ ok: boolean; email: string }>('/platform/whoami'),
   stats: () => apiFetch<PlatformStats>('/platform/stats'),
   listTenants: (search?: string, sort?: 'created_desc' | 'minutes_desc' | 'name_asc') => {
     const params = new URLSearchParams();

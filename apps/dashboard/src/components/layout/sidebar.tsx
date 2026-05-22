@@ -113,15 +113,17 @@ export function Sidebar() {
   const showComplianceBadge =
     vertical.id === 'dental' && complianceStatus && !complianceStatus.baaAccepted;
 
-  // Platform-admin check — fetches /platform/whoami. Returns 200 only when
-  // the caller's email is in ADMIN_EMAILS on the API. Used to gate the
-  // "Platform" sidebar link so regular tenants never see it.
+  // Platform-admin check — fetches /platform/whoami. Endpoint returns
+  // 200 for every authenticated user, with an `ok: boolean` field that
+  // reflects whether the caller is in ADMIN_EMAILS. We never let it
+  // throw (would trigger the global 401-interceptor and bounce the
+  // user to /login). Used to gate the "Platform" sidebar link.
   const { data: platformAdmin } = useSWR(
     typeof window !== 'undefined' ? 'platform-whoami' : null,
     async () => {
       try {
-        await platformApi.whoami();
-        return true;
+        const res = await platformApi.whoami();
+        return Boolean(res?.ok);
       } catch {
         return false;
       }

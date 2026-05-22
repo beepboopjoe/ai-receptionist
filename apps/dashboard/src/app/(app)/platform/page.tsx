@@ -34,10 +34,10 @@ export default function PlatformAdminPage() {
   const [sort, setSort] = useState<'created_desc' | 'minutes_desc' | 'name_asc'>('created_desc');
   const [grantModalTenant, setGrantModalTenant] = useState<PlatformTenant | null>(null);
 
-  const { data: whoamiData, error: whoamiError } = useSWR('platform-whoami', () =>
+  const { data: whoamiData, isLoading: whoamiLoading } = useSWR('platform-whoami', () =>
     platformApi.whoami()
   );
-  const isPlatformAdmin = !whoamiError && Boolean(whoamiData?.ok);
+  const isPlatformAdmin = Boolean(whoamiData?.ok);
 
   const { data: stats } = useSWR(
     isPlatformAdmin ? 'platform-stats' : null,
@@ -49,7 +49,15 @@ export default function PlatformAdminPage() {
     () => platformApi.listTenants(search, sort)
   );
 
-  if (whoamiError) {
+  if (whoamiLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={24} className="animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  if (!isPlatformAdmin) {
     return (
       <div className="max-w-md mx-auto mt-20 text-center">
         <Shield size={40} className="mx-auto text-gray-400 mb-4" />
@@ -58,14 +66,6 @@ export default function PlatformAdminPage() {
           This page is reserved for the platform owner. If you should have access, ask
           for your email to be added to ADMIN_EMAILS on the API.
         </p>
-      </div>
-    );
-  }
-
-  if (!isPlatformAdmin) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 size={24} className="animate-spin text-gray-400" />
       </div>
     );
   }
