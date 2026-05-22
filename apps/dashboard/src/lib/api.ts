@@ -734,4 +734,60 @@ export const platformApi = {
       `/admin/tenants/${tenantId}/revoke-promo-trial`,
       { method: 'POST' }
     ),
+
+  /** List every support ticket across all tenants (platform-admin only). */
+  listTickets: (filter?: { status?: SupportStatus; category?: SupportCategory }) => {
+    const params = new URLSearchParams();
+    if (filter?.status) params.set('status', filter.status);
+    if (filter?.category) params.set('category', filter.category);
+    const q = params.toString();
+    return apiFetch<{ data: AdminSupportTicket[] }>(
+      `/platform/support/tickets${q ? '?' + q : ''}`
+    );
+  },
+  resolveTicket: (id: string) =>
+    apiFetch<{ ok: true; ticket: SupportTicket }>(
+      `/platform/support/tickets/${id}/resolve`,
+      { method: 'POST' }
+    ),
+  reopenTicket: (id: string) =>
+    apiFetch<{ ok: true; ticket: SupportTicket }>(
+      `/platform/support/tickets/${id}/reopen`,
+      { method: 'POST' }
+    ),
+};
+
+// ---- Support ----
+// Tenant-facing endpoints for submitting/listing support tickets. The
+// platform-admin counterparts (cross-tenant list + resolve/reopen) live
+// on `platformApi` above.
+export type SupportCategory = 'bug' | 'question' | 'billing' | 'feature_request';
+export type SupportStatus = 'open' | 'resolved';
+
+export interface SupportTicket {
+  id: string;
+  tenantId: string;
+  submittedBy: string | null;
+  submitterEmail: string;
+  submitterName: string | null;
+  category: SupportCategory;
+  subject: string;
+  message: string;
+  status: SupportStatus;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  createdAt: string;
+}
+
+export interface AdminSupportTicket extends SupportTicket {
+  tenantName: string;
+}
+
+export const supportApi = {
+  submit: (body: { category: SupportCategory; subject: string; message: string }) =>
+    apiFetch<{ ok: true; ticket: SupportTicket }>('/support/tickets', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  list: () => apiFetch<{ data: SupportTicket[] }>('/support/tickets'),
 };

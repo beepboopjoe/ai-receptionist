@@ -816,3 +816,35 @@ export type ComplianceEvent = typeof complianceEvents.$inferSelect;
 export type NewComplianceEvent = typeof complianceEvents.$inferInsert;
 export type AgentSuggestion = typeof agentSuggestions.$inferSelect;
 export type NewAgentSuggestion = typeof agentSuggestions.$inferInsert;
+
+// ---- Support Tickets ----
+// In-dashboard support channel. Tenants submit categorised messages from
+// /support; the founder gets an email (Reply-To = submitter) and the ticket
+// shows up in /platform admin queue. See migration 0026.
+export const supportTickets = pgTable(
+  'support_tickets',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    submittedBy: uuid('submitted_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+    /** Snapshotted at submission time so Reply-To still works after the user is deleted. */
+    submitterEmail: text('submitter_email').notNull(),
+    submitterName: text('submitter_name'),
+    category: text('category').notNull(), // bug | question | billing | feature_request
+    subject: text('subject').notNull(),
+    message: text('message').notNull(),
+    status: text('status').notNull().default('open'), // open | resolved
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    resolvedBy: uuid('resolved_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tenantStatusIdx: index('support_tickets_tenant_status_idx').on(t.tenantId, t.status),
+    statusCreatedIdx: index('support_tickets_status_created_idx').on(t.status, t.createdAt),
+  })
+);
+
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type NewSupportTicket = typeof supportTickets.$inferInsert;
