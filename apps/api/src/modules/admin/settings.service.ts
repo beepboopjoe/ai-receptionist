@@ -51,6 +51,9 @@ export interface UpdateSettingsInput {
   recallIntervalMonths?: number;
   notificationPreferences?: Record<string, boolean>;
   callSummaryEmail?: string | null;
+  /** Free-text business description injected into the AI's system prompt on every call.
+   *  Max 4000 chars (validated in the PATCH /settings route). */
+  businessContext?: string | null;
 }
 
 export async function updateSettings(tenantId: string, input: UpdateSettingsInput) {

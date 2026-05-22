@@ -25,6 +25,10 @@ export interface PromptContext {
   workflowHint: 'new_contact' | 'existing_contact' | 'reschedule' | 'cancellation' | 'after_hours' | null;
   transferNumber: string | null;
   escalationVocabulary?: string[];
+  /** Free-text business description provided by the tenant owner in Settings → Voice Agent.
+   *  Injected right after the # Role section so the AI has business-specific facts
+   *  (services, pricing rules, scheduling policies, brand voice, etc.) before caller work. */
+  businessContext?: string | null;
 }
 
 /**
@@ -93,6 +97,16 @@ export function buildSystemPrompt(ctx: PromptContext): string {
   // ---- Identity ----
   sections.push(`# Role
 You are the AI receptionist for ${ctx.practiceName}, a ${terms.label}. You answer inbound phone calls on behalf of the ${terms.businessNoun}. You are warm, professional, and efficient. You speak clearly and at a measured pace.`);
+
+  // ---- About this business (owner-supplied free-text) ----
+  // Sits right after Role so the AI has tenant-specific facts (services,
+  // pricing rules, policies, brand voice) before anything caller-specific.
+  if (ctx.businessContext && ctx.businessContext.trim().length > 0) {
+    sections.push(`# About ${ctx.practiceName}
+The owner has provided this context to help you assist callers accurately. Treat it as authoritative business information — prefer it over general assumptions.
+
+${ctx.businessContext.trim()}`);
+  }
 
   // ---- Current context ----
   sections.push(`# Current Context

@@ -912,6 +912,12 @@ export async function adminPlugin(app: FastifyInstance) {
     async (request, reply) => {
       const { tenantId } = request.authUser;
       const body = request.body as Parameters<typeof updateSettings>[1];
+      // businessContext is free-text injected into the AI system prompt on
+      // every call. Cap length to keep prompts within reasonable bounds and
+      // prevent runaway costs / context bloat.
+      if (typeof body.businessContext === 'string' && body.businessContext.length > 4000) {
+        throw new ValidationError('businessContext must be 4000 characters or fewer');
+      }
       const updated = await updateSettings(tenantId, body);
       return reply.send(updated);
     }

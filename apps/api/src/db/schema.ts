@@ -263,6 +263,10 @@ export const tenantSettings = pgTable('tenant_settings', {
   notificationPreferences: jsonb('notification_preferences').default({}),
   /** Address that receives per-call summary emails when emailOnEveryCall is on. */
   callSummaryEmail: text('call_summary_email'),
+  /** Free-text business context shown to the AI as a system-prompt section
+   *  on every call. Owner-edited from Settings → Voice Agent. Max 4000 chars
+   *  enforced at the API layer (validation in the /settings PATCH route). */
+  businessContext: text('business_context'),
 });
 
 // ---- Integrations ----

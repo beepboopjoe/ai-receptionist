@@ -401,6 +401,7 @@ export default function VoiceAgentPage() {
   const [voiceProvider, setVoiceProvider] = useState('grok');
   const [afterHoursMode, setAfterHoursMode] = useState('voicemail');
   const [transferNumber, setTransferNumber] = useState('');
+  const [businessContext, setBusinessContext] = useState('');
   const [vertical, setVertical] = useState('generic');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -412,6 +413,7 @@ export default function VoiceAgentPage() {
       setVoiceProvider(settings.voiceProvider ?? 'grok');
       setAfterHoursMode(settings.afterHoursMode ?? 'voicemail');
       setTransferNumber(settings.transferNumber ?? '');
+      setBusinessContext(settings.businessContext ?? '');
     }
     if (tenant?.vertical) setVertical(tenant.vertical);
   }, [settings, tenant]);
@@ -420,7 +422,7 @@ export default function VoiceAgentPage() {
     setSaving(true);
     try {
       await Promise.all([
-        settingsApi.update({ voiceName, voiceProvider, afterHoursMode, transferNumber }),
+        settingsApi.update({ voiceName, voiceProvider, afterHoursMode, transferNumber, businessContext }),
         tenant?.vertical !== vertical ? tenantsApi.updateVertical(vertical) : Promise.resolve(),
       ]);
       try { localStorage.setItem('onboarding_vertical', vertical); } catch { /* ignore */ }
@@ -517,6 +519,30 @@ export default function VoiceAgentPage() {
             <option value="transfer">Transfer — forward to another number</option>
             <option value="callback_promise">Callback Promise — AI promises to call back</option>
           </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Business context for the AI
+            <span className="text-gray-400 font-normal ml-1.5">(optional)</span>
+          </label>
+          <textarea
+            value={businessContext}
+            onChange={(e) => setBusinessContext(e.target.value.slice(0, 4000))}
+            placeholder="Tell the AI about your business so it can answer caller questions accurately. Example: We're a family dental practice in Pasadena. We accept all major PPOs except Delta. New patients should arrive 15 minutes early. Same-day emergency slots are reserved for existing patients."
+            rows={6}
+            className="input font-normal"
+          />
+          <div className="flex items-start justify-between gap-3 mt-1">
+            <p className="text-xs text-gray-400 flex-1">
+              The AI uses this on every call as authoritative business info — services, pricing
+              rules, scheduling policies, brand voice, anything you&apos;d train a new front-desk
+              hire on.
+            </p>
+            <p className="text-xs text-gray-400 tabular-nums shrink-0">
+              {businessContext.length} / 4000
+            </p>
+          </div>
         </div>
 
         <div>

@@ -91,6 +91,7 @@ export async function handleMediaStream(
       appointmentTypes: tenantSettings.appointmentTypes,
       transferNumber: tenantSettings.transferNumber,
       voiceName:      tenantSettings.voiceName,
+      businessContext: tenantSettings.businessContext,
     })
       .from(tenantSettings)
       .where(eq(tenantSettings.tenantId, tenantId))
@@ -141,6 +142,7 @@ export async function handleMediaStream(
       caller: contact,
       workflowHint: workflow === 'after_hours' ? 'after_hours' : (workflow as 'new_contact' | 'existing_contact'),
       transferNumber: settingsRow?.transferNumber ?? null,
+      businessContext: settingsRow?.businessContext ?? null,
     });
   }
 
