@@ -86,14 +86,6 @@ These were deliberately punted, not forgotten. If you propose work, check this l
 
 ---
 
-## Live design question (next session pickup)
-
-User asked for prompt caching, ToolSearch, programmatic tool calling, and compaction. **Audit found no Anthropic SDK in the repo** — no `@anthropic-ai/sdk` in `apps/api/package.json`, no imports, voice path is xAI Grok Realtime end-to-end, the "call summary" at `grok.adapter.ts:206` is a placeholder that just joins transcript lines (comment: *"V2: POST to xAI chat completions"*), the AI Agent suggestion service uses static templates, the Curate-My-Agent wizard is pure UI synthesis. All four asked-for features are Anthropic-specific and have no Grok equivalent.
-
-Decision pending: **Path A** = adopt Anthropic Claude as a second backend for one or more non-realtime workloads (call summarization is the strongest candidate; AI Agent script generation and curation refinement are secondary), in which case prompt caching is the high-value lever (system + per-tenant business context repeat across every call) and ToolSearch / PTC / compaction are likely overkill for these workloads. **Path B** = user meant something non-LLM (SWR, Redis, browser/CDN cache). Re-ask before writing code.
-
----
-
 ## Conventions to keep
 
 - **Single source of truth for `Vertical`** — `packages/shared/src/types/vertical.types.ts`. Don't redeclare the union elsewhere.
