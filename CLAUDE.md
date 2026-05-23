@@ -4,7 +4,7 @@ This file is loaded automatically at the start of every Claude Code session in t
 
 If you only read three things, read these:
 1. `README.md` — architecture, run commands, "where things live" table.
-2. `~/.claude/plans/witty-knitting-ritchie.md` — running plan file with the most recent phase and its scope decisions.
+2. `~/.claude/plans/make-sure-the-sms-foamy-rivest.md` — running plan file with the most recent phase's scope decisions (last held: Curate-My-Agent wizard).
 3. This file — phase rollup + open work + cost-conscious patterns.
 
 ---
@@ -38,6 +38,14 @@ Don't re-do any of this. Verify before adding what you think might be missing.
 
 **Phase 10 — Partner portal V2.** Partner self-signup at `/partners` (cream theme, bcrypt password). Login at `/partners/login` (stores `partner_token` JWT with `role:'partner'`). Commission dashboard at `/partners/dashboard` (stats cards, referral link copy, commission history, payout request modal). `requirePartner` middleware. `partner.router.ts` endpoints: apply, login, me, commissions, payout-requests, profile. `affiliate.service.ts`: `applyAsPartner`, `loginPartner`, `getPartnerProfile` (SQL aggregate stats), `createPayoutRequest` (validates pending balance), `approvePartner`. Migration 0018: `status`/`password_hash`/`payout_email`/`payout_method` on affiliates + `payout_requests` table. HubSpot OAuth production activation (credentials in Railway). `/pricing` partner CTA now links to `/partners`.
 
+**Phase 11 — Founder ops + marketing polish + agent curation (2026-05-22).** Five workstreams shipped against existing infrastructure — no new domain primitives:
+
+- **Platform Admin dashboard at `/platform`** (commit `d609b84`). Founder-only surface gated by `ADMIN_EMAILS` env var on the API. Stats cards (MRR / total tenants / signups 7d–30d / platform minutes used this month), searchable + sortable tenant table with inline minute-usage bars, "Grant trial" modal (plan picker + minute input + 30/60/120/250 presets), "Revoke" button on promo-trial rows. Backend at `apps/api/src/modules/platform/platform.router.ts`: `/platform/{whoami,stats,tenants}` — all gated by a `requirePlatformAdmin` check against `ADMIN_EMAILS`. Sidebar link only renders when `whoami` returns `ok:true`.
+- **Google sign-in 401-loop fix** (commit `23057e7`). Root cause: `/platform/whoami` returned 401 for non-admins, and the dashboard's global 401-interceptor saw the response from the sidebar's startup-time call and bounced the user back to `/login`. Fix: `whoami` now uses `app.authenticate` and always returns 200 with `{ok: boolean}` — no 401 for non-admins. Sidebar reads `res.ok` instead of catching a throw. Also fixed `google-auth.service.ts` audit-log `actorType: 'admin'` (invalid enum) → `'admin_user'`, which had silently broken every Google signup's audit insert.
+- **Wholesale phone-number pricing for promo-trial tenants.** `apps/api/src/modules/phone-numbers/phone.service.ts` now exports `resolveMonthlyCostCents(numberType, promoTrial)` and `getNumberPricingForTenant(tenantId)`. Promo-trial tenants pay wholesale ($1 local / $2 toll-free, configurable via `TELNYX_WHOLESALE_LOCAL_CENTS` / `TELNYX_WHOLESALE_TOLLFREE_CENTS`) instead of the retail $5/$10. `GET /phone-numbers/pricing` exposes active rates to the dashboard, which renders an indigo→violet "Promo trial · numbers at cost" banner and uses the dynamic values across the buy/release UI. Stripe invoice description includes `(promo trial · at cost)` + `metadata.pricing = "wholesale_promo"|"retail"`.
+- **Curate-My-Agent wizard** (commit `e499efc`). New page at `/settings/voice-agent/curate` — guided 8-question Q&A whose answers synthesize into the same `tenant_settings.business_context` field the AI reads on every call. Critical files: `apps/dashboard/src/lib/agent-curation-questions.ts` (vertical-aware question sets — dental sees insurance-carrier prompts, legal sees case-type prompts, etc.), `apps/dashboard/src/lib/agent-curation-synth.ts` (`synthesizeContext()` + `parseContextToAnswers()`). Output wrapped in `<!-- agent-curation-v1 -->` anchor comments — round-trippable on re-run, and user's custom prose outside the anchors is preserved. CTA card (indigo→amber gradient) above the Business Context textarea on `/settings/voice-agent`. No backend changes — pure composition of existing `business_context` + `settingsApi.update`.
+- **Marketing polish.** Marketing header NAV_LINKS: `Resellers` → `Affiliate` (URL stays `/resellers`); inline nav on `/resellers` matches. `/inbound`: deleted "What you get inside" eyebrow block, moved Dashboard preview to position 3 (after How it works). `/demo`: consolidated three demo sections (vertical filter pills + SampleCallPlayer + VoiceLanguageDemo) into one unified section under the "🌐 Multilingual AI / Every voice. Every language." header — VoiceLanguageDemo on top, divider, then "Sample calls by industry" sub-section with the vertical pills + EN/ES toggle + SampleCallPlayer.
+
 ---
 
 ## Where to find things
@@ -64,14 +72,25 @@ The README has a longer table; these are the high-leverage entry points:
 
 These were deliberately punted, not forgotten. If you propose work, check this list first.
 
-1. **Google OAuth env vars in prod.** Code is complete (`auth-google.router.ts`). Needs `GOOGLE_AUTH_CLIENT_ID` + `GOOGLE_AUTH_CLIENT_SECRET` + `API_PUBLIC_URL` set on Railway, and the Railway callback URL added to Google Cloud Console authorized redirect URIs.
-2. **HubSpot credentials in prod.** ✅ Done (2026-05-13). `HUBSPOT_CLIENT_ID`, `HUBSPOT_CLIENT_SECRET`, `HUBSPOT_REDIRECT_URI` set in Railway. HubSpot Developer app created with `crm.objects.contacts.read/write` scopes.
-3. **Generate sample voice MP3s.** Script exists at `scripts/generate-sample-voices.ts`. Run: `XAI_API_KEY=xxx pnpm tsx scripts/generate-sample-voices.ts`. Output → `apps/dashboard/public/audio/samples/*.mp3`. Cost ~$0.05.
-4. **Record demo videos.** `DemoVideoPlayer` component + catalog exist. Need screen-recorded MP4s at `apps/dashboard/public/videos/<vertical>-demo.mp4`.
-5. **Partner portal — Stripe Connect payouts.** V2 self-signup + dashboard shipped (Phase 10). Remaining: Stripe Connect Express onboarding for automated payouts (`stripe.transfers.create` on `invoice.paid`), KYC/bank account flow.
-6. **Spanish i18n for remaining verticals.** Dental only has Spanish prompts. Need `es` entries in `vertical-prompts.ts` for legal, insurance, real_estate, home_services.
-7. **Sentry / PostHog.** User preference: no new SaaS accounts. Use OpenTelemetry (Phase 8) instead — self-hostable Jaeger/SigNoz.
-8. **Public API idempotency + bulk ops.** Phase 9 shipped CRUD write endpoints. Idempotency keys for POSTs and bulk operations are deferred.
+1. **Google OAuth env vars in prod.** ✅ Done (2026-05-22). `GOOGLE_AUTH_CLIENT_ID` / `GOOGLE_AUTH_CLIENT_SECRET` / `API_PUBLIC_URL` set on Railway; Google Cloud callback URL approved; sign-in + signup verified end-to-end after the 401-loop fix in Phase 11.
+2. **HubSpot credentials in prod.** ✅ Done (2026-05-13).
+3. **`ADMIN_EMAILS` on Railway.** Required to make the new `/platform` Admin dashboard link appear in the sidebar (Phase 11). Add `ADMIN_EMAILS=joeykhabbazz@gmail.com` (comma-separated for multiple) to the API service env on Railway and redeploy. Until set, the link is hidden but the platform is otherwise functional — anyone with the URL is gated out.
+4. **Generate sample voice MP3s.** Script exists at `scripts/generate-sample-voices.ts`. Run: `XAI_API_KEY=xxx pnpm tsx scripts/generate-sample-voices.ts`. Output → `apps/dashboard/public/audio/samples/*.mp3`. Cost ~$0.05.
+5. **Record demo videos.** `DemoVideoPlayer` component + catalog exist. Need screen-recorded MP4s at `apps/dashboard/public/videos/<vertical>-demo.mp4`.
+6. **Partner portal — Stripe Connect payouts.** V2 self-signup + dashboard shipped (Phase 10). Remaining: Stripe Connect Express onboarding for automated payouts (`stripe.transfers.create` on `invoice.paid`), KYC/bank account flow.
+7. **Spanish i18n for remaining verticals.** Dental only has Spanish prompts. Need `es` entries in `vertical-prompts.ts` for legal, insurance, real_estate, home_services.
+8. **Sentry / PostHog.** User preference: no new SaaS accounts. Use OpenTelemetry (Phase 8) instead — self-hostable Jaeger/SigNoz.
+9. **Public API idempotency + bulk ops.** Phase 9 shipped CRUD write endpoints. Idempotency keys for POSTs and bulk operations are deferred.
+10. **Escalations 500 — stale migration.** Production API logs show `column "updated_at" does not exist` on `/api/v1/escalations`. Diff the live `escalations` table against `apps/api/src/db/schema.ts` and write a migration to add the missing column (or drop the ORM reference if intentional).
+11. **Outbound feature gating for promo-trial tenants.** Decision tabled: feature flag is unlocked at Scale plan during promo, but Telnyx needs a tenant-owned dialer number for outbound. The wholesale-pricing path (Phase 11) makes BYO a $1/mo proposition for promo tenants — preferred. Alternative ("platform-owned shared trial dialer pool" via an `is_trial_outbound_pool` column on `tenant_phone_numbers`) is fully designed but unbuilt.
+
+---
+
+## Live design question (next session pickup)
+
+User asked for prompt caching, ToolSearch, programmatic tool calling, and compaction. **Audit found no Anthropic SDK in the repo** — no `@anthropic-ai/sdk` in `apps/api/package.json`, no imports, voice path is xAI Grok Realtime end-to-end, the "call summary" at `grok.adapter.ts:206` is a placeholder that just joins transcript lines (comment: *"V2: POST to xAI chat completions"*), the AI Agent suggestion service uses static templates, the Curate-My-Agent wizard is pure UI synthesis. All four asked-for features are Anthropic-specific and have no Grok equivalent.
+
+Decision pending: **Path A** = adopt Anthropic Claude as a second backend for one or more non-realtime workloads (call summarization is the strongest candidate; AI Agent script generation and curation refinement are secondary), in which case prompt caching is the high-value lever (system + per-tenant business context repeat across every call) and ToolSearch / PTC / compaction are likely overkill for these workloads. **Path B** = user meant something non-LLM (SWR, Redis, browser/CDN cache). Re-ask before writing code.
 
 ---
 
