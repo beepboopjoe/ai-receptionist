@@ -2,7 +2,8 @@
 import useSWR, { mutate } from 'swr';
 import { settingsApi, tenantsApi } from '@/lib/api';
 import { useState, useEffect, useRef } from 'react';
-import { Save, Mic, Upload, Trash2, CheckCircle, AlertCircle, Loader2, CreditCard } from 'lucide-react';
+import Link from 'next/link';
+import { Save, Mic, Upload, Trash2, CheckCircle, AlertCircle, Loader2, CreditCard, Sparkles, ArrowRight } from 'lucide-react';
 import { VERTICALS } from '@/lib/verticals';
 import { useToast } from '@/components/ui/toast';
 
@@ -526,6 +527,30 @@ export default function VoiceAgentPage() {
             Business context for the AI
             <span className="text-gray-400 font-normal ml-1.5">(optional)</span>
           </label>
+
+          {/* Curation Wizard CTA — guided alternative to free-text entry */}
+          <Link
+            href="/settings/voice-agent/curate"
+            className="block mb-3 rounded-xl border border-brand-200 bg-gradient-to-r from-brand-50 to-amber-50 p-4 hover:border-brand-300 transition-colors group"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-amber-500 flex items-center justify-center shrink-0">
+                  <Sparkles size={15} className="text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-brand-900">Not sure what to write?</p>
+                  <p className="text-xs text-brand-700 mt-0.5 leading-snug">
+                    Answer 8 quick questions and we&apos;ll build your AI&apos;s context for you.
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-brand-700 group-hover:gap-1.5 transition-all shrink-0">
+                Curate my agent <ArrowRight size={12} />
+              </span>
+            </div>
+          </Link>
+
           <textarea
             value={businessContext}
             onChange={(e) => setBusinessContext(e.target.value.slice(0, 4000))}
