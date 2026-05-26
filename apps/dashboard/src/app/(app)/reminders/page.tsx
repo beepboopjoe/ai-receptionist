@@ -5,6 +5,7 @@ import { Bell, RefreshCw } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListRowSkeleton } from '@/components/ui/skeleton';
 import { useVertical } from '@/lib/useVertical';
+import { SectionAgent } from '@/components/dashboard/section-agent';
 
 export default function RemindersPage() {
   const vertical = useVertical();
@@ -18,6 +19,8 @@ export default function RemindersPage() {
 
   return (
     <div className="space-y-6">
+      <SectionAgent section="reminders" />
+
       <div>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Reminders</h1>
         <p className="text-gray-500 mt-1">SMS and email notifications sent to {vertical.contactNounPlural}</p>

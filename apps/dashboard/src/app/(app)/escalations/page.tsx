@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { DownloadCsvButton } from '@/components/ui/download-csv-button';
+import { SectionAgent } from '@/components/dashboard/section-agent';
 
 export default function EscalationsPage() {
   const { data } = useSWR('escalations', () => escalationsApi.list());
@@ -34,6 +35,8 @@ export default function EscalationsPage() {
 
   return (
     <div className="space-y-6">
+      <SectionAgent section="escalations" />
+
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Escalations</h1>

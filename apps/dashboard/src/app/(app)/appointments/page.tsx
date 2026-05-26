@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ListRowSkeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
 import { DownloadCsvButton } from '@/components/ui/download-csv-button';
+import { SectionAgent } from '@/components/dashboard/section-agent';
 
 export default function AppointmentsPage() {
   const vertical = useVertical();
@@ -37,6 +38,8 @@ export default function AppointmentsPage() {
 
   return (
     <div className="space-y-6">
+      <SectionAgent section="appointments" />
+
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">{heading}</h1>

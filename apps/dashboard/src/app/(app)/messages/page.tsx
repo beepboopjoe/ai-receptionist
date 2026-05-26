@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { LockedFeature } from '@/components/ui/locked-feature';
+import { SectionAgent } from '@/components/dashboard/section-agent';
 
 // ── Relative time formatter ───────────────────────────────────────────────────
 function relativeTime(iso: string): string {
@@ -120,6 +121,8 @@ export default function MessagesPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      <SectionAgent section="messages" />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

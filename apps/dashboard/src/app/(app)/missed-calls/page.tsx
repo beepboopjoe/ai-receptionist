@@ -4,6 +4,7 @@ import { callsApi } from '@/lib/api';
 import { PhoneMissed, Phone } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListRowSkeleton } from '@/components/ui/skeleton';
+import { SectionAgent } from '@/components/dashboard/section-agent';
 
 export default function MissedCallsPage() {
   const { data, isLoading } = useSWR('missed-calls', () => callsApi.getMissed());
@@ -11,6 +12,8 @@ export default function MissedCallsPage() {
 
   return (
     <div className="space-y-6">
+      <SectionAgent section="missed-calls" />
+
       <div>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Missed Calls</h1>
         <p className="text-gray-500 mt-1">Calls that need a follow-up callback</p>

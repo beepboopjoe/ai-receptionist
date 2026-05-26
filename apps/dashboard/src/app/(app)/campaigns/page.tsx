@@ -12,6 +12,9 @@ import { useFeatureFlags } from '@/lib/featureFlags';
 import { usePlan } from '@/lib/usePlan';
 import { useToast } from '@/components/ui/toast';
 import { DownloadCsvButton } from '@/components/ui/download-csv-button';
+import { CampaignGoalGallery } from '@/components/campaigns/campaign-goal-gallery';
+import { SectionAgent } from '@/components/dashboard/section-agent';
+import { LeadDiscoveryCard } from '@/components/dashboard/lead-discovery-card';
 
 const STATUS_BADGE: Record<string, string> = {
   draft: 'badge-gray',
@@ -59,6 +62,8 @@ export default function CampaignsPage() {
   return (
     <div className="space-y-6">
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} reason="outbound_locked" />
+
+      <SectionAgent section="campaigns" />
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -141,16 +146,34 @@ export default function CampaignsPage() {
         </div>
       )}
 
+      {/* Goal-driven suggestions — Phase 12.4. Renders only goals with
+          live candidates so the gallery is always actionable. When no goals
+          have candidates the component returns null and the existing empty
+          state below takes over. */}
+      <CampaignGoalGallery
+        outboundEnabled={outboundEnabled}
+        onLocked={() => setShowUpgrade(true)}
+      />
+
       <div className="card">
         {isLoading ? (
           <ListRowSkeleton rows={4} />
         ) : campaigns.length === 0 ? (
-          <EmptyState
-            icon={Megaphone}
-            label="No campaigns yet"
-            hint={`Create one to start dialing ${vertical.contactNounPlural} automatically.`}
-            cta={{ label: 'Create campaign', href: '/campaigns/new' }}
-          />
+          <div className="p-6 space-y-4">
+            <EmptyState
+              icon={Megaphone}
+              label="No campaigns yet"
+              hint={`Create one to start dialing ${vertical.contactNounPlural} automatically — or pick a suggested campaign above.`}
+              cta={{ label: 'Create campaign', href: '/campaigns/new' }}
+            />
+            <LeadDiscoveryCard
+              eyebrow="No leads to call?"
+              title="Find your first 50 in 5 minutes."
+              description="Describe the business type and location, and we pull a fresh list straight from Google Maps. The imported leads land in a draft campaign ready to launch."
+              cta="Try Lead Discovery"
+              compact
+            />
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
