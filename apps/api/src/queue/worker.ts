@@ -131,6 +131,24 @@ outboundDialerWorker.on('failed', (job, err) => {
   console.error(`[worker:outbound-dialer] ❌ job ${job?.id} (${job?.name}) failed:`, err.message);
 });
 
+// ---- Lead discovery worker (Phase 12.7) ----
+const leadDiscoveryWorker = new Worker(
+  'lead-discovery',
+  async (job: Job) => {
+    if (job.name === 'poll') {
+      const { processLeadDiscoveryPoll } = await import('./jobs/lead-discovery-poll.job.js');
+      await processLeadDiscoveryPoll(job as Job<import('./jobs/lead-discovery-poll.job.js').LeadDiscoveryPollData>);
+    }
+  },
+  { connection: redis, concurrency: 5 }
+);
+leadDiscoveryWorker.on('completed', (job) => {
+  console.log(`[worker:lead-discovery] ✅ job ${job.id} (${job.name}) completed`);
+});
+leadDiscoveryWorker.on('failed', (job, err) => {
+  console.error(`[worker:lead-discovery] ❌ job ${job?.id} (${job?.name}) failed:`, err.message);
+});
+
 // ---- Scheduled tasks (node-cron) ----
 // Hourly sweep of minute_usage rows looking for tenants who crossed
 // 80% of their plan's included minutes — sends a one-time warning

@@ -78,14 +78,14 @@ export default function PhoneNumbersPage() {
         phoneE164: portForm.phoneE164,
         currentCarrier: portForm.currentCarrier,
         accountNumber: portForm.accountNumber,
-        accountPin: portForm.accountPin || undefined,
         authorizedName: portForm.authorizedName,
-        authorizedTitle: portForm.authorizedTitle || undefined,
         serviceAddress: portForm.serviceAddress,
         serviceCity: portForm.serviceCity,
         serviceState: portForm.serviceState,
         serviceZip: portForm.serviceZip,
-        desiredCompleteDate: portForm.desiredCompleteDate || undefined,
+        ...(portForm.accountPin && { accountPin: portForm.accountPin }),
+        ...(portForm.authorizedTitle && { authorizedTitle: portForm.authorizedTitle }),
+        ...(portForm.desiredCompleteDate && { desiredCompleteDate: portForm.desiredCompleteDate }),
       });
       toast.success("Port request submitted — we'll start the process within 1 business day. Ports typically complete in 5-14 business days.");
       setPortOpen(false);
@@ -130,8 +130,8 @@ export default function PhoneNumbersPage() {
     setResults([]);
     try {
       const res = await phoneNumbersApi.search({
-        areaCode: type === 'local' ? (areaCode || undefined) : undefined,
         type,
+        ...(type === 'local' && areaCode && { areaCode }),
       });
       setResults(res.data);
       if (res.data.length === 0) {
@@ -374,10 +374,10 @@ export default function PhoneNumbersPage() {
         </div>
       ) : owned.length === 0 ? (
         <EmptyState
-          title="No numbers yet"
-          description="Buy your first local or toll-free number to start taking calls."
-          actionLabel="Buy a number"
-          onAction={() => setSearchOpen(true)}
+          icon={Phone}
+          label="No numbers yet"
+          hint="Buy your first local or toll-free number to start taking calls."
+          cta={{ label: 'Buy a number', onClick: () => setSearchOpen(true) }}
         />
       ) : (
         <div className="card divide-y divide-gray-100">

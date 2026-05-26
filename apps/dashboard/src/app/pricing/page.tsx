@@ -7,7 +7,7 @@
 // ============================================================
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { CheckCircle, Clock, Mic, Phone, Calendar, Sparkles, Zap } from 'lucide-react';
+import { CheckCircle, Clock, Mic, Phone, Calendar, Sparkles, Zap, ArrowRight } from 'lucide-react';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { PLANS, PAY_AS_YOU_GO } from '@ai-receptionist/shared';
@@ -23,8 +23,13 @@ const RoiSection = dynamic(
   }
 );
 
-// Sellable plans shown in the card grid — trial excluded, enterprise included
-const PRICING_PLANS = PLANS.filter((p) => p.key !== 'trial');
+// Plans shown in the card grid. Trial goes first (leftmost) so visitors
+// see "free" before any paid price — strips the cost objection out of
+// the funnel without diluting the paid plans visually.
+const PRICING_PLANS = [
+  PLANS.find((p) => p.key === 'trial')!,
+  ...PLANS.filter((p) => p.key !== 'trial'),
+];
 
 const FAQS = [
   {
@@ -112,7 +117,7 @@ export default function PricingPage() {
       </section>
 
       {/* ── PAYG footnote strip ───────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-6 pb-16">
+      <section className="max-w-7xl mx-auto px-6 pb-8">
         <p className="text-center text-xs text-cream-400">
           Not ready for a subscription?{' '}
           <Link href="/signup?plan=payg" className="text-brand-500 hover:underline font-medium">
@@ -120,6 +125,74 @@ export default function PricingPage() {
           </Link>
           {' '}— no monthly commitment. Good for low-volume testing.
         </p>
+      </section>
+
+      {/* ── Add-ons (Phase 12.7 — Lead Discovery as a per-use add-on) ──── */}
+      <section className="max-w-7xl mx-auto px-6 pb-16">
+        <div className="text-center mb-8">
+          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Add-ons</p>
+          <h2 className="font-serif text-3xl text-cream-900 tracking-tight">
+            Use-as-you-need extensions.
+          </h2>
+          <p className="text-cream-600 mt-2 max-w-xl mx-auto">
+            Pay only when you use them — no separate subscription.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto">
+          {/* Lead Discovery add-on */}
+          <Link
+            href="/lead-discovery"
+            className="group block rounded-2xl bg-white border-2 border-amber-200 p-6 hover:border-amber-400 hover:shadow-md transition-all"
+          >
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-[0.2em] mb-1">
+                  Lead Discovery
+                </p>
+                <h3 className="font-serif text-xl text-cream-900 tracking-tight">
+                  Google Maps lead scraping
+                </h3>
+              </div>
+              <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1 whitespace-nowrap">
+                $0.99 / lead
+              </span>
+            </div>
+            <p className="text-sm text-cream-600 mb-4 leading-relaxed">
+              No list? Tell us who you want — &ldquo;dentists in Chicago, rated 3.5+&rdquo; — and we find them.
+              You pay only for leads you keep.
+            </p>
+            <p className="text-xs text-cream-500">
+              Available on Growth and Scale plans · Real-time Google Maps data
+            </p>
+            <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 group-hover:gap-2 transition-all">
+              See how it works <ArrowRight size={13} />
+            </span>
+          </Link>
+
+          {/* Voice Clone add-on (existing) */}
+          <div className="rounded-2xl bg-white border border-cream-200 p-6">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <p className="text-[10px] font-bold text-brand-600 uppercase tracking-[0.2em] mb-1">
+                  Voice Clone
+                </p>
+                <h3 className="font-serif text-xl text-cream-900 tracking-tight">
+                  Use your own voice
+                </h3>
+              </div>
+              <span className="text-[11px] font-bold text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-2.5 py-1 whitespace-nowrap">
+                $49 / mo
+              </span>
+            </div>
+            <p className="text-sm text-cream-600 mb-4 leading-relaxed">
+              Upload 1–5 voice samples and we&apos;ll clone your voice with ElevenLabs. Every AI call sounds
+              like you.
+            </p>
+            <p className="text-xs text-cream-500">
+              Available on Scale plan and above · Cancel anytime
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* ── What counts as an AI voice minute? ───────────── */}

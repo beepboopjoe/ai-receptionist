@@ -2,10 +2,12 @@
 
 This file is loaded automatically at the start of every Claude Code session in this repo. It's the orientation document for any agent picking up work, including future-you.
 
+> **⚠️ This file captures Phases 1–11. Read `HANDOFF.md` BEFORE this one** — it has the more recent phase rollup (12.1 → 12.7: live-call monitor, free trial visibility, call-me widget, goal-driven campaigns, SectionAgent, analytics page, lead discovery) plus current open work and post-deploy config tasks.
+
 If you only read three things, read these:
-1. `README.md` — architecture, run commands, "where things live" table.
-2. `~/.claude/plans/make-sure-the-sms-foamy-rivest.md` — running plan file with the most recent phase's scope decisions (last held: Curate-My-Agent wizard).
-3. This file — phase rollup + open work + cost-conscious patterns.
+1. `HANDOFF.md` — latest phase rollup (12.1+), current open work, post-deploy config tasks.
+2. This file (`CLAUDE.md`) — earlier phase rollup (1–11) + cost-conscious patterns + conventions.
+3. `~/.claude/plans/hat-does-ultra-review-starry-panda.md` — active plan file (last held: Phase 12.7 Lead Discovery).
 
 ---
 

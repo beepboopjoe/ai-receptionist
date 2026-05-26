@@ -236,7 +236,9 @@ export function EmbeddedVoiceDemo({ vertical: verticalProp = 'dental' }: { verti
     setAiSpeaking(true);
     const chunk = audioQueueRef.current.shift()!;
     const buffer = ctx.createBuffer(1, chunk.length, 24000);
-    buffer.copyToChannel(chunk, 0);
+    // Write into the channel directly — sidesteps TS 5.7+ TypedArray generic
+    // mismatch between Float32Array<ArrayBufferLike> and Float32Array<ArrayBuffer>.
+    buffer.getChannelData(0).set(chunk);
     const src = ctx.createBufferSource();
     src.buffer = buffer;
     src.connect(ctx.destination);

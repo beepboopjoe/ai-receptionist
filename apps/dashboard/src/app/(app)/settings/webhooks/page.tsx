@@ -249,7 +249,11 @@ function CreateEndpointForm({
     setSaving(true);
     try {
       const events = Array.from(selected).join(',');
-      const res = await webhooksApi.create({ url, events, description: description || undefined });
+      const res = await webhooksApi.create({
+        url,
+        events,
+        ...(description && { description }),
+      });
       toast.success('Endpoint created');
       onCreated(res.secret, res.id);
     } catch (err) {

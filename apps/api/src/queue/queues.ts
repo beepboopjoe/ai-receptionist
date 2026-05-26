@@ -20,3 +20,6 @@ export const outboundDialerQueue = new Queue('outbound-dialer', { connection: re
 
 /** HubSpot sync queue — bidirectional contact sync per tenant */
 export const hubspotSyncQueue = new Queue('hubspot-sync', { connection: redis });
+
+/** Lead discovery queue (Phase 12.7) — Apify scrape poll-and-ingest jobs. */
+export const leadDiscoveryQueue = new Queue('lead-discovery', { connection: redis });

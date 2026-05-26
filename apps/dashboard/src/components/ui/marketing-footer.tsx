@@ -20,7 +20,7 @@ export function MarketingFooter() {
 
         {/* Links */}
         <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
-          {[
+          {([
             ['Home',     '/'],
             ['Inbound',  '/inbound'],
             ['Outbound', '/outbound'],
@@ -28,7 +28,7 @@ export function MarketingFooter() {
             ['Demo',     '/demo'],
             ['Privacy',  '/legal/privacy'],
             ['Terms',    '/legal/terms'],
-          ].map(([label, href]) => (
+          ] as const).map(([label, href]) => (
             <Link key={href} href={href} className="hover:text-cream-900 transition-colors">
               {label}
             </Link>
