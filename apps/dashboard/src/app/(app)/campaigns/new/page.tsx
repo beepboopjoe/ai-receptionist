@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { campaignsApi } from '@/lib/api';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Crosshair, Megaphone, Upload, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/toast';
 
@@ -34,9 +34,10 @@ export default function NewCampaignPage() {
     }
     setSaving(true);
     try {
+      const { voicemailMessage, ...rest } = form;
       const campaign = await campaignsApi.create({
-        ...form,
-        voicemailMessage: form.voicemailMessage || undefined,
+        ...rest,
+        ...(voicemailMessage && { voicemailMessage }),
       }) as any;
       toast.success('Campaign created');
       router.push(`/campaigns/${campaign.id}`);
@@ -54,6 +55,63 @@ export default function NewCampaignPage() {
           <ArrowLeft size={16} /> Back
         </Link>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">New Campaign</h1>
+      </div>
+
+      {/* Pick your lead source — Phase 12.7 added the third option. */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Link
+          href="/leads/discover"
+          className="rounded-xl border border-brand-200 bg-gradient-to-br from-brand-50 to-amber-50/40 p-4 hover:shadow-md transition-shadow"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Crosshair size={14} className="text-brand-600" />
+            <p className="text-[11px] font-bold text-brand-700 uppercase tracking-wider">
+              Find new leads
+            </p>
+          </div>
+          <p className="font-semibold text-sm text-cream-900">Discover leads on Google Maps</p>
+          <p className="text-xs text-cream-700 mt-1 leading-relaxed">
+            Describe who you want to call. We scrape + import. Pay per lead.
+          </p>
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand-700">
+            Open discovery <ArrowRight size={12} />
+          </span>
+        </Link>
+
+        <Link
+          href="/campaigns"
+          className="rounded-xl border border-cream-200 bg-white p-4 hover:shadow-md transition-shadow"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Megaphone size={14} className="text-cream-600" />
+            <p className="text-[11px] font-bold text-cream-700 uppercase tracking-wider">
+              Pre-built goals
+            </p>
+          </div>
+          <p className="font-semibold text-sm text-cream-900">Pick a goal template</p>
+          <p className="text-xs text-cream-700 mt-1 leading-relaxed">
+            Recall, no-show recovery, stale leads — auto-built against your existing contacts.
+          </p>
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-cream-700">
+            See goals <ArrowRight size={12} />
+          </span>
+        </Link>
+
+        <div className="rounded-xl border border-cream-200 bg-cream-50 p-4 ring-2 ring-cream-300">
+          <div className="flex items-center gap-2 mb-2">
+            <Upload size={14} className="text-cream-600" />
+            <p className="text-[11px] font-bold text-cream-700 uppercase tracking-wider">
+              Manual upload
+            </p>
+          </div>
+          <p className="font-semibold text-sm text-cream-900">Build from scratch</p>
+          <p className="text-xs text-cream-700 mt-1 leading-relaxed">
+            Configure dial settings now, upload a CSV in the next step.
+          </p>
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-cream-800">
+            ✓ You&apos;re here
+          </span>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="card p-6 space-y-6">

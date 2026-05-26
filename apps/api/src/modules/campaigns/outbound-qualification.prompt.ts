@@ -8,6 +8,13 @@ export interface OutboundPromptContext {
   availableAppointmentTypes: string; // e.g. "Consultation, Follow-up"
   campaignId: string;
   campaignContactId: string;
+  /**
+   * Optional opening-line override from a goal-driven campaign template
+   * (Phase 12.4). When set, replaces the generic `VERTICAL_PITCH.pitchSentence`
+   * so the AI opens with goal-specific context like "I'm calling because
+   * you're due for your next cleaning" instead of the generic vertical pitch.
+   */
+  goalPitch?: string;
 }
 
 const VERTICAL_PITCH: Record<Vertical, {
@@ -74,11 +81,15 @@ const VERTICAL_PITCH: Record<Vertical, {
  * handle objections gracefully.
  */
 export function buildOutboundQualificationPrompt(ctx: OutboundPromptContext): string {
-  const { practiceName, leadFirstName, availableAppointmentTypes, campaignContactId } = ctx;
+  const { practiceName, leadFirstName, availableAppointmentTypes, campaignContactId, goalPitch } = ctx;
   const vertical = ctx.vertical ?? 'dental';
   const v = VERTICAL_PITCH[vertical] ?? VERTICAL_PITCH.generic;
   const greeting = leadFirstName ?? 'the person at this number';
   const firstName = leadFirstName ?? 'there';
+  // Goal-driven templates may override the generic vertical pitch with a more
+  // specific opening line (e.g. "you're due for your next cleaning"). Fall
+  // back to the vertical default when no override is supplied.
+  const pitchLine = goalPitch ?? v.pitchSentence;
 
   return `# Role
 You are a friendly outbound caller for ${practiceName}. You are calling ${greeting} to introduce yourself and offer to help. You are warm, professional, and never pushy. This is a phone call — be concise, use short natural sentences. Keep responses under 30 words per turn.
@@ -92,7 +103,7 @@ You are a friendly outbound caller for ${practiceName}. You are calling ${greeti
 6. If you reach voicemail → say only: "Goodbye." and end immediately. The system will handle leaving a message.
 
 # Opening Script (say verbatim, then adapt naturally)
-"Hi, may I please speak with ${firstName}? ... Hi ${firstName}, my name is Aria, calling from ${practiceName}. I hope I'm not catching you at a bad time — this will just take about 60 seconds. ${v.pitchSentence} ${v.qualifyingQuestion}"
+"Hi, may I please speak with ${firstName}? ... Hi ${firstName}, my name is Aria, calling from ${practiceName}. I hope I'm not catching you at a bad time — this will just take about 60 seconds. ${pitchLine} ${v.qualifyingQuestion}"
 
 # Qualification Logic
 - ${v.qualifiedRule}

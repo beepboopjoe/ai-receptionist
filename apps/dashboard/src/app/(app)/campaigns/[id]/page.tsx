@@ -234,9 +234,9 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
   const { data: contactsData } = useSWR(
     contactsKey,
     () => campaignsApi.getContacts(id, {
-      status: statusFilter === 'all' ? undefined : statusFilter,
       limit: 50,
       offset: page * 50,
+      ...(statusFilter !== 'all' && { status: statusFilter }),
     })
   );
 

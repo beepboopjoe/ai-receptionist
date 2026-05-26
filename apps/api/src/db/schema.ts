@@ -499,6 +499,10 @@ export const outboundCampaigns = pgTable(
     dialWindowStart: text('dial_window_start').notNull().default('09:00'),
     dialWindowEnd: text('dial_window_end').notNull().default('17:00'),
     voicemailMessage: text('voicemail_message'),
+    /** Goal slug (e.g. 'dental_recall') when created from a template. Phase 12.4. */
+    goal: text('goal'),
+    /** 'template' | 'manual' — NULL on legacy rows. */
+    goalSource: text('goal_source'),
     totalLeads: integer('total_leads').notNull().default(0),
     dialedCount: integer('dialed_count').notNull().default(0),
     connectedCount: integer('connected_count').notNull().default(0),
@@ -555,6 +559,42 @@ export const campaignContacts = pgTable(
       t.nextRetryAt
     ),
     tenantPhoneIdx: index('campaign_contacts_tenant_phone_idx').on(t.tenantId, t.phoneE164),
+  })
+);
+
+// ---- Lead Discovery Jobs (Phase 12.7) ----
+// Tracks Apify Google Maps scrape jobs from creation → ingestion →
+// import into campaign_contacts. Pricing is per-lead via Stripe
+// metered billing; margin tracked via cost_cents vs apify_cost_cents.
+export const leadDiscoveryJobs = pgTable(
+  'lead_discovery_jobs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    actorId: text('actor_id').notNull(),
+    apifyRunId: text('apify_run_id'),
+    /** pending | running | succeeded | failed | imported */
+    status: text('status').notNull().default('pending'),
+    searchParams: jsonb('search_params').notNull(),
+    rawResults: jsonb('raw_results'),
+    leadsFound: integer('leads_found').notNull().default(0),
+    leadsImported: integer('leads_imported').notNull().default(0),
+    costCents: integer('cost_cents').notNull().default(0),
+    apifyCostCents: integer('apify_cost_cents').notNull().default(0),
+    importedCampaignId: uuid('imported_campaign_id').references(
+      () => outboundCampaigns.id,
+      { onDelete: 'set null' }
+    ),
+    errorMessage: text('error_message'),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    importedAt: timestamp('imported_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tenantCreatedIdx: index('lead_discovery_jobs_tenant_idx').on(t.tenantId, t.createdAt),
   })
 );
 

@@ -10,6 +10,8 @@ import { useVertical } from '@/lib/useVertical';
 import { LockedFeature } from '@/components/ui/locked-feature';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AgentSuggestionsCard } from '@/components/dashboard/agent-suggestions-card';
+import { TopCampaignSuggestion } from '@/components/dashboard/top-campaign-suggestion';
+import { LeadDiscoveryCard } from '@/components/dashboard/lead-discovery-card';
 
 interface EventStyle { color: string; dot: string }
 
@@ -185,6 +187,12 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* ── Top campaign opportunity (goal-driven, Phase 12.4) ── */}
+      <TopCampaignSuggestion />
+
+      {/* ── Lead Discovery promo (Phase 12.7) ── */}
+      <LeadDiscoveryCard />
+
       {/* ── AI Agent Suggestions ── */}
       <AgentSuggestionsCard />
 
@@ -252,11 +260,15 @@ export default function DashboardPage() {
           </div>
           <div className="flex-1 overflow-y-auto divide-y divide-gray-50 max-h-96">
             {events.length === 0 ? (
-              <EmptyState
-                label={connected ? 'Waiting for activity…' : 'Connecting…'}
-                hint={connected ? 'Events will appear here in real time.' : undefined}
-                compact
-              />
+              connected ? (
+                <EmptyState
+                  label="Waiting for activity…"
+                  hint="Events will appear here in real time."
+                  compact
+                />
+              ) : (
+                <EmptyState label="Connecting…" compact />
+              )
             ) : (
               events.map((evt: ActivityEvent, i) => {
                 const style = EVENT_STYLES[evt.type] ?? { color: 'text-gray-700 bg-gray-50', dot: 'bg-gray-400' };

@@ -11,6 +11,17 @@ import {
   listCampaignContacts,
   updateCampaignContact,
 } from './campaign.service.js';
+import { GOAL_CATALOG, goalsForVertical, findGoal } from './campaign-goals.service.js';
+import { db } from '../../db/client.js';
+import {
+  outboundCampaigns,
+  campaignContacts,
+  tenants,
+  tenantPhoneNumbers,
+} from '../../db/schema.js';
+import { eq, and, isNull } from 'drizzle-orm';
+import { redis } from '../../db/redis.js';
+import type { Vertical } from '../voice-agent/prompt-builder.js';
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
 
 export async function campaignsPlugin(app: FastifyInstance) {
@@ -149,6 +160,162 @@ export async function campaignsPlugin(app: FastifyInstance) {
         offset: query.offset ? parseInt(query.offset) : 0,
       });
       reply.send(result);
+    },
+  });
+
+  // ============================================================
+  // GOAL-DRIVEN TEMPLATES — Phase 12.4
+  // ============================================================
+
+  // ---- List campaign goal suggestions for this tenant ----
+  // Returns the subset of GOAL_CATALOG that matches the tenant's vertical
+  // (plus generic goals), each with a live candidateCount. Cached per-tenant
+  // for 5 minutes via Redis since the candidate-count queries scan tables.
+  app.get('/campaigns/suggestions', {
+    preHandler: [app.requireRole('staff')],
+    async handler(request, reply) {
+      const { tenantId } = request.authUser;
+
+      const cacheKey = `campaigns:suggestions:${tenantId}`;
+      const cached = await redis.get(cacheKey).catch(() => null);
+      if (cached) {
+        return reply.send(JSON.parse(cached));
+      }
+
+      // Resolve tenant's vertical to scope the goals list.
+      const [tenant] = await db
+        .select({ vertical: tenants.vertical })
+        .from(tenants)
+        .where(eq(tenants.id, tenantId))
+        .limit(1);
+      const vertical = (tenant?.vertical ?? 'generic') as Vertical;
+      const goals = goalsForVertical(vertical);
+
+      // Run findCandidates for each. Failures are isolated — one buggy goal
+      // doesn't take down the whole response. count is 0 on failure.
+      const results = await Promise.all(
+        goals.map(async (g) => {
+          try {
+            const candidates = await g.findCandidates(tenantId);
+            return {
+              slug: g.slug,
+              vertical: g.vertical,
+              title: g.title,
+              description: g.description,
+              candidateCount: candidates.length,
+            };
+          } catch (err) {
+            request.log.warn({ err, slug: g.slug, tenantId }, 'Goal findCandidates failed');
+            return {
+              slug: g.slug,
+              vertical: g.vertical,
+              title: g.title,
+              description: g.description,
+              candidateCount: 0,
+            };
+          }
+        })
+      );
+
+      const payload = { suggestions: results };
+      // Cache 5 minutes; the underlying contact/appointment data doesn't churn fast.
+      await redis.set(cacheKey, JSON.stringify(payload), 'EX', 300).catch(() => null);
+      return reply.send(payload);
+    },
+  });
+
+  // ---- Create a campaign from a goal template ----
+  // One-click endpoint. Builds the contact list from the goal's SQL filter,
+  // creates a draft campaign with goal-specific defaults, and bulk-inserts
+  // campaign_contacts. Customer reviews the draft and clicks Start manually.
+  app.post('/campaigns/from-goal', {
+    preHandler: [app.requireRole('admin')],
+    async handler(request, reply) {
+      const { tenantId } = request.authUser;
+      const body = request.body as { goal?: string };
+      if (!body.goal) {
+        throw new ValidationError('goal is required');
+      }
+
+      const goal = findGoal(body.goal);
+      if (!goal) {
+        throw new NotFoundError(`Unknown goal: ${body.goal}`);
+      }
+
+      // Build the candidate list. Refuse if empty so we don't create an
+      // empty draft campaign the customer can't do anything with.
+      const candidates = await goal.findCandidates(tenantId);
+      if (candidates.length === 0) {
+        return reply.status(400).send({
+          error: 'no_candidates',
+          message: 'No contacts currently match this goal. Try again later or pick another goal.',
+        });
+      }
+
+      // Resolve the tenant's primary phone number — same pattern test-call uses.
+      const [primaryNumber] = await db
+        .select({ phoneE164: tenantPhoneNumbers.phoneE164 })
+        .from(tenantPhoneNumbers)
+        .where(
+          and(
+            eq(tenantPhoneNumbers.tenantId, tenantId),
+            eq(tenantPhoneNumbers.isPrimary, true),
+            isNull(tenantPhoneNumbers.releasedAt)
+          )
+        )
+        .limit(1);
+
+      if (!primaryNumber) {
+        return reply.status(400).send({
+          error: 'no_primary_number',
+          message: 'Provision a phone number in Settings → Phone Numbers before launching campaigns.',
+        });
+      }
+
+      const now = new Date();
+      const [campaign] = await db
+        .insert(outboundCampaigns)
+        .values({
+          tenantId,
+          name: goal.defaultName(now),
+          fromNumber: primaryNumber.phoneE164,
+          status: 'draft',
+          dialWindowStart: goal.defaultDialWindow.start,
+          dialWindowEnd: goal.defaultDialWindow.end,
+          voicemailMessage: goal.defaultVoicemail,
+          goal: goal.slug,
+          goalSource: 'template',
+          totalLeads: candidates.length,
+        })
+        .returning();
+
+      if (!campaign) {
+        return reply.status(500).send({ error: 'create_failed', message: 'Could not create campaign' });
+      }
+
+      // Bulk-insert campaign_contacts. contactId may be empty string for
+      // unlinked missed-call rows (generic_missed_call_callback); store NULL.
+      await db.insert(campaignContacts).values(
+        candidates.map((c) => ({
+          campaignId: campaign.id,
+          tenantId,
+          contactId: c.contactId && c.contactId.length > 0 ? c.contactId : null,
+          phoneE164: c.phoneE164,
+          firstName: c.firstName,
+          lastName: c.lastName,
+          email: c.email,
+          status: 'pending' as const,
+        }))
+      );
+
+      // Invalidate the suggestions cache so the gallery refreshes its count.
+      await redis.del(`campaigns:suggestions:${tenantId}`).catch(() => null);
+
+      return reply.status(201).send({
+        campaignId: campaign.id,
+        goal: goal.slug,
+        candidateCount: candidates.length,
+      });
     },
   });
 
