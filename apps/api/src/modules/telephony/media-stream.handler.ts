@@ -117,6 +117,23 @@ export async function handleMediaStream(
       .where(eq(campaignContacts.id, campaignContactId))
       .limit(1);
 
+    // If this call belongs to a goal-driven campaign (Phase 12.4), use the
+    // goal's pitch override so the AI opens with goal-specific context rather
+    // than the generic vertical pitch.
+    let goalPitch: string | undefined;
+    if (campaignId) {
+      const { outboundCampaigns } = await import('../../db/schema.js');
+      const [c] = await db
+        .select({ goal: outboundCampaigns.goal })
+        .from(outboundCampaigns)
+        .where(eq(outboundCampaigns.id, campaignId))
+        .limit(1);
+      if (c?.goal) {
+        const { findGoal } = await import('../campaigns/campaign-goals.service.js');
+        goalPitch = findGoal(c.goal)?.pitchOverride;
+      }
+    }
+
     systemPrompt = buildOutboundQualificationPrompt({
       practiceName,
       vertical,
@@ -124,6 +141,7 @@ export async function handleMediaStream(
       availableAppointmentTypes: apptTypes.map((t: AppointmentType) => t.name).join(', '),
       campaignId: campaignId ?? '',
       campaignContactId,
+      ...(goalPitch && { goalPitch }),
     });
   } else {
     const now     = dayjs().tz(tz);
@@ -228,21 +246,47 @@ export async function handleMediaStream(
     }
   });
 
-  // 9. Relay audio: Grok → Telnyx + accumulate transcript
+  // 9. Relay audio: Grok → Telnyx + accumulate transcript + fan out live deltas
+  const liveStartedAt = Date.now();
   grokSocket.on('message', (data: Buffer) => {
     const event = JSON.parse(data.toString()) as Record<string, unknown>;
     const eventType = event['type'] as string;
 
-    // Capture the real Grok session ID when the server confirms it
+    // Capture the real Grok session ID when the server confirms it,
+    // then announce the live call to the dashboard.
     if (eventType === 'session.created') {
       const serverSession = event['session'] as Record<string, string> | undefined;
       if (serverSession?.['id']) {
         grokSessionId = serverSession['id'];
       }
+      pushActivity(tenantId, 'call_live_started', {
+        callId,
+        callSid,
+        fromNumber,
+        contactName: contact ? `${contact.firstName} ${contact.lastName}` : undefined,
+        vertical,
+        startedAt: new Date(liveStartedAt).toISOString(),
+      });
     }
 
-    // Let the adapter process transcript events
-    GrokVoiceAdapter.processEvent(grokSessionId, event);
+    // Let the adapter process transcript events and tell us what was finalized.
+    const result = GrokVoiceAdapter.processEvent(grokSessionId, event);
+    if (result.callerText) {
+      pushActivity(tenantId, 'call_caller_said', {
+        callId,
+        role: 'caller',
+        text: result.callerText,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    if (result.flushedAgentText) {
+      pushActivity(tenantId, 'call_agent_said', {
+        callId,
+        role: 'agent',
+        text: result.flushedAgentText,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     // Stream audio back to the caller
     if (eventType === 'response.audio.delta') {
@@ -290,6 +334,15 @@ export async function handleMediaStream(
 
     // Clean up session memory
     await voiceAdapter.endSession(grokSessionId).catch(() => void 0);
+
+    // Tell the live monitor the call has ended so it can close any open
+    // viewer drawer. Sent before call_completed/call_missed so the dashboard
+    // can transition state cleanly.
+    const durationSeconds = Math.round((Date.now() - liveStartedAt) / 1000);
+    pushActivity(tenantId, 'call_live_ended', {
+      callId,
+      durationSeconds,
+    });
 
     // Fire webhooks + activity for call completion. Both helpers never throw.
     // If the Grok session never produced a transcript, treat as missed.

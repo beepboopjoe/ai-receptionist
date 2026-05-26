@@ -112,6 +112,165 @@ export const callsApi = {
   getMissed: () => apiFetch<{ data: unknown[] }>('/calls/missed'),
   escalate: (id: string, reason: string) =>
     apiFetch(`/calls/${id}/escalate`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  takeover: (id: string) =>
+    apiFetch<{ ok: boolean; toNumber?: string; error?: string; message?: string }>(
+      `/calls/${id}/takeover`,
+      { method: 'POST' }
+    ),
+  testCall: () =>
+    apiFetch<{ ok: boolean; callId?: string; toNumber?: string; error?: string; message?: string }>(
+      `/calls/test-call`,
+      { method: 'POST' }
+    ),
+};
+
+// ---- Campaign goal templates (Phase 12.4) ----
+export interface CampaignGoalSuggestion {
+  slug: string;
+  vertical: string;
+  title: string;
+  description: string;
+  candidateCount: number;
+}
+
+export const campaignGoalsApi = {
+  suggestions: () =>
+    apiFetch<{ suggestions: CampaignGoalSuggestion[] }>(`/campaigns/suggestions`),
+  fromGoal: (goal: string) =>
+    apiFetch<{ campaignId?: string; candidateCount?: number; error?: string; message?: string }>(
+      `/campaigns/from-goal`,
+      { method: 'POST', body: JSON.stringify({ goal }) }
+    ),
+};
+
+// ---- Section agent (Phase 12.5) ----
+export interface SectionLiveCount {
+  label: string;
+  value: number;
+  severity: 'info' | 'warning' | 'success' | 'critical';
+}
+
+export interface SectionSuggestionsResponse {
+  liveCounts: SectionLiveCount[];
+  pendingSuggestionIds: string[];
+}
+
+export const sectionsApi = {
+  suggestions: (section: string) =>
+    apiFetch<SectionSuggestionsResponse>(`/sections/${section}/suggestions`),
+};
+
+// ---- Analytics (Phase 12.6) ----
+export interface AnalyticsOverview {
+  period: { days: number; from: string; to: string };
+  totals: {
+    calls: number;
+    answered: number;
+    missed: number;
+    bookings: number;
+    escalations: number;
+    totalDurationSeconds: number;
+    answerRate: number;
+  };
+  daily: Array<{ date: string; calls: number; missed: number; bookings: number }>;
+  peakHour: { hour: number; count: number } | null;
+  roi: {
+    callsRecovered: number;
+    moneySaved: number;
+    hoursOfStaffWork: number;
+    humanCostAvoided: number;
+    avgBookingValueUsd: number;
+  };
+}
+
+export const analyticsApi = {
+  overview: (days: number = 30) =>
+    apiFetch<AnalyticsOverview>(`/analytics/overview?days=${days}`),
+};
+
+// ---- Lead Discovery (Phase 12.7) ----
+export interface LeadDiscoveryParams {
+  query: string;
+  locationQuery: string;
+  radiusMiles?: number;
+  minRating?: number;
+  requirePhone?: boolean;
+  maxResults: number;
+}
+
+export interface LeadDiscoveryJob {
+  id: string;
+  tenantId: string;
+  actorId: string;
+  apifyRunId: string | null;
+  status: 'pending' | 'running' | 'succeeded' | 'failed' | 'imported';
+  searchParams: LeadDiscoveryParams;
+  rawResults: Array<Record<string, unknown>> | null;
+  leadsFound: number;
+  leadsImported: number;
+  costCents: number;
+  importedCampaignId: string | null;
+  errorMessage: string | null;
+  startedAt: string;
+  completedAt: string | null;
+  importedAt: string | null;
+  createdAt: string;
+}
+
+export const leadDiscoveryApi = {
+  preview: (params: LeadDiscoveryParams) =>
+    apiFetch<{ estimatedLeads: number; costCents: number; perLeadCents: number }>(
+      `/leads/discover/preview`,
+      { method: 'POST', body: JSON.stringify(params) }
+    ),
+  start: (params: LeadDiscoveryParams) =>
+    apiFetch<{ jobId: string; apifyRunId: string; status: string }>(
+      `/leads/discover/jobs`,
+      { method: 'POST', body: JSON.stringify(params) }
+    ),
+  list: () => apiFetch<{ data: LeadDiscoveryJob[] }>(`/leads/discover/jobs`),
+  get: (id: string) => apiFetch<LeadDiscoveryJob>(`/leads/discover/jobs/${id}`),
+  import: (id: string, body: { selectedIndices?: number[]; campaignId?: string }) =>
+    apiFetch<{ campaignId: string; leadsImported: number; costCents: number }>(
+      `/leads/discover/jobs/${id}/import`,
+      { method: 'POST', body: JSON.stringify(body) }
+    ),
+};
+
+// ---- Search (cmd-K palette) ----
+// Shape mirrors apps/api/src/modules/admin/router.ts `GET /search`.
+export interface SearchHits {
+  contacts: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    phoneE164: string;
+    email: string | null;
+  }>;
+  calls: Array<{
+    id: string;
+    fromNumber: string;
+    summary: string | null;
+    startedAt: string;
+    status: string;
+  }>;
+  appointments: Array<{
+    id: string;
+    appointmentType: string;
+    providerName: string | null;
+    startsAt: string;
+    status: string;
+  }>;
+  escalations: Array<{
+    id: string;
+    reason: string;
+    priority: string;
+    status: string;
+  }>;
+}
+
+export const searchApi = {
+  query: (q: string) => apiFetch<SearchHits>(`/search?q=${encodeURIComponent(q)}`),
 };
 
 // ---- Appointments ----

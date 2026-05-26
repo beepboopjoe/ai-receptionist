@@ -640,6 +640,172 @@ export async function adminPlugin(app: FastifyInstance) {
     }
   );
 
+  // Manual take-over — bridge the live AI call to the configured staff
+  // phone number. Triggered from the dashboard live-call monitor.
+  app.post(
+    '/calls/:id/takeover',
+    { onRequest: [app.requireRole("staff")] },
+    async (request, reply) => {
+      const { tenantId, id: actorId } = request.authUser;
+      const { id } = request.params as { id: string };
+
+      const [call] = await db
+        .select({ id: calls.id, rcCallId: calls.rcCallId, status: calls.status })
+        .from(calls)
+        .where(and(eq(calls.id, id), eq(calls.tenantId, tenantId)))
+        .limit(1);
+
+      if (!call) throw new NotFoundError('Call not found');
+
+      // The call must still be live. Once the Grok WS closes, the row's
+      // status flips to 'completed' or 'missed' and the Telnyx call leg
+      // is gone — nothing to bridge.
+      // Live statuses set by the telephony layer: 'active' on initial insert,
+      // 'connected' after pickup. Anything else (completed/missed/failed) means
+      // the call leg is gone.
+      if (call.status !== 'active' && call.status !== 'connected') {
+        return reply.status(409).send({
+          error: 'call_not_live',
+          message: 'This call has already ended.',
+        });
+      }
+
+      // CLAUDE.md confirms Telnyx is the production telephony path.
+      // The legacy RingCentral handoff lives behind initiateManualTakeover's
+      // `provider: 'ringcentral'` branch; we default to telnyx here.
+      const { initiateManualTakeover } = await import('../telephony/transfer.js');
+      const result = await initiateManualTakeover({
+        tenantId,
+        callId: call.id,
+        rcCallId: call.rcCallId,
+        provider: 'telnyx',
+        actorId,
+      });
+
+      if (!result.success) {
+        const status = result.error === 'no_transfer_number_configured' ? 400 : 502;
+        return reply.status(status).send({
+          error: result.error,
+          message:
+            result.error === 'no_transfer_number_configured'
+              ? 'Set a Staff Transfer Number in Voice Agent settings before taking over a call.'
+              : 'Could not transfer the call. Please try again.',
+        });
+      }
+
+      return reply.send({ ok: true, toNumber: result.toNumber });
+    }
+  );
+
+  // Test call — the tenant's own AI calls the owner's cell so they can
+  // practice before going live. Triggered by the dashboard "Call my AI"
+  // button on the onboarding completion page and in voice-agent settings.
+  app.post(
+    '/calls/test-call',
+    { onRequest: [app.requireRole("staff")] },
+    async (request, reply) => {
+      const { tenantId, id: actorId } = request.authUser;
+
+      // 1. Read where the call should ring (owner's cell — same field used
+      //    by the AI-initiated handoff and the live-call take-over).
+      const [settings] = await db
+        .select({ transferNumber: tenantSettings.transferNumber })
+        .from(tenantSettings)
+        .where(eq(tenantSettings.tenantId, tenantId))
+        .limit(1);
+
+      const transferNumber = settings?.transferNumber;
+      if (!transferNumber) {
+        return reply.status(400).send({
+          error: 'no_transfer_number_configured',
+          message: 'Set a Staff Transfer Number in Voice Agent settings before placing a test call.',
+        });
+      }
+
+      // 2. Find the tenant's primary phone number to dial *from*. Without
+      //    a provisioned number we can't place outbound calls.
+      const { tenantPhoneNumbers } = await import('../../db/schema.js');
+      const { isNull } = await import('drizzle-orm');
+      const [primaryNumber] = await db
+        .select({ phoneE164: tenantPhoneNumbers.phoneE164 })
+        .from(tenantPhoneNumbers)
+        .where(
+          and(
+            eq(tenantPhoneNumbers.tenantId, tenantId),
+            eq(tenantPhoneNumbers.isPrimary, true),
+            isNull(tenantPhoneNumbers.releasedAt)
+          )
+        )
+        .limit(1);
+
+      if (!primaryNumber) {
+        return reply.status(400).send({
+          error: 'no_primary_number',
+          message: 'Provision a phone number in Settings → Phone Numbers before placing a test call.',
+        });
+      }
+
+      // 3. Create the call record. direction='test' so this never counts
+      //    toward billed-minute usage or appears in customer call stats.
+      const [callRecord] = await db
+        .insert(calls)
+        .values({
+          tenantId,
+          rcCallId: `pending-test-${Date.now()}`,
+          direction: 'test',
+          fromNumber: transferNumber, // the owner is the "caller" from the AI's POV
+          toNumber: primaryNumber.phoneE164,
+          status: 'active',
+          startedAt: new Date(),
+        })
+        .returning({ id: calls.id });
+
+      const callId = callRecord!.id;
+
+      // 4. Place the call via Telnyx.
+      const { dialDirect } = await import('../campaigns/telnyx-dialer.service.js');
+      let callSid: string;
+      try {
+        const result = await dialDirect({
+          to: transferNumber,
+          from: primaryNumber.phoneE164,
+          callId,
+          tenantId,
+          fromNumber: transferNumber,
+          mode: 'self_test',
+        });
+        callSid = result.callSid;
+      } catch (err) {
+        request.log.error({ err, callId }, 'Test-call Telnyx dial failed');
+        await db
+          .update(calls)
+          .set({ status: 'failed', outcome: 'dial_error', updatedAt: new Date() })
+          .where(eq(calls.id, callId));
+        return reply.status(502).send({
+          error: 'dial_failed',
+          message: "Couldn't place the test call. Please try again.",
+        });
+      }
+
+      await db
+        .update(calls)
+        .set({ rcCallId: callSid, updatedAt: new Date() })
+        .where(eq(calls.id, callId));
+
+      auditLog({
+        tenantId,
+        actorType: 'admin_user',
+        actorId,
+        action: 'call.test_call_placed',
+        entityType: 'call',
+        entityId: callId,
+        metadata: { toNumber: transferNumber, fromNumber: primaryNumber.phoneE164, callSid },
+      });
+
+      return reply.send({ ok: true, callId, toNumber: transferNumber });
+    }
+  );
+
   // ================================================================
   // APPOINTMENTS
   // ================================================================

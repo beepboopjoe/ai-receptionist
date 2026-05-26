@@ -8,10 +8,23 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 export type ActivityEventType =
   | 'call_started'
   | 'call_completed'
+  | 'call_missed'
   | 'appointment_booked'
   | 'appointment_cancelled'
   | 'escalation_created'
-  | 'campaign_lead_connected';
+  | 'escalation_resolved'
+  | 'campaign_lead_connected'
+  | 'campaign_lead_qualified'
+  | 'campaign_lead_booked'
+  | 'campaign_completed'
+  | 'call_blocked'
+  | 'support_ticket_received'
+  // Live-call monitor (Phase 12.1)
+  | 'call_live_started'
+  | 'call_caller_said'
+  | 'call_agent_said'
+  | 'call_live_ended'
+  | 'call_taken_over';
 
 export interface ActivityEvent {
   type: ActivityEventType;

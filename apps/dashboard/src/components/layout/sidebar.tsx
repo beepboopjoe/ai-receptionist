@@ -24,6 +24,7 @@ import {
   Shield,
   Sparkles,
   LifeBuoy,
+  Crosshair,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { logout } from '@/lib/auth';
@@ -36,6 +37,7 @@ import { complianceApi, platformApi } from '@/lib/api';
 import useSWR from 'swr';
 import { UpgradeModal } from '@/components/ui/upgrade-modal';
 import type { UpgradeReason } from '@/components/ui/upgrade-modal';
+import { useLiveCalls } from '@/lib/useLiveCalls';
 
 function buildNav(contactsLabel: string, appointmentsLabel: string) {
   return [
@@ -43,6 +45,7 @@ function buildNav(contactsLabel: string, appointmentsLabel: string) {
     { href: '/calls', label: 'Call Log', icon: Phone, requires: undefined as undefined | 'two_way_sms' },
     { href: '/appointments', label: appointmentsLabel, icon: Calendar, requires: undefined as undefined | 'two_way_sms' },
     { href: '/contacts', label: contactsLabel, icon: Users, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/leads/discover', label: 'Lead Discovery', icon: Crosshair, requires: undefined as undefined | 'two_way_sms' },
     { href: '/missed-calls', label: 'Missed Calls', icon: PhoneMissed, requires: undefined as undefined | 'two_way_sms' },
     { href: '/reminders', label: 'Reminders', icon: Bell, requires: undefined as undefined | 'two_way_sms' },
     { href: '/escalations', label: 'Escalations', icon: AlertCircle, requires: undefined as undefined | 'two_way_sms' },
@@ -52,9 +55,15 @@ function buildNav(contactsLabel: string, appointmentsLabel: string) {
   ];
 }
 
-// Pro-locked nav entries (rendered greyed out with lock icon)
-const proNavItems: { label: string; icon: React.ElementType; reason: UpgradeReason }[] = [
-  { label: 'Analytics', icon: BarChart2, reason: 'pro_analytics' },
+// Pro-locked nav entries. When `href` is set AND the tenant is entitled,
+// the item renders as a real Link; otherwise it shows the upgrade modal.
+const proNavItems: {
+  label: string;
+  icon: React.ElementType;
+  reason: UpgradeReason;
+  href?: string;
+}[] = [
+  { label: 'Analytics', icon: BarChart2, reason: 'pro_analytics', href: '/analytics' },
   { label: 'Multi-location', icon: Building2, reason: 'multi_location' },
 ];
 
@@ -103,6 +112,12 @@ export function Sidebar() {
 
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const nav = buildNav(cap(vertical.contactNounPlural), cap(vertical.appointmentNounPlural));
+
+  // Live-call pulse — when one or more AI calls are in progress, the
+  // Call Log link sprouts a red dot so customers can spot the action.
+  // Shares the same WebSocket connection as the /calls page (useActivityFeed).
+  const { activeCalls } = useLiveCalls();
+  const liveCallCount = activeCalls.length;
 
   // Compliance badge — show amber dot on Compliance nav item when BAA is
   // unsigned. Only fetch when the user is authenticated (window exists).
@@ -269,6 +284,7 @@ export function Sidebar() {
                 </button>
               );
             }
+            const showLivePulse = href === '/calls' && liveCallCount > 0;
             return (
               <Link
                 key={href}
@@ -282,14 +298,45 @@ export function Sidebar() {
                 )}
               >
                 <Icon size={18} />
-                {label}
+                <span className="flex-1">{label}</span>
+                {showLivePulse && (
+                  <span
+                    className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700"
+                    title={`${liveCallCount} call${liveCallCount > 1 ? 's' : ''} in progress`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    LIVE
+                  </span>
+                )}
               </Link>
             );
           })}
 
-          {/* Pro-locked nav items */}
-          {proNavItems.map(({ label, icon: Icon, reason }) =>
-            analyticsEnabled ? null : (
+          {/* Pro-locked nav items. Analytics is a real page when the
+              tenant is entitled (Scale plan); otherwise it stays a
+              locked button that opens the upgrade modal. */}
+          {proNavItems.map(({ label, icon: Icon, reason, href }) => {
+            if (analyticsEnabled && href) {
+              return (
+                <Link
+                  key={label}
+                  href={href}
+                  onClick={() => setMobileOpen(false)}
+                  className={clsx(
+                    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                    pathname === href || pathname.startsWith(href + '/')
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  )}
+                >
+                  <Icon size={18} />
+                  {label}
+                </Link>
+              );
+            }
+            // Locked (free/Starter/Growth) — show upgrade prompt
+            if (analyticsEnabled) return null;
+            return (
               <button
                 key={label}
                 type="button"
@@ -301,8 +348,8 @@ export function Sidebar() {
                 <span className="flex-1">{label}</span>
                 <Lock size={13} className="opacity-40" />
               </button>
-            )
-          )}
+            );
+          })}
 
           <div className="pt-4 pb-1">
             <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Settings</p>

@@ -126,12 +126,14 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
    * Process an incoming Grok event and update session transcript.
    * Called by the audio relay for each message received from Grok.
    *
-   * Returns the event type and any action signals (e.g. escalate).
+   * Returns the event type and — when a transcript entry was just
+   * finalized — the text that was added. The caller uses these to
+   * fan out mid-call transcript events to the live-monitor stream.
    */
   static processEvent(
     sessionId: string,
     event: Record<string, unknown>
-  ): { type: string; escalate?: boolean } {
+  ): { type: string; escalate?: boolean; flushedAgentText?: string; callerText?: string } {
     const type = event['type'] as string;
 
     switch (type) {
@@ -148,15 +150,17 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
       // ── Agent turn complete — flush buffer to transcript ───────────────
       case 'response.done': {
         const buffered = agentTranscriptBuffer.get(sessionId) ?? '';
-        if (buffered.trim()) {
+        const flushed = buffered.trim();
+        if (flushed) {
           const transcript = sessionTranscripts.get(sessionId) ?? [];
           transcript.push({
             role: 'agent',
-            text: buffered.trim(),
+            text: flushed,
             timestamp: new Date().toISOString(),
           });
           sessionTranscripts.set(sessionId, transcript);
           agentTranscriptBuffer.set(sessionId, ''); // reset for next turn
+          return { type, flushedAgentText: flushed };
         }
         break;
       }
@@ -165,14 +169,16 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
       // This event fires when Grok has finished transcribing the caller's speech.
       case 'conversation.item.input_audio_transcription.completed': {
         const transcriptText = event['transcript'] as string | undefined;
-        if (transcriptText?.trim()) {
+        const trimmed = transcriptText?.trim();
+        if (trimmed) {
           const transcript = sessionTranscripts.get(sessionId) ?? [];
           transcript.push({
             role: 'caller',
-            text: transcriptText.trim(),
+            text: trimmed,
             timestamp: new Date().toISOString(),
           });
           sessionTranscripts.set(sessionId, transcript);
+          return { type, callerText: trimmed };
         }
         break;
       }

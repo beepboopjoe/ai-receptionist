@@ -1,18 +1,45 @@
 'use client';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { callsApi } from '@/lib/api';
-import { Phone, ChevronRight } from 'lucide-react';
+import { Phone, ChevronRight, PhoneCall } from 'lucide-react';
 import Link from 'next/link';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListRowSkeleton } from '@/components/ui/skeleton';
 import { DownloadCsvButton } from '@/components/ui/download-csv-button';
+import { useLiveCalls } from '@/lib/useLiveCalls';
+import { LiveCallDrawer } from '@/components/dashboard/live-call-drawer';
+import { SectionAgent } from '@/components/dashboard/section-agent';
 
 export default function CallsPage() {
-  const { data, isLoading } = useSWR('calls', () => callsApi.list({ limit: 50 }));
+  const { data, isLoading, mutate } = useSWR('calls', () => callsApi.list({ limit: 50 }));
   const calls = (data as any)?.data ?? [];
+
+  const { activeCalls } = useLiveCalls();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
+
+  // Default to the first/most-recent live call. If the selected call ends,
+  // fall back to the next available one — and close the drawer if none remain.
+  useEffect(() => {
+    if (activeCalls.length === 0) {
+      setSelectedCallId(null);
+      setDrawerOpen(false);
+      // Refresh the call list — a just-ended call's completed row should appear.
+      mutate();
+      return;
+    }
+    if (!selectedCallId || !activeCalls.find((c) => c.callId === selectedCallId)) {
+      setSelectedCallId(activeCalls[activeCalls.length - 1]!.callId);
+    }
+  }, [activeCalls, selectedCallId, mutate]);
+
+  const selectedCall = activeCalls.find((c) => c.callId === selectedCallId) ?? null;
 
   return (
     <div className="space-y-6">
+      <SectionAgent section="calls" />
+
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Call Log</h1>
@@ -32,6 +59,41 @@ export default function CallsPage() {
           filename="calls.csv"
         />
       </div>
+
+      {/* Live-call banner — only when one or more AI calls are in progress. */}
+      {activeCalls.length > 0 && (
+        <div className="rounded-xl border border-brand-200 bg-gradient-to-r from-brand-50 to-amber-50 px-5 py-3 flex items-center gap-4">
+          <div className="relative w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center shrink-0">
+            <PhoneCall size={16} className="text-white" />
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-brand-900">
+              {activeCalls.length === 1
+                ? `Call in progress from ${activeCalls[0]!.contactName ?? activeCalls[0]!.fromNumber}`
+                : `${activeCalls.length} calls in progress`}
+            </p>
+            <p className="text-xs text-brand-700/80">
+              Watch the transcript stream in real time or take over the conversation.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 transition-colors whitespace-nowrap"
+          >
+            Watch live →
+          </button>
+        </div>
+      )}
+
+      <LiveCallDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        call={selectedCall}
+        allCalls={activeCalls}
+        onSelectCall={setSelectedCallId}
+      />
 
       <div className="card">
         <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

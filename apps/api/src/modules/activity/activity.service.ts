@@ -26,7 +26,13 @@ export type ActivityEventType =
   | 'campaign_lead_booked'
   | 'campaign_completed'
   | 'call_blocked'
-  | 'support_ticket_received';
+  | 'support_ticket_received'
+  // Live-call monitor (Phase 12.1): mid-call transcript streaming + manual takeover
+  | 'call_live_started'
+  | 'call_caller_said'
+  | 'call_agent_said'
+  | 'call_live_ended'
+  | 'call_taken_over';
 
 export interface ActivityEvent {
   type: ActivityEventType;
