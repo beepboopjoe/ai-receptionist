@@ -97,6 +97,66 @@ export async function dialLead(params: DialLeadParams): Promise<DialResult> {
   return { callSid: callControlId };
 }
 
+export interface DialDirectParams {
+  to: string;
+  from: string;
+  /** Our internal calls.id — encoded in client_state for downstream handlers. */
+  callId: string;
+  /** Tenant whose AI config drives the call (demo tenant for /public/call-me,
+   *  the owner's own tenant for /calls/test-call). */
+  tenantId: string;
+  /** Phone number presented to media-stream.handler as the "caller" — for
+   *  call-me widgets this is the visitor's number, for test-calls this is the
+   *  owner's cell. Treated as inbound from the AI's perspective. */
+  fromNumber: string;
+  /** Why this call exists. Stamped into the audit log + the call record. */
+  mode: 'demo' | 'self_test';
+}
+
+/**
+ * Initiate a direct outbound call — no campaign, no AMD, no machine detection.
+ * Used by the call-me-now widget (visitor's phone) and the test-call button
+ * (owner's cell). When the callee answers we want the media stream to start
+ * immediately and behave like an inbound call — the AI greets the callee as
+ * if they had called us.
+ *
+ * The trick: we encode `isOutbound: false` in client_state so the existing
+ * Telnyx webhook handler routes call.answered → startStream straight away
+ * (the same path as a regular inbound call).
+ */
+export async function dialDirect(params: DialDirectParams): Promise<DialResult> {
+  const { to, from, callId, tenantId, fromNumber, mode } = params;
+
+  const clientState = Buffer.from(
+    JSON.stringify({
+      callId,
+      tenantId,
+      fromNumber, // the visitor / owner — the "caller" from the AI's POV
+      callSid: '', // filled in below once Telnyx returns the call_control_id
+      isOutbound: false, // skip AMD; treat call.answered as inbound-style
+      mode, // surfaces in dispatched events for analytics
+    })
+  ).toString('base64');
+
+  const body: Record<string, unknown> = {
+    connection_id: config.TELNYX_APP_ID,
+    to,
+    from,
+    // Intentionally no answering_machine_detection — the callee is the demo
+    // visitor or the owner themselves, we know it's a human.
+    webhook_url: `${config.APP_URL}/api/v1/webhooks/telnyx`,
+    webhook_url_method: 'POST',
+    client_state: clientState,
+    timeout_secs: 30,
+  };
+
+  const result = (await post('/calls', body)) as { data: { call_control_id: string } };
+  const callControlId = result.data.call_control_id;
+
+  logger.info({ callControlId, to, mode }, 'Direct outbound call initiated via Telnyx');
+  return { callSid: callControlId };
+}
+
 /**
  * Answer an inbound call.
  * client_state is our base64-encoded params that Telnyx will echo back in

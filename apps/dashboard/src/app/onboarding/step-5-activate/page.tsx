@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { onboardingApi } from '@/lib/api';
-import { CheckCircle, ArrowLeft, Zap } from 'lucide-react';
+import { onboardingApi, callsApi } from '@/lib/api';
+import { CheckCircle, ArrowLeft, Zap, Phone, Loader2 } from 'lucide-react';
 
 const CHECKLIST = [
   'Phone line provisioned',
@@ -15,6 +15,8 @@ export default function Step5ActivatePage() {
   const router = useRouter();
   const [activating, setActivating] = useState(false);
   const [error, setError] = useState('');
+  const [placingTestCall, setPlacingTestCall] = useState(false);
+  const [testCallMessage, setTestCallMessage] = useState('');
 
   async function handleActivate() {
     setActivating(true);
@@ -25,6 +27,23 @@ export default function Step5ActivatePage() {
     } catch (err: any) {
       setError(err.message ?? 'Activation failed');
       setActivating(false);
+    }
+  }
+
+  async function handleTestCall() {
+    setPlacingTestCall(true);
+    setTestCallMessage('');
+    try {
+      const result = await callsApi.testCall();
+      if (result.ok) {
+        setTestCallMessage(`Look at your phone — your AI is calling ${result.toNumber} now.`);
+      } else {
+        setTestCallMessage(result.message ?? 'Could not place the test call.');
+      }
+    } catch (err: any) {
+      setTestCallMessage(err.message ?? 'Test call failed');
+    } finally {
+      setPlacingTestCall(false);
     }
   }
 
@@ -52,6 +71,45 @@ export default function Step5ActivatePage() {
           {error}
         </div>
       )}
+
+      {/* Hear it for yourself before activation. Reduces "what's it sound like?"
+          anxiety that drives some first-time customers to delay going live. */}
+      <div className="card p-6 bg-gradient-to-br from-amber-50 to-brand-50 border-amber-200">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center shrink-0">
+            <Phone size={18} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-cream-900 mb-1">Hear your AI before going live</p>
+            <p className="text-xs text-cream-700 mb-3">
+              Have your own AI receptionist call you. You&apos;ll hear exactly what your callers will
+              hear — same voice, same vertical, same business context.
+            </p>
+            <button
+              onClick={handleTestCall}
+              disabled={placingTestCall}
+              className="inline-flex items-center gap-2 bg-cream-900 text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-cream-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {placingTestCall ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Placing call…
+                </>
+              ) : (
+                <>
+                  <Phone size={14} />
+                  Call my AI now
+                </>
+              )}
+            </button>
+            {testCallMessage && (
+              <p className="text-xs mt-3 text-cream-800 bg-white/70 border border-cream-200 rounded-md px-3 py-2">
+                {testCallMessage}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div className="card p-6 bg-brand-600 text-white text-center">
         <Zap size={36} className="mx-auto mb-3 opacity-90" />

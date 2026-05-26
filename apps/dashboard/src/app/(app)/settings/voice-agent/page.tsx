@@ -1,9 +1,9 @@
 'use client';
 import useSWR, { mutate } from 'swr';
-import { settingsApi, tenantsApi } from '@/lib/api';
+import { settingsApi, tenantsApi, callsApi } from '@/lib/api';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Save, Mic, Upload, Trash2, CheckCircle, AlertCircle, Loader2, CreditCard, Sparkles, ArrowRight } from 'lucide-react';
+import { Save, Mic, Upload, Trash2, CheckCircle, AlertCircle, Loader2, CreditCard, Sparkles, ArrowRight, Phone } from 'lucide-react';
 import { VERTICALS } from '@/lib/verticals';
 import { useToast } from '@/components/ui/toast';
 
@@ -406,7 +406,28 @@ export default function VoiceAgentPage() {
   const [vertical, setVertical] = useState('generic');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [placingTestCall, setPlacingTestCall] = useState(false);
   const toast = useToast();
+
+  async function placeTestCall() {
+    if (!transferNumber) {
+      toast.error('Save a Staff Transfer Number first.');
+      return;
+    }
+    setPlacingTestCall(true);
+    try {
+      const result = await callsApi.testCall();
+      if (result.ok) {
+        toast.success(`Calling ${result.toNumber} now — pick up to hear your AI.`);
+      } else {
+        toast.error(result.message ?? 'Could not place the test call.');
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Test call failed');
+    } finally {
+      setPlacingTestCall(false);
+    }
+  }
 
   useEffect(() => {
     if (settings) {
@@ -574,14 +595,26 @@ export default function VoiceAgentPage() {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Staff Transfer Number
           </label>
-          <input
-            value={transferNumber}
-            onChange={(e) => setTransferNumber(e.target.value)}
-            placeholder="+15550001234"
-            className="input"
-          />
+          <div className="flex gap-2">
+            <input
+              value={transferNumber}
+              onChange={(e) => setTransferNumber(e.target.value)}
+              placeholder="+15550001234"
+              className="input flex-1"
+            />
+            <button
+              type="button"
+              onClick={placeTestCall}
+              disabled={!transferNumber || placingTestCall}
+              title={transferNumber ? 'Place a test call — your AI will ring your number' : 'Enter a number first'}
+              className="inline-flex items-center gap-1.5 px-3 rounded-lg bg-cream-900 text-white text-xs font-semibold hover:bg-cream-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {placingTestCall ? <Loader2 size={13} className="animate-spin" /> : <Phone size={13} />}
+              Test it now
+            </button>
+          </div>
           <p className="text-xs text-gray-400 mt-1">
-            Phone number to transfer escalations and after-hours calls to
+            Phone number to transfer escalations and after-hours calls to. Click <strong>Test it now</strong> to have your AI call you — best way to hear how it sounds.
           </p>
         </div>
 

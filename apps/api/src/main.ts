@@ -45,6 +45,10 @@ import { startWebhookDrainWorker, stopWebhookDrainWorker } from './workers/webho
 import apiKeyMiddleware from './modules/public-api/api-key.middleware.js';
 import { apiKeyAdminPlugin } from './modules/public-api/api-key.router.js';
 import { publicApiPlugin } from './modules/public-api/public.router.js';
+import { publicDemoPlugin } from './modules/public-api/public-demo.router.js';
+import { sectionsPlugin } from './modules/sections/section.router.js';
+import { analyticsPlugin } from './modules/analytics/analytics.router.js';
+import { leadDiscoveryPlugin } from './modules/lead-discovery/lead-discovery.router.js';
 import { openapiPlugin } from './modules/public-api/openapi.plugin.js';
 import { smsPlugin } from './modules/sms/sms.router.js';
 import { compliancePlugin } from './modules/compliance/compliance.router.js';
@@ -166,6 +170,10 @@ async function buildApp() {
   await app.register(webhookPlugin, { prefix: '/api/v1' });
   await app.register(apiKeyAdminPlugin, { prefix: '/api/v1' });
   await app.register(publicApiPlugin, { prefix: '/api/v1' });
+  await app.register(publicDemoPlugin, { prefix: '/api/v1' });
+  await app.register(sectionsPlugin, { prefix: '/api/v1' });
+  await app.register(analyticsPlugin, { prefix: '/api/v1' });
+  await app.register(leadDiscoveryPlugin, { prefix: '/api/v1' });
   await app.register(billingPlugin, { prefix: '/api/v1' });
   await app.register(phoneNumbersPlugin, { prefix: '/api/v1' });
   await app.register(affiliatePlugin, { prefix: '/api/v1' });

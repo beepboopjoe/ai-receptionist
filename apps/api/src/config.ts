@@ -105,6 +105,27 @@ const envSchema = z.object({
   // differs. Retail rates are hardcoded in phone.service.ts.
   TELNYX_WHOLESALE_LOCAL_CENTS: z.coerce.number().int().min(0).default(100),
   TELNYX_WHOLESALE_TOLLFREE_CENTS: z.coerce.number().int().min(0).default(200),
+
+  // Public homepage "Call me now" widget (Phase 12.3).
+  // DEMO_TENANT_ID points at a real tenant row pre-configured with a generic
+  // demo persona. DEMO_FROM_NUMBER is the E.164 number the call originates
+  // from (must be assigned to that tenant in Telnyx). Both unset = widget
+  // returns 503 "Demo unavailable" gracefully; no crash.
+  DEMO_TENANT_ID: z.string().default(''),
+  DEMO_FROM_NUMBER: z.string().default(''),
+  /** Global ceiling on call-me requests per UTC day. Bounds cost worst-case. */
+  DEMO_DAILY_CALL_LIMIT: z.coerce.number().int().min(0).default(200),
+
+  // Apify integration (Phase 12.7) — Lead Discovery via Google Maps Scraper.
+  // Platform-managed: we hold one Apify account and charge tenants per lead.
+  // Endpoints respond 503 with setup instructions when this token is unset.
+  APIFY_API_TOKEN: z.string().default(''),
+  /** Apify actor used for Google Maps scraping. */
+  APIFY_GOOGLE_MAPS_ACTOR_ID: z.string().default('compass~crawler-google-places'),
+  /** Retail per-lead price in CENTS the tenant pays. */
+  LEAD_DISCOVERY_PRICE_CENTS: z.coerce.number().int().min(1).default(99),
+  /** Stripe price_id for the leads_discovered metered line item. */
+  STRIPE_PRICE_LEADS_DISCOVERED: z.string().default(''),
 });
 
 function loadConfig() {
