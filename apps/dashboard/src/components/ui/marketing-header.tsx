@@ -14,6 +14,7 @@ import { BRAND_NAME } from '@/lib/brand';
 const NAV_LINKS = [
   { label: 'Inbound',   href: '/inbound' },
   { label: 'Outbound',  href: '/outbound' },
+  { label: 'Leads',     href: '/lead-discovery' },
   { label: 'Pricing',   href: '/pricing' },
   { label: 'Demo',      href: '/demo' },
   { label: 'Affiliate', href: '/resellers' },
@@ -57,16 +58,23 @@ export function MarketingHeader() {
             ))}
           </nav>
 
-          {/* Desktop CTAs */}
+          {/* Desktop CTAs — Try Free leads the conversion path; plans link
+              stays available as the outline secondary. */}
           <div className="hidden md:flex items-center gap-3">
             <Link href="/login" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">
               Sign in
             </Link>
             <Link
               href="/pricing#plans"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-cream-300 px-3.5 py-2 text-sm font-medium text-cream-800 hover:bg-cream-50 transition-colors"
+            >
+              See plans
+            </Link>
+            <Link
+              href="/signup?plan=trial"
               className="glow-btn inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors"
             >
-              See plans →
+              Try Free →
             </Link>
           </div>
 
@@ -134,9 +142,16 @@ export function MarketingHeader() {
             <Link
               href="/pricing#plans"
               onClick={() => setMobileOpen(false)}
+              className="block w-full text-center py-2.5 px-4 rounded-xl text-sm font-medium text-cream-800 border border-cream-300 hover:bg-cream-50 transition-colors"
+            >
+              See plans
+            </Link>
+            <Link
+              href="/signup?plan=trial"
+              onClick={() => setMobileOpen(false)}
               className="block w-full text-center py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 transition-colors"
             >
-              See plans →
+              Try Free →
             </Link>
           </div>
         </nav>

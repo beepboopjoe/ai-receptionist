@@ -66,8 +66,8 @@ export function PricingCards({ plans }: PricingCardsProps) {
         </div>
       </div>
 
-      {/* Cards grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* Cards grid — 5 columns at lg to fit Free Trial alongside the four paid plans. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
         {plans.map((plan) => {
           const isEnterprise = plan.key === 'enterprise';
           const isFree = plan.key === 'trial';
@@ -185,6 +185,15 @@ export function PricingCards({ plans }: PricingCardsProps) {
                 >
                   <Mail size={14} /> Contact Sales
                 </a>
+              ) : isFree ? (
+                // Free trial — no Stripe checkout, no per-cycle branching.
+                // Visible the same whether the visitor is logged in or not.
+                <Link
+                  href="/signup?plan=trial"
+                  className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl font-semibold text-sm transition-colors bg-cream-900 hover:bg-cream-800 text-white"
+                >
+                  Try free →
+                </Link>
               ) : isLoggedIn ? (
                 <button
                   onClick={() => void handleCheckout(plan.key)}

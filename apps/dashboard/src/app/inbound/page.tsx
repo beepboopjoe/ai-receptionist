@@ -110,10 +110,10 @@ export default function InboundPage() {
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/pricing#plans"
+              href="/signup?plan=trial"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              See plans &amp; pricing →
+              Try Free — 10 min →
             </Link>
             <Link
               href="/demo"
@@ -123,7 +123,7 @@ export default function InboundPage() {
             </Link>
           </div>
           <p className="text-xs text-cream-500 mt-5">
-            Included on every plan · Pay monthly or annual · No contracts
+            No credit card required · See plans below · No contracts
           </p>
         </div>
       </section>
@@ -341,10 +341,10 @@ export default function InboundPage() {
 
         <div className="mt-10 text-center">
           <Link
-            href="/pricing#plans"
+            href="/signup?plan=trial"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition-colors"
           >
-            See plans →
+            Try Free — 10 min →
           </Link>
         </div>
       </section>
@@ -373,10 +373,10 @@ export default function InboundPage() {
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/pricing#plans"
+              href="/signup?plan=trial"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              <Phone size={15} /> Choose your plan
+              <Phone size={15} /> Try Free — 10 min
             </Link>
             <Link
               href="/pricing#compare"
