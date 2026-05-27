@@ -144,6 +144,13 @@ const envSchema = z.object({
   // platform-level env vars needed. Tenants paste credentials in the
   // dashboard's Connect Filevine modal.
 
+  // Zoho CRM (Phase 13) — OAuth. The same client_id works across all five
+  // Zoho data centers (.com / .eu / .in / .com.au / .jp); the tenant picks
+  // their DC at connect time.
+  ZOHO_CLIENT_ID: z.string().default(''),
+  ZOHO_CLIENT_SECRET: z.string().default(''),
+  ZOHO_REDIRECT_URI: z.string().default('http://localhost:3001/api/v1/integrations/zoho/callback'),
+
   // Knowledge Base (Phase 12.8) — OpenAI embeddings + RAG.
   // Endpoints respond 503 with setup instructions when OPENAI_API_KEY unset.
   OPENAI_API_KEY: z.string().default(''),

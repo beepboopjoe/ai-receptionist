@@ -473,6 +473,10 @@ export const integrationsApi = {
     }),
   disconnectFilevine: () =>
     apiFetch('/integrations/filevine/disconnect', { method: 'POST' }),
+  connectZohoUrl: (dc: 'com' | 'eu' | 'in' | 'com.au' | 'jp' = 'com') =>
+    apiUrl(`/integrations/zoho/connect?dc=${encodeURIComponent(dc)}`),
+  disconnectZoho: () =>
+    apiFetch('/integrations/zoho/disconnect', { method: 'POST' }),
 };
 
 /** Build a full URL to an API endpoint (for browser redirects / OAuth flows). */

@@ -38,6 +38,13 @@ import {
   appendFilevineEscalation,
   type FilevineCredentials,
 } from '../../modules/crm/adapters/filevine.adapter.js';
+import {
+  appendZohoCallNote,
+  appendZohoAppointment,
+  appendZohoEscalation,
+  type ZohoTokens,
+  type ZohoDc,
+} from '../../modules/crm/adapters/zoho.adapter.js';
 import type {
   CallNote,
   AppointmentSyncPayload,
@@ -49,7 +56,7 @@ import pino from 'pino';
 const logger = pino({ name: 'crm-event-sync-job' });
 
 /** Providers that the dispatch table knows how to call. */
-const SUPPORTED_PROVIDERS = ['hubspot', 'salesforce', 'clio', 'filevine'] as const;
+const SUPPORTED_PROVIDERS = ['hubspot', 'salesforce', 'clio', 'filevine', 'zoho'] as const;
 type SupportedProvider = (typeof SUPPORTED_PROVIDERS)[number];
 
 export async function processCrmEventSync(job: Job<CrmEventJobData>): Promise<void> {
@@ -112,6 +119,16 @@ export async function processCrmEventSync(job: Job<CrmEventJobData>): Promise<vo
             orgId: creds.orgId!,
           };
           await dispatchFilevine(eventType, payload, fvCreds, row.id, tenantId);
+          break;
+        }
+        case 'zoho': {
+          const tokens: ZohoTokens = {
+            access_token: creds.access_token!,
+            refresh_token: creds.refresh_token!,
+            expires_at: Number(creds.expires_at),
+            dc: (creds.dc as ZohoDc) ?? 'com',
+          };
+          await dispatchZoho(eventType, payload, tokens, row.id, tenantId);
           break;
         }
       }
@@ -211,6 +228,26 @@ async function dispatchFilevine(
       return;
     case 'escalation_created':
       await appendFilevineEscalation(creds, payload as EscalationSyncPayload, integrationId, tenantId);
+      return;
+  }
+}
+
+async function dispatchZoho(
+  eventType: CrmEventJobData['eventType'],
+  payload: CrmEventJobData['payload'],
+  tokens: ZohoTokens,
+  integrationId: string,
+  tenantId: string
+): Promise<void> {
+  switch (eventType) {
+    case 'call_note':
+      await appendZohoCallNote(tokens, payload as CallNote, integrationId, tenantId);
+      return;
+    case 'appointment_booked':
+      await appendZohoAppointment(tokens, payload as AppointmentSyncPayload, integrationId, tenantId);
+      return;
+    case 'escalation_created':
+      await appendZohoEscalation(tokens, payload as EscalationSyncPayload, integrationId, tenantId);
       return;
   }
 }

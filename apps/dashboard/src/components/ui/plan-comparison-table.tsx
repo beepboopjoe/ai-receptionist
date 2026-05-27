@@ -71,10 +71,12 @@ const SECTIONS: {
   {
     title: 'Integrations',
     rows: [
-      { label: 'Webhooks',                     cells: [false, false, true, true, true] },
-      { label: 'CRM sync (HubSpot, etc.)',     cells: [false, false, true, true, true] },
-      { label: 'Public REST API access',       cells: [false, false, false, true, true] },
-      { label: 'Custom integrations',          cells: [false, false, false, false, true] },
+      { label: 'Webhooks',                                         cells: [false, false, true, true, true] },
+      { label: 'CRM event sync (calls/appointments/escalations)',  cells: [false, false, true, true, true] },
+      { label: 'CRMs supported (HubSpot + Salesforce)',            cells: [false, true,  true, true, true] },
+      { label: 'CRMs supported (+ Zoho + Clio + Filevine)',        cells: [false, false, true, true, true] },
+      { label: 'Public REST API access',                           cells: [false, false, false, true, true] },
+      { label: 'Custom integrations',                              cells: [false, false, false, false, true] },
     ],
   },
   {

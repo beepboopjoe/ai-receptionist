@@ -509,6 +509,40 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════
+          LIVES INSIDE YOUR CRM (Phase 13)
+      ══════════════════════════════════════════════════════ */}
+      <section className="bg-cream-50 py-20 px-6">
+        <div className="max-w-5xl mx-auto text-center">
+          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">
+            Works inside your CRM
+          </p>
+          <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight mb-5">
+            Every call. Every appointment. Every escalation. In your CRM.
+          </h2>
+          <p className="text-cream-600 text-lg mb-10 max-w-2xl mx-auto">
+            When the AI handles a call, the summary + full transcript posts as a Note
+            on the matching contact. Appointments book as Events. Escalations land as
+            high-priority Tasks. Your team sees it all where they already work.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-3xl mx-auto">
+            {[
+              { name: 'HubSpot',     icon: '🔗' },
+              { name: 'Salesforce',  icon: '☁️' },
+              { name: 'Clio',        icon: '⚖️' },
+              { name: 'Filevine',    icon: '📁' },
+              { name: 'Zoho CRM',    icon: '🟧' },
+            ].map((crm) => (
+              <div key={crm.name} className="bg-white rounded-lg border border-cream-200 p-5 flex flex-col items-center gap-2">
+                <div className="text-3xl">{crm.icon}</div>
+                <div className="text-sm font-semibold text-cream-800">{crm.name}</div>
+                <div className="text-[10px] uppercase tracking-wide text-brand-600 font-bold">Two-way sync</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════
           WORKS WITH STRIP
       ══════════════════════════════════════════════════════ */}
       <section className="bg-white border-y border-cream-200 py-8 px-6">
@@ -517,7 +551,7 @@ export default function LandingPage() {
             Works with
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
-            {['HubSpot', 'Google Calendar', 'Outlook', 'OpenAI', 'Claude', 'Salesforce', 'Slack', 'Gmail', 'Clio', 'Follow Up Boss', 'ServiceTitan', 'WhatsApp', 'Zapier'].map((name) => (
+            {['HubSpot', 'Salesforce', 'Clio', 'Filevine', 'Zoho CRM', 'Google Calendar', 'Outlook', 'OpenAI', 'Claude', 'Slack', 'Gmail', 'Follow Up Boss', 'ServiceTitan', 'WhatsApp', 'Zapier'].map((name) => (
               <span
                 key={name}
                 className="inline-flex items-center px-4 py-2 rounded-full border border-cream-200 bg-cream-50 text-xs font-semibold text-cream-600 tracking-wide"

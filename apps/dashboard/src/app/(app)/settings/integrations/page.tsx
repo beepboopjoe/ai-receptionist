@@ -41,6 +41,7 @@ const CRM_PROVIDERS: CrmProvider[] = [
   // Universal CRMs — show for every vertical
   { id: 'hubspot',        label: 'HubSpot',        description: 'CRM sync — contacts, leads, and call activity',          icon: '🔗',  badge: 'Popular', verticals: 'all' },
   { id: 'salesforce',     label: 'Salesforce',     description: 'Enterprise CRM — contacts, calls, appointments, escalations', icon: '☁️',  badge: null,      verticals: 'all' },
+  { id: 'zoho',           label: 'Zoho CRM',       description: 'International SMB CRM — calls, events, and tasks sync',     icon: '🟧',  badge: null,      verticals: 'all' },
   // Vertical-specific
   { id: 'clio',           label: 'Clio',           description: 'Legal practice management — calls logged as Communications', icon: '⚖️',  badge: null,      verticals: ['legal'] },
   { id: 'filevine',       label: 'Filevine',       description: 'Personal-injury legal CRM — calls logged as Notes on matters', icon: '📁',  badge: null,      verticals: ['legal'] },
@@ -61,6 +62,7 @@ export default function IntegrationsPage() {
     provider: string;
     status: string;
     lastSyncedAt?: string;
+    errorMessage?: string | null;
   }[];
   const connectedMap = Object.fromEntries(connected.map((i) => [i.provider, i]));
   const [syncing, setSyncing] = useState(false);
@@ -188,10 +190,11 @@ export default function IntegrationsPage() {
             const isSalesforce = provider.id === 'salesforce';
             const isClio = provider.id === 'clio';
             const isFilevine = provider.id === 'filevine';
-            // Phase 13 — CRMs with real backend adapters. Session C will add zoho.
-            const isWired = isHubSpot || isSalesforce || isClio || isFilevine;
+            const isZoho = provider.id === 'zoho';
+            // Phase 13 — CRMs with real backend adapters.
+            const isWired = isHubSpot || isSalesforce || isClio || isFilevine || isZoho;
             // OAuth flow CRMs (vs API-key Filevine which uses a modal).
-            const isOAuth = isHubSpot || isSalesforce || isClio;
+            const isOAuth = isHubSpot || isSalesforce || isClio || isZoho;
 
             return (
               <div key={provider.id} className="card p-5 flex items-center gap-5">
@@ -216,6 +219,11 @@ export default function IntegrationsPage() {
                   {isConnected && integration?.lastSyncedAt && (
                     <p className="text-xs text-gray-400 mt-1">
                       Last synced {new Date(integration.lastSyncedAt).toLocaleString()}
+                    </p>
+                  )}
+                  {isConnected && integration?.errorMessage && (
+                    <p className="text-xs text-red-600 mt-1 bg-red-50 border border-red-100 rounded px-2 py-1">
+                      ⚠️ Last sync failed: {integration.errorMessage}
                     </p>
                   )}
                 </div>
