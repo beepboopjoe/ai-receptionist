@@ -26,3 +26,6 @@ export const leadDiscoveryQueue = new Queue('lead-discovery', { connection: redi
 
 /** Knowledge base queue (Phase 12.8) — parse + chunk + embed uploaded documents. */
 export const kbQueue = new Queue('kb', { connection: redis });
+
+/** CRM event sync queue (Phase 13) — fan out call/appointment/escalation events to connected CRMs. */
+export const crmEventSyncQueue = new Queue('crm-event-sync', { connection: redis });

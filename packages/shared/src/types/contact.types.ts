@@ -46,7 +46,39 @@ export interface CallNote {
   summary: string;
   outcome: string;
   appointmentId?: string;
+  /** Optional full transcript — adapters that support a long-form body include this. */
+  transcript?: string;
+  /** Optional call metadata. */
+  durationSec?: number;
+  direction?: 'inbound' | 'outbound';
+  fromNumber?: string;
   createdAt: string;
+}
+
+/** Phase 13 — payload for syncing a booked appointment to a CRM as an Event/Meeting. */
+export interface AppointmentSyncPayload {
+  appointmentId: string;
+  /** Local contact ID — adapter resolves to its own CRM contactId. */
+  contactPhoneE164: string;
+  contactEmail?: string | null;
+  contactName?: string;
+  appointmentType: string;
+  startsAt: string; // ISO 8601
+  endsAt: string;   // ISO 8601
+  notes?: string;
+}
+
+/** Phase 13 — payload for syncing an escalation to a CRM as a Task/To-Do. */
+export interface EscalationSyncPayload {
+  escalationId: string;
+  contactPhoneE164: string;
+  contactEmail?: string | null;
+  contactName?: string;
+  reason: string;
+  /** Free-text description (transcript snippet, AI's summary of the urgency). */
+  description?: string;
+  /** ISO 8601 due time — defaults to "now + 4h" if not set by caller. */
+  dueAt?: string;
 }
 
 // ---- CRM Adapter Interface ----
@@ -59,4 +91,7 @@ export interface ICrmAdapter {
   createContact(data: CreateContactInput, tenantId: string): Promise<Contact>;
   updateContact(id: string, data: Partial<CreateContactInput>, tenantId: string): Promise<Contact>;
   appendCallNote(contactId: string, note: CallNote, tenantId: string): Promise<void>;
+  /** Phase 13 — optional. Adapters that don't yet implement these skip silently in sync fan-out. */
+  createAppointmentEvent?(contactId: string, appt: AppointmentSyncPayload, tenantId: string): Promise<void>;
+  createEscalationTask?(contactId: string, esc: EscalationSyncPayload, tenantId: string): Promise<void>;
 }

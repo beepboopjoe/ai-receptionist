@@ -149,6 +149,23 @@ leadDiscoveryWorker.on('failed', (job, err) => {
   console.error(`[worker:lead-discovery] ❌ job ${job?.id} (${job?.name}) failed:`, err.message);
 });
 
+// ---- CRM event sync worker (Phase 13) ----
+// Fans out call/appointment/escalation events to each tenant's connected CRMs.
+const crmEventSyncWorker = new Worker(
+  'crm-event-sync',
+  async (job: Job) => {
+    const { processCrmEventSync } = await import('./jobs/crm-event-sync.job.js');
+    await processCrmEventSync(job as Job<import('../modules/crm/event-sync.service.js').CrmEventJobData>);
+  },
+  { connection: redis, concurrency: 5 }
+);
+crmEventSyncWorker.on('completed', (job) => {
+  console.log(`[worker:crm-event-sync] ✅ job ${job.id} (${job.name}) completed`);
+});
+crmEventSyncWorker.on('failed', (job, err) => {
+  console.error(`[worker:crm-event-sync] ❌ job ${job?.id} (${job?.name}) failed:`, err.message);
+});
+
 // ---- Knowledge base worker (Phase 12.8) ----
 const kbWorker = new Worker(
   'kb',

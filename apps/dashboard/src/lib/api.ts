@@ -453,7 +453,23 @@ export const integrationsApi = {
     apiFetch(`/integrations/${provider}`, { method: 'DELETE' }),
   syncHubspot: () =>
     apiFetch<{ jobId: string; message: string }>('/integrations/hubspot/sync', { method: 'POST' }),
+
+  // Phase 13 — connect handlers per CRM. Each redirects the browser to the
+  // server-side OAuth endpoint (which then redirects to the CRM consent page).
+  // Returning the URL rather than top-level redirecting from React lets the
+  // page show "Redirecting..." UI first if it wants to.
+  connectHubspotUrl: () => apiUrl('/integrations/hubspot/connect'),
+  connectSalesforceUrl: (opts?: { sandbox?: boolean }) =>
+    apiUrl(`/integrations/salesforce/connect${opts?.sandbox ? '?sandbox=1' : ''}`),
+  disconnectSalesforce: () =>
+    apiFetch('/integrations/salesforce/disconnect', { method: 'POST' }),
 };
+
+/** Build a full URL to an API endpoint (for browser redirects / OAuth flows). */
+function apiUrl(path: string): string {
+  const base = (process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/api/v1').replace(/\/$/, '');
+  return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+}
 
 // ---- Onboarding ----
 export const onboardingApi = {

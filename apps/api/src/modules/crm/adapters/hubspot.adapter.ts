@@ -138,3 +138,198 @@ export async function updateContact(
   });
   if (!res.ok) throw new Error(`HubSpot updateContact failed: ${res.status}`);
 }
+
+// ── Activity sync (Phase 13) ───────────────────────────────
+// Lookup-or-create the contact by phone, then post a Note / Meeting / Task
+// with an association. These helpers refresh the access token automatically
+// on 401 and persist the new token back to integrations.credentials.
+
+import { db } from '../../../db/client.js';
+import { integrations } from '../../../db/schema.js';
+import { eq } from 'drizzle-orm';
+import { encryptCredentials } from '../../../lib/encryption.js';
+import type {
+  CallNote,
+  AppointmentSyncPayload,
+  EscalationSyncPayload,
+} from '@ai-receptionist/shared';
+
+const HS_ASSOC_NOTE_TO_CONTACT = 202;     // HubSpot-defined association type IDs.
+const HS_ASSOC_MEETING_TO_CONTACT = 200;
+const HS_ASSOC_TASK_TO_CONTACT = 204;
+
+/** Look up a HubSpot contact ID by E.164 phone, returning null if not found. */
+async function findContactByPhone(accessToken: string, phoneE164: string): Promise<string | null> {
+  const res = await fetch(`${HS_BASE}/crm/v3/objects/contacts/search`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      filterGroups: [
+        { filters: [{ propertyName: 'phone', operator: 'EQ', value: phoneE164 }] },
+      ],
+      properties: ['phone'],
+      limit: 1,
+    }),
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { results?: { id: string }[] };
+  return data.results?.[0]?.id ?? null;
+}
+
+/**
+ * Wrap a HubSpot API call with auto-refresh on 401. Persists the refreshed
+ * token back to integrations.credentials for next time.
+ */
+async function withAutoRefresh<T>(
+  tokens: HubSpotTokens,
+  integrationId: string,
+  fn: (accessToken: string) => Promise<{ ok: boolean; status: number; data: T | null; body?: string }>
+): Promise<T> {
+  let result = await fn(tokens.access_token);
+
+  // 401 means the token expired between checks; refresh once.
+  if (result.status === 401) {
+    const fresh = await refreshTokens(tokens.refresh_token);
+    await db
+      .update(integrations)
+      .set({
+        credentials: encryptCredentials({
+          access_token: fresh.access_token,
+          refresh_token: fresh.refresh_token,
+          expires_at: String(fresh.expires_at),
+        }),
+        updatedAt: new Date(),
+      })
+      .where(eq(integrations.id, integrationId));
+    result = await fn(fresh.access_token);
+  }
+
+  if (!result.ok || !result.data) {
+    throw new Error(`HubSpot API failed (${result.status}): ${result.body ?? 'no body'}`);
+  }
+  return result.data;
+}
+
+export async function appendHubSpotCallNote(
+  tokens: HubSpotTokens,
+  note: CallNote,
+  integrationId: string,
+  _tenantId: string
+): Promise<void> {
+  const contactId = note.fromNumber
+    ? await findContactByPhone(tokens.access_token, note.fromNumber)
+    : null;
+
+  const body = [
+    `📞 AI Receptionist call — ${note.outcome}`,
+    note.summary ? `\nSummary:\n${note.summary}` : '',
+    note.transcript ? `\n\nTranscript:\n${note.transcript}` : '',
+  ].join('');
+
+  await withAutoRefresh(tokens, integrationId, async (accessToken) => {
+    const res = await fetch(`${HS_BASE}/crm/v3/objects/notes`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        properties: {
+          hs_note_body: body.slice(0, 65535), // HubSpot's max for hs_note_body
+          hs_timestamp: new Date(note.createdAt).getTime(),
+        },
+        ...(contactId && {
+          associations: [
+            {
+              to: { id: contactId },
+              types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: HS_ASSOC_NOTE_TO_CONTACT }],
+            },
+          ],
+        }),
+      }),
+    });
+    return {
+      ok: res.ok,
+      status: res.status,
+      data: res.ok ? { id: (await res.json() as { id: string }).id } : null,
+      ...(res.ok ? {} : { body: await res.text() }),
+    };
+  });
+}
+
+export async function appendHubSpotAppointment(
+  tokens: HubSpotTokens,
+  appt: AppointmentSyncPayload,
+  integrationId: string,
+  _tenantId: string
+): Promise<void> {
+  const contactId = await findContactByPhone(tokens.access_token, appt.contactPhoneE164);
+
+  await withAutoRefresh(tokens, integrationId, async (accessToken) => {
+    const res = await fetch(`${HS_BASE}/crm/v3/objects/meetings`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        properties: {
+          hs_meeting_title: `${appt.appointmentType} — booked by AI`,
+          hs_meeting_body: appt.notes ?? `${appt.appointmentType} appointment booked by AI Receptionist.`,
+          hs_timestamp: new Date(appt.startsAt).getTime(),
+          hs_meeting_start_time: new Date(appt.startsAt).getTime(),
+          hs_meeting_end_time: new Date(appt.endsAt).getTime(),
+          hs_meeting_outcome: 'SCHEDULED',
+        },
+        ...(contactId && {
+          associations: [
+            {
+              to: { id: contactId },
+              types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: HS_ASSOC_MEETING_TO_CONTACT }],
+            },
+          ],
+        }),
+      }),
+    });
+    return {
+      ok: res.ok,
+      status: res.status,
+      data: res.ok ? { id: (await res.json() as { id: string }).id } : null,
+      ...(res.ok ? {} : { body: await res.text() }),
+    };
+  });
+}
+
+export async function appendHubSpotEscalation(
+  tokens: HubSpotTokens,
+  esc: EscalationSyncPayload,
+  integrationId: string,
+  _tenantId: string
+): Promise<void> {
+  const contactId = await findContactByPhone(tokens.access_token, esc.contactPhoneE164);
+  const dueAt = esc.dueAt ?? new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
+
+  await withAutoRefresh(tokens, integrationId, async (accessToken) => {
+    const res = await fetch(`${HS_BASE}/crm/v3/objects/tasks`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        properties: {
+          hs_task_subject: `⚠️ AI escalation: ${esc.reason}`,
+          hs_task_body: esc.description ?? esc.reason,
+          hs_task_priority: 'HIGH',
+          hs_task_status: 'NOT_STARTED',
+          hs_timestamp: new Date(dueAt).getTime(),
+        },
+        ...(contactId && {
+          associations: [
+            {
+              to: { id: contactId },
+              types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: HS_ASSOC_TASK_TO_CONTACT }],
+            },
+          ],
+        }),
+      }),
+    });
+    return {
+      ok: res.ok,
+      status: res.status,
+      data: res.ok ? { id: (await res.json() as { id: string }).id } : null,
+      ...(res.ok ? {} : { body: await res.text() }),
+    };
+  });
+}

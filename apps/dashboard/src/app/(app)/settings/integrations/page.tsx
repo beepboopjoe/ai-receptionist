@@ -182,6 +182,10 @@ export default function IntegrationsPage() {
             const integration = connectedMap[provider.id];
             const isConnected = integration?.status === 'connected';
             const isHubSpot = provider.id === 'hubspot';
+            const isSalesforce = provider.id === 'salesforce';
+            // Phase 13 — CRMs with real backend adapters. Sessions B+C will add
+            // clio / filevine / zoho to this set.
+            const isWired = isHubSpot || isSalesforce;
 
             return (
               <div key={provider.id} className="card p-5 flex items-center gap-5">
@@ -210,19 +214,21 @@ export default function IntegrationsPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {isHubSpot ? (
+                  {isWired ? (
                     isConnected ? (
                       <>
+                        {isHubSpot && (
+                          <button
+                            onClick={handleHubSpotSync}
+                            disabled={syncing}
+                            className="btn-secondary text-sm flex items-center gap-1.5"
+                          >
+                            <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
+                            {syncing ? 'Syncing…' : 'Sync now'}
+                          </button>
+                        )}
                         <button
-                          onClick={handleHubSpotSync}
-                          disabled={syncing}
-                          className="btn-secondary text-sm flex items-center gap-1.5"
-                        >
-                          <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
-                          {syncing ? 'Syncing…' : 'Sync now'}
-                        </button>
-                        <button
-                          onClick={() => handleDisconnect('hubspot')}
+                          onClick={() => handleDisconnect(provider.id)}
                           className="btn-danger text-sm"
                         >
                           <Trash2 size={14} /> Disconnect
@@ -230,10 +236,14 @@ export default function IntegrationsPage() {
                       </>
                     ) : (
                       <a
-                        href={`${apiBase}/api/v1/integrations/hubspot/connect`}
+                        href={
+                          isSalesforce
+                            ? `${apiBase}/api/v1/integrations/salesforce/connect`
+                            : `${apiBase}/api/v1/integrations/${provider.id.replace('_', '-')}/connect`
+                        }
                         className="btn-primary text-sm flex items-center gap-1.5"
                       >
-                        <ExternalLink size={13} /> Connect HubSpot
+                        <ExternalLink size={13} /> Connect {provider.label}
                       </a>
                     )
                   ) : (

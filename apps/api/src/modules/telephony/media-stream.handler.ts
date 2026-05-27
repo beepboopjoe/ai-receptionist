@@ -378,6 +378,22 @@ export async function handleMediaStream(
         contactName: contact ? `${contact.firstName} ${contact.lastName}` : undefined,
         summary,
       });
+
+      // Phase 13 — fan out to connected CRMs as a Note/Activity on the matched
+      // contact. No-op when no contact was identified (anonymous caller).
+      // Fire-and-forget; the helper never throws.
+      if (contact) {
+        const { syncCallNote } = await import('../crm/event-sync.service.js');
+        syncCallNote(tenantId, {
+          callId,
+          summary: summary ?? '',
+          outcome: isOutbound ? 'outbound_completed' : 'inbound_completed',
+          transcript: transcript.map((t) => `${t.role}: ${t.text}`).join('\n').slice(0, 8000),
+          direction: isOutbound ? 'outbound' : 'inbound',
+          fromNumber,
+          createdAt: new Date().toISOString(),
+        });
+      }
     }
 
     void triggerPostCallWorkflow({ callId, tenantId, workflow, contact, callSid });

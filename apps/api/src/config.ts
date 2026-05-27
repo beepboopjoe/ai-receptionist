@@ -127,6 +127,13 @@ const envSchema = z.object({
   /** Stripe price_id for the leads_discovered metered line item. */
   STRIPE_PRICE_LEADS_DISCOVERED: z.string().default(''),
 
+  // Salesforce CRM (Phase 13) — OAuth Web Server Flow. Set on Railway after
+  // creating the Connected App in your Salesforce dev console. Optional in
+  // dev — /integrations/salesforce/connect returns 503 when CLIENT_ID unset.
+  SALESFORCE_CLIENT_ID: z.string().default(''),
+  SALESFORCE_CLIENT_SECRET: z.string().default(''),
+  SALESFORCE_REDIRECT_URI: z.string().default('http://localhost:3001/api/v1/integrations/salesforce/callback'),
+
   // Knowledge Base (Phase 12.8) — OpenAI embeddings + RAG.
   // Endpoints respond 503 with setup instructions when OPENAI_API_KEY unset.
   OPENAI_API_KEY: z.string().default(''),
