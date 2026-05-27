@@ -180,6 +180,7 @@ async function buildApp() {
   await app.register(analyticsPlugin, { prefix: '/api/v1' });
   await app.register(leadDiscoveryPlugin, { prefix: '/api/v1' });
   await app.register(kbPlugin, { prefix: '/api/v1' });
+  console.log('[boot] kbPlugin registered (Phase 12.8 KB routes under /api/v1/kb/*)');
   await app.register(salesforceOAuthPlugin, { prefix: '/api/v1' });
   await app.register(clioOAuthPlugin, { prefix: '/api/v1' });
   await app.register(filevineCredentialsPlugin, { prefix: '/api/v1' });

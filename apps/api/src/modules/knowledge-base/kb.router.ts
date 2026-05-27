@@ -10,7 +10,6 @@
 //   GET    /kb/usage                   — quota + current usage for the UI bar
 // ============================================================
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import fp from 'fastify-plugin';
 import {
   uploadDocument,
   listDocuments,
@@ -115,4 +114,8 @@ export async function kbRoutes(
   );
 }
 
-export const kbPlugin = fp(kbRoutes, { name: 'knowledge-base' });
+// Plain async-function plugin — matches the pattern of every other working
+// plugin in main.ts. Earlier this used `fp(kbRoutes, { name: 'knowledge-base' })`,
+// which somehow caused the routes to silently not register on prod despite
+// the build succeeding. Phase 18 / activation investigation; dropping fp fixes it.
+export const kbPlugin = kbRoutes;
