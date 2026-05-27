@@ -463,6 +463,16 @@ export const integrationsApi = {
     apiUrl(`/integrations/salesforce/connect${opts?.sandbox ? '?sandbox=1' : ''}`),
   disconnectSalesforce: () =>
     apiFetch('/integrations/salesforce/disconnect', { method: 'POST' }),
+  connectClioUrl: () => apiUrl('/integrations/clio/connect'),
+  disconnectClio: () =>
+    apiFetch('/integrations/clio/disconnect', { method: 'POST' }),
+  connectFilevine: (body: { apiKey: string; apiSecret: string; orgId: string }) =>
+    apiFetch<{ ok: boolean }>('/integrations/filevine/connect', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  disconnectFilevine: () =>
+    apiFetch('/integrations/filevine/disconnect', { method: 'POST' }),
 };
 
 /** Build a full URL to an API endpoint (for browser redirects / OAuth flows). */

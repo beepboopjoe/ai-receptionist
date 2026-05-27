@@ -26,6 +26,18 @@ import {
   appendSalesforceEscalation,
   type SalesforceTokens,
 } from '../../modules/crm/adapters/salesforce.adapter.js';
+import {
+  appendClioCallNote,
+  appendClioAppointment,
+  appendClioEscalation,
+  type ClioTokens,
+} from '../../modules/crm/adapters/clio.adapter.js';
+import {
+  appendFilevineCallNote,
+  appendFilevineAppointment,
+  appendFilevineEscalation,
+  type FilevineCredentials,
+} from '../../modules/crm/adapters/filevine.adapter.js';
 import type {
   CallNote,
   AppointmentSyncPayload,
@@ -37,7 +49,7 @@ import pino from 'pino';
 const logger = pino({ name: 'crm-event-sync-job' });
 
 /** Providers that the dispatch table knows how to call. */
-const SUPPORTED_PROVIDERS = ['hubspot', 'salesforce'] as const;
+const SUPPORTED_PROVIDERS = ['hubspot', 'salesforce', 'clio', 'filevine'] as const;
 type SupportedProvider = (typeof SUPPORTED_PROVIDERS)[number];
 
 export async function processCrmEventSync(job: Job<CrmEventJobData>): Promise<void> {
@@ -82,6 +94,24 @@ export async function processCrmEventSync(job: Job<CrmEventJobData>): Promise<vo
             instance_url: creds.instance_url!,
           };
           await dispatchSalesforce(eventType, payload, tokens, row.id, tenantId, meta);
+          break;
+        }
+        case 'clio': {
+          const tokens: ClioTokens = {
+            access_token: creds.access_token!,
+            refresh_token: creds.refresh_token!,
+            expires_at: Number(creds.expires_at),
+          };
+          await dispatchClio(eventType, payload, tokens, row.id, tenantId);
+          break;
+        }
+        case 'filevine': {
+          const fvCreds: FilevineCredentials = {
+            apiKey: creds.apiKey!,
+            apiSecret: creds.apiSecret!,
+            orgId: creds.orgId!,
+          };
+          await dispatchFilevine(eventType, payload, fvCreds, row.id, tenantId);
           break;
         }
       }
@@ -141,6 +171,46 @@ async function dispatchSalesforce(
       return;
     case 'escalation_created':
       await appendSalesforceEscalation(tokens, payload as EscalationSyncPayload, integrationId, tenantId);
+      return;
+  }
+}
+
+async function dispatchClio(
+  eventType: CrmEventJobData['eventType'],
+  payload: CrmEventJobData['payload'],
+  tokens: ClioTokens,
+  integrationId: string,
+  tenantId: string
+): Promise<void> {
+  switch (eventType) {
+    case 'call_note':
+      await appendClioCallNote(tokens, payload as CallNote, integrationId, tenantId);
+      return;
+    case 'appointment_booked':
+      await appendClioAppointment(tokens, payload as AppointmentSyncPayload, integrationId, tenantId);
+      return;
+    case 'escalation_created':
+      await appendClioEscalation(tokens, payload as EscalationSyncPayload, integrationId, tenantId);
+      return;
+  }
+}
+
+async function dispatchFilevine(
+  eventType: CrmEventJobData['eventType'],
+  payload: CrmEventJobData['payload'],
+  creds: FilevineCredentials,
+  integrationId: string,
+  tenantId: string
+): Promise<void> {
+  switch (eventType) {
+    case 'call_note':
+      await appendFilevineCallNote(creds, payload as CallNote, integrationId, tenantId);
+      return;
+    case 'appointment_booked':
+      await appendFilevineAppointment(creds, payload as AppointmentSyncPayload, integrationId, tenantId);
+      return;
+    case 'escalation_created':
+      await appendFilevineEscalation(creds, payload as EscalationSyncPayload, integrationId, tenantId);
       return;
   }
 }

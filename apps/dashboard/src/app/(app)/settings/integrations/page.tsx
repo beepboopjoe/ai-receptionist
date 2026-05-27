@@ -1,10 +1,11 @@
 'use client';
 import useSWR, { mutate } from 'swr';
 import { integrationsApi } from '@/lib/api';
-import { CheckCircle, ExternalLink, Trash2, Phone, Mail, RefreshCw } from 'lucide-react';
+import { CheckCircle, ExternalLink, Trash2, Phone, Mail, RefreshCw, KeyRound } from 'lucide-react';
 import { useVertical } from '@/lib/useVertical';
 import type { Vertical } from '@/lib/verticals';
 import { useState } from 'react';
+import { FilevineCredentialsModal } from '@/components/integrations/filevine-credentials-modal';
 
 const PROVIDERS = [
   { id: 'google_calendar', label: 'Google Calendar', description: 'Appointment scheduling + slot lookup', icon: '📅' },
@@ -38,10 +39,11 @@ interface CrmProvider {
 
 const CRM_PROVIDERS: CrmProvider[] = [
   // Universal CRMs — show for every vertical
-  { id: 'hubspot',        label: 'HubSpot',        description: 'CRM sync — contacts, leads, and deal pipelines',          icon: '🔗',  badge: 'Popular', verticals: 'all' },
-  { id: 'salesforce',     label: 'Salesforce',     description: 'Enterprise CRM — full contact and opportunity sync',      icon: '☁️',  badge: null,      verticals: 'all' },
+  { id: 'hubspot',        label: 'HubSpot',        description: 'CRM sync — contacts, leads, and call activity',          icon: '🔗',  badge: 'Popular', verticals: 'all' },
+  { id: 'salesforce',     label: 'Salesforce',     description: 'Enterprise CRM — contacts, calls, appointments, escalations', icon: '☁️',  badge: null,      verticals: 'all' },
   // Vertical-specific
-  { id: 'clio',           label: 'Clio',           description: 'Legal practice management — matter and client sync',      icon: '⚖️',  badge: null,      verticals: ['legal'] },
+  { id: 'clio',           label: 'Clio',           description: 'Legal practice management — calls logged as Communications', icon: '⚖️',  badge: null,      verticals: ['legal'] },
+  { id: 'filevine',       label: 'Filevine',       description: 'Personal-injury legal CRM — calls logged as Notes on matters', icon: '📁',  badge: null,      verticals: ['legal'] },
   { id: 'mycase',         label: 'MyCase',         description: 'Legal practice management — case and document sync',      icon: '📂',  badge: null,      verticals: ['legal'] },
   { id: 'follow_up_boss', label: 'Follow Up Boss', description: 'Real estate CRM — lead routing and follow-up sync',       icon: '🏠',  badge: null,      verticals: ['real_estate'] },
   { id: 'servicetitan',   label: 'ServiceTitan',   description: 'Home services — job booking and dispatch sync',           icon: '🔧',  badge: null,      verticals: ['home_services'] },
@@ -62,6 +64,7 @@ export default function IntegrationsPage() {
   }[];
   const connectedMap = Object.fromEntries(connected.map((i) => [i.provider, i]));
   const [syncing, setSyncing] = useState(false);
+  const [filevineModalOpen, setFilevineModalOpen] = useState(false);
 
   // Show universal CRMs always; vertical-specific only when relevant.
   const visibleCrmProviders = CRM_PROVIDERS.filter(
@@ -183,9 +186,12 @@ export default function IntegrationsPage() {
             const isConnected = integration?.status === 'connected';
             const isHubSpot = provider.id === 'hubspot';
             const isSalesforce = provider.id === 'salesforce';
-            // Phase 13 — CRMs with real backend adapters. Sessions B+C will add
-            // clio / filevine / zoho to this set.
-            const isWired = isHubSpot || isSalesforce;
+            const isClio = provider.id === 'clio';
+            const isFilevine = provider.id === 'filevine';
+            // Phase 13 — CRMs with real backend adapters. Session C will add zoho.
+            const isWired = isHubSpot || isSalesforce || isClio || isFilevine;
+            // OAuth flow CRMs (vs API-key Filevine which uses a modal).
+            const isOAuth = isHubSpot || isSalesforce || isClio;
 
             return (
               <div key={provider.id} className="card p-5 flex items-center gap-5">
@@ -234,18 +240,21 @@ export default function IntegrationsPage() {
                           <Trash2 size={14} /> Disconnect
                         </button>
                       </>
-                    ) : (
+                    ) : isOAuth ? (
                       <a
-                        href={
-                          isSalesforce
-                            ? `${apiBase}/api/v1/integrations/salesforce/connect`
-                            : `${apiBase}/api/v1/integrations/${provider.id.replace('_', '-')}/connect`
-                        }
+                        href={`${apiBase}/api/v1/integrations/${provider.id}/connect`}
                         className="btn-primary text-sm flex items-center gap-1.5"
                       >
                         <ExternalLink size={13} /> Connect {provider.label}
                       </a>
-                    )
+                    ) : isFilevine ? (
+                      <button
+                        onClick={() => setFilevineModalOpen(true)}
+                        className="btn-primary text-sm flex items-center gap-1.5"
+                      >
+                        <KeyRound size={13} /> Connect Filevine
+                      </button>
+                    ) : null
                   ) : (
                     <a
                       href={`mailto:hello@aireceptionist.ai?subject=Integration — ${provider.label}`}
@@ -260,6 +269,12 @@ export default function IntegrationsPage() {
           })}
         </div>
       </div>
+
+      <FilevineCredentialsModal
+        open={filevineModalOpen}
+        onClose={() => setFilevineModalOpen(false)}
+        onSuccess={() => mutate('integrations')}
+      />
     </div>
   );
 }

@@ -51,6 +51,8 @@ import { analyticsPlugin } from './modules/analytics/analytics.router.js';
 import { leadDiscoveryPlugin } from './modules/lead-discovery/lead-discovery.router.js';
 import { kbPlugin } from './modules/knowledge-base/kb.router.js';
 import { salesforceOAuthPlugin } from './modules/crm/salesforce-oauth.router.js';
+import { clioOAuthPlugin } from './modules/crm/clio-oauth.router.js';
+import { filevineCredentialsPlugin } from './modules/crm/filevine-credentials.router.js';
 import { openapiPlugin } from './modules/public-api/openapi.plugin.js';
 import { smsPlugin } from './modules/sms/sms.router.js';
 import { compliancePlugin } from './modules/compliance/compliance.router.js';
@@ -178,6 +180,8 @@ async function buildApp() {
   await app.register(leadDiscoveryPlugin, { prefix: '/api/v1' });
   await app.register(kbPlugin, { prefix: '/api/v1' });
   await app.register(salesforceOAuthPlugin, { prefix: '/api/v1' });
+  await app.register(clioOAuthPlugin, { prefix: '/api/v1' });
+  await app.register(filevineCredentialsPlugin, { prefix: '/api/v1' });
   await app.register(billingPlugin, { prefix: '/api/v1' });
   await app.register(phoneNumbersPlugin, { prefix: '/api/v1' });
   await app.register(affiliatePlugin, { prefix: '/api/v1' });

@@ -134,6 +134,16 @@ const envSchema = z.object({
   SALESFORCE_CLIENT_SECRET: z.string().default(''),
   SALESFORCE_REDIRECT_URI: z.string().default('http://localhost:3001/api/v1/integrations/salesforce/callback'),
 
+  // Clio CRM (Phase 13) — OAuth. Register your app at developers.clio.com,
+  // set the redirect URI to the URI below.
+  CLIO_CLIENT_ID: z.string().default(''),
+  CLIO_CLIENT_SECRET: z.string().default(''),
+  CLIO_REDIRECT_URI: z.string().default('http://localhost:3001/api/v1/integrations/clio/callback'),
+
+  // Filevine CRM (Phase 13) — tenant-supplied API key + secret + orgId, no
+  // platform-level env vars needed. Tenants paste credentials in the
+  // dashboard's Connect Filevine modal.
+
   // Knowledge Base (Phase 12.8) — OpenAI embeddings + RAG.
   // Endpoints respond 503 with setup instructions when OPENAI_API_KEY unset.
   OPENAI_API_KEY: z.string().default(''),
