@@ -14,6 +14,7 @@ import { BRAND_NAME } from '@/lib/brand';
 const NAV_LINKS = [
   { label: 'Inbound',   href: '/inbound' },
   { label: 'Outbound',  href: '/outbound' },
+  { label: 'For Law Firms', href: '/legal' },
   { label: 'Leads',     href: '/lead-discovery' },
   { label: 'Docs',      href: '/knowledge-base' },
   { label: 'Pricing',   href: '/pricing' },
