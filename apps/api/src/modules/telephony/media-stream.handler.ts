@@ -150,6 +150,14 @@ export async function handleMediaStream(
     const isAfterHours = !todayHours || isOutsideHours(now, todayHours.open, todayHours.close);
     workflow = isAfterHours ? 'after_hours' : contact ? 'existing_contact' : 'new_contact';
 
+    // Phase 12.8 — pull top-K knowledge-base chunks for grounding. Synthetic
+    // query because we have no caller utterance yet at call-start. Always
+    // resolves to [] on any error (no OPENAI_API_KEY, no docs, embed failure)
+    // so the prompt stays well-formed regardless.
+    const { retrieveRelevantChunks } = await import('../knowledge-base/kb.service.js');
+    const kbQuery = `${practiceName} ${vertical} ${apptTypes[0]?.name ?? ''}`.trim();
+    const kbChunks = await retrieveRelevantChunks(tenantId, kbQuery, 4);
+
     systemPrompt = buildSystemPrompt({
       practiceName,
       vertical,
@@ -161,6 +169,7 @@ export async function handleMediaStream(
       workflowHint: workflow === 'after_hours' ? 'after_hours' : (workflow as 'new_contact' | 'existing_contact'),
       transferNumber: settingsRow?.transferNumber ?? null,
       businessContext: settingsRow?.businessContext ?? null,
+      ...(kbChunks.length > 0 && { kbChunks }),
     });
   }
 

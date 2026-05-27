@@ -29,6 +29,10 @@ export interface PromptContext {
    *  Injected right after the # Role section so the AI has business-specific facts
    *  (services, pricing rules, scheduling policies, brand voice, etc.) before caller work. */
   businessContext?: string | null;
+  /** Phase 12.8 — top-K knowledge-base chunks retrieved at call-start by similarity to
+   *  a synthetic query (practiceName + vertical + appointment type). Injected as a new
+   *  `# Knowledge Base Excerpts` section so the AI grounds its answers in tenant docs. */
+  kbChunks?: string[];
 }
 
 /**
@@ -106,6 +110,19 @@ You are the AI receptionist for ${ctx.practiceName}, a ${terms.label}. You answe
 The owner has provided this context to help you assist callers accurately. Treat it as authoritative business information — prefer it over general assumptions.
 
 ${ctx.businessContext.trim()}`);
+  }
+
+  // ---- Knowledge Base excerpts (Phase 12.8) ----
+  // Top-K passages from documents the owner uploaded. Same authoritative
+  // weight as # About — treat as ground truth for tenant-specific facts.
+  if (ctx.kbChunks && ctx.kbChunks.length > 0) {
+    const excerpts = ctx.kbChunks
+      .map((chunk, i) => `--- Excerpt ${i + 1} ---\n${chunk.trim()}`)
+      .join('\n\n');
+    sections.push(`# Knowledge Base Excerpts
+These passages were pulled from documents the owner uploaded. Treat as authoritative — if a caller asks about something covered here, quote or paraphrase from these excerpts rather than guessing.
+
+${excerpts}`);
   }
 
   // ---- Current context ----

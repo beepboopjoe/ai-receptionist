@@ -21,6 +21,7 @@ import {
   smsMessages,
   outboundCampaigns,
   leadDiscoveryJobs,
+  kbDocuments,
 } from '../../db/schema.js';
 import { and, eq, gte, count, sql, desc, inArray } from 'drizzle-orm';
 
@@ -33,7 +34,8 @@ export type SectionKey =
   | 'messages'
   | 'campaigns'
   | 'reminders'
-  | 'lead-discovery';
+  | 'lead-discovery'
+  | 'knowledge-base';
 
 export interface LiveCount {
   label: string;
@@ -57,6 +59,7 @@ const SUGGESTION_TYPES_BY_SECTION: Record<SectionKey, string[]> = {
   campaigns: [],
   reminders: [],
   'lead-discovery': [],
+  'knowledge-base': [],
 };
 
 // ---- Per-section detectors ------------------------------------------------
@@ -368,6 +371,34 @@ async function leadDiscoveryCounts(tenantId: string): Promise<LiveCount[]> {
   ];
 }
 
+async function knowledgeBaseCounts(tenantId: string): Promise<LiveCount[]> {
+  const [readyRow] = await db
+    .select({ value: count() })
+    .from(kbDocuments)
+    .where(and(eq(kbDocuments.tenantId, tenantId), eq(kbDocuments.status, 'ready')));
+
+  const [failedRow] = await db
+    .select({ value: count() })
+    .from(kbDocuments)
+    .where(and(eq(kbDocuments.tenantId, tenantId), eq(kbDocuments.status, 'failed')));
+
+  const ready = Number(readyRow?.value ?? 0);
+  const failed = Number(failedRow?.value ?? 0);
+
+  return [
+    {
+      label: 'Documents ready',
+      value: ready,
+      severity: ready > 0 ? 'success' : 'info',
+    },
+    {
+      label: 'Failed',
+      value: failed,
+      severity: failed > 0 ? 'warning' : 'success',
+    },
+  ];
+}
+
 async function remindersCounts(tenantId: string): Promise<LiveCount[]> {
   const past7 = new Date();
   past7.setDate(past7.getDate() - 7);
@@ -442,6 +473,9 @@ export async function getSectionSuggestions(
       case 'lead-discovery':
         liveCounts = await leadDiscoveryCounts(tenantId);
         break;
+      case 'knowledge-base':
+        liveCounts = await knowledgeBaseCounts(tenantId);
+        break;
     }
   } catch {
     // Defensive — never fail the whole section response over a count query.
@@ -484,5 +518,6 @@ export function isValidSection(section: string): section is SectionKey {
     'campaigns',
     'reminders',
     'lead-discovery',
+    'knowledge-base',
   ].includes(section);
 }

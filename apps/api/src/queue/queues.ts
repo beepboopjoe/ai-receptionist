@@ -23,3 +23,6 @@ export const hubspotSyncQueue = new Queue('hubspot-sync', { connection: redis })
 
 /** Lead discovery queue (Phase 12.7) — Apify scrape poll-and-ingest jobs. */
 export const leadDiscoveryQueue = new Queue('lead-discovery', { connection: redis });
+
+/** Knowledge base queue (Phase 12.8) — parse + chunk + embed uploaded documents. */
+export const kbQueue = new Queue('kb', { connection: redis });

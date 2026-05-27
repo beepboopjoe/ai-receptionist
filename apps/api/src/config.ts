@@ -126,6 +126,21 @@ const envSchema = z.object({
   LEAD_DISCOVERY_PRICE_CENTS: z.coerce.number().int().min(1).default(99),
   /** Stripe price_id for the leads_discovered metered line item. */
   STRIPE_PRICE_LEADS_DISCOVERED: z.string().default(''),
+
+  // Knowledge Base (Phase 12.8) — OpenAI embeddings + RAG.
+  // Endpoints respond 503 with setup instructions when OPENAI_API_KEY unset.
+  OPENAI_API_KEY: z.string().default(''),
+  OPENAI_EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+  /** Per-tenant document count + total byte limits by plan tier. */
+  KB_DOC_LIMIT_STARTER: z.coerce.number().int().min(0).default(5),
+  KB_DOC_LIMIT_GROWTH:  z.coerce.number().int().min(0).default(25),
+  KB_DOC_LIMIT_SCALE:   z.coerce.number().int().min(0).default(500),
+  KB_BYTES_LIMIT_STARTER: z.coerce.number().int().min(0).default(10_485_760),       // 10 MB
+  KB_BYTES_LIMIT_GROWTH:  z.coerce.number().int().min(0).default(104_857_600),      // 100 MB
+  KB_BYTES_LIMIT_SCALE:   z.coerce.number().int().min(0).default(2_147_483_648),    // 2 GB
+  /** Trial tenants get the Starter quota by default. */
+  KB_DOC_LIMIT_TRIAL: z.coerce.number().int().min(0).default(2),
+  KB_BYTES_LIMIT_TRIAL: z.coerce.number().int().min(0).default(2_097_152),          // 2 MB
 });
 
 function loadConfig() {

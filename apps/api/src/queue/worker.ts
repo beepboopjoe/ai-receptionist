@@ -149,6 +149,24 @@ leadDiscoveryWorker.on('failed', (job, err) => {
   console.error(`[worker:lead-discovery] ❌ job ${job?.id} (${job?.name}) failed:`, err.message);
 });
 
+// ---- Knowledge base worker (Phase 12.8) ----
+const kbWorker = new Worker(
+  'kb',
+  async (job: Job) => {
+    if (job.name === 'process') {
+      const { processKbDocument } = await import('./jobs/kb-process.job.js');
+      await processKbDocument(job as Job<import('./jobs/kb-process.job.js').KbProcessJobData>);
+    }
+  },
+  { connection: redis, concurrency: 3 }
+);
+kbWorker.on('completed', (job) => {
+  console.log(`[worker:kb] ✅ job ${job.id} (${job.name}) completed`);
+});
+kbWorker.on('failed', (job, err) => {
+  console.error(`[worker:kb] ❌ job ${job?.id} (${job?.name}) failed:`, err.message);
+});
+
 // ---- Scheduled tasks (node-cron) ----
 // Hourly sweep of minute_usage rows looking for tenants who crossed
 // 80% of their plan's included minutes — sends a one-time warning

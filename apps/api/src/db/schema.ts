@@ -15,7 +15,32 @@ import {
   index,
   unique,
   numeric,
+  customType,
 } from 'drizzle-orm/pg-core';
+
+// ---- Custom column types for Phase 12.8 (Knowledge Base) ----
+// Drizzle doesn't ship native helpers for `bytea` or `vector(N)`, so we
+// declare them as customType wrappers. The vector helper round-trips a
+// JS number[] to pgvector's `[0.1,0.2,...]` string representation.
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return 'bytea';
+  },
+});
+
+const vector1536 = customType<{ data: number[]; driverData: string }>({
+  dataType() {
+    return 'vector(1536)';
+  },
+  toDriver(value: number[]) {
+    return `[${value.join(',')}]`;
+  },
+  fromDriver(value: unknown): number[] {
+    if (typeof value !== 'string') return [];
+    return value.replace(/^\[|\]$/g, '').split(',').map(Number);
+  },
+});
 
 // ---- Tenants ----
 export const tenants = pgTable('tenants', {
@@ -888,3 +913,66 @@ export const supportTickets = pgTable(
 
 export type SupportTicket = typeof supportTickets.$inferSelect;
 export type NewSupportTicket = typeof supportTickets.$inferInsert;
+
+// ---- Knowledge Base (Phase 12.8) ----
+// Tenant-uploaded documents (PDF/DOCX/TXT/MD) parsed into chunks +
+// OpenAI embeddings. Retrieved at call-start and injected into the
+// system prompt as `# Knowledge Base Excerpts`. See migration 0029.
+//
+// V1 storage notes:
+//   - file_bytes lives in Postgres (capped at 10MB by multipart limit).
+//   - embedding is nullable so chunks can be inserted before the OpenAI
+//     embed call lands; the BullMQ worker fills it in.
+//   - embedding_model lets us migrate models later (e.g. to a 1536→3072
+//     upgrade) without dropping comparability.
+export const kbDocuments = pgTable(
+  'kb_documents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    filename: text('filename').notNull(),
+    mimeType: text('mime_type').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
+    fileBytes: bytea('file_bytes').notNull(),
+    /** pending | processing | ready | failed */
+    status: text('status').notNull().default('pending'),
+    errorMessage: text('error_message'),
+    chunkCount: integer('chunk_count').notNull().default(0),
+    uploadedBy: uuid('uploaded_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+  },
+  (t) => ({
+    tenantCreatedIdx: index('kb_documents_tenant_idx').on(t.tenantId, t.createdAt),
+  })
+);
+
+export const kbChunks = pgTable(
+  'kb_chunks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    documentId: uuid('document_id')
+      .notNull()
+      .references(() => kbDocuments.id, { onDelete: 'cascade' }),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    chunkIndex: integer('chunk_index').notNull(),
+    content: text('content').notNull(),
+    /** 1536 dims = OpenAI text-embedding-3-small. Nullable while embed is in-flight. */
+    embedding: vector1536('embedding'),
+    embeddingModel: text('embedding_model').notNull().default('text-embedding-3-small'),
+    tokenCount: integer('token_count').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    documentIdx: index('kb_chunks_document_idx').on(t.documentId, t.chunkIndex),
+  })
+);
+
+export type KbDocument = typeof kbDocuments.$inferSelect;
+export type NewKbDocument = typeof kbDocuments.$inferInsert;
+export type KbChunk = typeof kbChunks.$inferSelect;
+export type NewKbChunk = typeof kbChunks.$inferInsert;
