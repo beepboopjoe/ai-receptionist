@@ -29,3 +29,6 @@ export const kbQueue = new Queue('kb', { connection: redis });
 
 /** CRM event sync queue (Phase 13) — fan out call/appointment/escalation events to connected CRMs. */
 export const crmEventSyncQueue = new Queue('crm-event-sync', { connection: redis });
+
+/** Recurring campaign scanner (Phase 18) — fires every minute to re-enqueue due recurring campaigns. */
+export const recurringCampaignScanQueue = new Queue('recurring-campaign-scan', { connection: redis });

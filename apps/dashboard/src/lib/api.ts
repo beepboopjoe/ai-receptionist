@@ -742,6 +742,23 @@ export const campaignsApi = {
       method: 'PATCH',
       body: JSON.stringify(update),
     }),
+  // Phase 18 — recurring schedule.
+  setRecurring: (
+    id: string,
+    body: {
+      frequency: 'daily' | 'weekly' | 'monthly';
+      dayOfWeek?: number;
+      dayOfMonth?: number;
+      time: string;
+      timezone: string;
+    }
+  ) =>
+    apiFetch<{ ok: true; nextRunAt: string }>(`/campaigns/${id}/recurring`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  clearRecurring: (id: string) =>
+    apiFetch<{ ok: true }>(`/campaigns/${id}/recurring`, { method: 'DELETE' }),
 };
 
 // ---- SMS (two-way inbox) ----

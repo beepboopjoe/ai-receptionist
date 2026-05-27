@@ -149,6 +149,38 @@ leadDiscoveryWorker.on('failed', (job, err) => {
   console.error(`[worker:lead-discovery] ❌ job ${job?.id} (${job?.name}) failed:`, err.message);
 });
 
+// ---- Recurring campaign scanner (Phase 18) ----
+// Fires every minute, scans outbound_campaigns for due recurring rows,
+// re-runs the goal candidate query, inserts fresh contacts.
+const recurringCampaignScanWorker = new Worker(
+  'recurring-campaign-scan',
+  async (job: Job) => {
+    const { processRecurringCampaignScan } = await import('./jobs/recurring-campaign-scan.job.js');
+    await processRecurringCampaignScan(job);
+  },
+  { connection: redis, concurrency: 1 } // single-worker — serialize the scan
+);
+recurringCampaignScanWorker.on('failed', (job, err) => {
+  console.error(`[worker:recurring-campaign-scan] ❌ job ${job?.id} failed:`, err.message);
+});
+
+// Schedule the repeatable scan once on worker boot. BullMQ dedupes by key so
+// repeated boots don't multiply the schedule.
+(async () => {
+  const { recurringCampaignScanQueue } = await import('./queues.js');
+  await recurringCampaignScanQueue.add(
+    'scan',
+    {},
+    {
+      repeat: { pattern: '* * * * *' }, // every minute
+      jobId: 'recurring-scan-singleton', // dedup key
+    }
+  );
+  console.log('[worker:recurring-campaign-scan] ✅ repeatable scan scheduled (every minute)');
+})().catch((err) => {
+  console.error('[worker:recurring-campaign-scan] ❌ failed to schedule:', err);
+});
+
 // ---- CRM event sync worker (Phase 13) ----
 // Fans out call/appointment/escalation events to each tenant's connected CRMs.
 const crmEventSyncWorker = new Worker(

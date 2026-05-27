@@ -537,6 +537,16 @@ export const outboundCampaigns = pgTable(
     failedCount: integer('failed_count').notNull().default(0),
     startedAt: timestamp('started_at', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
+    // Phase 18 — recurring schedule. NULL columns when is_recurring=false.
+    isRecurring: boolean('is_recurring').notNull().default(false),
+    recurrenceFrequency: text('recurrence_frequency'),       // 'daily' | 'weekly' | 'monthly'
+    recurrenceDayOfWeek: integer('recurrence_day_of_week'),  // 0..6
+    recurrenceDayOfMonth: integer('recurrence_day_of_month'),// 1..28
+    recurrenceTime: text('recurrence_time'),                 // 'HH:MM' 24h
+    recurrenceTimezone: text('recurrence_timezone'),         // IANA tz
+    nextRunAt: timestamp('next_run_at', { withTimezone: true }),
+    lastRunAt: timestamp('last_run_at', { withTimezone: true }),
+    recurringRunCount: integer('recurring_run_count').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

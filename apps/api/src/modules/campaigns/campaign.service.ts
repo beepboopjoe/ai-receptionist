@@ -46,6 +46,9 @@ export async function createCampaign(input: CreateCampaignInput): Promise<Outbou
     })
     .returning();
 
+  if (!campaign) {
+    throw new Error('Campaign insert returned no row');
+  }
   logger.info({ campaignId: campaign.id }, 'Campaign created');
   return campaign;
 }

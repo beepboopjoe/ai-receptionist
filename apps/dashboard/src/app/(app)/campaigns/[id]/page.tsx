@@ -3,14 +3,44 @@ import useSWR, { mutate } from 'swr';
 import { campaignsApi } from '@/lib/api';
 import {
   ArrowLeft, Play, Pause, XCircle, Upload, X,
-  CheckCircle2, Phone, Calendar, Mail, ChevronRight, Users
+  CheckCircle2, Phone, Calendar, Mail, ChevronRight, Users, RotateCw
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RecurringCampaignModal } from '@/components/campaigns/recurring-campaign-modal';
 
 const STATUSES = ['all', 'pending', 'dialing', 'connected', 'qualified', 'not_qualified', 'booked', 'voicemail', 'no_answer', 'failed', 'do_not_call'];
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function formatRecurrence(c: {
+  recurrenceFrequency?: string;
+  recurrenceDayOfWeek?: number | null;
+  recurrenceDayOfMonth?: number | null;
+  recurrenceTime?: string;
+  recurrenceTimezone?: string;
+}): string {
+  if (!c.recurrenceFrequency) return 'recurring';
+  const time = c.recurrenceTime ?? '09:00';
+  const tz = c.recurrenceTimezone ?? '';
+  switch (c.recurrenceFrequency) {
+    case 'daily':
+      return `Every day at ${time} ${tz}`.trim();
+    case 'weekly': {
+      const day = c.recurrenceDayOfWeek != null ? DAY_NAMES[c.recurrenceDayOfWeek] : 'Monday';
+      return `Every ${day} at ${time} ${tz}`.trim();
+    }
+    case 'monthly': {
+      const dom = c.recurrenceDayOfMonth ?? 1;
+      const ord = dom === 1 ? '1st' : dom === 2 ? '2nd' : dom === 3 ? '3rd' : `${dom}th`;
+      return `On the ${ord} of each month at ${time} ${tz}`.trim();
+    }
+    default:
+      return 'recurring';
+  }
+}
 
 const STATUS_BADGE: Record<string, string> = {
   pending: 'badge-gray',
@@ -243,6 +273,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
   const [actionLoading, setActionLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<{ inserted: number; skipped: number; errors: string[] } | null>(null);
+  const [recurringModalOpen, setRecurringModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const c = campaign as any;
@@ -348,7 +379,63 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
             <XCircle size={15} /> Cancel
           </button>
         )}
+
+        {/* Phase 18 — recurring schedule */}
+        {c.goal && (
+          <button
+            onClick={() => setRecurringModalOpen(true)}
+            className={`btn-secondary text-sm flex items-center gap-1.5 ${
+              c.isRecurring ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : ''
+            }`}
+          >
+            <RotateCw size={14} className={c.isRecurring ? 'text-indigo-600' : ''} />
+            {c.isRecurring ? 'Recurring' : 'Make recurring'}
+          </button>
+        )}
       </div>
+
+      {/* Recurring schedule chip — only when active */}
+      {c.isRecurring && c.nextRunAt && (
+        <div className="bg-indigo-50/60 border border-indigo-100 rounded-lg p-3 text-sm text-indigo-900 flex items-center gap-2">
+          <RotateCw size={14} className="text-indigo-600 shrink-0" />
+          <span>
+            <strong>Recurring schedule:</strong> {formatRecurrence(c)}.
+            Next run: {new Date(c.nextRunAt).toLocaleString()}
+            {c.lastRunAt && (
+              <>
+                {' · '}
+                Last run: {new Date(c.lastRunAt).toLocaleString()} ({c.recurringRunCount ?? 0} total runs)
+              </>
+            )}.
+          </span>
+          <button
+            onClick={() => setRecurringModalOpen(true)}
+            className="ml-auto text-xs underline hover:no-underline"
+          >
+            Edit
+          </button>
+        </div>
+      )}
+
+      <RecurringCampaignModal
+        open={recurringModalOpen}
+        campaignId={id}
+        campaignName={c.name}
+        hasGoal={!!c.goal}
+        currentConfig={
+          c.isRecurring && c.recurrenceFrequency
+            ? {
+                frequency: c.recurrenceFrequency,
+                dayOfWeek: c.recurrenceDayOfWeek,
+                dayOfMonth: c.recurrenceDayOfMonth,
+                time: c.recurrenceTime,
+                timezone: c.recurrenceTimezone,
+              }
+            : null
+        }
+        onClose={() => setRecurringModalOpen(false)}
+        onSaved={() => mutate(`campaign-${id}`)}
+      />
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">

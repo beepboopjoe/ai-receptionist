@@ -12,6 +12,11 @@ import {
   updateCampaignContact,
 } from './campaign.service.js';
 import { GOAL_CATALOG, goalsForVertical, findGoal } from './campaign-goals.service.js';
+import {
+  markCampaignRecurring,
+  clearRecurrence,
+  type RecurrenceFrequency,
+} from './recurring-campaign.service.js';
 import { db } from '../../db/client.js';
 import {
   outboundCampaigns,
@@ -333,6 +338,53 @@ export async function campaignsPlugin(app: FastifyInstance) {
       const updated = await updateCampaignContact(contactId, id, tenantId, body as any);
       if (!updated) throw new NotFoundError('Campaign contact not found');
       reply.send(updated);
+    },
+  });
+
+  // ---- Recurring schedule (Phase 18) ----
+  app.post('/campaigns/:id/recurring', {
+    preHandler: [app.requireRole('admin')],
+    async handler(request, reply) {
+      const { tenantId } = request.authUser;
+      const { id } = request.params as { id: string };
+      const body = request.body as {
+        frequency?: string;
+        dayOfWeek?: number;
+        dayOfMonth?: number;
+        time?: string;
+        timezone?: string;
+      };
+
+      if (!body.frequency || !['daily', 'weekly', 'monthly'].includes(body.frequency)) {
+        throw new ValidationError('frequency must be one of: daily, weekly, monthly');
+      }
+      if (!body.time) throw new ValidationError('time (HH:MM) is required');
+      if (!body.timezone) throw new ValidationError('timezone (IANA) is required');
+
+      const params = {
+        frequency: body.frequency as RecurrenceFrequency,
+        ...(body.dayOfWeek !== undefined ? { dayOfWeek: body.dayOfWeek } : {}),
+        ...(body.dayOfMonth !== undefined ? { dayOfMonth: body.dayOfMonth } : {}),
+        time: body.time,
+        timezone: body.timezone,
+      };
+
+      const result = await markCampaignRecurring(tenantId, id, params);
+      if (!result.ok) {
+        const status = result.reason === 'not_found' ? 404 : 400;
+        return reply.status(status).send({ error: result.reason });
+      }
+      return reply.send({ ok: true, nextRunAt: result.nextRunAt });
+    },
+  });
+
+  app.delete('/campaigns/:id/recurring', {
+    preHandler: [app.requireRole('admin')],
+    async handler(request, reply) {
+      const { tenantId } = request.authUser;
+      const { id } = request.params as { id: string };
+      await clearRecurrence(tenantId, id);
+      return reply.send({ ok: true });
     },
   });
 }
