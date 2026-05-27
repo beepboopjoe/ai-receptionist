@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { label: 'Inbound',   href: '/inbound' },
   { label: 'Outbound',  href: '/outbound' },
   { label: 'Leads',     href: '/lead-discovery' },
+  { label: 'Docs',      href: '/knowledge-base' },
   { label: 'Pricing',   href: '/pricing' },
   { label: 'Demo',      href: '/demo' },
   { label: 'Affiliate', href: '/resellers' },

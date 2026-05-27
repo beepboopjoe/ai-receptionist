@@ -72,6 +72,7 @@ const settingsNav = [
   { href: '/settings/integrations', label: 'Integrations', icon: null },
   { href: '/settings/office-hours', label: 'Office Hours', icon: null },
   { href: '/settings/voice-agent', label: 'Voice Agent', icon: null },
+  { href: '/settings/knowledge-base', label: 'Knowledge Base', icon: null },
   { href: '/settings/notifications', label: 'Notifications', icon: null },
   { href: '/settings/webhooks', label: 'Webhooks', icon: null },
   { href: '/settings/api-keys', label: 'API Keys', icon: null },

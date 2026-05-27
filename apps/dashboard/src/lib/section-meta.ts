@@ -21,6 +21,7 @@ import {
   Megaphone,
   Bell,
   Crosshair,
+  BookOpen,
 } from 'lucide-react';
 import type { AgentSuggestionType } from './api';
 
@@ -33,7 +34,8 @@ export type SectionKey =
   | 'messages'
   | 'campaigns'
   | 'reminders'
-  | 'lead-discovery';
+  | 'lead-discovery'
+  | 'knowledge-base';
 
 export interface SectionAction {
   label: string;
@@ -192,6 +194,19 @@ export const SECTION_META: Record<SectionKey, SectionMeta> = {
     actions: () => [
       { label: 'See how pricing works', href: '/lead-discovery' },
       { label: 'View past discoveries', href: '#history' },
+    ],
+    relevantSuggestionTypes: [],
+  },
+
+  'knowledge-base': {
+    key: 'knowledge-base',
+    icon: BookOpen,
+    title: 'Knowledge Base',
+    whatThisIs: ({ contactPlural }) =>
+      `Upload fee schedules, intake forms, FAQs, or policy PDFs and the AI grounds every call in them — so when ${contactPlural} ask about pricing, hours, or your specific services, the AI gives the right answer instead of "let me have someone call you back".`,
+    actions: () => [
+      { label: 'How it works', href: '/knowledge-base' },
+      { label: 'Upload a doc', href: '#upload' },
     ],
     relevantSuggestionTypes: [],
   },

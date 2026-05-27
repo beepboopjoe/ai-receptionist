@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { AgentSuggestionsCard } from '@/components/dashboard/agent-suggestions-card';
 import { TopCampaignSuggestion } from '@/components/dashboard/top-campaign-suggestion';
 import { LeadDiscoveryCard } from '@/components/dashboard/lead-discovery-card';
+import { KnowledgeBaseCard } from '@/components/dashboard/knowledge-base-card';
 
 interface EventStyle { color: string; dot: string }
 
@@ -192,6 +193,9 @@ export default function DashboardPage() {
 
       {/* ── Lead Discovery promo (Phase 12.7) ── */}
       <LeadDiscoveryCard />
+
+      {/* ── Knowledge Base promo (Phase 12.8 / 14) ── */}
+      <KnowledgeBaseCard />
 
       {/* ── AI Agent Suggestions ── */}
       <AgentSuggestionsCard />

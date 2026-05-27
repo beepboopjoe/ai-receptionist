@@ -75,6 +75,8 @@ const SECTIONS: {
       { label: 'CRM event sync (calls/appointments/escalations)',  cells: [false, false, true, true, true] },
       { label: 'CRMs supported (HubSpot + Salesforce)',            cells: [false, true,  true, true, true] },
       { label: 'CRMs supported (+ Zoho + Clio + Filevine)',        cells: [false, false, true, true, true] },
+      { label: 'Knowledge Base — documents',                       cells: ['2 docs', '5 docs', '25 docs', '500 docs', 'Unlimited'] },
+      { label: 'Knowledge Base — storage',                         cells: ['2 MB', '10 MB', '100 MB', '2 GB', 'Unlimited'] },
       { label: 'Public REST API access',                           cells: [false, false, false, true, true] },
       { label: 'Custom integrations',                              cells: [false, false, false, false, true] },
     ],

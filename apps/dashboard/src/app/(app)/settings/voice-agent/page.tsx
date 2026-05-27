@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Save, Mic, Upload, Trash2, CheckCircle, AlertCircle, Loader2, CreditCard, Sparkles, ArrowRight, Phone } from 'lucide-react';
 import { VERTICALS } from '@/lib/verticals';
 import { useToast } from '@/components/ui/toast';
+import { KnowledgeBaseCard } from '@/components/dashboard/knowledge-base-card';
 
 const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/api/v1';
 
@@ -571,6 +572,17 @@ export default function VoiceAgentPage() {
               </span>
             </div>
           </Link>
+
+          {/* ── Knowledge Base promo (Phase 14) — sits next to Curate as
+              the doc-upload alternative to free-text business context. */}
+          <div className="mb-3">
+            <KnowledgeBaseCard
+              compact
+              title="Got a fee schedule or intake form?"
+              description="Upload the doc and the AI grounds every call in it — no need to retype everything into this textarea."
+              cta="Upload docs"
+            />
+          </div>
 
           <textarea
             value={businessContext}

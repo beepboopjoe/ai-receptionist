@@ -479,6 +479,52 @@ export const integrationsApi = {
     apiFetch('/integrations/zoho/disconnect', { method: 'POST' }),
 };
 
+// ---- Knowledge Base (Phase 12.8 / 14) ----
+
+export interface KbDocument {
+  id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  status: 'pending' | 'processing' | 'ready' | 'failed';
+  errorMessage: string | null;
+  chunkCount: number;
+  createdAt: string;
+  processedAt: string | null;
+}
+
+export interface KbUsage {
+  docCount: number;
+  totalBytes: number;
+  limits: { docs: number; bytes: number };
+}
+
+export const kbApi = {
+  list: () => apiFetch<{ documents: KbDocument[] }>('/kb/documents'),
+  get: (id: string) => apiFetch<KbDocument>(`/kb/documents/${id}`),
+  usage: () => apiFetch<KbUsage>('/kb/usage'),
+  delete: (id: string) => apiFetch(`/kb/documents/${id}`, { method: 'DELETE' }),
+  reprocess: (id: string) =>
+    apiFetch<{ ok: true }>(`/kb/documents/${id}/reprocess`, { method: 'POST' }),
+  /** Upload a single file via multipart. Returns the new doc record. */
+  upload: async (file: File): Promise<KbDocument> => {
+    const form = new FormData();
+    form.append('file', file);
+    const base = (process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/api/v1').replace(/\/$/, '');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    const res = await fetch(`${base}/kb/documents`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Upload failed (${res.status}): ${body.slice(0, 200)}`);
+    }
+    return res.json() as Promise<KbDocument>;
+  },
+};
+
 /** Build a full URL to an API endpoint (for browser redirects / OAuth flows). */
 function apiUrl(path: string): string {
   const base = (process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/api/v1').replace(/\/$/, '');
