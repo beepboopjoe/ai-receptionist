@@ -1,34 +1,66 @@
 'use client';
 // ============================================================
 // Shared marketing site nav — cream theme.
-// Used by /, /inbound, /outbound, /pricing, /demo.
-// Active link is highlighted in brand-600.
-// Includes a mobile hamburger drawer.
+// Used by every public marketing page (/, /inbound, /outbound,
+// /pricing, /demo, /legal, /dental, etc.).
+// Active link highlights in brand-600.
+// Verticals are grouped in a dropdown (Phase 16) to keep the
+// top-level nav compact as we add more vertical landings.
+// Mobile drawer expands the verticals inline.
 // ============================================================
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import { BRAND_NAME } from '@/lib/brand';
 
-const NAV_LINKS = [
-  { label: 'Inbound',   href: '/inbound' },
-  { label: 'Outbound',  href: '/outbound' },
-  { label: 'For Law Firms', href: '/legal' },
-  { label: 'Leads',     href: '/lead-discovery' },
-  { label: 'Docs',      href: '/knowledge-base' },
-  { label: 'Pricing',   href: '/pricing' },
-  { label: 'Demo',      href: '/demo' },
-  { label: 'Affiliate', href: '/resellers' },
+type VerticalLink = { label: string; href: string };
+type NavItem =
+  | { kind: 'link'; label: string; href: string }
+  | { kind: 'dropdown'; label: string; items: VerticalLink[] };
+
+const VERTICAL_LINKS: VerticalLink[] = [
+  { label: 'Law Firms',        href: '/legal' },
+  { label: 'Dental Practices', href: '/dental' },
+  { label: 'Insurance',        href: '/insurance' },
+  { label: 'Real Estate',      href: '/real-estate' },
+  { label: 'Home Services',    href: '/home-services' },
+];
+
+const NAV_ITEMS: NavItem[] = [
+  { kind: 'link',     label: 'Inbound',   href: '/inbound' },
+  { kind: 'link',     label: 'Outbound',  href: '/outbound' },
+  { kind: 'dropdown', label: 'Verticals', items: VERTICAL_LINKS },
+  { kind: 'link',     label: 'Leads',     href: '/lead-discovery' },
+  { kind: 'link',     label: 'Docs',      href: '/knowledge-base' },
+  { kind: 'link',     label: 'Pricing',   href: '/pricing' },
+  { kind: 'link',     label: 'Demo',      href: '/demo' },
+  { kind: 'link',     label: 'Affiliate', href: '/resellers' },
 ];
 
 export function MarketingHeader() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [verticalsOpen, setVerticalsOpen] = useState(false);
+  const [mobileVerticalsOpen, setMobileVerticalsOpen] = useState(false);
+  const verticalsRef = useRef<HTMLDivElement>(null);
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(href + '/');
   }
+  const isVerticalActive = VERTICAL_LINKS.some((v) => isActive(v.href));
+
+  // Click-outside-to-close for the desktop Verticals dropdown.
+  useEffect(() => {
+    if (!verticalsOpen) return;
+    function handler(e: MouseEvent) {
+      if (verticalsRef.current && !verticalsRef.current.contains(e.target as Node)) {
+        setVerticalsOpen(false);
+      }
+    }
+    window.addEventListener('mousedown', handler);
+    return () => window.removeEventListener('mousedown', handler);
+  }, [verticalsOpen]);
 
   return (
     <>
@@ -45,23 +77,74 @@ export function MarketingHeader() {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-7">
-            {NAV_LINKS.map(({ label, href }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`text-sm font-medium transition-colors ${
-                  isActive(href)
-                    ? 'text-brand-600'
-                    : 'text-cream-700 hover:text-cream-900'
-                }`}
-              >
-                {label}
-              </Link>
-            ))}
+            {NAV_ITEMS.map((item) => {
+              if (item.kind === 'link') {
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`text-sm font-medium transition-colors ${
+                      isActive(item.href)
+                        ? 'text-brand-600'
+                        : 'text-cream-700 hover:text-cream-900'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              }
+              // dropdown
+              return (
+                <div
+                  key={item.label}
+                  ref={verticalsRef}
+                  className="relative"
+                  onMouseEnter={() => setVerticalsOpen(true)}
+                  onMouseLeave={() => setVerticalsOpen(false)}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setVerticalsOpen((v) => !v)}
+                    aria-haspopup="true"
+                    aria-expanded={verticalsOpen}
+                    className={`inline-flex items-center gap-1 text-sm font-medium transition-colors ${
+                      isVerticalActive
+                        ? 'text-brand-600'
+                        : 'text-cream-700 hover:text-cream-900'
+                    }`}
+                  >
+                    {item.label}
+                    <ChevronDown
+                      size={14}
+                      className={`transition-transform ${verticalsOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  {verticalsOpen && (
+                    <div className="absolute left-0 top-full pt-2">
+                      <div className="bg-white border border-cream-200 rounded-xl shadow-lg py-2 min-w-[200px]">
+                        {item.items.map((v) => (
+                          <Link
+                            key={v.href}
+                            href={v.href}
+                            onClick={() => setVerticalsOpen(false)}
+                            className={`block px-4 py-2 text-sm transition-colors ${
+                              isActive(v.href)
+                                ? 'bg-brand-50 text-brand-700 font-medium'
+                                : 'text-cream-700 hover:bg-cream-50 hover:text-cream-900'
+                            }`}
+                          >
+                            {v.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </nav>
 
-          {/* Desktop CTAs — Try Free leads the conversion path; plans link
-              stays available as the outline secondary. */}
+          {/* Desktop CTAs */}
           <div className="hidden md:flex items-center gap-3">
             <Link href="/login" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">
               Sign in
@@ -102,7 +185,7 @@ export function MarketingHeader() {
 
       {/* Mobile drawer */}
       <div
-        className={`fixed top-0 right-0 bottom-0 z-50 w-72 bg-white border-l border-cream-200 shadow-xl transition-transform duration-200 md:hidden ${
+        className={`fixed top-0 right-0 bottom-0 z-50 w-72 bg-white border-l border-cream-200 shadow-xl transition-transform duration-200 md:hidden overflow-y-auto ${
           mobileOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -118,20 +201,63 @@ export function MarketingHeader() {
         </div>
 
         <nav className="flex flex-col gap-1 px-3 pt-4">
-          {NAV_LINKS.map(({ label, href }) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setMobileOpen(false)}
-              className={`flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                isActive(href)
-                  ? 'bg-brand-50 text-brand-700'
-                  : 'text-cream-700 hover:bg-cream-50 hover:text-cream-900'
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            if (item.kind === 'link') {
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={`flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                    isActive(item.href)
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'text-cream-700 hover:bg-cream-50 hover:text-cream-900'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            }
+            // dropdown — render as expandable section
+            return (
+              <div key={item.label}>
+                <button
+                  type="button"
+                  onClick={() => setMobileVerticalsOpen((v) => !v)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                    isVerticalActive
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'text-cream-700 hover:bg-cream-50 hover:text-cream-900'
+                  }`}
+                  aria-expanded={mobileVerticalsOpen}
+                >
+                  {item.label}
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform ${mobileVerticalsOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {mobileVerticalsOpen && (
+                  <div className="ml-3 mt-1 mb-2 border-l-2 border-cream-200 pl-3 space-y-1">
+                    {item.items.map((v) => (
+                      <Link
+                        key={v.href}
+                        href={v.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
+                          isActive(v.href)
+                            ? 'bg-brand-50 text-brand-700 font-medium'
+                            : 'text-cream-600 hover:bg-cream-50 hover:text-cream-900'
+                        }`}
+                      >
+                        {v.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           <div className="pt-4 mt-2 border-t border-cream-100 space-y-2 px-1">
             <Link
