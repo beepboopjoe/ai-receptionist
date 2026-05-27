@@ -34,7 +34,7 @@ export function useLiveCalls() {
     // events[0] is newest — walk oldest → newest so state evolves correctly.
     for (let i = events.length - 1; i >= 0; i--) {
       const e = events[i];
-      if (!e) continue;
+      if (!e || !e.data) continue;
       const data = e.data as Record<string, unknown>;
       const callId = data['callId'] as string | undefined;
       if (!callId) continue;
