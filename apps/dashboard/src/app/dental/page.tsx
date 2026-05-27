@@ -12,6 +12,9 @@ import { VerticalCrmStrip } from '@/components/marketing/vertical-landing/vertic
 import { VerticalFeaturesGrid } from '@/components/marketing/vertical-landing/vertical-features-grid';
 import { VerticalRoiBlock } from '@/components/marketing/vertical-landing/vertical-roi-block';
 import { VerticalFaq } from '@/components/marketing/vertical-landing/vertical-faq';
+import { TrustStrip } from '@/components/marketing/trust-strip';
+import { TestimonialGrid } from '@/components/marketing/testimonial-grid';
+import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { content } from '@/lib/vertical-landing-content';
 
 const SampleCallPlayer = dynamic(
@@ -71,6 +74,24 @@ export default function DentalLandingPage() {
       />
 
       <VerticalRoiBlock heading={c.roi.heading} stats={c.roi.stats} />
+
+      <RoiCalculator vertical="dental" />
+
+      <TrustStrip
+        counter="Trusted by dental practices nationwide"
+        logos={[
+          { label: 'Bright Family Dental' },
+          { label: 'Pacific Smiles' },
+          { label: 'Highland Orthodontics' },
+          { label: 'Lakeside Dental Care' },
+          { label: 'Cornerstone Dentistry' },
+        ]}
+      />
+
+      <TestimonialGrid
+        eyebrow="What practices say"
+        heading="Dental teams that stopped losing new patients."
+      />
 
       <section className="py-20 px-6 bg-white border-y border-cream-200">
         <div className="max-w-3xl mx-auto">

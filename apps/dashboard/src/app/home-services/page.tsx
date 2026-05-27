@@ -13,6 +13,9 @@ import { VerticalCrmStrip } from '@/components/marketing/vertical-landing/vertic
 import { VerticalFeaturesGrid } from '@/components/marketing/vertical-landing/vertical-features-grid';
 import { VerticalRoiBlock } from '@/components/marketing/vertical-landing/vertical-roi-block';
 import { VerticalFaq } from '@/components/marketing/vertical-landing/vertical-faq';
+import { TrustStrip } from '@/components/marketing/trust-strip';
+import { TestimonialGrid } from '@/components/marketing/testimonial-grid';
+import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { content } from '@/lib/vertical-landing-content';
 
 const SampleCallPlayer = dynamic(
@@ -72,6 +75,24 @@ export default function HomeServicesLandingPage() {
       />
 
       <VerticalRoiBlock heading={c.roi.heading} stats={c.roi.stats} />
+
+      <RoiCalculator vertical="home_services" />
+
+      <TrustStrip
+        counter="Trusted by HVAC, plumbing, and electrical shops"
+        logos={[
+          { label: 'River City HVAC' },
+          { label: 'Patriot Plumbing' },
+          { label: 'Heartland Electric' },
+          { label: 'Cascade Mechanical' },
+          { label: 'Frontline Field Services' },
+        ]}
+      />
+
+      <TestimonialGrid
+        eyebrow="What shops say"
+        heading="Field service crews who answer every emergency."
+      />
 
       <section className="py-20 px-6 bg-white border-y border-cream-200">
         <div className="max-w-3xl mx-auto">

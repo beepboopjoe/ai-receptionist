@@ -12,6 +12,9 @@ import { VerticalCrmStrip } from '@/components/marketing/vertical-landing/vertic
 import { VerticalFeaturesGrid } from '@/components/marketing/vertical-landing/vertical-features-grid';
 import { VerticalRoiBlock } from '@/components/marketing/vertical-landing/vertical-roi-block';
 import { VerticalFaq } from '@/components/marketing/vertical-landing/vertical-faq';
+import { TrustStrip } from '@/components/marketing/trust-strip';
+import { TestimonialGrid } from '@/components/marketing/testimonial-grid';
+import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { content } from '@/lib/vertical-landing-content';
 
 const SampleCallPlayer = dynamic(
@@ -71,6 +74,24 @@ export default function RealEstateLandingPage() {
       />
 
       <VerticalRoiBlock heading={c.roi.heading} stats={c.roi.stats} />
+
+      <RoiCalculator vertical="real_estate" />
+
+      <TrustStrip
+        counter="Trusted by brokerages and solo agents"
+        logos={[
+          { label: 'Summit Realty' },
+          { label: 'Bayview Properties' },
+          { label: 'Park Avenue Group' },
+          { label: 'Mountain Crest Real Estate' },
+          { label: 'Lake Country Homes' },
+        ]}
+      />
+
+      <TestimonialGrid
+        eyebrow="What agents say"
+        heading="Brokers who answer in 5 seconds, not 5 hours."
+      />
 
       <section className="py-20 px-6 bg-white border-y border-cream-200">
         <div className="max-w-3xl mx-auto">

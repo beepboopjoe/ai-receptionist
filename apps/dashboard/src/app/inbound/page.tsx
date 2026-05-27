@@ -10,6 +10,8 @@ import { CheckCircle, Phone, ShieldCheck, Sparkles, Moon, Globe, MessageSquare, 
 import { BRAND_NAME } from '@/lib/brand';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
+import { TrustStrip } from '@/components/marketing/trust-strip';
+import { TestimonialGrid } from '@/components/marketing/testimonial-grid';
 
 // Lazy-load — TTS audio code shouldn't block initial paint.
 const SampleCallPlayer = dynamic(
@@ -407,6 +409,10 @@ export default function InboundPage() {
           </div>
         </Link>
       </section>
+
+      {/* Phase 17 — social proof */}
+      <TrustStrip />
+      <TestimonialGrid background="cream" />
 
       <MarketingFooter />
     </div>

@@ -13,6 +13,9 @@ import { VerticalCrmStrip } from '@/components/marketing/vertical-landing/vertic
 import { VerticalFeaturesGrid } from '@/components/marketing/vertical-landing/vertical-features-grid';
 import { VerticalRoiBlock } from '@/components/marketing/vertical-landing/vertical-roi-block';
 import { VerticalFaq } from '@/components/marketing/vertical-landing/vertical-faq';
+import { TrustStrip } from '@/components/marketing/trust-strip';
+import { TestimonialGrid } from '@/components/marketing/testimonial-grid';
+import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { content } from '@/lib/vertical-landing-content';
 
 // SampleCallPlayer is client-side only — defer to keep the page server-rendered.
@@ -74,6 +77,24 @@ export default function LegalLandingPage() {
       />
 
       <VerticalRoiBlock heading={c.roi.heading} stats={c.roi.stats} />
+
+      <RoiCalculator vertical="legal" />
+
+      <TrustStrip
+        counter="Trusted by law firms across the country"
+        logos={[
+          { label: 'Coastal Law Group' },
+          { label: 'Brenner & Associates' },
+          { label: 'Riverside Trial Lawyers' },
+          { label: 'Magnolia Family Law' },
+          { label: 'Northside Defense' },
+        ]}
+      />
+
+      <TestimonialGrid
+        eyebrow="What attorneys say"
+        heading="Law firms switching from voicemail."
+      />
 
       {/* ═══ TESTIMONIAL (placeholder until real customer quote available) ═══ */}
       <section className="py-20 px-6 bg-white border-y border-cream-200">

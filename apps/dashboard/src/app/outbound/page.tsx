@@ -10,6 +10,8 @@ import { CheckCircle, Phone, ShieldCheck, Sparkles, AlertCircle, MessageSquare, 
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { CampaignFlowDiagram } from '@/components/ui/campaign-flow-diagram';
+import { TrustStrip } from '@/components/marketing/trust-strip';
+import { TestimonialGrid } from '@/components/marketing/testimonial-grid';
 import { BRAND_NAME } from '@/lib/brand';
 
 // SampleCallPlayer uses Web Speech API at click-time. Lazy-load it
@@ -459,6 +461,10 @@ export default function OutboundPage() {
           </div>
         </Link>
       </section>
+
+      {/* Phase 17 — social proof */}
+      <TrustStrip />
+      <TestimonialGrid background="cream" />
 
       <MarketingFooter />
     </div>

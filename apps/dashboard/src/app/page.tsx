@@ -10,6 +10,9 @@ import { BRAND_NAME } from '@/lib/brand';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { CallMeWidget } from '@/components/ui/call-me-widget';
+import { TrustStrip } from '@/components/marketing/trust-strip';
+import { TestimonialGrid } from '@/components/marketing/testimonial-grid';
+import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { PLANS } from '@ai-receptionist/shared';
 
 const HomepageVoiceSamples = dynamic(
@@ -549,6 +552,15 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Trust strip (Phase 17) ── */}
+      <TrustStrip />
+
+      {/* ── Customer testimonials (Phase 17) ── */}
+      <TestimonialGrid background="cream" />
+
+      {/* ── ROI calculator (Phase 17) ── */}
+      <RoiCalculator vertical="generic" />
 
       {/* ══════════════════════════════════════════════════════
           WORKS WITH STRIP
