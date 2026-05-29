@@ -11,7 +11,6 @@ import { BRAND_NAME } from '@/lib/brand';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { TrustStrip } from '@/components/marketing/trust-strip';
-import { TestimonialGrid } from '@/components/marketing/testimonial-grid';
 
 // Lazy-load — TTS audio code shouldn't block initial paint.
 const SampleCallPlayer = dynamic(
@@ -410,9 +409,9 @@ export default function InboundPage() {
         </Link>
       </section>
 
-      {/* Phase 17 — social proof */}
+      {/* Phase 17 — social proof. TestimonialGrid removed (Phase 19.1) until
+          we have real customer quotes. Re-mount with real `testimonials` prop. */}
       <TrustStrip />
-      <TestimonialGrid background="cream" />
 
       <MarketingFooter />
     </div>
