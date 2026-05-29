@@ -13,7 +13,6 @@ import { VerticalCrmStrip } from '@/components/marketing/vertical-landing/vertic
 import { VerticalFeaturesGrid } from '@/components/marketing/vertical-landing/vertical-features-grid';
 import { VerticalRoiBlock } from '@/components/marketing/vertical-landing/vertical-roi-block';
 import { VerticalFaq } from '@/components/marketing/vertical-landing/vertical-faq';
-import { TrustStrip } from '@/components/marketing/trust-strip';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { content } from '@/lib/vertical-landing-content';
 
@@ -79,18 +78,8 @@ export default function LegalLandingPage() {
 
       <RoiCalculator vertical="legal" />
 
-      <TrustStrip
-        counter="Trusted by law firms across the country"
-        logos={[
-          { label: 'Coastal Law Group' },
-          { label: 'Brenner & Associates' },
-          { label: 'Riverside Trial Lawyers' },
-          { label: 'Magnolia Family Law' },
-          { label: 'Northside Defense' },
-        ]}
-      />
-
-      {/* TestimonialGrid removed (Phase 19.1) until real customer quotes. */}
+      {/* TrustStrip removed (Phase 19.2) + TestimonialGrid removed (Phase 19.1)
+          until real customer logos + quotes. */}
 
       {/* ═══ TESTIMONIAL (placeholder until real customer quote available) ═══ */}
       <section className="py-20 px-6 bg-white border-y border-cream-200">

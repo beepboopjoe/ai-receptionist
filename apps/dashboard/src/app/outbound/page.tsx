@@ -10,7 +10,6 @@ import { CheckCircle, Phone, ShieldCheck, Sparkles, AlertCircle, MessageSquare, 
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { CampaignFlowDiagram } from '@/components/ui/campaign-flow-diagram';
-import { TrustStrip } from '@/components/marketing/trust-strip';
 import { BRAND_NAME } from '@/lib/brand';
 
 // SampleCallPlayer uses Web Speech API at click-time. Lazy-load it
@@ -461,9 +460,8 @@ export default function OutboundPage() {
         </Link>
       </section>
 
-      {/* Phase 17 — social proof. TestimonialGrid removed (Phase 19.1) until
-          we have real customer quotes. Re-mount with real `testimonials` prop. */}
-      <TrustStrip />
+      {/* Social proof components (TrustStrip + TestimonialGrid) removed
+          until we have real customer logos + quotes. See Phase 19.1/19.2. */}
 
       <MarketingFooter />
     </div>

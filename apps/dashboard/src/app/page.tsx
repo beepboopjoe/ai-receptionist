@@ -10,7 +10,6 @@ import { BRAND_NAME } from '@/lib/brand';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { CallMeWidget } from '@/components/ui/call-me-widget';
-import { TrustStrip } from '@/components/marketing/trust-strip';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { PLANS } from '@ai-receptionist/shared';
 
@@ -552,10 +551,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Trust strip (Phase 17) ── */}
-      <TrustStrip />
-
-      {/* TestimonialGrid removed (Phase 19.1) until we have real customer
+      {/* TrustStrip removed (Phase 19.2) until we have real customer logos.
+          Re-mount with real `logos` prop (each entry needs realLogoSrc).
+          TestimonialGrid removed (Phase 19.1) until we have real customer
           quotes. Re-mount with real `testimonials` prop. */}
 
       {/* ── ROI calculator (Phase 17) ── */}

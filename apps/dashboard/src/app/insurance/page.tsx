@@ -12,7 +12,6 @@ import { VerticalCrmStrip } from '@/components/marketing/vertical-landing/vertic
 import { VerticalFeaturesGrid } from '@/components/marketing/vertical-landing/vertical-features-grid';
 import { VerticalRoiBlock } from '@/components/marketing/vertical-landing/vertical-roi-block';
 import { VerticalFaq } from '@/components/marketing/vertical-landing/vertical-faq';
-import { TrustStrip } from '@/components/marketing/trust-strip';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { content } from '@/lib/vertical-landing-content';
 
@@ -76,18 +75,7 @@ export default function InsuranceLandingPage() {
 
       <RoiCalculator vertical="insurance" />
 
-      <TrustStrip
-        counter="Trusted by independent agencies"
-        logos={[
-          { label: 'Northwind Insurance' },
-          { label: 'Sequoia Risk Partners' },
-          { label: 'Heritage Coverage Group' },
-          { label: 'Coastline Agency' },
-          { label: 'Summit Brokers' },
-        ]}
-      />
-
-      {/* TestimonialGrid removed (Phase 19.1) until real customer quotes. */}
+      {/* TrustStrip + TestimonialGrid removed until real customer logos + quotes. */}
 
       <section className="py-20 px-6 bg-white border-y border-cream-200">
         <div className="max-w-3xl mx-auto">
