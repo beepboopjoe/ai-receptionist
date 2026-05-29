@@ -11,7 +11,6 @@ import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { CallMeWidget } from '@/components/ui/call-me-widget';
 import { TrustStrip } from '@/components/marketing/trust-strip';
-import { TestimonialGrid } from '@/components/marketing/testimonial-grid';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { PLANS } from '@ai-receptionist/shared';
 
@@ -556,8 +555,8 @@ export default function LandingPage() {
       {/* ── Trust strip (Phase 17) ── */}
       <TrustStrip />
 
-      {/* ── Customer testimonials (Phase 17) ── */}
-      <TestimonialGrid background="cream" />
+      {/* TestimonialGrid removed (Phase 19.1) until we have real customer
+          quotes. Re-mount with real `testimonials` prop. */}
 
       {/* ── ROI calculator (Phase 17) ── */}
       <RoiCalculator vertical="generic" />

@@ -13,7 +13,6 @@ import { VerticalFeaturesGrid } from '@/components/marketing/vertical-landing/ve
 import { VerticalRoiBlock } from '@/components/marketing/vertical-landing/vertical-roi-block';
 import { VerticalFaq } from '@/components/marketing/vertical-landing/vertical-faq';
 import { TrustStrip } from '@/components/marketing/trust-strip';
-import { TestimonialGrid } from '@/components/marketing/testimonial-grid';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { content } from '@/lib/vertical-landing-content';
 
@@ -88,10 +87,7 @@ export default function DentalLandingPage() {
         ]}
       />
 
-      <TestimonialGrid
-        eyebrow="What practices say"
-        heading="Dental teams that stopped losing new patients."
-      />
+      {/* TestimonialGrid removed (Phase 19.1) until real customer quotes. */}
 
       <section className="py-20 px-6 bg-white border-y border-cream-200">
         <div className="max-w-3xl mx-auto">

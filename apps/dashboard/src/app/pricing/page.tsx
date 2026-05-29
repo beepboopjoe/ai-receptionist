@@ -14,7 +14,6 @@ import { PLANS, PAY_AS_YOU_GO } from '@ai-receptionist/shared';
 import { PricingCards } from '@/components/ui/pricing-cards';
 import { PlanComparisonTable } from '@/components/ui/plan-comparison-table';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
-import { TestimonialGrid } from '@/components/marketing/testimonial-grid';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const RoiSection = dynamic(
@@ -121,8 +120,7 @@ export default function PricingPage() {
       {/* ── ROI calculator (Phase 17) ─────────────────────── */}
       <RoiCalculator vertical="generic" />
 
-      {/* ── Customer testimonials (Phase 17) ──────────────── */}
-      <TestimonialGrid background="white" />
+      {/* TestimonialGrid removed (Phase 19.1) until real customer quotes. */}
 
       {/* ── PAYG footnote strip ───────────────────────────── */}
       <section className="max-w-7xl mx-auto px-6 pb-8">
