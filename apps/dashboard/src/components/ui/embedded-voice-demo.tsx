@@ -467,7 +467,7 @@ export function EmbeddedVoiceDemo({ vertical: verticalProp = 'dental' }: { verti
             <div className="w-3 h-3 rounded-full bg-red-500/80" />
             <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
             <div className="w-3 h-3 rounded-full bg-green-500/80" />
-            <span className="ml-3 text-xs text-white/30">AI Receptionist — Voice Demo</span>
+            <span className="ml-3 text-xs text-white/30">Telfin — Voice Demo</span>
             <div className="ml-auto flex items-center gap-1.5">
               {isRunning
                 ? <><span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" /><span className="text-xs text-green-400">Live</span></>

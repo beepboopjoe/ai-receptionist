@@ -84,7 +84,7 @@ export interface VerticalLandingContent {
 
 const legal: VerticalLandingContent = {
   seo: {
-    title: 'AI Receptionist for Law Firms — Intake, Scheduling, Clio/Filevine Sync',
+    title: 'Telfin for Law Firms — Intake, Scheduling, Clio/Filevine Sync',
     description:
       "24/7 AI receptionist built for law firms. Runs initial intake, books consults, escalates conflict-of-interest cases, and posts every call to Clio, Filevine, MyCase, HubSpot, or Salesforce. English + Spanish. No setup fees.",
   },
@@ -196,7 +196,7 @@ const legal: VerticalLandingContent = {
 
 const dental: VerticalLandingContent = {
   seo: {
-    title: 'AI Receptionist for Dental Practices — Recall, Booking, EHR Sync',
+    title: 'Telfin for Dental Practices — Recall, Booking, EHR Sync',
     description:
       "24/7 AI receptionist for dental practices. Handles new-patient bookings, recall follow-ups, insurance verification handoff, after-hours emergency triage. Connects to Dentrix, Eaglesoft, Open Dental. HIPAA-ready. English + Spanish.",
   },
@@ -308,7 +308,7 @@ const dental: VerticalLandingContent = {
 
 const insurance: VerticalLandingContent = {
   seo: {
-    title: 'AI Receptionist for Insurance Agencies — Claim Intake, Quotes, Renewals',
+    title: 'Telfin for Insurance Agencies — Claim Intake, Quotes, Renewals',
     description:
       "24/7 AI receptionist for insurance agencies. Captures claim details, routes quote requests, follows up on policy renewals, escalates urgent claims. Connects to Applied Epic, HubSpot, Salesforce, Zoho. English + Spanish.",
   },
@@ -419,7 +419,7 @@ const insurance: VerticalLandingContent = {
 
 const realEstate: VerticalLandingContent = {
   seo: {
-    title: 'AI Receptionist for Real Estate — Lead Capture, Showings, Listing FAQ',
+    title: 'Telfin for Real Estate — Lead Capture, Showings, Listing FAQ',
     description:
       "24/7 AI receptionist for real estate brokerages. Captures inbound leads, books showings, answers listing questions, follows up on stale leads. Connects to Follow Up Boss, HubSpot, Salesforce. The 5-minute response rule, automated.",
   },
@@ -530,7 +530,7 @@ const realEstate: VerticalLandingContent = {
 
 const homeServices: VerticalLandingContent = {
   seo: {
-    title: 'AI Receptionist for Home Services — Dispatch, Emergencies, Quotes',
+    title: 'Telfin for Home Services — Dispatch, Emergencies, Quotes',
     description:
       "24/7 AI receptionist for HVAC, plumbing, electrical, roofing, and other home services. Triages emergency calls (gas leak, no heat, burst pipe), books jobs, captures quote requests. Connects to ServiceTitan, Jobber, HubSpot.",
   },

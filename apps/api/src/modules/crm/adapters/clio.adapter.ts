@@ -153,7 +153,7 @@ export async function appendClioCallNote(
     : null;
 
   const body = [
-    `AI Receptionist call — ${note.outcome}`,
+    `Telfin call — ${note.outcome}`,
     note.summary && `\nSummary:\n${note.summary}`,
     note.transcript && `\n\nTranscript:\n${note.transcript}`,
   ].filter(Boolean).join('');
@@ -196,7 +196,7 @@ export async function appendClioAppointment(
       body: JSON.stringify({
         data: {
           summary: `${appt.appointmentType} — booked by AI`,
-          description: appt.notes ?? `${appt.appointmentType} booked by AI Receptionist.`,
+          description: appt.notes ?? `${appt.appointmentType} booked by Telfin.`,
           start_at: appt.startsAt,
           end_at: appt.endsAt,
           ...(contactId && { contacts: [{ id: contactId }] }),

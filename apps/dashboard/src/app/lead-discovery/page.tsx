@@ -101,7 +101,7 @@ const FAQS = [
   },
   {
     q: 'Do I have to use Apify directly?',
-    a: 'No. We hold the Apify account and bill you a single per-lead price. You never sign up for Apify, never see an Apify dashboard, never pay them directly. Everything is in your AI Receptionist account.',
+    a: 'No. We hold the Apify account and bill you a single per-lead price. You never sign up for Apify, never see an Apify dashboard, never pay them directly. Everything is in your Telfin account.',
   },
   {
     q: 'What if a search returns junk?',

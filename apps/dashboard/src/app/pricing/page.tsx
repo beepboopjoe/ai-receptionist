@@ -334,7 +334,7 @@ export default function PricingPage() {
           <div>
             <h3 className="text-lg font-semibold text-cream-900">Become a partner</h3>
             <p className="text-sm text-cream-600 mt-1">
-              Resell AI Receptionist to your clients and earn a recurring commission on every customer you refer.
+              Resell Telfin to your clients and earn a recurring commission on every customer you refer.
             </p>
           </div>
           <Link

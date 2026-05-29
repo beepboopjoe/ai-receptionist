@@ -221,7 +221,7 @@ export async function appendHubSpotCallNote(
     : null;
 
   const body = [
-    `📞 AI Receptionist call — ${note.outcome}`,
+    `📞 Telfin call — ${note.outcome}`,
     note.summary ? `\nSummary:\n${note.summary}` : '',
     note.transcript ? `\n\nTranscript:\n${note.transcript}` : '',
   ].join('');
@@ -269,7 +269,7 @@ export async function appendHubSpotAppointment(
       body: JSON.stringify({
         properties: {
           hs_meeting_title: `${appt.appointmentType} — booked by AI`,
-          hs_meeting_body: appt.notes ?? `${appt.appointmentType} appointment booked by AI Receptionist.`,
+          hs_meeting_body: appt.notes ?? `${appt.appointmentType} appointment booked by Telfin.`,
           hs_timestamp: new Date(appt.startsAt).getTime(),
           hs_meeting_start_time: new Date(appt.startsAt).getTime(),
           hs_meeting_end_time: new Date(appt.endsAt).getTime(),

@@ -547,7 +547,7 @@ export default function LandingPage() {
               href="/legal"
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-700 hover:text-indigo-900 underline-offset-4 hover:underline"
             >
-              See AI Receptionist for law firms <span aria-hidden>→</span>
+              See Telfin for law firms <span aria-hidden>→</span>
             </Link>
           </div>
         </div>

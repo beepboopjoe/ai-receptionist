@@ -2,7 +2,7 @@ import { BRAND_NAME } from '@/lib/brand';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Terms of Service — AI Receptionist',
+  title: 'Terms of Service — Telfin',
 };
 
 export default function TermsPage() {
@@ -10,7 +10,7 @@ export default function TermsPage() {
     <div className="min-h-screen bg-cream-50">
       <nav className="border-b border-cream-200 px-6 py-4 flex items-center justify-between bg-white">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center text-white font-serif text-sm">ar</div>
+          <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center text-white font-serif text-sm">TF</div>
           <span className="font-serif text-cream-900 font-semibold">{BRAND_NAME}</span>
         </Link>
         <Link href="/" className="text-sm text-cream-600 hover:text-cream-900 transition-colors">← Back to home</Link>
@@ -31,7 +31,7 @@ export default function TermsPage() {
           </div>
 
           <p className="leading-relaxed">
-            By accessing or using AI Receptionist services, you agree to be bound by these Terms of Service.
+            By accessing or using Telfin services, you agree to be bound by these Terms of Service.
             Please read them carefully before using our platform.
           </p>
 

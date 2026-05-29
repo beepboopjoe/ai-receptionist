@@ -35,7 +35,7 @@ export class ElevenLabsVoiceAdapter implements IVoiceAdapter {
     if (!resolvedAgentId) {
       // Create a new agent — this is idempotent at the EL level
       const agent = await createOrUpdateAgent({
-        name: 'AI Receptionist',
+        name: 'Telfin',
         systemPrompt: params.systemPrompt,
         voiceId: this.credentials['voice_id'],
       });

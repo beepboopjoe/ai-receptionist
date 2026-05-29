@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ShieldCheck } from 'lucide-react';
 
 export const metadata = {
-  title: 'HIPAA Compliance — AI Receptionist',
+  title: 'HIPAA Compliance — Telfin',
 };
 
 export default function HipaaPage() {
@@ -11,7 +11,7 @@ export default function HipaaPage() {
     <div className="min-h-screen bg-cream-50">
       <nav className="border-b border-cream-200 px-6 py-4 flex items-center justify-between bg-white">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center text-white font-serif text-sm">ar</div>
+          <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center text-white font-serif text-sm">TF</div>
           <span className="font-serif text-cream-900 font-semibold">{BRAND_NAME}</span>
         </Link>
         <Link href="/" className="text-sm text-cream-600 hover:text-cream-900 transition-colors">← Back to home</Link>
@@ -28,14 +28,14 @@ export default function HipaaPage() {
             <div>
               <p className="text-sm font-semibold text-green-900 mb-1">HIPAA-Ready Platform</p>
               <p className="text-sm text-green-800">
-                AI Receptionist is designed for healthcare practices. We sign Business Associate Agreements (BAAs)
+                Telfin is designed for healthcare practices. We sign Business Associate Agreements (BAAs)
                 and implement safeguards required under HIPAA.
               </p>
             </div>
           </div>
 
           <p className="leading-relaxed">
-            As a service provider to healthcare practices, AI Receptionist acts as a Business Associate under the
+            As a service provider to healthcare practices, Telfin acts as a Business Associate under the
             Health Insurance Portability and Accountability Act (HIPAA) when we process Protected Health Information
             (PHI) on your behalf.
           </p>

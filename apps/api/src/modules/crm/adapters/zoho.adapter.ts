@@ -159,7 +159,7 @@ export async function appendZohoCallNote(
 ): Promise<void> {
   const contactId = note.fromNumber ? await findContactByPhone(tokens, note.fromNumber) : null;
   const body = [
-    `AI Receptionist call — ${note.outcome}`,
+    `Telfin call — ${note.outcome}`,
     note.summary && `\nSummary:\n${note.summary}`,
     note.transcript && `\n\nTranscript:\n${note.transcript}`,
   ].filter(Boolean).join('');
@@ -209,7 +209,7 @@ export async function appendZohoAppointment(
         data: [
           {
             Event_Title: `${appt.appointmentType} — booked by AI`,
-            Description: appt.notes ?? `${appt.appointmentType} booked by AI Receptionist.`,
+            Description: appt.notes ?? `${appt.appointmentType} booked by Telfin.`,
             Start_DateTime: appt.startsAt,
             End_DateTime: appt.endsAt,
             ...(contactId && { What_Id: contactId, $se_module: 'Contacts' }),

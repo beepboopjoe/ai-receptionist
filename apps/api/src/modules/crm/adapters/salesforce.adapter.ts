@@ -174,7 +174,7 @@ export async function appendSalesforceCallNote(
   const whoId = note.fromNumber ? await findContactByPhone(tokens, note.fromNumber) : null;
 
   const description = [
-    `AI Receptionist call — ${note.outcome}`,
+    `Telfin call — ${note.outcome}`,
     note.summary && `\nSummary:\n${note.summary}`,
     note.transcript && `\n\nTranscript:\n${note.transcript}`,
   ].filter(Boolean).join('');
@@ -216,7 +216,7 @@ export async function appendSalesforceAppointment(
       headers: { Authorization: `Bearer ${t.access_token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         Subject: `${appt.appointmentType} — booked by AI`,
-        Description: appt.notes ?? `${appt.appointmentType} appointment booked by AI Receptionist.`,
+        Description: appt.notes ?? `${appt.appointmentType} appointment booked by Telfin.`,
         StartDateTime: appt.startsAt,
         EndDateTime: appt.endsAt,
         ...(whoId && { WhoId: whoId }),

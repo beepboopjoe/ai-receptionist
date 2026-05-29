@@ -58,7 +58,7 @@ export async function runUsageWarningSweep(): Promise<{ checked: number; sent: n
 <p>Heads up — <strong>${row.tenantName}</strong> has used <strong>${Math.round(used)} of your plan's ${plan.monthlyMinutes} included AI minutes</strong> this billing period (about ${pct}%).</p>
 <p>You have roughly <strong>${Math.round(remaining)} minutes</strong> left before overage charges of $${plan.overagePerMin.toFixed(2)}/min kick in. Calls won't be cut off — they keep working — but the difference will appear on your next invoice.</p>
 <p>If you're consistently hitting your cap, the next tier up usually pays for itself. <a href="${config.DASHBOARD_URL}/billing">Manage your plan →</a></p>
-<p>— The AI Receptionist team</p>`;
+<p>— The Telfin team</p>`;
     try {
       await sendEmail({
         to: owner.email,

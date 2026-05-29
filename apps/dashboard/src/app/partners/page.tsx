@@ -69,7 +69,7 @@ export default function PartnersPage() {
             <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-serif text-lg shadow-sm">
               ar
             </div>
-            <span className="font-semibold text-cream-900 text-sm hidden sm:inline">AI Receptionist</span>
+            <span className="font-semibold text-cream-900 text-sm hidden sm:inline">Telfin</span>
           </Link>
           <nav className="hidden md:flex items-center gap-7">
             <Link href="/inbound" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Inbound</Link>
@@ -99,7 +99,7 @@ export default function PartnersPage() {
             <span className="text-brand-600">by referring clients</span>
           </h1>
           <p className="text-lg text-cream-600 mb-8 max-w-lg">
-            Refer businesses to AI Receptionist and earn 20% of every invoice they pay — forever. No cap, no expiry.
+            Refer businesses to Telfin and earn 20% of every invoice they pay — forever. No cap, no expiry.
           </p>
           <div className="flex flex-wrap gap-4 text-sm text-cream-600">
             {['Free to join', 'Instant ref link', 'Monthly payouts', 'No minimums'].map((t) => (
@@ -245,7 +245,7 @@ export default function PartnersPage() {
       {/* ── Footer ──────────────────────────────────────────────── */}
       <footer className="border-t border-cream-200 py-8">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-cream-400">
-          <span>© 2026 AI Receptionist</span>
+          <span>© 2026 Telfin</span>
           <div className="flex items-center gap-6">
             <Link href="/" className="hover:text-cream-900 transition-colors">Home</Link>
             <Link href="/pricing" className="hover:text-cream-900 transition-colors">Pricing</Link>

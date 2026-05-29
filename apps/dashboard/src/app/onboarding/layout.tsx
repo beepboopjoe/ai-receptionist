@@ -6,7 +6,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-600 mb-4">
             <span className="text-3xl">🦷</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Set Up Your AI Receptionist</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Set Up Your Telfin</h1>
           <p className="text-gray-500 mt-1">Complete these 5 steps to go live</p>
         </div>
         {children}

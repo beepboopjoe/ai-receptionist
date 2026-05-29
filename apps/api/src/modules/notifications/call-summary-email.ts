@@ -80,7 +80,7 @@ export async function sendCallSummaryEmail(callId: string): Promise<void> {
     const html = `
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
   <h2 style="font-family: Georgia, serif; color: #1a1a1a; margin: 0 0 4px 0;">${row.tenantName}</h2>
-  <p style="color: #666; font-size: 13px; margin: 0 0 24px 0;">AI Receptionist · ${startedAt}</p>
+  <p style="color: #666; font-size: 13px; margin: 0 0 24px 0;">Telfin · ${startedAt}</p>
 
   <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #1a1a1a;">
     <tr>

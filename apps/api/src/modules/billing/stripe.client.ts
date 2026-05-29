@@ -26,7 +26,7 @@ export function getStripe(): Stripe | null {
     apiVersion: '2025-08-27.basil',
     typescript: true,
     appInfo: {
-      name: 'AI Receptionist',
+      name: 'Telfin',
       version: '1.0.0',
     },
   });

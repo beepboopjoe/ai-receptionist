@@ -70,7 +70,7 @@ export function MarketingHeader() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-serif text-lg shadow-sm">
-              ar
+              TF
             </div>
             <span className="font-serif text-lg text-cream-900">{BRAND_NAME}</span>
           </Link>

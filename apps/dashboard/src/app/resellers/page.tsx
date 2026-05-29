@@ -123,7 +123,7 @@ const FAQS = [
   },
   {
     q: "What does White-Label include?",
-    a: "White-Label removes all AI Receptionist branding and replaces it with yours — your logo, your product name, your domain (e.g. app.youragency.com), custom color palette, and custom email templates. Your clients never see our name. We operate entirely in the background.",
+    a: "White-Label removes all Telfin branding and replaces it with yours — your logo, your product name, your domain (e.g. app.youragency.com), custom color palette, and custom email templates. Your clients never see our name. We operate entirely in the background.",
   },
   {
     q: "Can I set my own pricing?",
@@ -262,7 +262,7 @@ export default function ResellersPage() {
             <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-serif text-lg shadow-sm">
               ar
             </div>
-            <span className="font-semibold text-cream-900 text-sm hidden sm:inline">AI Receptionist</span>
+            <span className="font-semibold text-cream-900 text-sm hidden sm:inline">Telfin</span>
           </Link>
           <nav className="hidden md:flex items-center gap-7">
             <Link href="/inbound" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Inbound</Link>
@@ -285,7 +285,7 @@ export default function ResellersPage() {
           <Building2 size={12} /> Reseller & White-Label Program
         </div>
         <h1 className="font-serif text-5xl lg:text-6xl font-bold text-cream-900 leading-tight mb-5">
-          Sell AI Receptionist<br />
+          Sell Telfin<br />
           <span className="text-brand-600">as your own product</span>
         </h1>
         <p className="text-xl text-cream-600 max-w-2xl mx-auto mb-10">
@@ -402,7 +402,7 @@ export default function ResellersPage() {
             Your brand. Your product. Our engine.
           </h2>
           <p className="text-cream-600 max-w-2xl mx-auto">
-            White-Label partners deploy AI Receptionist as their own SaaS product. Your clients
+            White-Label partners deploy Telfin as their own SaaS product. Your clients
             log into your domain, see your logo, and hear your AI voice name — we run entirely
             in the background.
           </p>
@@ -489,7 +489,7 @@ export default function ResellersPage() {
       {/* ── Final CTA ───────────────────────────────────────────── */}
       <section className="max-w-2xl mx-auto text-center px-6 py-20">
         <h2 className="font-serif text-3xl font-bold text-cream-900 mb-4">
-          Ready to make AI Receptionist your revenue stream?
+          Ready to make Telfin your revenue stream?
         </h2>
         <p className="text-cream-600 mb-8">
           Start with Affiliate — free, no commitments. Or jump straight to Reseller or White-Label
@@ -514,7 +514,7 @@ export default function ResellersPage() {
       {/* ── Footer ──────────────────────────────────────────────── */}
       <footer className="border-t border-cream-200 py-8">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-cream-400">
-          <span>© 2026 AI Receptionist</span>
+          <span>© 2026 Telfin</span>
           <div className="flex items-center gap-6">
             <Link href="/" className="hover:text-cream-900 transition-colors">Home</Link>
             <Link href="/pricing" className="hover:text-cream-900 transition-colors">Pricing</Link>

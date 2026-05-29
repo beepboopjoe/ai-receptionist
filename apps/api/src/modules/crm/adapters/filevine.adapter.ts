@@ -108,7 +108,7 @@ export async function appendFilevineCallNote(
 ): Promise<void> {
   const projectId = note.fromNumber ? await findProjectByPhone(creds, note.fromNumber) : null;
   const body = [
-    `AI Receptionist call — ${note.outcome}`,
+    `Telfin call — ${note.outcome}`,
     note.summary && `\n\nSummary:\n${note.summary}`,
     note.transcript && `\n\nTranscript:\n${note.transcript}`,
   ].filter(Boolean).join('');
@@ -140,7 +140,7 @@ export async function appendFilevineAppointment(
     {
       ...(projectId && { projectId: { native: projectId } }),
       subject: `${appt.appointmentType} — booked by AI`,
-      description: appt.notes ?? `${appt.appointmentType} booked by AI Receptionist.`,
+      description: appt.notes ?? `${appt.appointmentType} booked by Telfin.`,
       startTime: appt.startsAt,
       endTime: appt.endsAt,
     },

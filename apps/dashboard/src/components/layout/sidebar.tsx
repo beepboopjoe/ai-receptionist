@@ -181,7 +181,7 @@ export function Sidebar() {
         </button>
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center text-white font-serif text-sm">
-            ar
+            TF
           </div>
           <span className="font-serif text-base text-cream-900">{BRAND_NAME}</span>
         </div>
@@ -218,7 +218,7 @@ export function Sidebar() {
         <div className="px-6 py-5 border-b border-cream-200">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-serif text-lg">
-              ar
+              TF
             </div>
             <span className="font-serif text-lg text-cream-900">{BRAND_NAME}</span>
           </div>

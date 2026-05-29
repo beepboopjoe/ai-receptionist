@@ -2,7 +2,7 @@ import { BRAND_NAME } from '@/lib/brand';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Privacy Policy — AI Receptionist',
+  title: 'Privacy Policy — Telfin',
 };
 
 export default function PrivacyPage() {
@@ -10,7 +10,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-cream-50">
       <nav className="border-b border-cream-200 px-6 py-4 flex items-center justify-between bg-white">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center text-white font-serif text-sm">ar</div>
+          <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center text-white font-serif text-sm">TF</div>
           <span className="font-serif text-cream-900 font-semibold">{BRAND_NAME}</span>
         </Link>
         <Link href="/" className="text-sm text-cream-600 hover:text-cream-900 transition-colors">← Back to home</Link>
@@ -31,7 +31,7 @@ export default function PrivacyPage() {
           </div>
 
           <p className="leading-relaxed">
-            AI Receptionist (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is committed to protecting the privacy and security of your
+            Telfin (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is committed to protecting the privacy and security of your
             personal information and the protected health information of patients your practice serves.
           </p>
 

@@ -70,7 +70,7 @@ const envSchema = z.object({
   // Resend (transactional email)
   RESEND_API_KEY: z.string().default(''),
   RESEND_FROM_EMAIL: z.string().default('noreply@example.com'),
-  RESEND_FROM_NAME: z.string().default('AI Receptionist'),
+  RESEND_FROM_NAME: z.string().default('Telfin'),
 
   // Stripe billing — optional. Webhook + checkout endpoints respond
   // 503 with setup instructions when STRIPE_SECRET_KEY is unset.

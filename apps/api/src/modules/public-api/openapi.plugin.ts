@@ -20,13 +20,13 @@ export async function openapiPlugin(app: FastifyInstance): Promise<void> {
     openapi: {
       openapi: '3.0.3',
       info: {
-        title: 'AI Receptionist — Public API',
+        title: 'Telfin — Public API',
         description:
-          'Read-only and mutation endpoints for integrating with your AI Receptionist tenant. ' +
+          'Read-only and mutation endpoints for integrating with your Telfin tenant. ' +
           'All requests require an API key (mint one in Settings → API Keys). Send the key as ' +
           '`Authorization: Bearer ark_live_…` or `X-API-Key: ark_live_…`.',
         version: '1.0.0',
-        contact: { name: 'AI Receptionist Support', email: 'hello@aireceptionist.ai' },
+        contact: { name: 'Telfin Support', email: 'hello@aireceptionist.ai' },
       },
       servers: [{ url: '/', description: 'Same-origin (relative path)' }],
       components: {

@@ -32,7 +32,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-600 mb-4 text-white font-serif text-2xl">
-            ar
+            TF
           </div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">{BRAND_NAME}</h1>
           <p className="text-cream-600 mt-1">Sign in to your dashboard</p>

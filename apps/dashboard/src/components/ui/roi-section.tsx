@@ -148,7 +148,7 @@ function RoiCalculator() {
 
             {/* Plan selector */}
             <div>
-              <label className="text-sm font-medium text-cream-700 block mb-3">AI Receptionist plan</label>
+              <label className="text-sm font-medium text-cream-700 block mb-3">Telfin plan</label>
               <div className="grid grid-cols-3 gap-2">
                 {PLAN_OPTIONS.map(p => (
                   <button
@@ -179,7 +179,7 @@ function RoiCalculator() {
             </div>
 
             <div className="rounded-2xl border border-brand-100 bg-brand-50 p-5">
-              <p className="text-xs font-semibold text-brand-700 uppercase tracking-widest mb-1">AI Receptionist monthly cost</p>
+              <p className="text-xs font-semibold text-brand-700 uppercase tracking-widest mb-1">Telfin monthly cost</p>
               <p className="font-serif text-3xl text-brand-700">{fmt(plan.price)}</p>
               <p className="text-xs text-brand-700/80 mt-1">
                 {plan.label} plan · 24/7 · unlimited after-hours
@@ -263,7 +263,7 @@ export function RoiSection() {
             </ul>
           </div>
 
-          {/* AI Receptionist */}
+          {/* Telfin */}
           <div className="rounded-3xl bg-white border border-brand-200 overflow-hidden relative shadow-sm">
             {/* Top brand line */}
             <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-brand-400/70 to-transparent" />
@@ -275,7 +275,7 @@ export function RoiSection() {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-brand-600 uppercase tracking-widest">AI-powered</p>
-                  <h3 className="text-base font-semibold text-cream-900">AI Receptionist</h3>
+                  <h3 className="text-base font-semibold text-cream-900">Telfin</h3>
                 </div>
               </div>
 

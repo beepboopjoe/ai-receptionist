@@ -28,7 +28,7 @@ const DashboardTeaser = dynamic(
 );
 
 export const metadata = {
-  title: 'AI Receptionist — answer every call, 24/7',
+  title: 'Telfin — answer every call, 24/7',
   description:
     'Your AI receptionist answers every inbound call, books appointments, and qualifies leads — in English and Spanish, around the clock.',
 };

@@ -48,7 +48,7 @@ export default function PartnerLoginPage() {
             <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white font-serif text-base">
               ar
             </div>
-            <span className="text-sm font-semibold text-cream-900">AI Receptionist</span>
+            <span className="text-sm font-semibold text-cream-900">Telfin</span>
           </Link>
           <Link href="/partners" className="text-xs text-cream-500 hover:text-cream-800 transition-colors">
             Partner program →
