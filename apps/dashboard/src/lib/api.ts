@@ -987,6 +987,43 @@ export const platformApi = {
       { method: 'POST' }
     ),
 
+  /** Suspend a tenant — soft, reversible. Blocks login + cancels Stripe at period end. */
+  suspendTenant: (tenantId: string, reason?: string) =>
+    apiFetch<{
+      ok: true;
+      tenantId: string;
+      suspended: true;
+      stripeCanceledAtPeriodEnd: boolean;
+      stripeError: string | null;
+    }>(`/platform/tenants/${tenantId}/suspend`, {
+      method: 'POST',
+      body: JSON.stringify({ reason: reason ?? null }),
+    }),
+
+  /** Reactivate a previously suspended tenant. Does not auto-resubscribe Stripe. */
+  reactivateTenant: (tenantId: string) =>
+    apiFetch<{ ok: true; tenantId: string; suspended: false }>(
+      `/platform/tenants/${tenantId}/reactivate`,
+      { method: 'POST' }
+    ),
+
+  /**
+   * Hard delete — cascades all tenant data, cancels Stripe immediately.
+   * Requires `confirmName` to match `tenants.name` exactly (typed guard).
+   */
+  deleteTenant: (tenantId: string, confirmName: string) =>
+    apiFetch<{
+      ok: true;
+      tenantId: string;
+      deleted: true;
+      stripeCanceled: boolean;
+      stripeError: string | null;
+      snapshot: Record<string, unknown>;
+    }>(`/platform/tenants/${tenantId}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ confirmName }),
+    }),
+
   /** List every support ticket across all tenants (platform-admin only). */
   listTickets: (filter?: { status?: SupportStatus; category?: SupportCategory }) => {
     const params = new URLSearchParams();

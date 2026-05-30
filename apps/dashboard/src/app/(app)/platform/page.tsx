@@ -31,6 +31,11 @@ import {
   Mail,
   Clock,
   RotateCcw,
+  Ban,
+  PlayCircle,
+  Trash2,
+  AlertTriangle,
+  MoreVertical,
 } from 'lucide-react';
 import { platformApi, type PlatformTenant, type AdminSupportTicket, type SupportCategory, type SupportStatus } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
@@ -42,6 +47,7 @@ export default function PlatformAdminPage() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'created_desc' | 'minutes_desc' | 'name_asc'>('created_desc');
   const [grantModalTenant, setGrantModalTenant] = useState<PlatformTenant | null>(null);
+  const [deleteModalTenant, setDeleteModalTenant] = useState<PlatformTenant | null>(null);
 
   const { data: whoamiData, isLoading: whoamiLoading } = useSWR('platform-whoami', () =>
     platformApi.whoami()
@@ -183,6 +189,32 @@ export default function PlatformAdminPage() {
                         toast.error(err instanceof Error ? err.message : 'Revoke failed');
                       }
                     }}
+                    onSuspend={async () => {
+                      if (!window.confirm(
+                        `Suspend "${t.name}"?\n\nThis blocks dashboard login and incoming calls. Their Stripe subscription will be canceled at period end. You can reactivate later.`
+                      )) return;
+                      try {
+                        const res = await platformApi.suspendTenant(t.id);
+                        if (res.stripeError) {
+                          toast.info(`Suspended ${t.name} · Stripe cancel failed: ${res.stripeError}`);
+                        } else {
+                          toast.success(`Suspended ${t.name}${res.stripeCanceledAtPeriodEnd ? ' · Stripe canceled at period end' : ''}`);
+                        }
+                        await refetchTenants();
+                      } catch (err) {
+                        toast.error(err instanceof Error ? err.message : 'Suspend failed');
+                      }
+                    }}
+                    onReactivate={async () => {
+                      try {
+                        await platformApi.reactivateTenant(t.id);
+                        toast.success(`Reactivated ${t.name}`);
+                        await refetchTenants();
+                      } catch (err) {
+                        toast.error(err instanceof Error ? err.message : 'Reactivate failed');
+                      }
+                    }}
+                    onDelete={() => setDeleteModalTenant(t)}
                   />
                 ))}
               </tbody>
@@ -201,6 +233,18 @@ export default function PlatformAdminPage() {
           onClose={() => setGrantModalTenant(null)}
           onGranted={async () => {
             setGrantModalTenant(null);
+            await refetchTenants();
+          }}
+        />
+      )}
+
+      {/* Delete Tenant modal — typed-name confirmation guard */}
+      {deleteModalTenant && (
+        <DeleteTenantModal
+          tenant={deleteModalTenant}
+          onClose={() => setDeleteModalTenant(null)}
+          onDeleted={async () => {
+            setDeleteModalTenant(null);
             await refetchTenants();
           }}
         />
@@ -238,17 +282,25 @@ function TenantRow({
   tenant,
   onGrant,
   onRevoke,
+  onSuspend,
+  onReactivate,
+  onDelete,
 }: {
   tenant: PlatformTenant;
   onGrant: () => void;
   onRevoke: () => void;
+  onSuspend: () => void;
+  onReactivate: () => void;
+  onDelete: () => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const created = new Date(tenant.createdAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
 
+  const isSuspended = tenant.subscriptionStatus === 'suspended';
   const minutesPct = tenant.minutesIncluded > 0
     ? Math.min(100, Math.round((tenant.minutesUsed / tenant.minutesIncluded) * 100))
     : 0;
@@ -287,7 +339,11 @@ function TenantRow({
         </div>
       </td>
       <td className="px-3 py-3">
-        {tenant.capReached ? (
+        {isSuspended ? (
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">
+            <Ban size={10} /> Suspended
+          </span>
+        ) : tenant.capReached ? (
           <span className="inline-flex text-xs font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
             Cap reached
           </span>
@@ -310,21 +366,81 @@ function TenantRow({
         )}
       </td>
       <td className="px-6 py-3 text-right">
-        {tenant.promoTrial ? (
-          <button
-            onClick={onRevoke}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-700 hover:bg-red-50 transition-colors"
-          >
-            Revoke
-          </button>
-        ) : (
-          <button
-            onClick={onGrant}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors"
-          >
-            <Sparkles size={11} /> Grant trial
-          </button>
-        )}
+        <div className="inline-flex items-center gap-1">
+          {tenant.promoTrial ? (
+            <button
+              onClick={onRevoke}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-700 hover:bg-red-50 transition-colors"
+            >
+              Revoke
+            </button>
+          ) : (
+            <button
+              onClick={onGrant}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors"
+            >
+              <Sparkles size={11} /> Grant trial
+            </button>
+          )}
+
+          {/* Account-lifecycle menu — suspend / reactivate / delete */}
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              onBlur={() => setTimeout(() => setMenuOpen(false), 150)}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              aria-label="Account actions"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+            >
+              <MoreVertical size={14} />
+            </button>
+            {menuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 mt-1 w-52 rounded-lg border border-gray-200 bg-white shadow-lg z-20 overflow-hidden"
+              >
+                {isSuspended ? (
+                  <button
+                    role="menuitem"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setMenuOpen(false);
+                      onReactivate();
+                    }}
+                    className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 text-left"
+                  >
+                    <PlayCircle size={13} /> Reactivate account
+                  </button>
+                ) : (
+                  <button
+                    role="menuitem"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setMenuOpen(false);
+                      onSuspend();
+                    }}
+                    className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 text-left"
+                  >
+                    <Ban size={13} /> Suspend account
+                  </button>
+                )}
+                <div className="border-t border-gray-100" />
+                <button
+                  role="menuitem"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setMenuOpen(false);
+                    onDelete();
+                  }}
+                  className="w-full inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 text-left"
+                >
+                  <Trash2 size={13} /> Delete account…
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </td>
     </tr>
   );
@@ -464,6 +580,136 @@ function GrantTrialModal({
             ) : (
               <>
                 <CheckCircle size={13} /> Grant trial
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Delete Tenant modal — typed-name confirmation guard ──────────
+// Hard delete cascades all tenant data via FK constraints and cancels
+// the Stripe subscription immediately. The typed-name guard mirrors
+// GitHub/Stripe's "type X to confirm" deletion UX.
+function DeleteTenantModal({
+  tenant,
+  onClose,
+  onDeleted,
+}: {
+  tenant: PlatformTenant;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const toast = useToast();
+  const [confirmName, setConfirmName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const matches = confirmName.trim() === tenant.name;
+
+  async function handleDelete() {
+    if (!matches) return;
+    setBusy(true);
+    try {
+      const res = await platformApi.deleteTenant(tenant.id, confirmName.trim());
+      if (res.stripeError) {
+        toast.info(`Deleted ${tenant.name} · Stripe cancel failed: ${res.stripeError}. Cancel manually in Stripe Dashboard.`);
+      } else {
+        toast.success(`Deleted ${tenant.name}${res.stripeCanceled ? ' · Stripe subscription canceled' : ''}`);
+      }
+      onDeleted();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-xl max-w-md w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+              <AlertTriangle size={15} className="text-red-700" />
+            </div>
+            <h3 className="font-semibold text-gray-900">Delete tenant</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-900 space-y-2">
+            <p className="font-semibold">This cannot be undone.</p>
+            <p>
+              All calls, contacts, appointments, campaigns, knowledge-base
+              documents, phone numbers, and API keys for{' '}
+              <span className="font-semibold">{tenant.name}</span> will be
+              permanently deleted. The Stripe subscription will be canceled
+              immediately (no refund).
+            </p>
+          </div>
+
+          <div className="bg-gray-50 border border-gray-100 rounded-lg px-4 py-3 text-sm">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1 font-semibold">Tenant</p>
+            <p className="font-medium text-gray-900">{tenant.name}</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {tenant.ownerEmail ?? `slug: ${tenant.slug}`} · plan: {tenant.plan}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">
+              Type the tenant name to confirm
+            </label>
+            <input
+              type="text"
+              value={confirmName}
+              onChange={(e) => setConfirmName(e.target.value)}
+              placeholder={tenant.name}
+              autoFocus
+              className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none ${
+                matches
+                  ? 'border-red-500 bg-red-50/50'
+                  : 'border-gray-200 focus:border-red-500'
+              }`}
+            />
+            <p className="text-xs text-gray-500 mt-1.5">
+              Must match exactly: <code className="font-mono text-gray-700">{tenant.name}</code>
+            </p>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={busy || !matches}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {busy ? (
+              <>
+                <Loader2 size={13} className="animate-spin" /> Deleting…
+              </>
+            ) : (
+              <>
+                <Trash2 size={13} /> Permanently delete
               </>
             )}
           </button>

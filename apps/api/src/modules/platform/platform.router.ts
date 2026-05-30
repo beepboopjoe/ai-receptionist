@@ -15,7 +15,9 @@ import { db } from '../../db/client.js';
 import { tenants, calls, adminUsers } from '../../db/schema.js';
 import { and, eq, gte, sql, desc, ilike, or, inArray } from 'drizzle-orm';
 import { config } from '../../config.js';
-import { AuthError } from '../../lib/errors.js';
+import { AuthError, NotFoundError, ValidationError } from '../../lib/errors.js';
+import { auditLog } from '../../audit/audit-logger.js';
+import { getStripe } from '../billing/stripe.client.js';
 
 /** Gate: caller's JWT email must appear in ADMIN_EMAILS. */
 async function requirePlatformAdmin(
@@ -226,6 +228,244 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
       }
 
       return { data: enriched, total: filtered.length };
+    }
+  );
+
+  // ────────────────────────────────────────────────────────────────────
+  // SUSPEND a tenant — soft action. Blocks dashboard login + incoming
+  // calls without destroying any data. Cancels Stripe subscription at
+  // period end (so the customer isn't billed again). Reversible via
+  // /platform/tenants/:id/reactivate. Refuses to suspend a tenant the
+  // caller's own account belongs to — admins must use a different
+  // tool to delete their own org.
+  // ────────────────────────────────────────────────────────────────────
+  app.post(
+    '/platform/tenants/:id/suspend',
+    { onRequest: [requirePlatformAdmin] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const body = (request.body ?? {}) as { reason?: string };
+
+      const [target] = await db
+        .select({
+          id: tenants.id,
+          name: tenants.name,
+          isActive: tenants.isActive,
+          stripeSubscriptionId: tenants.stripeSubscriptionId,
+        })
+        .from(tenants)
+        .where(eq(tenants.id, id))
+        .limit(1);
+      if (!target) throw new NotFoundError('Tenant not found');
+
+      const callerTenantId = (request.user as { tenantId?: string }).tenantId;
+      if (callerTenantId === id) {
+        throw new ValidationError('You cannot suspend your own tenant from this panel.');
+      }
+
+      // Cancel the Stripe subscription at period end — keeps service
+      // running through the paid period, no immediate refund.
+      let stripeCanceled = false;
+      let stripeError: string | null = null;
+      if (target.stripeSubscriptionId) {
+        try {
+          const stripe = getStripe();
+          if (stripe) {
+            await stripe.subscriptions.update(target.stripeSubscriptionId, {
+              cancel_at_period_end: true,
+            });
+            stripeCanceled = true;
+          }
+        } catch (err) {
+          stripeError = err instanceof Error ? err.message : 'Stripe call failed';
+          console.error(`[platform] Suspend ${id}: stripe cancel failed:`, err);
+        }
+      }
+
+      await db
+        .update(tenants)
+        .set({
+          isActive: false,
+          subscriptionStatus: 'suspended',
+          updatedAt: new Date(),
+        })
+        .where(eq(tenants.id, id));
+
+      auditLog({
+        tenantId: id,
+        actorType: 'admin_user',
+        actorId: (request.user as { sub: string }).sub,
+        action: 'tenant.suspended',
+        entityType: 'tenant',
+        entityId: id,
+        metadata: {
+          targetName: target.name,
+          suspendedBy: (request.user as { email: string }).email,
+          reason: body.reason ?? null,
+          stripeCanceled,
+          stripeError,
+        },
+      });
+
+      return reply.send({
+        ok: true,
+        tenantId: id,
+        suspended: true,
+        stripeCanceledAtPeriodEnd: stripeCanceled,
+        stripeError,
+      });
+    }
+  );
+
+  // ────────────────────────────────────────────────────────────────────
+  // REACTIVATE a previously suspended tenant. Flips is_active back on
+  // and clears the suspended status. Does NOT auto-resubscribe Stripe —
+  // the customer must complete checkout again if their sub was canceled.
+  // ────────────────────────────────────────────────────────────────────
+  app.post(
+    '/platform/tenants/:id/reactivate',
+    { onRequest: [requirePlatformAdmin] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+
+      const [target] = await db
+        .select({ id: tenants.id, name: tenants.name })
+        .from(tenants)
+        .where(eq(tenants.id, id))
+        .limit(1);
+      if (!target) throw new NotFoundError('Tenant not found');
+
+      await db
+        .update(tenants)
+        .set({
+          isActive: true,
+          // Clear our own "suspended" marker. We deliberately don't
+          // touch Stripe — if cancel_at_period_end was set, the admin
+          // can ask the user to re-checkout, or undo via Stripe Dashboard.
+          subscriptionStatus: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(tenants.id, id));
+
+      auditLog({
+        tenantId: id,
+        actorType: 'admin_user',
+        actorId: (request.user as { sub: string }).sub,
+        action: 'tenant.reactivated',
+        entityType: 'tenant',
+        entityId: id,
+        metadata: {
+          targetName: target.name,
+          reactivatedBy: (request.user as { email: string }).email,
+        },
+      });
+
+      return reply.send({ ok: true, tenantId: id, suspended: false });
+    }
+  );
+
+  // ────────────────────────────────────────────────────────────────────
+  // DELETE a tenant — hard, irreversible. Cascades via FK constraints
+  // (every tenant-scoped table has ON DELETE CASCADE on tenant_id).
+  // Requires the caller to type the tenant name exactly as a typed
+  // confirmation guard. Cancels the Stripe subscription IMMEDIATELY
+  // (not period-end) since the account is going away. Stripe failures
+  // are logged but don't block the delete — better to have an orphan
+  // Stripe sub than a stuck delete request.
+  //
+  // Audit log is written BEFORE the delete; the audit row goes away
+  // with the tenant (cascade) but is captured in the response payload
+  // and console output for forensic recovery.
+  // ────────────────────────────────────────────────────────────────────
+  app.delete(
+    '/platform/tenants/:id',
+    { onRequest: [requirePlatformAdmin] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const body = (request.body ?? {}) as { confirmName?: string };
+
+      const [target] = await db
+        .select({
+          id: tenants.id,
+          name: tenants.name,
+          slug: tenants.slug,
+          plan: tenants.plan,
+          stripeSubscriptionId: tenants.stripeSubscriptionId,
+          stripeCustomerId: tenants.stripeCustomerId,
+        })
+        .from(tenants)
+        .where(eq(tenants.id, id))
+        .limit(1);
+      if (!target) throw new NotFoundError('Tenant not found');
+
+      const callerTenantId = (request.user as { tenantId?: string }).tenantId;
+      if (callerTenantId === id) {
+        throw new ValidationError('You cannot delete your own tenant from this panel.');
+      }
+
+      if (!body.confirmName || body.confirmName.trim() !== target.name) {
+        throw new ValidationError(
+          `Typed confirmation does not match tenant name. Type "${target.name}" exactly to confirm deletion.`
+        );
+      }
+
+      // Cancel the Stripe subscription NOW (not at period end). Failures
+      // are logged and surfaced in the response, but don't abort the delete.
+      let stripeCanceled = false;
+      let stripeError: string | null = null;
+      if (target.stripeSubscriptionId) {
+        try {
+          const stripe = getStripe();
+          if (stripe) {
+            await stripe.subscriptions.cancel(target.stripeSubscriptionId);
+            stripeCanceled = true;
+          }
+        } catch (err) {
+          stripeError = err instanceof Error ? err.message : 'Stripe call failed';
+          console.error(`[platform] Delete ${id}: stripe cancel failed:`, err);
+        }
+      }
+
+      // Forensic snapshot for the audit log — the tenant row + its
+      // children all disappear in the next statement, so emit before.
+      const snapshot = {
+        targetId: target.id,
+        targetName: target.name,
+        targetSlug: target.slug,
+        targetPlan: target.plan,
+        stripeSubscriptionId: target.stripeSubscriptionId,
+        stripeCustomerId: target.stripeCustomerId,
+        deletedBy: (request.user as { email: string }).email,
+        stripeCanceled,
+        stripeError,
+        at: new Date().toISOString(),
+      };
+      console.warn(`[platform] DELETE tenant ${id}`, snapshot);
+
+      // The audit_log row is itself FK'd to tenants — it will be cascaded
+      // away. We still call auditLog() to flush to whatever sinks the
+      // logger has wired up (file, observability) before the delete fires.
+      auditLog({
+        tenantId: id,
+        actorType: 'admin_user',
+        actorId: (request.user as { sub: string }).sub,
+        action: 'tenant.deleted',
+        entityType: 'tenant',
+        entityId: id,
+        metadata: snapshot,
+      });
+
+      // CASCADE delete — every tenant-scoped table has ON DELETE CASCADE.
+      await db.delete(tenants).where(eq(tenants.id, id));
+
+      return reply.send({
+        ok: true,
+        tenantId: id,
+        deleted: true,
+        stripeCanceled,
+        stripeError,
+        snapshot,
+      });
     }
   );
 }
