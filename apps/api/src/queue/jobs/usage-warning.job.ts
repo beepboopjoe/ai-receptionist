@@ -9,7 +9,7 @@
 import { db } from '../../db/client.js';
 import { tenants, adminUsers, minuteUsage } from '../../db/schema.js';
 import { and, eq, isNull, sql } from 'drizzle-orm';
-import { getPlan } from '@ai-receptionist/shared';
+import { getPlan, resolvePlanLimits } from '@ai-receptionist/shared';
 import { sendEmail } from '../../modules/notifications/adapters/email.adapter.js';
 import { config } from '../../config.js';
 
@@ -26,6 +26,7 @@ export async function runUsageWarningSweep(): Promise<{ checked: number; sent: n
       minutesUsed: minuteUsage.minutesUsed,
       plan: tenants.plan,
       tenantName: tenants.name,
+      legacyPricing: tenants.legacyPricing,
     })
     .from(minuteUsage)
     .innerJoin(tenants, eq(minuteUsage.tenantId, tenants.id))
@@ -34,9 +35,11 @@ export async function runUsageWarningSweep(): Promise<{ checked: number; sent: n
   let sent = 0;
   for (const row of rows) {
     const plan = getPlan(row.plan);
-    if (!plan || plan.monthlyMinutes < 0) continue; // unlimited / unknown — skip
+    if (!plan) continue;
+    const { minutes: includedMinutes, overagePerMin } = resolvePlanLimits(plan, { legacyPricing: row.legacyPricing });
+    if (includedMinutes < 0) continue; // unlimited / unknown — skip
     const used = Number(row.minutesUsed);
-    if (used / plan.monthlyMinutes < WARNING_THRESHOLD) continue;
+    if (used / includedMinutes < WARNING_THRESHOLD) continue;
 
     // Look up the tenant owner's email.
     const [owner] = await db
@@ -51,12 +54,12 @@ export async function runUsageWarningSweep(): Promise<{ checked: number; sent: n
       continue;
     }
 
-    const pct = Math.round((used / plan.monthlyMinutes) * 100);
-    const remaining = Math.max(0, plan.monthlyMinutes - used);
+    const pct = Math.round((used / includedMinutes) * 100);
+    const remaining = Math.max(0, includedMinutes - used);
     const greeting = owner.firstName ? `Hi ${owner.firstName},` : 'Hi,';
     const html = `<p>${greeting}</p>
-<p>Heads up — <strong>${row.tenantName}</strong> has used <strong>${Math.round(used)} of your plan's ${plan.monthlyMinutes} included AI minutes</strong> this billing period (about ${pct}%).</p>
-<p>You have roughly <strong>${Math.round(remaining)} minutes</strong> left before overage charges of $${plan.overagePerMin.toFixed(2)}/min kick in. Calls won't be cut off — they keep working — but the difference will appear on your next invoice.</p>
+<p>Heads up — <strong>${row.tenantName}</strong> has used <strong>${Math.round(used)} of your plan's ${includedMinutes} included AI minutes</strong> this billing period (about ${pct}%).</p>
+<p>You have roughly <strong>${Math.round(remaining)} minutes</strong> left before overage charges of $${overagePerMin.toFixed(2)}/min kick in. Calls won't be cut off — they keep working — but the difference will appear on your next invoice.</p>
 <p>If you're consistently hitting your cap, the next tier up usually pays for itself. <a href="${config.DASHBOARD_URL}/billing">Manage your plan →</a></p>
 <p>— The Telfin team</p>`;
     try {

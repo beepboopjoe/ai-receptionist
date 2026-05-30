@@ -36,6 +36,8 @@ interface BillingData {
   renewalDate: string;
   monthlyPrice: number;
   outboundEnabled: boolean;
+  /** Phase 20: true for subscribers grandfathered onto pre-2026-05-28 caps. */
+  legacyPricing?: boolean;
 }
 
 // ── Plan badge color map ────────────────────────────────────────────────────
@@ -263,7 +265,7 @@ export default function BillingPage() {
           {/* ── Current plan card ── */}
           <div className="card p-6 flex flex-col sm:flex-row sm:items-center gap-6">
             <div className="flex-1 space-y-2">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <span
                   className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold ${
                     BADGE_COLORS[planConfig.color]
@@ -272,6 +274,14 @@ export default function BillingPage() {
                   <Zap size={13} />
                   {planConfig.label}
                 </span>
+                {billing.legacyPricing && (
+                  <span
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+                    title="Grandfathered onto the original plan caps. Future pricing changes won't affect this subscription."
+                  >
+                    Grandfathered · {minutesIncluded} min/mo
+                  </span>
+                )}
               </div>
               <p className="text-3xl font-bold text-gray-900">
                 {planConfig.price === 0

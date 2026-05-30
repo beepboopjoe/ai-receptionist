@@ -62,6 +62,14 @@ export const tenants = pgTable('tenants', {
   currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
   trialEnd: timestamp('trial_end', { withTimezone: true }),
   billingCycle: text('billing_cycle'), // 'monthly' | 'annual'
+  // ---- Pricing grandfathering ----
+  // Phase 20 (2026-05-28) restructured plan caps + overage rates
+  // to position Telfin as a managed AI receptionist (SmithAI/Ruby tier)
+  // rather than a DIY platform (Synthflow/Vapi tier). Headline prices
+  // are unchanged, so existing Stripe Prices stay valid; the caps live
+  // in our app code. Tenants flipped to TRUE by migration 0031 keep
+  // their pre-restructure caps forever via resolvePlanLimits().
+  legacyPricing: boolean('legacy_pricing').notNull().default(false),
   // ---- Add-ons ----
   // voice_clone_addon: true when the tenant has an active Stripe subscription
   // for the Voice Clone add-on ($49/mo). Managed by the Stripe webhook.

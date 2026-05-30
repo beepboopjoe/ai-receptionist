@@ -13,9 +13,20 @@
 // INTERNAL MARGIN MODEL (never customer-facing):
 //   Cost/min: $0.07 | Cost/number: $1/mo
 //   margin = (price - (minutes*0.07 + numbers*1)) / price
-//   Starter: ($79  - $14.00)  / $79  ≈ 82.3%   (BYO — no number cost)
-//   Growth:  ($199 - $54.50)  / $199 ≈ 72.6%
-//   Scale:   ($399 - $110.00) / $399 ≈ 72.4%
+//
+//   Current pricing (Phase 20 restructure, 2026-05-28):
+//     Starter: ($79  - $7.00)  / $79  ≈ 91.1%   (100 min, BYO number)
+//     Growth:  ($199 - $23.00) / $199 ≈ 88.4%   (300 min, 2 numbers)
+//     Scale:   ($399 - $57.50) / $399 ≈ 85.6%   (750 min, 5 numbers)
+//
+//   Legacy pricing (grandfathered subs with tenants.legacy_pricing = true):
+//     Starter: ($79  - $14.00)  / $79  ≈ 82.3%   (200 min)
+//     Growth:  ($199 - $54.50)  / $199 ≈ 72.6%   (750 min)
+//     Scale:   ($399 - $110.00) / $399 ≈ 72.4%   (1500 min)
+//
+// Positioning: cap reduction + overage lift moves Telfin from the DIY
+// platform tier (Synthflow/Vapi $0.05-0.20/min) into the managed AI
+// receptionist tier (SmithAI/Ruby $0.50-$3/min effective).
 // ============================================================
 
 export type PlanKey = 'trial' | 'starter' | 'growth' | 'scale' | 'enterprise';
@@ -76,12 +87,12 @@ export const PLANS: readonly Plan[] = [
     description: 'Perfect for solo operators or single-location businesses ready to stop missing calls.',
     monthlyPrice: 79,
     annualMonthlyPrice: 67,
-    monthlyMinutes: 200,
-    overagePerMin: 0.29,
+    monthlyMinutes: 100,
+    overagePerMin: 0.39,
     includedPhoneNumbers: 0,
     outbound: true,
     features: [
-      '200 AI voice minutes / month',
+      '100 AI voice minutes / month',
       'Bring your own number — free porting (or add a line for $5/mo)',
       'English + Spanish AI receptionist',
       'Two-way SMS inbox',
@@ -99,13 +110,13 @@ export const PLANS: readonly Plan[] = [
     description: 'For growing practices running regular outbound campaigns and intake workflows.',
     monthlyPrice: 199,
     annualMonthlyPrice: 169,
-    monthlyMinutes: 750,
-    overagePerMin: 0.25,
+    monthlyMinutes: 300,
+    overagePerMin: 0.35,
     includedPhoneNumbers: 2,
     outbound: true,
     popular: true,
     features: [
-      '750 AI voice minutes / month',
+      '300 AI voice minutes / month',
       '2 local phone numbers included',
       'Everything in Starter',
       'Outbound calling campaigns',
@@ -124,12 +135,12 @@ export const PLANS: readonly Plan[] = [
     description: 'Multi-location or high-call-volume businesses with advanced intake and CRM needs.',
     monthlyPrice: 399,
     annualMonthlyPrice: 339,
-    monthlyMinutes: 1500,
-    overagePerMin: 0.19,
+    monthlyMinutes: 750,
+    overagePerMin: 0.29,
     includedPhoneNumbers: 5,
     outbound: true,
     features: [
-      '1,500 AI voice minutes / month',
+      '750 AI voice minutes / month',
       '5 local phone numbers included',
       'Everything in Growth',
       'Multi-location support',
@@ -201,6 +212,37 @@ export const MINUTE_PACKS = [
  */
 export function getPlan(key: string): Plan | undefined {
   return PLANS.find((p) => p.key === key);
+}
+
+/**
+ * Pre-Phase-20 cap + overage values. Used only when a tenant carries
+ * `legacy_pricing = true` (set on all paying tenants at the time the
+ * 2026-05-28 pricing restructure shipped). New signups never hit this.
+ *
+ * Trial + Enterprise are unchanged in the restructure, so no entries here.
+ */
+export const LEGACY_LIMITS: Record<'starter' | 'growth' | 'scale', { minutes: number; overagePerMin: number }> = {
+  starter: { minutes: 200,  overagePerMin: 0.29 },
+  growth:  { minutes: 750,  overagePerMin: 0.25 },
+  scale:   { minutes: 1500, overagePerMin: 0.19 },
+};
+
+/**
+ * Resolve a tenant's effective minute cap + overage rate. Honors the
+ * grandfathered `legacy_pricing` flag for subscribers who signed up
+ * before the Phase 20 pricing restructure (2026-05-28).
+ *
+ * Always use this instead of reading `plan.monthlyMinutes` or
+ * `plan.overagePerMin` directly when computing billing or enforcement.
+ */
+export function resolvePlanLimits(
+  plan: Plan,
+  tenant: { legacyPricing?: boolean | null }
+): { minutes: number; overagePerMin: number } {
+  if (tenant.legacyPricing && (plan.key === 'starter' || plan.key === 'growth' || plan.key === 'scale')) {
+    return LEGACY_LIMITS[plan.key];
+  }
+  return { minutes: plan.monthlyMinutes, overagePerMin: plan.overagePerMin };
 }
 
 /** Subscription status mirror of Stripe's `subscription.status` enum. */

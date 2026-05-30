@@ -14,7 +14,7 @@ import { db } from '../../db/client.js';
 import { tenants, minuteUsage, calls } from '../../db/schema.js';
 import { and, eq, gte, sql } from 'drizzle-orm';
 import { getStripe } from './stripe.client.js';
-import { getPlan } from '@ai-receptionist/shared';
+import { getPlan, resolvePlanLimits } from '@ai-receptionist/shared';
 
 /**
  * Compute the current billing period's [start, end] for a tenant.
@@ -74,6 +74,7 @@ export async function incrementMinuteUsage(
       stripeCustomerId: tenants.stripeCustomerId,
       currentPeriodEnd: tenants.currentPeriodEnd,
       createdAt: tenants.createdAt,
+      legacyPricing: tenants.legacyPricing,
     })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
@@ -82,7 +83,11 @@ export async function incrementMinuteUsage(
 
   const { start, end } = periodBoundsFor(tenant);
   const plan = getPlan(tenant.plan);
-  const includedMinutes = plan?.monthlyMinutes ?? 0;
+  // resolvePlanLimits honors the grandfathered Phase 20 caps for
+  // tenants flipped to legacyPricing=true by migration 0031.
+  const limits = plan ? resolvePlanLimits(plan, { legacyPricing: tenant.legacyPricing }) : null;
+  const includedMinutes = limits?.minutes ?? 0;
+  const effectiveOveragePerMin = limits?.overagePerMin ?? 0;
   // Enterprise = unlimited (-1) → never overages.
   const isUnlimited = includedMinutes < 0;
 
@@ -123,9 +128,9 @@ export async function incrementMinuteUsage(
   const currentChunks = Math.floor(overageNow / CHUNK);
   const newChunks = currentChunks - previousChunks;
 
-  if (newChunks > 0 && plan && plan.overagePerMin > 0 && tenant.stripeCustomerId) {
+  if (newChunks > 0 && effectiveOveragePerMin > 0 && tenant.stripeCustomerId) {
     const minutesInChunk = newChunks * CHUNK;
-    const cents = Math.round(minutesInChunk * plan.overagePerMin * 100);
+    const cents = Math.round(minutesInChunk * effectiveOveragePerMin * 100);
     try {
       const stripe = getStripe();
       if (stripe) {
@@ -133,7 +138,7 @@ export async function incrementMinuteUsage(
           customer: tenant.stripeCustomerId,
           amount: cents,
           currency: 'usd',
-          description: `Overage minutes (${minutesInChunk} min @ $${plan.overagePerMin.toFixed(2)}/min)`,
+          description: `Overage minutes (${minutesInChunk} min @ $${effectiveOveragePerMin.toFixed(2)}/min)`,
           metadata: {
             tenantId,
             periodStart: start.toISOString(),
@@ -229,6 +234,7 @@ export async function getCurrentUsage(tenantId: string): Promise<UsageSnapshot |
       createdAt: tenants.createdAt,
       minutesOverride: tenants.minutesOverride,
       promoTrial: tenants.promoTrial,
+      legacyPricing: tenants.legacyPricing,
     })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
@@ -237,8 +243,10 @@ export async function getCurrentUsage(tenantId: string): Promise<UsageSnapshot |
 
   const { start, end } = periodBoundsFor(tenant);
   const plan = getPlan(tenant.plan);
-  // Promo-trial override wins over the plan default.
-  const includedMinutes = tenant.minutesOverride ?? plan?.monthlyMinutes ?? 0;
+  // Promo-trial override wins over the plan default; otherwise honor
+  // grandfathered (legacy_pricing) caps for pre-Phase-20 subscribers.
+  const planLimits = plan ? resolvePlanLimits(plan, { legacyPricing: tenant.legacyPricing }) : null;
+  const includedMinutes = tenant.minutesOverride ?? planLimits?.minutes ?? 0;
 
   const [row] = await db
     .select()

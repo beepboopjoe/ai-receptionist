@@ -47,14 +47,9 @@ function hashResetToken(raw: string): string {
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
 
-// Plan tier config — must stay in sync with packages/shared/src/types/billing.types.ts
-const PLAN_TIERS: Record<string, { minutesIncluded: number; price: number; outbound: boolean; overagePerMin: number }> = {
-  trial:      { minutesIncluded: 10,    price: 0,    outbound: true,  overagePerMin: 0 },
-  starter:    { minutesIncluded: 200,   price: 79,   outbound: true,  overagePerMin: 0.29 },
-  growth:     { minutesIncluded: 750,   price: 199,  outbound: true,  overagePerMin: 0.25 },
-  scale:      { minutesIncluded: 1500,  price: 399,  outbound: true,  overagePerMin: 0.19 },
-  enterprise: { minutesIncluded: 99999, price: 0,    outbound: true,  overagePerMin: 0 },
-};
+// Plan validation — drives both /me/usage and the grant-promo-trial validator.
+// Source of truth is PLANS in @ai-receptionist/shared.
+const VALID_PLAN_KEYS = PLANS.map((p) => p.key);
 
 // Per-vertical default appointment types seeded at signup. The dashboard
 // UI lets owners customize these afterwards in Settings → Appointment Types.
@@ -108,7 +103,7 @@ export const DEFAULT_APPT_TYPES_BY_VERTICAL: Record<string, Array<{ id: string; 
 
 // Vertical list lives in @ai-receptionist/shared. Imported via settings.service re-export
 // so we have one source of truth.
-import { VERTICAL_VALUES as VALID_VERTICALS, isVertical } from '@ai-receptionist/shared';
+import { VERTICAL_VALUES as VALID_VERTICALS, isVertical, getPlan, resolvePlanLimits, PLANS } from '@ai-receptionist/shared';
 
 export async function adminPlugin(app: FastifyInstance) {
   // ================================================================
@@ -367,6 +362,7 @@ export async function adminPlugin(app: FastifyInstance) {
           createdAt: tenants.createdAt,
           minutesOverride: tenants.minutesOverride,
           promoTrial: tenants.promoTrial,
+          legacyPricing: tenants.legacyPricing,
         })
         .from(tenants)
         .where(eq(tenants.id, tenantId))
@@ -374,11 +370,13 @@ export async function adminPlugin(app: FastifyInstance) {
 
       if (!tenant) throw new NotFoundError('Tenant not found');
 
-      const plan = tenant.plan as keyof typeof PLAN_TIERS;
-      const tier = PLAN_TIERS[plan] ?? PLAN_TIERS['trial'];
+      const plan = tenant.plan;
+      const planObj = getPlan(plan) ?? getPlan('trial')!;
+      const planLimits = resolvePlanLimits(planObj, { legacyPricing: tenant.legacyPricing });
 
-      // Effective cap: promo-trial override wins over the plan default.
-      const minutesIncluded = tenant.minutesOverride ?? tier.minutesIncluded;
+      // Effective cap: promo-trial override wins over the plan default,
+      // otherwise honor grandfathered (legacy_pricing) caps via the helper.
+      const minutesIncluded = tenant.minutesOverride ?? planLimits.minutes;
 
       // Calculate this month's usage
       const now = new Date();
@@ -410,10 +408,13 @@ export async function adminPlugin(app: FastifyInstance) {
         callsThisMonth: Number(usageRow?.callCount) ?? 0,
         appointmentsThisMonth: Number(apptRow?.apptCount) ?? 0,
         renewalDate,
-        monthlyPrice: tier.price,
-        outboundEnabled: tier.outbound,
+        monthlyPrice: planObj.monthlyPrice,
+        outboundEnabled: planObj.outbound,
         promoTrial: tenant.promoTrial,
         capReached: tenant.promoTrial && minutesUsed >= minutesIncluded,
+        // Phase 20: tenants on pre-2026-05-28 caps. UI surfaces a small tag
+        // so subscribers understand why their cap differs from /pricing.
+        legacyPricing: tenant.legacyPricing,
       });
     }
   );
@@ -430,9 +431,9 @@ export async function adminPlugin(app: FastifyInstance) {
       const { id } = request.params as { id: string };
       const body = (request.body ?? {}) as { plan?: string; minutes?: number };
 
-      if (!body.plan || !PLAN_TIERS[body.plan]) {
+      if (!body.plan || !VALID_PLAN_KEYS.includes(body.plan as typeof VALID_PLAN_KEYS[number])) {
         throw new ValidationError(
-          `plan must be one of: ${Object.keys(PLAN_TIERS).join(', ')}`
+          `plan must be one of: ${VALID_PLAN_KEYS.join(', ')}`
         );
       }
       if (
