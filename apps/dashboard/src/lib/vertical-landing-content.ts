@@ -23,6 +23,9 @@ import {
   Wrench,
   AlertTriangle,
   Clock,
+  PhoneCall,
+  RefreshCw,
+  Star,
 } from 'lucide-react';
 import type { Vertical } from '@/lib/verticals';
 
@@ -93,7 +96,7 @@ const legal: VerticalLandingContent = {
     headline: "Your firm's first phone call",
     headlineGradientSuffix: 'shouldn’t go to voicemail.',
     subhead:
-      "AI receptionist for law firms — answers every call 24/7, runs initial intake, books consults, and posts every conversation to Clio, Filevine, MyCase, or Salesforce. Built for the way attorneys actually work.",
+      "AI receptionist + outbound dialer for law firms. Answers every inbound call 24/7, runs initial intake, books consults, and proactively calls clients back — consult reminders, court-date confirmations, stale-lead reactivation, referral asks. Every conversation posts to Clio, Filevine, MyCase, HubSpot, or Salesforce. English, Spanish, and 5 more languages.",
     accentChipClass: 'bg-indigo-100 text-indigo-700',
   },
   crmStrip: {
@@ -128,6 +131,21 @@ const legal: VerticalLandingContent = {
         title: 'Court-date sensitivity',
         body: 'When a caller says "I was served papers", "I have a court date", or mentions a restraining order, the AI flags it as time-sensitive and routes to your on-call attorney’s cell immediately.',
       },
+      {
+        icon: PhoneCall,
+        title: 'Consult-reminder campaigns',
+        body: 'Automatic outbound calls to scheduled consults 24 hours and 2 hours before — no-show rates typically cut in half. Cancellations reschedule on the same call instead of disappearing into voicemail.',
+      },
+      {
+        icon: RefreshCw,
+        title: 'Stale-lead reactivation',
+        body: 'AI calls every prospect who inquired but never booked, on a configurable cadence. Dormant pipeline that would otherwise rot in your CRM becomes signed retainers — usually 8-12× lift on cases that were already paid for in marketing.',
+      },
+      {
+        icon: Star,
+        title: 'Past-client referral asks',
+        body: 'Polite quarterly outbound to closed-matter clients asking for referrals. The ask your associates know they should make and never have the time to actually pick up the phone for.',
+      },
     ],
   },
   roi: {
@@ -140,6 +158,14 @@ const legal: VerticalLandingContent = {
       {
         value: '$2,400',
         body: 'average value of a closed PI case. The math on one missed call vs. one signed retainer is not subtle.',
+      },
+      {
+        value: '~50%',
+        body: 'typical no-show reduction when the AI runs consult-reminder calls at the 24-hour and 2-hour marks. Cancellations reschedule on the spot.',
+      },
+      {
+        value: '8-12×',
+        body: 'reactivation lift on stale leads that never returned the initial callback. The AI catches them; your intake team converts them.',
       },
       {
         value: '0',
@@ -179,6 +205,38 @@ const legal: VerticalLandingContent = {
       {
         q: 'What happens during a conflict check?',
         a: "When a caller mentions an opposing party name, the AI responds with \"Let me have one of our attorneys call you back to confirm we can help with this matter\" and escalates to your conflict-check process. No representation is offered, no engagement letter implied, no advice given.",
+      },
+      {
+        q: 'How is this different from Smith.ai or Ruby Receptionists?',
+        a: 'Smith.ai and Ruby are humans-in-the-loop services priced around $290–$600/month for 30–200 calls. We are 100% AI, dramatically higher call cap at the same price point, and — critically — we make outbound calls too. Smith.ai and Ruby are inbound-only; we run your consult reminders, stale-lead reactivation, court-date confirmations, and referral asks from the same platform that answers your inbound line.',
+      },
+      {
+        q: 'Is this UPL (unauthorized practice of law)?',
+        a: 'No. The AI is explicitly instructed in every system prompt to never give legal advice, never form an attorney-client relationship, and never predict case outcomes. It is intake software — legally analogous to a trained paralegal taking initial intake notes. The retainer agreement your firm executes with the client downstream is what establishes representation.',
+      },
+      {
+        q: 'What about state-bar advertising rules?',
+        a: 'The AI does not advertise on its own. It answers inbound calls placed to numbers your firm controls and makes outbound calls only to numbers you have imported with an existing relationship (current clients, web-form leads, signed retainers). Your firm remains the responsible advertiser under your jurisdiction\'s Rules of Professional Conduct.',
+      },
+      {
+        q: 'Recording laws — what about two-party consent states?',
+        a: 'Configurable per tenant. In California, Florida, Illinois, Massachusetts, Maryland, Montana, New Hampshire, Pennsylvania, and Washington the AI opens every call with an explicit recording-and-AI announcement. In one-party-consent states the standard intake disclosure still notifies the caller that an automated system is taking the call.',
+      },
+      {
+        q: 'Multi-state practice — can the AI route by jurisdiction?',
+        a: 'Yes. The AI asks for the state of the matter during intake and routes the call to the right licensed attorney based on the routing rules you configure in /settings/voice-agent. Different attorneys for different states is a single dropdown.',
+      },
+      {
+        q: 'TCPA compliance for the outbound campaigns?',
+        a: 'Outbound only dials numbers your firm has imported with an established business relationship — existing clients, web-form leads, signed-retainer clients, or lists you uploaded. The platform does not cold-call from purchased lists. DNC handling and per-state quiet-hours windows are configurable per campaign.',
+      },
+      {
+        q: 'Does the AI flag statute-of-limitations risk on intake?',
+        a: 'Yes. When a caller says "I was injured 18 months ago" or "this happened two years ago" or similar date-anchored language, the AI flags the call as time-sensitive and escalates to a human rather than scheduling a routine callback. The exact vocabulary is configurable per practice area.',
+      },
+      {
+        q: 'What languages beyond English and Spanish?',
+        a: 'Italian, Arabic, Farsi, Armenian, and Russian on every paid plan — critical for immigration practices serving Russian-, Persian-, or Armenian-speaking communities. The AI detects caller language automatically and switches mid-call without losing context.',
       },
     ],
   },
