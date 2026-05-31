@@ -17,6 +17,10 @@ const HomepageVoiceSamples = dynamic(
   () => import('@/components/ui/homepage-voice-samples').then((m) => m.HomepageVoiceSamples),
   { ssr: false }
 );
+const DashboardTeaser = dynamic(
+  () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
+  { ssr: false }
+);
 
 const FAQS = [
   {
@@ -166,6 +170,15 @@ export default function LandingPage() {
           VOICE SAMPLES
       ══════════════════════════════════════════════════════ */}
       <HomepageVoiceSamples />
+
+      {/* ══════════════════════════════════════════════════════
+          DASHBOARD PREVIEW — position 3, mirrors /inbound
+      ══════════════════════════════════════════════════════ */}
+      <section className="bg-white border-y border-cream-200 py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <DashboardTeaser />
+        </div>
+      </section>
 
       {/* ══════════════════════════════════════════════════════
           PRODUCT GRID — INBOUND + OUTBOUND + MESSAGING + DISCOVERY
