@@ -3,10 +3,16 @@ import useSWR, { mutate } from 'swr';
 import { settingsApi, tenantsApi, callsApi } from '@/lib/api';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Save, Mic, Upload, Trash2, CheckCircle, AlertCircle, Loader2, CreditCard, Sparkles, ArrowRight, Phone } from 'lucide-react';
+import { Save, Mic, Upload, Trash2, CheckCircle, AlertCircle, Loader2, CreditCard, Sparkles, ArrowRight, Phone, Scale } from 'lucide-react';
 import { VERTICALS } from '@/lib/verticals';
 import { useToast } from '@/components/ui/toast';
 import { KnowledgeBaseCard } from '@/components/dashboard/knowledge-base-card';
+import {
+  LEGAL_PRACTICE_AREAS,
+  applyPracticeAreaToContext,
+  detectPracticeAreaFromContext,
+  type LegalPracticeArea,
+} from '@/lib/legal-presets';
 
 const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/api/v1';
 
@@ -584,6 +590,18 @@ export default function VoiceAgentPage() {
             />
           </div>
 
+          {/* ── Legal practice-area preset (Phase 26a) ───────────────
+              Only renders when tenant vertical === 'legal'. Selecting an
+              area appends/overwrites a context block wrapped in
+              <!-- legal-practice-area-v1 --> anchors so user prose is
+              preserved. */}
+          {vertical === 'legal' && (
+            <LegalPracticeAreaSelect
+              businessContext={businessContext}
+              onApply={(updatedContext) => setBusinessContext(updatedContext)}
+            />
+          )}
+
           <textarea
             value={businessContext}
             onChange={(e) => setBusinessContext(e.target.value.slice(0, 4000))}
@@ -638,6 +656,108 @@ export default function VoiceAgentPage() {
 
       {/* ── Custom Voice Clone ─────────────────────────────── */}
       <VoiceCloneSection />
+    </div>
+  );
+}
+
+// ── Legal practice-area select — Phase 26a ────────────────────
+// Renders only on /settings/voice-agent for legal-vertical tenants.
+// Selecting an area appends/overwrites a block in the Business Context
+// wrapped in <!-- legal-practice-area-v1 --> anchor comments so the
+// user's other custom prose is preserved across re-selections.
+function LegalPracticeAreaSelect({
+  businessContext,
+  onApply,
+}: {
+  businessContext: string;
+  onApply: (updatedContext: string) => void;
+}) {
+  const detected = detectPracticeAreaFromContext(businessContext);
+  const [selectedId, setSelectedId] = useState<string>(detected ?? '');
+  const [showDetails, setShowDetails] = useState(false);
+
+  // Re-sync the dropdown when the Business Context is loaded async from settings.
+  useEffect(() => {
+    const next = detectPracticeAreaFromContext(businessContext);
+    if (next && next !== selectedId) setSelectedId(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessContext]);
+
+  function handleSelect(id: string) {
+    setSelectedId(id);
+    if (!id) return;
+    const preset = LEGAL_PRACTICE_AREAS.find((p) => p.id === id);
+    if (!preset) return;
+    const updated = applyPracticeAreaToContext(businessContext, preset);
+    onApply(updated);
+  }
+
+  const selected = LEGAL_PRACTICE_AREAS.find((p) => p.id === selectedId) ?? null;
+
+  return (
+    <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4">
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-lg bg-white border border-indigo-200 flex items-center justify-center shrink-0">
+          <Scale size={16} className="text-indigo-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-1">
+            Legal practice area
+          </p>
+          <p className="text-xs text-indigo-900/80 mb-3">
+            Selecting an area appends a tuned context block (intake vocabulary, escalation
+            triggers, tone). You can edit the textarea below freely — re-selecting only
+            overwrites the practice-area block, not your other prose.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={selectedId}
+              onChange={(e) => handleSelect(e.target.value)}
+              className="px-3 py-2 text-sm rounded-lg border border-indigo-200 bg-white focus:outline-none focus:border-indigo-400 max-w-xs"
+            >
+              <option value="">— None (clear practice-area block) —</option>
+              {LEGAL_PRACTICE_AREAS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+            {selected && (
+              <button
+                type="button"
+                onClick={() => setShowDetails((v) => !v)}
+                className="text-xs font-semibold text-indigo-700 hover:underline"
+              >
+                {showDetails ? 'Hide details' : 'What changes when I pick this?'}
+              </button>
+            )}
+          </div>
+          {selected && showDetails && (
+            <div className="mt-3 space-y-2 text-xs">
+              <div>
+                <span className="font-semibold text-indigo-900">Escalation vocabulary the AI listens for:</span>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {selected.escalationVocab.map((v) => (
+                    <span key={v} className="bg-white border border-indigo-200 text-indigo-700 px-2 py-0.5 rounded-full font-mono">
+                      {v}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span className="font-semibold text-indigo-900">Initial greeting tone:</span>{' '}
+                <span className="text-indigo-800">{selected.greetingTone}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-indigo-900">Block appended below:</span>
+                <pre className="mt-1 bg-white border border-indigo-100 rounded-md p-2 text-[10px] text-indigo-900 whitespace-pre-wrap leading-snug max-h-32 overflow-y-auto">
+                  {selected.contextBlock}
+                </pre>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

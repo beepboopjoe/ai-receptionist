@@ -9,13 +9,15 @@
 // ============================================================
 import useSWR, { mutate } from 'swr';
 import { useState } from 'react';
-import { Plus, Trash2, RotateCcw, Send, Webhook, Copy, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, RotateCcw, Send, Webhook, Copy, CheckCircle2, Sparkles, Scale } from 'lucide-react';
 import { webhooksApi, type WebhookEndpoint } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useFeatureFlags } from '@/lib/featureFlags';
+import { useVertical } from '@/lib/useVertical';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListRowSkeleton } from '@/components/ui/skeleton';
 import { LockedFeature } from '@/components/ui/locked-feature';
+import { LEGAL_WEBHOOK_PRESETS, type LegalWebhookPreset } from '@/lib/legal-presets';
 
 const AVAILABLE_EVENTS = [
   'call.started',
@@ -32,6 +34,8 @@ const AVAILABLE_EVENTS = [
 
 export default function WebhooksPage() {
   const { has } = useFeatureFlags();
+  const vertical = useVertical();
+  const isLegal = vertical.id === 'legal';
   const { data, isLoading } = useSWR('webhooks', () => webhooksApi.list());
   const { data: deliveriesData } = useSWR('webhook-deliveries', () => webhooksApi.deliveries(20));
   const endpoints = data?.data ?? [];
@@ -39,7 +43,13 @@ export default function WebhooksPage() {
   const toast = useToast();
 
   const [showCreate, setShowCreate] = useState(false);
+  const [createInitial, setCreateInitial] = useState<Partial<{ url: string; events: string; description: string }>>({});
   const [newSecret, setNewSecret] = useState<{ id: string; secret: string } | null>(null);
+
+  function openCreateForm(prefill?: Partial<{ url: string; events: string; description: string }>) {
+    setCreateInitial(prefill ?? {});
+    setShowCreate(true);
+  }
 
   if (!has('webhooks')) {
     return (
@@ -94,10 +104,26 @@ export default function WebhooksPage() {
             Each delivery is HMAC-signed with your endpoint&apos;s secret.
           </p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary shrink-0">
+        <button onClick={() => openCreateForm()} className="btn-primary shrink-0">
           <Plus size={16} /> New endpoint
         </button>
       </div>
+
+      {/* ═══ LEGAL PRESET PANEL — Phase 26a ═══
+          Renders only when tenant vertical === 'legal'. Five one-click
+          presets seed the most-common legal webhook integrations. */}
+      {isLegal && !showCreate && (
+        <LegalWebhookPresetPanel
+          presets={LEGAL_WEBHOOK_PRESETS}
+          onPick={(preset) =>
+            openCreateForm({
+              url: '',
+              events: preset.events,
+              description: preset.descriptionPrefill,
+            })
+          }
+        />
+      )}
 
       {newSecret && (
         <NewSecretBanner
@@ -109,12 +135,17 @@ export default function WebhooksPage() {
 
       {showCreate && (
         <CreateEndpointForm
+          initial={createInitial}
           onCreated={(secret, id) => {
             setShowCreate(false);
+            setCreateInitial({});
             setNewSecret({ id, secret });
             void mutate('webhooks');
           }}
-          onCancel={() => setShowCreate(false)}
+          onCancel={() => {
+            setShowCreate(false);
+            setCreateInitial({});
+          }}
         />
       )}
 
@@ -216,16 +247,23 @@ function NewSecretBanner({
 
 // ── Create endpoint form ───────────────────────────────────────
 function CreateEndpointForm({
+  initial,
   onCreated,
   onCancel,
 }: {
+  initial?: Partial<{ url: string; events: string; description: string }>;
   onCreated: (secret: string, id: string) => void;
   onCancel: () => void;
 }) {
   const toast = useToast();
-  const [url, setUrl] = useState('');
-  const [description, setDescription] = useState('');
-  const [selected, setSelected] = useState<Set<string>>(new Set(['*']));
+  const [url, setUrl] = useState(initial?.url ?? '');
+  const [description, setDescription] = useState(initial?.description ?? '');
+  // Seed the event chips from `initial.events` ("event1,event2") or fall back to "*".
+  const [selected, setSelected] = useState<Set<string>>(() => {
+    const raw = initial?.events?.trim();
+    if (!raw || raw === '*') return new Set(['*']);
+    return new Set(raw.split(',').map((s) => s.trim()).filter(Boolean));
+  });
   const [saving, setSaving] = useState(false);
 
   function toggleEvent(ev: string) {
@@ -316,6 +354,64 @@ function CreateEndpointForm({
         </button>
       </div>
     </form>
+  );
+}
+
+// ── Legal preset panel — Phase 26a ────────────────────────────
+function LegalWebhookPresetPanel({
+  presets,
+  onPick,
+}: {
+  presets: readonly LegalWebhookPreset[];
+  onPick: (preset: LegalWebhookPreset) => void;
+}) {
+  return (
+    <section className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50/60 to-violet-50/40 p-6">
+      <div className="flex items-start gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl bg-white border border-indigo-200 flex items-center justify-center shrink-0">
+          <Scale size={18} className="text-indigo-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles size={14} className="text-indigo-500" />
+            <p className="text-xs font-bold text-indigo-700 uppercase tracking-wider">
+              Legal preset
+            </p>
+          </div>
+          <h2 className="font-semibold text-gray-900">Start with a law-firm webhook</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Five common integrations for legal practices. Each fills the new-endpoint
+            form with the right event filter and a description — you supply your own
+            receiving URL.
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {presets.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            onClick={() => onPick(preset)}
+            className="text-left rounded-xl bg-white border border-indigo-100 hover:border-indigo-300 hover:shadow-sm p-4 transition-all"
+          >
+            <p className="font-semibold text-sm text-gray-900 mb-1">{preset.title}</p>
+            <p className="text-xs text-gray-600 leading-relaxed mb-3">
+              {preset.description}
+            </p>
+            <p className="text-[10px] font-mono text-indigo-600 mb-2 truncate">
+              {preset.events}
+            </p>
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700">
+              <Plus size={11} /> Use this preset
+            </span>
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-gray-500 mt-5">
+        Tip: most of these are easiest to wire via a Zapier or Make.com "Catch hook"
+        as the first step, then chain into Clio / Slack / Gmail / Salesforce on the back.
+      </p>
+    </section>
   );
 }
 

@@ -2,14 +2,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { campaignsApi } from '@/lib/api';
-import { ArrowLeft, Save, Crosshair, Megaphone, Upload, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Save, Crosshair, Megaphone, Upload, ArrowRight, Scale, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/toast';
+import { useVertical } from '@/lib/useVertical';
+import { LEGAL_CAMPAIGN_TEMPLATES, type LegalCampaignTemplate } from '@/lib/legal-presets';
 
 export default function NewCampaignPage() {
   const router = useRouter();
   const toast = useToast();
+  const vertical = useVertical();
+  const isLegal = vertical.id === 'legal';
   const [saving, setSaving] = useState(false);
+  const [appliedTemplateId, setAppliedTemplateId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -24,6 +29,22 @@ export default function NewCampaignPage() {
 
   function set(key: string, value: string | number) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function applyLegalTemplate(t: LegalCampaignTemplate) {
+    setForm((f) => ({
+      ...f,
+      name: t.campaignName,
+      voicemailMessage: t.voicemailMessage,
+      dialWindowStart: t.dialWindowStart,
+      dialWindowEnd: t.dialWindowEnd,
+      maxRetries: t.maxRetries,
+      retryDelayMinutes: t.retryDelayMinutes,
+      maxConcurrentCalls: t.maxConcurrentCalls,
+      // fromNumber intentionally not touched — the user supplies their own caller ID.
+    }));
+    setAppliedTemplateId(t.id);
+    toast.info(`Template applied: ${t.title}. Review the fields and add your caller ID.`);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -113,6 +134,17 @@ export default function NewCampaignPage() {
           </span>
         </div>
       </div>
+
+      {/* ═══ LEGAL TEMPLATE GALLERY — Phase 26a ═══
+          Renders only when tenant vertical === 'legal'. Six one-click
+          templates pre-fill the form below with sensible legal defaults. */}
+      {isLegal && (
+        <LegalCampaignTemplateGallery
+          templates={LEGAL_CAMPAIGN_TEMPLATES}
+          appliedId={appliedTemplateId}
+          onPick={applyLegalTemplate}
+        />
+      )}
 
       <form onSubmit={handleSubmit} className="card p-6 space-y-6">
         {/* Basic info */}
@@ -232,5 +264,71 @@ export default function NewCampaignPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+// ── Legal template gallery — Phase 26a ────────────────────────
+function LegalCampaignTemplateGallery({
+  templates,
+  appliedId,
+  onPick,
+}: {
+  templates: readonly LegalCampaignTemplate[];
+  appliedId: string | null;
+  onPick: (t: LegalCampaignTemplate) => void;
+}) {
+  return (
+    <section className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50/60 to-violet-50/40 p-6">
+      <div className="flex items-start gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl bg-white border border-indigo-200 flex items-center justify-center shrink-0">
+          <Scale size={18} className="text-indigo-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles size={14} className="text-indigo-500" />
+            <p className="text-xs font-bold text-indigo-700 uppercase tracking-wider">
+              Legal templates
+            </p>
+          </div>
+          <h2 className="font-semibold text-gray-900">Start from a law-firm template</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Seven proactive campaigns built for law-firm workflows. Picking one pre-fills
+            the form below — review, add your caller ID, then save.
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {templates.map((t) => {
+          const isApplied = appliedId === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onPick(t)}
+              className={`text-left rounded-xl p-4 transition-all ${
+                isApplied
+                  ? 'bg-white border-2 border-indigo-400 shadow-sm'
+                  : 'bg-white border border-indigo-100 hover:border-indigo-300 hover:shadow-sm'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <p className="font-semibold text-sm text-gray-900">{t.title}</p>
+                {isApplied && (
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full whitespace-nowrap">
+                    Applied
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-600 leading-relaxed mb-3">{t.description}</p>
+              <p className="text-[11px] text-indigo-700 font-medium">{t.targetHint}</p>
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-xs text-gray-500 mt-5">
+        Picking a template only fills the form fields below. You still review, set your caller
+        ID, and click <span className="font-semibold">Create Campaign</span> to actually save.
+      </p>
+    </section>
   );
 }
