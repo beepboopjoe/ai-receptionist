@@ -202,12 +202,12 @@ export async function syncSubscription(subscription: Stripe.Subscription): Promi
 function inferPlanKeyFromPriceId(priceId: string | null): PlanKey | null {
   if (!priceId) return null;
   const map: Record<string, PlanKey> = {
-    [config.STRIPE_PRICE_STARTER_MONTHLY]: 'starter',
-    [config.STRIPE_PRICE_STARTER_ANNUAL]:  'starter',
-    [config.STRIPE_PRICE_GROWTH_MONTHLY]:  'growth',
-    [config.STRIPE_PRICE_GROWTH_ANNUAL]:   'growth',
-    [config.STRIPE_PRICE_SCALE_MONTHLY]:   'scale',
-    [config.STRIPE_PRICE_SCALE_ANNUAL]:    'scale',
+    [config.STRIPE_PRICE_GROWTH_MONTHLY]:   'growth',
+    [config.STRIPE_PRICE_GROWTH_ANNUAL]:    'growth',
+    [config.STRIPE_PRICE_SCALE_MONTHLY]:    'scale',
+    [config.STRIPE_PRICE_SCALE_ANNUAL]:     'scale',
+    [config.STRIPE_PRICE_BUSINESS_MONTHLY]: 'business',
+    [config.STRIPE_PRICE_BUSINESS_ANNUAL]:  'business',
   };
   // Empty-string keys (unconfigured price ids) collide on '' — strip them
   // out by checking that the entry value isn't empty AND matches.
@@ -216,10 +216,10 @@ function inferPlanKeyFromPriceId(priceId: string | null): PlanKey | null {
 
 function inferCycleFromPriceId(priceId: string | null): BillingCycle | null {
   if (!priceId) return null;
-  if ([config.STRIPE_PRICE_STARTER_MONTHLY, config.STRIPE_PRICE_GROWTH_MONTHLY, config.STRIPE_PRICE_SCALE_MONTHLY].includes(priceId)) {
+  if ([config.STRIPE_PRICE_GROWTH_MONTHLY, config.STRIPE_PRICE_SCALE_MONTHLY, config.STRIPE_PRICE_BUSINESS_MONTHLY].includes(priceId)) {
     return 'monthly';
   }
-  if ([config.STRIPE_PRICE_STARTER_ANNUAL, config.STRIPE_PRICE_GROWTH_ANNUAL, config.STRIPE_PRICE_SCALE_ANNUAL].includes(priceId)) {
+  if ([config.STRIPE_PRICE_GROWTH_ANNUAL, config.STRIPE_PRICE_SCALE_ANNUAL, config.STRIPE_PRICE_BUSINESS_ANNUAL].includes(priceId)) {
     return 'annual';
   }
   return null;

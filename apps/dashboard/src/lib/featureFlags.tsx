@@ -31,27 +31,28 @@ export type FeatureFlag =
   | 'priority_support'
   | 'crm_integrations';
 
-/** Lowest plan tier required for each flag. Anything above also gets it. */
+/** Lowest plan tier required for each flag. Anything above also gets it.
+ *  Phase 23: Starter is removed; everything that used to gate at 'starter'
+ *  (e.g. two_way_sms) now gates at 'growth' — the new entry-level paid tier. */
 const PLAN_REQUIREMENT: Record<FeatureFlag, PlanTier> = {
   outbound_campaigns:  'growth',
-  two_way_sms:         'starter',
+  two_way_sms:         'growth',
   analytics:           'scale',
   multi_location:      'scale',
   webhooks:            'growth',
   api_access:          'scale',
   custom_voice:        'scale',
   sso:                 'enterprise',
-  priority_support:    'scale',
+  priority_support:    'business',
   crm_integrations:    'growth',
 };
 
 /** Tier ordering — higher index = more capable plan. */
 const TIER_RANK: Record<PlanTier, number> = {
   trial: 0,
-  starter: 1,
-  growth: 2,
-  scale: 3,
-  pro: 3,      // legacy alias — same rank as scale
+  growth: 1,
+  scale: 2,
+  business: 3,
   enterprise: 4,
 };
 

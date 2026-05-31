@@ -35,12 +35,16 @@ export interface KbQuota { docs: number; bytes: number }
 
 export function getQuotaForPlan(plan: string): KbQuota {
   switch (plan) {
+    case 'enterprise':
+      // Enterprise re-uses the Scale quota by default; lift via per-tenant
+      // override in production if needed.
+      return { docs: config.KB_DOC_LIMIT_SCALE, bytes: config.KB_BYTES_LIMIT_SCALE };
+    case 'business':
+      return { docs: config.KB_DOC_LIMIT_SCALE, bytes: config.KB_BYTES_LIMIT_SCALE };
     case 'scale':
       return { docs: config.KB_DOC_LIMIT_SCALE, bytes: config.KB_BYTES_LIMIT_SCALE };
     case 'growth':
       return { docs: config.KB_DOC_LIMIT_GROWTH, bytes: config.KB_BYTES_LIMIT_GROWTH };
-    case 'starter':
-      return { docs: config.KB_DOC_LIMIT_STARTER, bytes: config.KB_BYTES_LIMIT_STARTER };
     case 'trial':
     default:
       return { docs: config.KB_DOC_LIMIT_TRIAL, bytes: config.KB_BYTES_LIMIT_TRIAL };

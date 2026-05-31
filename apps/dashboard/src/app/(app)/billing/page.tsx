@@ -16,7 +16,13 @@ const PLAN_DISPLAY: Record<string, { label: string; color: string; price: number
       p.key,
       {
         label: p.name,
-        color: p.popular ? 'indigo' : p.key === 'scale' ? 'purple' : 'blue',
+        color: p.popular
+          ? 'indigo'
+          : p.key === 'scale'
+            ? 'purple'
+            : p.key === 'business'
+              ? 'amber'
+              : 'blue',
         price: p.monthlyPrice,
         minutes: p.monthlyMinutes === -1 ? 99999 : p.monthlyMinutes,
         overagePerMin: p.overagePerMin,
@@ -46,6 +52,7 @@ const BADGE_COLORS: Record<string, string> = {
   blue:   'bg-blue-100 text-blue-700',
   indigo: 'bg-brand-100 text-brand-700',
   purple: 'bg-purple-100 text-purple-700',
+  amber:  'bg-amber-100 text-amber-700',
 };
 
 // ── Loading skeleton — uses the shared UI primitive ────────────────────────
@@ -203,13 +210,15 @@ export default function BillingPage() {
   const planConfig = billing
     ? (PLAN_DISPLAY[billing.plan] ?? PLAN_DISPLAY['trial'])
     : null;
-  // Suggest the next-tier upgrade — Starter→Growth→Scale.
+  // Suggest the next-tier upgrade — Trial → Growth → Scale → Business.
   const nextUpgrade =
-    billing?.plan === 'trial' || billing?.plan === 'starter'
+    billing?.plan === 'trial'
       ? { key: 'growth', label: 'Growth' }
       : billing?.plan === 'growth'
         ? { key: 'scale', label: 'Scale' }
-        : null;
+        : billing?.plan === 'scale'
+          ? { key: 'business', label: 'Business' }
+          : null;
   const [portalLoading, setPortalLoading] = useState(false);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
 

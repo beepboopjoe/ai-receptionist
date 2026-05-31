@@ -2,30 +2,34 @@
 // ============================================================
 // PlanComparisonTable — feature matrix on /pricing.
 // Rows grouped by section in ascending-unlock order; cells are
-// either ✓, —, or specific values (minutes, numbers).
+// either ✓, —, or specific values (minutes, numbers, concurrency).
 // Responsive: <md collapses to per-plan stacked cards.
+//
+// Phase 23 (2026-05-30): Starter removed, Business added.
+// Columns are now: [Free Trial, Growth, Scale, Business, Enterprise]
+// — same 5 columns, different lineup.
 // ============================================================
 import { Fragment, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Check, Minus } from 'lucide-react';
 import { billingApi } from '@/lib/api';
 
-type PlanCol = 'trial' | 'starter' | 'growth' | 'scale' | 'enterprise';
+type PlanCol = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise';
 
 // Trial is the leftmost column — visitors see "free" before any paid price.
 const PLAN_COLS: { key: PlanCol; name: string; price: string; popular?: boolean }[] = [
   { key: 'trial',      name: 'Free Trial', price: 'Free'    },
-  { key: 'starter',    name: 'Starter',    price: '$79/mo'  },
   { key: 'growth',     name: 'Growth',     price: '$199/mo', popular: true },
   { key: 'scale',      name: 'Scale',      price: '$399/mo' },
+  { key: 'business',   name: 'Business',   price: '$599/mo' },
   { key: 'enterprise', name: 'Enterprise', price: 'Custom'  },
 ];
 
 type Cell = boolean | string;
 
-// Cell tuples are now 5-wide: [trial, starter, growth, scale, enterprise].
+// Cell tuples are 5-wide: [trial, growth, scale, business, enterprise].
 // Trial is inbound-only — every Messaging / Outbound / Integrations /
-// Operations row is `false`. See Phase 12.2 plan in the docs.
+// Operations row is `false`.
 const SECTIONS: {
   title: string;
   rows: { label: string; cells: [Cell, Cell, Cell, Cell, Cell] }[];
@@ -33,11 +37,13 @@ const SECTIONS: {
   {
     title: 'Core',
     rows: [
-      { label: 'AI voice minutes / month',          cells: ['10 total', '200', '750', '1,500', 'Unlimited'] },
-      { label: 'English + Spanish AI receptionist', cells: [true, true, true, true, true] },
-      { label: '24/7 inbound answering',            cells: [true, true, true, true, true] },
-      { label: 'Call transcripts + summaries',      cells: [true, true, true, true, true] },
-      { label: 'Calendar sync (Google / Outlook)',  cells: [true, true, true, true, true] },
+      { label: 'AI voice minutes / month',                cells: ['10 total', '380', '780', '1,100', 'Unlimited'] },
+      { label: '🌐 7 languages (EN ES IT AR FA HY RU)',   cells: [true, true, true, true, true] },
+      { label: '24/7 inbound answering',                  cells: [true, true, true, true, true] },
+      { label: 'Concurrent inbound calls',                cells: ['1', '5', '15', '50', 'Unlimited'] },
+      { label: 'Concurrent outbound calls',               cells: ['—', '3', '8', '25', 'Unlimited'] },
+      { label: 'Call transcripts + summaries',            cells: [true, true, true, true, true] },
+      { label: 'Calendar sync (Google / Outlook)',        cells: [true, true, true, true, true] },
     ],
   },
   {
@@ -52,7 +58,7 @@ const SECTIONS: {
   {
     title: 'Phone numbers',
     rows: [
-      { label: 'Included local phone numbers',                cells: ['BYO', 'BYO', '2', '5', 'Custom'] },
+      { label: 'Included local phone numbers',                cells: ['BYO', '2', '5', '10', 'Custom'] },
       { label: 'Bring your own number (free porting)',        cells: [true, true, true, true, true] },
       { label: 'Buy add-on local number ($5/mo each)',        cells: [false, true, true, true, true] },
       { label: 'Toll-free number add-on ($10/mo)',            cells: [false, true, true, true, true] },
@@ -62,35 +68,36 @@ const SECTIONS: {
     title: 'Outbound',
     rows: [
       { label: 'Outbound test calls',                       cells: [false, true, true, true, true] },
-      { label: 'Outbound calling campaigns',                cells: [false, false, true, true, true] },
-      { label: 'Voicemail drop + AMD',                      cells: [false, false, true, true, true] },
-      { label: 'Advanced campaign retries',                 cells: [false, false, false, true, true] },
-      { label: 'Lead Discovery (Google Maps · $0.99/lead)', cells: [false, false, true, true, true] },
+      { label: 'Outbound calling campaigns',                cells: [false, true, true, true, true] },
+      { label: 'Voicemail drop + AMD',                      cells: [false, true, true, true, true] },
+      { label: 'Advanced campaign retries',                 cells: [false, false, true, true, true] },
+      { label: 'Lead Discovery (Google Maps · $0.99/lead)', cells: [false, true, true, true, true] },
     ],
   },
   {
     title: 'Integrations',
     rows: [
-      { label: 'Webhooks',                                         cells: [false, false, true, true, true] },
-      { label: 'CRM event sync (calls/appointments/escalations)',  cells: [false, false, true, true, true] },
-      { label: 'CRMs supported (HubSpot + Salesforce)',            cells: [false, true,  true, true, true] },
-      { label: 'CRMs supported (+ Zoho + Clio + Filevine)',        cells: [false, false, true, true, true] },
-      { label: 'Knowledge Base — documents',                       cells: ['2 docs', '5 docs', '25 docs', '500 docs', 'Unlimited'] },
-      { label: 'Knowledge Base — storage',                         cells: ['2 MB', '10 MB', '100 MB', '2 GB', 'Unlimited'] },
-      { label: 'Public REST API access',                           cells: [false, false, false, true, true] },
-      { label: 'Custom integrations',                              cells: [false, false, false, false, true] },
+      { label: 'Webhooks',                                         cells: [false, true, true, true, true] },
+      { label: 'CRM event sync (calls/appointments/escalations)',  cells: [false, true, true, true, true] },
+      { label: 'CRMs supported (HubSpot + Salesforce + Zoho + Clio + Filevine)', cells: [false, true, true, true, true] },
+      { label: 'Knowledge Base — documents',                       cells: ['2 docs', '25 docs', '500 docs', '500 docs', 'Unlimited'] },
+      { label: 'Knowledge Base — storage',                         cells: ['2 MB', '100 MB', '2 GB', '2 GB', 'Unlimited'] },
+      { label: 'Public REST API access',                           cells: [false, false, true, true, true] },
+      { label: 'Custom integrations',                              cells: [false, false, false, true, true] },
     ],
   },
   {
     title: 'Operations',
     rows: [
-      { label: 'Priority support',            cells: [false, false, true, true, true] },
-      { label: 'Multi-location support',      cells: [false, false, false, true, true] },
-      { label: 'Advanced analytics',          cells: [false, false, false, true, true] },
-      { label: 'Custom voice clone add-on',   cells: [false, false, false, true, true] },
+      { label: 'Multi-location support',      cells: [false, false, true, true, true] },
+      { label: 'Advanced analytics',          cells: [false, false, true, true, true] },
+      { label: 'Custom voice clone add-on',   cells: [false, false, true, true, true] },
+      { label: 'Priority support',            cells: [false, false, false, true, true] },
+      { label: 'Dedicated account manager',   cells: [false, false, false, true, true] },
       { label: 'HIPAA-ready / BAA',           cells: [false, false, false, false, true] },
       { label: 'White-label',                 cells: [false, false, false, false, true] },
       { label: 'Dedicated onboarding',        cells: [false, false, false, false, true] },
+      { label: 'SLA-backed uptime',           cells: [false, false, false, false, true] },
     ],
   },
 ];

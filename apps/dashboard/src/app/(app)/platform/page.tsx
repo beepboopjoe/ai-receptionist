@@ -40,7 +40,7 @@ import {
 import { platformApi, type PlatformTenant, type AdminSupportTicket, type SupportCategory, type SupportStatus } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 
-const PLAN_OPTIONS = ['starter', 'growth', 'scale', 'enterprise'] as const;
+const PLAN_OPTIONS = ['growth', 'scale', 'business', 'enterprise'] as const;
 
 export default function PlatformAdminPage() {
   const toast = useToast();

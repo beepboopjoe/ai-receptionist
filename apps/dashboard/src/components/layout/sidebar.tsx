@@ -153,7 +153,7 @@ export function Sidebar() {
   );
 
   const isHighUsage = usagePercent >= 80;
-  const showUpgradeCta = !loading && (plan === 'trial' || plan === 'starter');
+  const showUpgradeCta = !loading && plan === 'trial';
 
   async function handleLogout() {
     await logout();

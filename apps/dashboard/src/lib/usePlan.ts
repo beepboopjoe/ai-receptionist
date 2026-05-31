@@ -8,15 +8,15 @@
 import useSWR from 'swr';
 import { billingApi } from './api';
 
-export type PlanTier = 'trial' | 'starter' | 'growth' | 'scale' | 'pro' | 'enterprise';
+export type PlanTier = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise';
 
 export interface PlanState {
   plan: PlanTier;
   /** true for Growth and above — enables outbound campaigns */
   outboundEnabled: boolean;
-  /** true for Pro and above — enables advanced analytics */
+  /** true for Scale and above — enables advanced analytics */
   analyticsEnabled: boolean;
-  /** true for Pro and above — enables multi-location management */
+  /** true for Scale and above — enables multi-location management */
   multiLocationEnabled: boolean;
   minutesUsed: number;
   minutesIncluded: number;
@@ -41,8 +41,8 @@ export function usePlan(): PlanState {
   return {
     plan,
     outboundEnabled: b?.outboundEnabled ?? false,
-    analyticsEnabled: plan === 'scale' || plan === 'pro' || plan === 'enterprise',
-    multiLocationEnabled: plan === 'scale' || plan === 'pro' || plan === 'enterprise',
+    analyticsEnabled: plan === 'scale' || plan === 'business' || plan === 'enterprise',
+    multiLocationEnabled: plan === 'scale' || plan === 'business' || plan === 'enterprise',
     minutesUsed: b?.minutesUsed ?? 0,
     minutesIncluded: b?.minutesIncluded ?? 0,
     usagePercent: b?.usagePercent ?? 0,

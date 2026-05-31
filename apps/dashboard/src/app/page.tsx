@@ -99,7 +99,7 @@ const INDUSTRIES = [
 ];
 
 // Derived from shared catalog — single source of truth.
-const PLANS_PREVIEW = PLANS.filter((p) => ['starter', 'growth', 'scale'].includes(p.key)).map((p) => ({
+const PLANS_PREVIEW = PLANS.filter((p) => ['growth', 'scale', 'business'].includes(p.key)).map((p) => ({
   key: p.key,
   name: p.name,
   price: `$${p.monthlyPrice}`,

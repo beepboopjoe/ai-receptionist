@@ -21,10 +21,11 @@ if (!KEY) {
 const stripe = new Stripe(KEY, { apiVersion: '2025-04-30.basil' });
 
 // ── Target prices (must match billing.types.ts) ────────────────────────────
+// Phase 23 (2026-05-30): Starter removed; Business added as new top tier.
 const PLANS = [
-  { key: 'starter',    name: 'Starter',    monthly: 79_00,  annual: 67_00  },
-  { key: 'growth',     name: 'Growth',     monthly: 199_00, annual: 169_00 },
-  { key: 'scale',      name: 'Scale',      monthly: 399_00, annual: 339_00 },
+  { key: 'growth',   name: 'Growth',   monthly: 199_00, annual: 169_00 },
+  { key: 'scale',    name: 'Scale',    monthly: 399_00, annual: 339_00 },
+  { key: 'business', name: 'Business', monthly: 599_00, annual: 509_00 },
 ] as const;
 
 // ── Helpers ────────────────────────────────────────────────────────────────

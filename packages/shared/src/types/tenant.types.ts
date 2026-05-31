@@ -5,7 +5,7 @@
 import type { AppointmentType } from './appointment.types.js';
 import type { OfficeHours } from './workflow.types.js';
 
-export type TenantPlan = 'trial' | 'starter' | 'growth' | 'scale' | 'pro' | 'enterprise';
+export type TenantPlan = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise';
 
 export type AfterHoursMode = 'voicemail' | 'callback' | 'transfer';
 

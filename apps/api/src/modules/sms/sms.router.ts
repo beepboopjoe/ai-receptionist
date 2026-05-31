@@ -18,7 +18,7 @@ import { getTenantFromNumber } from './tenant-from-number.js';
 // Plans that unlock the two-way SMS inbox (send endpoint).
 // SMS is included on every paid plan; only the 10-min trial is blocked.
 // Reads remain open so downgraded users can still see their history.
-const SMS_SEND_PLANS = new Set(['starter', 'growth', 'scale', 'pro', 'enterprise']);
+const SMS_SEND_PLANS = new Set(['growth', 'scale', 'business', 'enterprise']);
 
 async function smsRouterPlugin(app: FastifyInstance) {
   // ── GET /sms/conversations ────────────────────────────────────────────────

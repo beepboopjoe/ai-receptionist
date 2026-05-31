@@ -7,7 +7,7 @@
 // ============================================================
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { CheckCircle, Clock, Mic, Phone, Calendar, Sparkles, Zap, ArrowRight } from 'lucide-react';
+import { CheckCircle, Clock, Mic, Phone, Calendar, Sparkles, Zap, ArrowRight, MessageSquare, MapPin, Inbox } from 'lucide-react';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { PLANS, PAY_AS_YOU_GO } from '@ai-receptionist/shared';
@@ -35,23 +35,23 @@ const PRICING_PLANS = [
 const FAQS = [
   {
     q: 'What happens when I run out of minutes?',
-    a: 'Your AI keeps answering — calls never drop mid-conversation. Overage minutes are billed at the per-minute rate for your plan (Starter $0.29/min, Growth $0.25/min, Scale $0.19/min) and added to your next invoice. We email you at 80% usage so there are no surprises.',
+    a: 'Your AI keeps answering — calls never drop mid-conversation. Overage minutes are billed at the per-minute rate for your plan (Growth $0.35/min, Scale $0.29/min, Business $0.25/min) and added to your next invoice. We email you at 80% usage so there are no surprises.',
   },
   {
     q: 'Does it handle both inbound and outbound calls?',
-    a: 'Inbound 24/7 answering is on every plan. Outbound calling campaigns (autodialer, voicemail drop, retries) are included on Growth and Scale. Most competitors charge $99–$199/mo extra for outbound — we bundle it from Growth up.',
+    a: 'Inbound 24/7 answering is on every plan. Outbound calling campaigns (autodialer, voicemail drop, retries) are included on every paid plan. Most competitors charge $99–$199/mo extra for outbound — we bundle it from Growth up.',
   },
   {
     q: 'Does SMS come included?',
-    a: 'Yes — the two-way SMS inbox, automated appointment reminders (24h + 2h), and missed-call text-back are all included on every paid plan. SMS is sent from your business number (BYO or provisioned).',
+    a: 'Yes — the two-way SMS inbox, automated appointment reminders (24h + 2h), and missed-call text-back are all included on every paid plan. SMS is sent from a number we provision for you (included on every paid plan).',
   },
   {
-    q: 'Can the AI speak Spanish?',
-    a: 'Included on every plan. Your AI greets callers in English and switches to Spanish automatically when the caller does — no configuration needed. More languages coming soon.',
+    q: 'What languages does the AI speak?',
+    a: 'Every plan ships with seven languages: English, Spanish, Italian, Arabic, Farsi, Armenian, and Russian. Your AI greets callers in your primary language and switches automatically when the caller does. No configuration, no upgrade fee.',
   },
   {
     q: 'What phone number do I get?',
-    a: 'Starter is BYO — forward your existing business line to the AI, or port your number to us for free. Growth includes 2 local numbers, Scale includes 5. Need an extra line on any plan? Add one for $5/mo.',
+    a: 'Growth includes 2 local numbers, Scale 5, and Business 10. You can also port your existing business line to us for free, or buy additional local numbers at $5/mo each on any paid plan. Trial is bring-your-own (forward your existing line).',
   },
   {
     q: 'Can I change plans or cancel at any time?',
@@ -103,6 +103,54 @@ export default function PricingPage() {
         </p>
       </section>
 
+      {/* ── Why we include phone numbers ──────────────────── */}
+      <section className="max-w-5xl mx-auto px-6 py-12">
+        <div className="rounded-3xl border border-cream-200 bg-white px-8 py-10 md:px-12">
+          <div className="grid grid-cols-1 md:grid-cols-[260px,1fr] gap-8 items-start">
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center mb-4">
+                <Phone size={22} className="text-brand-600" />
+              </div>
+              <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-2">
+                Why we include phone numbers
+              </p>
+              <h3 className="font-serif text-2xl text-cream-900 tracking-tight leading-snug">
+                Your numbers aren&apos;t a tax — they&apos;re the whole receptionist.
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="rounded-2xl bg-cream-50 border border-cream-200 p-5">
+                <div className="w-9 h-9 rounded-xl bg-white border border-cream-200 flex items-center justify-center mb-3">
+                  <MapPin size={16} className="text-brand-600" />
+                </div>
+                <h4 className="text-sm font-semibold text-cream-900 mb-1">Local presence</h4>
+                <p className="text-xs text-cream-600 leading-relaxed">
+                  Calls placed from a local area code get answered roughly 3× more often than out-of-state or toll-free numbers.
+                </p>
+              </div>
+              <div className="rounded-2xl bg-cream-50 border border-cream-200 p-5">
+                <div className="w-9 h-9 rounded-xl bg-white border border-cream-200 flex items-center justify-center mb-3">
+                  <Inbox size={16} className="text-brand-600" />
+                </div>
+                <h4 className="text-sm font-semibold text-cream-900 mb-1">Callbacks ring the AI</h4>
+                <p className="text-xs text-cream-600 leading-relaxed">
+                  When a lead calls the number back, our AI picks up and books the appointment. Spoofed caller IDs send the callback to your voicemail — the whole receptionist value evaporates.
+                </p>
+              </div>
+              <div className="rounded-2xl bg-cream-50 border border-cream-200 p-5">
+                <div className="w-9 h-9 rounded-xl bg-white border border-cream-200 flex items-center justify-center mb-3">
+                  <MessageSquare size={16} className="text-brand-600" />
+                </div>
+                <h4 className="text-sm font-semibold text-cream-900 mb-1">Two-way SMS</h4>
+                <p className="text-xs text-cream-600 leading-relaxed">
+                  Missed-call text-back, appointment reminders, and the SMS inbox all run on the numbers we provision. Your existing landline can&apos;t send SMS.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Feature comparison matrix ─────────────────────── */}
       <section id="compare" className="max-w-7xl mx-auto px-6 py-16 scroll-mt-20">
         <div className="text-center mb-10">
@@ -111,7 +159,8 @@ export default function PricingPage() {
             What&apos;s included in each plan.
           </h2>
           <p className="text-cream-600 mt-3 max-w-2xl mx-auto">
-            SMS, transcripts, and bilingual answering are on every plan. Growth and Scale unlock outbound campaigns, integrations, and analytics.
+            SMS, transcripts, outbound campaigns, and 7 languages are on every paid plan.
+            The difference between Growth, Scale, and Business is included minutes, phone numbers, and concurrent-call capacity.
           </p>
         </div>
         <PlanComparisonTable />
@@ -264,9 +313,10 @@ export default function PricingPage() {
           </div>
           <div className="rounded-2xl bg-cream-50 border border-cream-200 px-8 py-5 text-center">
             <p className="text-sm text-cream-600">
-              <span className="font-semibold text-cream-900">Example:</span> Growth plan (750 min/mo) typically handles{' '}
-              <span className="font-semibold text-cream-900">200–375 inbound calls</span> per month,
-              or a mix of inbound + outbound campaigns. Most growing practices never hit the limit.
+              <span className="font-semibold text-cream-900">Example:</span> Growth plan (380 min/mo) typically handles{' '}
+              <span className="font-semibold text-cream-900">100–200 inbound calls</span> per month,
+              or a mix of inbound + outbound campaigns. Overage at $0.35/min — about 1 in 4 customers
+              pay overage in a peak month, and most are still net-positive vs. a human receptionist.
             </p>
           </div>
         </div>

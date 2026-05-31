@@ -8,28 +8,33 @@
 //
 // Adding a plan: bump the union type, add a row, add Stripe
 // products in the customer's Stripe dashboard, set the
-// STRIPE_PRICE_ID_<KEY>_(MONTHLY|ANNUAL) env vars on the API.
+// STRIPE_PRICE_<KEY>_(MONTHLY|ANNUAL) env vars on the API.
 //
 // INTERNAL MARGIN MODEL (never customer-facing):
 //   Cost/min: $0.07 | Cost/number: $1/mo
 //   margin = (price - (minutes*0.07 + numbers*1)) / price
 //
-//   Current pricing (Phase 20 restructure, 2026-05-28):
-//     Starter: ($79  - $7.00)  / $79  ≈ 91.1%   (100 min, BYO number)
-//     Growth:  ($199 - $23.00) / $199 ≈ 88.4%   (300 min, 2 numbers)
-//     Scale:   ($399 - $57.50) / $399 ≈ 85.6%   (750 min, 5 numbers)
+//   85% margin floor is enforced — every paid tier carries
+//   ≥0.2pp cushion above 85% at full utilization.
 //
-//   Legacy pricing (grandfathered subs with tenants.legacy_pricing = true):
-//     Starter: ($79  - $14.00)  / $79  ≈ 82.3%   (200 min)
+//   Current pricing (Phase 23 rework, 2026-05-30):
+//     Growth:   ($199 - $28.60)  / $199 ≈ 85.6%   (380 min, 2 numbers)
+//     Scale:    ($399 - $59.60)  / $399 ≈ 85.1%   (780 min, 5 numbers)
+//     Business: ($599 - $87.00)  / $599 ≈ 85.5%   (1,100 min, 10 numbers)
+//
+//   Phase 23 dropped Starter entirely. The 10-min Trial is the
+//   only sub-$199 on-ramp; everything else is committed-customer
+//   pricing matching the managed-AI-receptionist segment
+//   (SmithAI $290+, Ruby $300+).
+//
+//   Legacy pricing block (kept as defensive infrastructure for
+//   future grandfathering — no rows fire it today since no subs
+//   existed at Phase 23 cutover):
 //     Growth:  ($199 - $54.50)  / $199 ≈ 72.6%   (750 min)
 //     Scale:   ($399 - $110.00) / $399 ≈ 72.4%   (1500 min)
-//
-// Positioning: cap reduction + overage lift moves Telfin from the DIY
-// platform tier (Synthflow/Vapi $0.05-0.20/min) into the managed AI
-// receptionist tier (SmithAI/Ruby $0.50-$3/min effective).
 // ============================================================
 
-export type PlanKey = 'trial' | 'starter' | 'growth' | 'scale' | 'enterprise';
+export type PlanKey = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise';
 export type BillingCycle = 'monthly' | 'annual';
 
 export interface Plan {
@@ -53,6 +58,14 @@ export interface Plan {
   includedPhoneNumbers: number;
   /** Whether outbound campaigns are unlocked at this tier. */
   outbound: boolean;
+  /**
+   * Maximum concurrent inbound calls handled at any moment.
+   * -1 = unlimited (Enterprise). Marketing surface in Phase 23;
+   * runtime enforcement deferred to Phase 24.
+   */
+  concurrentInbound: number;
+  /** Maximum concurrent outbound calls dialed at any moment. -1 = unlimited. */
+  concurrentOutbound: number;
   /** Marketing badge — only one plan should be marked popular. */
   popular?: boolean;
   /** Bullet points for the pricing card. */
@@ -71,35 +84,14 @@ export const PLANS: readonly Plan[] = [
     overagePerMin: 0,
     includedPhoneNumbers: 0,
     outbound: false,
+    concurrentInbound: 1,
+    concurrentOutbound: 0,
     features: [
       '10 AI voice minutes',
       'Bring your own number (free porting)',
-      'English + Spanish AI receptionist',
+      '🌐 7 languages — EN, ES, IT, AR, FA, HY, RU',
       'Call transcripts + summaries',
       'No credit card required',
-    ],
-  },
-  {
-    key: 'starter',
-    name: 'Starter',
-    badge: 'Best for solo offices',
-    tagline: 'Answer every call. Never miss a lead.',
-    description: 'Perfect for solo operators or single-location businesses ready to stop missing calls.',
-    monthlyPrice: 79,
-    annualMonthlyPrice: 67,
-    monthlyMinutes: 100,
-    overagePerMin: 0.39,
-    includedPhoneNumbers: 0,
-    outbound: true,
-    features: [
-      '100 AI voice minutes / month',
-      'Bring your own number — free porting (or add a line for $5/mo)',
-      'English + Spanish AI receptionist',
-      'Two-way SMS inbox',
-      'Appointment reminder SMS (24h + 2h)',
-      'Missed-call text-back SMS',
-      'Call transcripts + summaries',
-      'Email & SMS notifications',
     ],
   },
   {
@@ -107,24 +99,27 @@ export const PLANS: readonly Plan[] = [
     name: 'Growth',
     badge: 'Most Popular',
     tagline: 'Qualify leads and book appointments automatically.',
-    description: 'For growing practices running regular outbound campaigns and intake workflows.',
+    description: 'The entry-level managed AI receptionist tier. For growing practices running regular outbound campaigns and inbound intake.',
     monthlyPrice: 199,
     annualMonthlyPrice: 169,
-    monthlyMinutes: 300,
+    monthlyMinutes: 380,
     overagePerMin: 0.35,
     includedPhoneNumbers: 2,
     outbound: true,
+    concurrentInbound: 5,
+    concurrentOutbound: 3,
     popular: true,
     features: [
-      '300 AI voice minutes / month',
+      '🌐 7 languages — EN, ES, IT, AR, FA, HY, RU',
+      '380 AI voice minutes / month',
       '2 local phone numbers included',
-      'Everything in Starter',
+      '5 concurrent inbound · 3 outbound',
       'Outbound calling campaigns',
       'Voicemail drop + AMD',
       'Appointment booking',
+      'Two-way SMS inbox',
       'CRM / webhook integrations',
       'Lead qualification templates',
-      'Priority support',
     ],
   },
   {
@@ -135,43 +130,74 @@ export const PLANS: readonly Plan[] = [
     description: 'Multi-location or high-call-volume businesses with advanced intake and CRM needs.',
     monthlyPrice: 399,
     annualMonthlyPrice: 339,
-    monthlyMinutes: 750,
+    monthlyMinutes: 780,
     overagePerMin: 0.29,
     includedPhoneNumbers: 5,
     outbound: true,
+    concurrentInbound: 15,
+    concurrentOutbound: 8,
     features: [
-      '750 AI voice minutes / month',
+      '🌐 7 languages — EN, ES, IT, AR, FA, HY, RU',
+      '780 AI voice minutes / month',
       '5 local phone numbers included',
+      '15 concurrent inbound · 8 outbound',
       'Everything in Growth',
       'Multi-location support',
       'Advanced outbound campaigns',
       'SMS automation workflows',
       'Custom intake flows',
       'API access',
-      'CRM sync',
       'Analytics dashboard',
+    ],
+  },
+  {
+    key: 'business',
+    name: 'Business',
+    badge: 'Best for high-volume teams',
+    tagline: 'Heavy call volume, ten numbers, one premium tier.',
+    description: 'For businesses handling thousands of calls per month across many lines, regions, or campaigns.',
+    monthlyPrice: 599,
+    annualMonthlyPrice: 509,
+    monthlyMinutes: 1100,
+    overagePerMin: 0.25,
+    includedPhoneNumbers: 10,
+    outbound: true,
+    concurrentInbound: 50,
+    concurrentOutbound: 25,
+    features: [
+      '🌐 7 languages — EN, ES, IT, AR, FA, HY, RU',
+      '1,100 AI voice minutes / month',
+      '10 local phone numbers included',
+      '50 concurrent inbound · 25 outbound',
+      'Everything in Scale',
+      'Dedicated account manager',
+      'Priority phone + email support',
+      'Custom integrations on request',
+      'Quarterly success review',
     ],
   },
   {
     key: 'enterprise',
     name: 'Enterprise',
-    badge: 'Custom volume',
-    tagline: 'Custom AI workflows for high-volume teams.',
-    description: 'HIPAA-ready, white-label, and dedicated onboarding for organizations that need it all.',
+    badge: 'HIPAA + white-label',
+    tagline: 'Compliance-grade AI receptionist with custom integrations.',
+    description: 'HIPAA-ready with signed BAA, white-label dashboard, unlimited concurrent calls, dedicated onboarding, and SLA-backed uptime.',
     monthlyPrice: 0, // shown as "Custom" in UI
     annualMonthlyPrice: 0,
     monthlyMinutes: -1,
     overagePerMin: -1,
     includedPhoneNumbers: -1,
     outbound: true,
+    concurrentInbound: -1,
+    concurrentOutbound: -1,
     features: [
-      'High-volume AI minutes',
-      'HIPAA-ready workflows',
-      'Custom SMS workflows',
+      '🌐 7 languages — EN, ES, IT, AR, FA, HY, RU',
+      'HIPAA-ready workflows + signed BAA',
+      'White-label dashboard',
+      'Unlimited concurrent calls',
       'Custom integrations',
-      'Dedicated onboarding',
-      'White-label options',
-      'Multiple locations',
+      'SLA-backed uptime',
+      'Dedicated onboarding + account team',
       'Custom number pools',
     ],
   },
@@ -179,7 +205,7 @@ export const PLANS: readonly Plan[] = [
 
 /** Pay-as-you-go option — de-emphasized alternative to subscriptions.
  *
- * Priced above Starter's effective rate ($79/200 min = $0.395/min) so
+ * Priced above Growth's effective rate ($199/380 min = $0.524/min) so
  * subscribing is always the better deal above ~150 min/mo. Shown as a
  * small strip below the main plan grid — not the primary CTA.
  */
@@ -208,21 +234,21 @@ export const MINUTE_PACKS = [
 
 /**
  * Look up a plan by key. Returns undefined for unknown keys (callers
- * decide whether to default to Starter or surface an error).
+ * decide whether to default to Growth or surface an error).
  */
 export function getPlan(key: string): Plan | undefined {
   return PLANS.find((p) => p.key === key);
 }
 
 /**
- * Pre-Phase-20 cap + overage values. Used only when a tenant carries
- * `legacy_pricing = true` (set on all paying tenants at the time the
- * 2026-05-28 pricing restructure shipped). New signups never hit this.
+ * Pre-Phase-23 cap + overage values. Defensive infrastructure for any
+ * future grandfathering — no subscribers carried `legacy_pricing = true`
+ * at the Phase 23 cutover (2026-05-30), so this map doesn't fire today.
  *
- * Trial + Enterprise are unchanged in the restructure, so no entries here.
+ * Trial + Enterprise + Business have no legacy equivalents (Business is
+ * a Phase 23 introduction; the others' limits never changed).
  */
-export const LEGACY_LIMITS: Record<'starter' | 'growth' | 'scale', { minutes: number; overagePerMin: number }> = {
-  starter: { minutes: 200,  overagePerMin: 0.29 },
+export const LEGACY_LIMITS: Record<'growth' | 'scale', { minutes: number; overagePerMin: number }> = {
   growth:  { minutes: 750,  overagePerMin: 0.25 },
   scale:   { minutes: 1500, overagePerMin: 0.19 },
 };
@@ -230,7 +256,7 @@ export const LEGACY_LIMITS: Record<'starter' | 'growth' | 'scale', { minutes: nu
 /**
  * Resolve a tenant's effective minute cap + overage rate. Honors the
  * grandfathered `legacy_pricing` flag for subscribers who signed up
- * before the Phase 20 pricing restructure (2026-05-28).
+ * before a pricing restructure.
  *
  * Always use this instead of reading `plan.monthlyMinutes` or
  * `plan.overagePerMin` directly when computing billing or enforcement.
@@ -239,7 +265,7 @@ export function resolvePlanLimits(
   plan: Plan,
   tenant: { legacyPricing?: boolean | null }
 ): { minutes: number; overagePerMin: number } {
-  if (tenant.legacyPricing && (plan.key === 'starter' || plan.key === 'growth' || plan.key === 'scale')) {
+  if (tenant.legacyPricing && (plan.key === 'growth' || plan.key === 'scale')) {
     return LEGACY_LIMITS[plan.key];
   }
   return { minutes: plan.monthlyMinutes, overagePerMin: plan.overagePerMin };

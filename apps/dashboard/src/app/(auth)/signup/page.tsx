@@ -23,7 +23,7 @@ function StashUrlParams({
     // Pricing-page plan/cycle — signals the user wants to buy immediately
     const plan = params.get('plan');
     const cycle = params.get('cycle');
-    if (plan && (plan === 'starter' || plan === 'growth' || plan === 'scale')) {
+    if (plan && (plan === 'growth' || plan === 'scale' || plan === 'business')) {
       const validCycle: BillingCycle = cycle === 'annual' ? 'annual' : 'monthly';
       onPricingParams(plan, validCycle);
       try {
@@ -37,7 +37,7 @@ function StashUrlParams({
 }
 
 // ── Plan options shown in the picker ──────────────────────────
-type SignupPlanKey = 'trial' | 'starter' | 'growth' | 'scale';
+type SignupPlanKey = 'trial' | 'growth' | 'scale' | 'business';
 
 const PLAN_OPTIONS: {
   key: SignupPlanKey;
@@ -62,21 +62,10 @@ const PLAN_OPTIONS: {
     paid: false,
   },
   {
-    key: 'starter',
-    name: 'Starter',
-    priceDisplay: '$79/mo',
-    minutes: '200',
-    numbers: 'BYO',
-    badge: 'Solo offices',
-    popular: false,
-    note: 'Activates immediately after payment',
-    paid: true,
-  },
-  {
     key: 'growth',
     name: 'Growth',
     priceDisplay: '$199/mo',
-    minutes: '750',
+    minutes: '380',
     numbers: '2',
     badge: 'Most Popular',
     popular: true,
@@ -87,18 +76,30 @@ const PLAN_OPTIONS: {
     key: 'scale',
     name: 'Scale',
     priceDisplay: '$399/mo',
-    minutes: '1,500',
+    minutes: '780',
     numbers: '5',
     badge: null,
     popular: false,
     note: 'Activates immediately after payment',
     paid: true,
   },
+  {
+    key: 'business',
+    name: 'Business',
+    priceDisplay: '$599/mo',
+    minutes: '1,100',
+    numbers: '10',
+    badge: 'High-volume teams',
+    popular: false,
+    note: 'Activates immediately after payment',
+    paid: true,
+  },
 ];
 
-// Derive aiUseCase for the register API from the plan chosen
+// Derive aiUseCase for the register API from the plan chosen.
+// Trial users start inbound-only; every paid tier unlocks outbound too.
 function aiUseCaseForPlan(plan: SignupPlanKey): 'inbound' | 'both' {
-  return plan === 'trial' || plan === 'starter' ? 'inbound' : 'both';
+  return plan === 'trial' ? 'inbound' : 'both';
 }
 
 export default function SignupPage() {
