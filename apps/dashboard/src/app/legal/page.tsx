@@ -45,6 +45,10 @@ const SampleCallPlayer = dynamic(
   () => import('@/components/ui/sample-call-player').then((m) => m.SampleCallPlayer),
   { ssr: false }
 );
+const DashboardTeaser = dynamic(
+  () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
+  { ssr: false }
+);
 
 const c = content.legal;
 
@@ -73,13 +77,25 @@ export default function LegalLandingPage() {
         iconGradient={c.features.iconGradient}
       />
 
-      {/* ═══ PROACTIVE OUTBOUND CAMPAIGNS — Phase 24 ═══
-          The thing that sets us apart from Smith.ai / Ruby:
-          we don't just answer the phone, we make outbound calls
-          on the firm's behalf. Six legal-tuned campaigns. */}
-      <section className="py-20 px-6 bg-white border-y border-cream-200">
+      {/* ═══ DASHBOARD PREVIEW — Phase 26b polish ═══
+          Mirrors the position-3 pattern used on /inbound, /outbound,
+          /demo, and the homepage. Breaks up the run of card grids
+          and gives lawyers a concrete picture of what they'll see
+          when they log in. */}
+      <section className="bg-cream-50 py-20 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
+          <DashboardTeaser />
+        </div>
+      </section>
+
+      {/* ═══ PROACTIVE OUTBOUND CAMPAIGNS — restyled Phase 26b ═══
+          Was a 6-card grid (visually identical to the Features grid
+          immediately above). Now a numbered timeline so it reads as
+          a sequence the firm can actually adopt one-at-a-time.
+          Alternating-side layout breaks the monotony entirely. */}
+      <section className="py-20 px-6 bg-white border-y border-cream-200">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
             <p className="text-xs font-bold text-indigo-600 uppercase tracking-[0.2em] mb-3">
               Proactive outbound
             </p>
@@ -91,7 +107,16 @@ export default function LegalLandingPage() {
               your associates know they should do and never have time to actually pick up the phone for.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+          {/* Vertical timeline with an indigo rail down the middle on desktop,
+              left-aligned on mobile. Each row alternates which side the card
+              sits on; the number sits on the rail. */}
+          <ol className="relative space-y-10 md:space-y-14">
+            {/* Rail — desktop only */}
+            <div
+              aria-hidden
+              className="hidden md:block absolute left-1/2 top-2 bottom-2 -translate-x-1/2 w-px bg-gradient-to-b from-indigo-200 via-indigo-300 to-violet-200"
+            />
             {[
               {
                 Icon: PhoneCall,
@@ -101,7 +126,7 @@ export default function LegalLandingPage() {
               {
                 Icon: ClipboardList,
                 title: 'Engagement-letter follow-up',
-                body: 'Reaches out to clients whose retainer is signed but who haven\'t returned scheduling forms, medical authorizations, or document requests. Polite, persistent, on a cadence you set.',
+                body: "Reaches out to clients whose retainer is signed but who haven't returned scheduling forms, medical authorizations, or document requests. Polite, persistent, on a cadence you set.",
               },
               {
                 Icon: Calendar,
@@ -123,20 +148,51 @@ export default function LegalLandingPage() {
                 title: 'Past-client referral asks',
                 body: 'Polite quarterly outreach to closed-matter clients asking for referrals. The single highest-ROI outbound program for any law firm — and the one that never gets done because everyone is busy.',
               },
-            ].map(({ Icon, title, body }) => (
-              <div
-                key={title}
-                className="rounded-2xl bg-cream-50 border border-cream-200 p-6 hover:shadow-sm hover:border-indigo-200 transition-all"
-              >
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center mb-4">
-                  <Icon size={20} className="text-white" />
-                </div>
-                <h3 className="font-semibold text-cream-900 text-base mb-2">{title}</h3>
-                <p className="text-sm text-cream-600 leading-relaxed">{body}</p>
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-xs text-cream-500 mt-8">
+            ].map(({ Icon, title, body }, i) => {
+              const isLeft = i % 2 === 0;
+              const cardClasses = `rounded-xl bg-cream-50 border border-cream-200 p-5 hover:border-indigo-300 hover:shadow-sm transition-all ${
+                isLeft ? 'md:text-right' : 'md:text-left'
+              }`;
+              const iconWrapClasses = `w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center mb-3 ${
+                isLeft ? 'md:ml-auto' : ''
+              }`;
+              return (
+                <li
+                  key={title}
+                  className="relative md:grid md:grid-cols-[1fr_auto_1fr] md:gap-6 md:items-start"
+                >
+                  {/* Desktop: card on left if even, on right if odd. Mobile: always full width below the number row. */}
+                  <div
+                    className={`hidden md:block ${isLeft ? 'md:col-start-1 md:pr-2' : 'md:col-start-3 md:pl-2'}`}
+                  >
+                    <div className={cardClasses}>
+                      <div className={iconWrapClasses}>
+                        <Icon size={18} className="text-white" />
+                      </div>
+                      <h3 className="font-semibold text-cream-900 text-base mb-2">{title}</h3>
+                      <p className="text-sm text-cream-600 leading-relaxed">{body}</p>
+                    </div>
+                  </div>
+
+                  {/* Number badge — sits on the rail (desktop) or leads the mobile row */}
+                  <div className="md:col-start-2 flex md:block items-center gap-3">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white font-serif text-lg md:text-xl flex items-center justify-center shadow-md shadow-indigo-200 shrink-0 z-10 ring-4 ring-white">
+                      {i + 1}
+                    </div>
+                    {/* Mobile-only inline title so the number isn't orphaned */}
+                    <p className="md:hidden font-semibold text-cream-900 text-base">{title}</p>
+                  </div>
+
+                  {/* Mobile-only card body */}
+                  <div className="md:hidden mt-3 ml-13">
+                    <p className="text-sm text-cream-600 leading-relaxed">{body}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+
+          <p className="text-center text-xs text-cream-500 mt-12">
             All six campaigns are configurable in <span className="font-mono text-cream-700">/campaigns</span> and run as recurring jobs.
             Outbound dialing is included on every paid plan; minute usage counts toward your monthly cap.
           </p>
@@ -186,68 +242,68 @@ export default function LegalLandingPage() {
               practice area. Out of the box we ship tuned defaults for these nine.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Restyled Phase 26b: compact pill grid instead of large 3-col cards.
+              Each pill expands inline on hover/focus to reveal its tuning note —
+              keeps the section visually quiet vs. the timeline above. */}
+          <div className="flex flex-wrap justify-center gap-2.5 max-w-4xl mx-auto">
             {[
               {
                 Icon: HeartPulse,
                 area: 'Personal Injury',
-                tune: 'Statute-of-limitations vocabulary, medical-treatment follow-up campaigns, settlement-check pickup outreach.',
+                tune: 'Statute-of-limitations vocabulary · medical-treatment follow-up · settlement-check pickup.',
               },
               {
                 Icon: HeartHandshake,
                 area: 'Family Law',
-                tune: 'Sensitive-intake tone, custody/divorce escalation triggers, court-date reminders for hearings and mediations.',
+                tune: 'Sensitive-intake tone · custody/divorce escalation triggers · hearing & mediation reminders.',
               },
               {
                 Icon: ShieldAlert,
                 area: 'Criminal Defense',
-                tune: '"Arrested", "served papers", "warrant" route to your on-call cell immediately. Jail-call intake supported.',
+                tune: '"Arrested", "served papers", "warrant" route to on-call cell immediately. Jail-call intake supported.',
               },
               {
                 Icon: Globe2,
                 area: 'Immigration',
-                tune: 'Multilingual intake in Spanish, Arabic, Farsi, Armenian, Russian. USCIS appointment reminders + interview-prep nudges.',
+                tune: 'Multilingual: Spanish, Arabic, Farsi, Armenian, Russian. USCIS appointment + interview-prep nudges.',
               },
               {
                 Icon: ScrollText,
                 area: 'Estate Planning',
-                tune: 'Appointment-based, low-urgency cadence. Annual-review outreach campaigns to existing clients.',
+                tune: 'Appointment-based, low-urgency cadence. Annual-review outreach to existing clients.',
               },
               {
                 Icon: Wallet,
                 area: 'Bankruptcy',
-                tune: '341-meeting reminders, document-collection follow-ups, automatic-stay-question escalation to a human.',
+                tune: '341-meeting reminders · document-collection follow-ups · automatic-stay escalation.',
               },
               {
                 Icon: HardHat,
                 area: "Workers' Comp",
-                tune: 'First-notice-of-injury intake fields, IME appointment reminders, medical-records pickup coordination.',
+                tune: 'First-notice-of-injury fields · IME appointment reminders · medical-records pickup.',
               },
               {
                 Icon: Briefcase,
                 area: 'Business Law',
-                tune: 'Consultative tone, contract-review intake, scheduled quarterly check-ins with retained corporate clients.',
+                tune: 'Consultative tone · contract-review intake · quarterly check-ins with retained corporate clients.',
               },
               {
                 Icon: Building2,
                 area: 'Real Estate Law',
-                tune: 'Closing-day coordination, title-issue escalation, document-signing reminders.',
+                tune: 'Closing-day coordination · title-issue escalation · document-signing reminders.',
               },
             ].map(({ Icon, area, tune }) => (
-              <div
+              <details
                 key={area}
-                className="rounded-2xl bg-white border border-cream-200 p-5 hover:border-indigo-200 hover:shadow-sm transition-all"
+                className="group rounded-full bg-white border border-cream-200 hover:border-indigo-300 open:rounded-2xl open:bg-cream-50 open:border-indigo-300 transition-all open:max-w-xl"
               >
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
-                    <Icon size={18} className="text-indigo-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-cream-900 text-sm mb-1">{area}</h3>
-                    <p className="text-xs text-cream-600 leading-relaxed">{tune}</p>
-                  </div>
-                </div>
-              </div>
+                <summary className="flex items-center gap-2 px-4 py-2 cursor-pointer list-none select-none">
+                  <Icon size={15} className="text-indigo-600 shrink-0" />
+                  <span className="text-sm font-semibold text-cream-900">{area}</span>
+                  <span className="text-cream-400 text-xs group-open:rotate-45 transition-transform">+</span>
+                </summary>
+                <p className="px-4 pb-3 -mt-1 text-xs text-cream-600 leading-relaxed">{tune}</p>
+              </details>
             ))}
           </div>
           <p className="text-center text-xs text-cream-500 mt-8">
