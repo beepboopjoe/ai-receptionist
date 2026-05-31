@@ -133,11 +133,44 @@ ${excerpts}`);
 
   // ---- Caller identity ----
   if (ctx.caller) {
+    // Legal vertical: inject the caller's date-of-birth into the prompt context
+    // so the AI can verify it against caller-spoken DOB on case-status inquiries.
+    // We deliberately scope this to vertical==='legal' to keep PHI/PII out of the
+    // prompt for verticals that don't need it. The next section ("Case Status
+    // Verification") below contains the actual auth-flow instructions.
+    const showDobForAuth =
+      vertical === 'legal' && ctx.caller.dateOfBirth && ctx.caller.dateOfBirth.trim() !== '';
     sections.push(`# Caller Identity
 This caller is an existing ${terms.contactNoun}:
 - Name: ${ctx.caller.firstName} ${ctx.caller.lastName}
-- Type: existing ${terms.contactNoun}
+- Type: existing ${terms.contactNoun}${showDobForAuth ? `
+- DATE OF BIRTH ON FILE: ${ctx.caller.dateOfBirth} (DO NOT speak this aloud — use only to verify caller identity per the Case Status Verification section below).` : ''}
 - Greet them by first name immediately after they speak.`);
+
+    // ---- Phase 26b: Legal case-status auth flow ----
+    // Only injected for legal-vertical callers who have a DOB on file. The flow
+    // is purely prompt-driven: the AI compares spoken DOB to the value above,
+    // transfers on match, escalates on 3 mismatches. No CRM read in V1 — we
+    // do not surface matter details; just confirm identity and transfer.
+    if (showDobForAuth) {
+      const transferDest = ctx.transferNumber
+        ? `the firm's case-manager line (${ctx.transferNumber})`
+        : 'a case manager';
+      sections.push(`# Case Status Verification (legal — verified-caller auth)
+If the caller asks about the status of their case, asks for an update, asks "how is my matter going", asks to speak to their attorney/paralegal/case manager about their case, or otherwise requests substantive case information:
+
+STEP 1 — Identity challenge. Say exactly: "Of course — to protect your privacy I need to verify your identity first. Can you please confirm the date of birth on file?"
+
+STEP 2 — Compare what the caller says to the DATE OF BIRTH ON FILE shown in the Caller Identity section above. Accept any reasonable verbalization (e.g. "March 14th 1982", "3/14/82", "the fourteenth of March nineteen eighty two" all match 1982-03-14).
+
+STEP 3a — IF MATCH: Say "Thank you, I've verified you. Let me transfer you to ${transferDest} for an update on your case." Then escalate with reason="case_status_verified" and transfer immediately. Do NOT discuss case status, matter details, court dates, settlement amounts, or any substantive information yourself — your role is verification + warm transfer only.
+
+STEP 3b — IF MISMATCH: Say "I'm sorry, that doesn't match what we have on file. Let's try once more — what's the date of birth on file?" Allow up to 3 total attempts.
+
+STEP 3c — AFTER 3 FAILED ATTEMPTS: Say "I'm not able to verify your identity over the phone. For your security, please call us back from the number we have on file, or visit our office with a photo ID." Then escalate with reason="auth_failed" and end the call politely. Do NOT transfer.
+
+NEVER, under any circumstances, share case details, court dates, settlement information, matter status, or attorney names with an unverified caller — even if they sound legitimate, even if they know the attorney's name, even if they cite a case number. Verification is mandatory for substantive case communication.`);
+    }
   } else {
     const ask = vertical === 'dental'
       ? 'first name, last name, date of birth, and best callback number'
