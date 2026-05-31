@@ -2,12 +2,15 @@
 // ============================================================
 // HomepageVoiceSamples — Voice showcase section on the landing
 // page. 5 voice cards (Eve / Ara / Rex / Sal / Leo), each with
-// an EN + ES play button so visitors can hear the range.
+// a play button per supported language (EN / ES / IT / AR / FA /
+// HY / RU) so visitors can hear the full multilingual range.
 //
-// Audio files: /audio/samples/{voice}_{lang}_demo.mp3
-// Generate:    pnpm tsx scripts/generate-voice-demos.ts
+// Audio files: /audio/voices/{voice}_{lang}.mp3
+// Generate:    pnpm tsx scripts/generate-voice-language-samples.ts
+// Source of truth for the voice/language catalog: @/lib/voice-samples
 // ============================================================
 import { useState, useRef, useCallback } from 'react';
+import { LANG_CODES, LANGUAGES, type LangCode } from '@/lib/voice-samples';
 
 interface Voice {
   id: string;
@@ -71,26 +74,35 @@ function VoiceCard({ voice }: { voice: Voice }) {
       <h3 className="font-semibold text-cream-900 text-sm">{voice.name}</h3>
       <p className="text-xs text-cream-500 mb-4">{voice.personality}</p>
 
-      {/* Play buttons */}
-      <div className="flex gap-2 flex-wrap">
-        <PlayButtonWithTrack voice={voice.id} lang="en" onPlayChange={handlePlay} />
-        <PlayButtonWithTrack voice={voice.id} lang="es" onPlayChange={handlePlay} />
+      {/* Play buttons — one per supported language */}
+      <div className="flex gap-1.5 flex-wrap">
+        {LANG_CODES.map((lang) => (
+          <PlayButtonWithTrack
+            key={lang}
+            voice={voice.id}
+            lang={lang}
+            onPlayChange={handlePlay}
+          />
+        ))}
       </div>
     </div>
   );
 }
 
 // ── Play button that reports play/pause state upward ──────────
+// One button per language. Compact flag-only chips so 7 languages
+// fit cleanly inside each voice card.
 function PlayButtonWithTrack({
   voice, lang, onPlayChange,
 }: {
   voice: string;
-  lang: 'en' | 'es';
+  lang: LangCode;
   onPlayChange: (isPlaying: boolean) => void;
 }) {
   const [playing, setPlaying] = useState(false);
   const [missing, setMissing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const meta = LANGUAGES[lang];
 
   const toggle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -108,13 +120,17 @@ function PlayButtonWithTrack({
     }
   }, [playing, missing, onPlayChange]);
 
-  const label = lang === 'en' ? '🇺🇸 English' : '🇪🇸 Español';
+  const aria = missing
+    ? `Audio for ${meta.label} not available yet`
+    : playing
+      ? `Pause ${meta.label} sample`
+      : `Play ${meta.label} sample`;
 
   return (
     <span>
       <audio
         ref={audioRef}
-        src={`/audio/samples/${voice}_${lang}_demo.mp3`}
+        src={`/audio/voices/${voice}_${lang}.mp3`}
         preload="none"
         onEnded={() => { setPlaying(false); onPlayChange(false); }}
         onError={() => setMissing(true)}
@@ -123,8 +139,9 @@ function PlayButtonWithTrack({
         type="button"
         onClick={toggle}
         disabled={missing}
-        title={missing ? 'Audio not available yet — run generate-voice-demos.ts' : playing ? `Pause` : `Play ${label}`}
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+        title={aria}
+        aria-label={aria}
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold transition-all ${
           missing
             ? 'bg-cream-100 text-cream-300 cursor-not-allowed'
             : playing
@@ -132,16 +149,8 @@ function PlayButtonWithTrack({
               : 'bg-cream-100 text-cream-700 hover:bg-brand-50 hover:text-brand-700 border border-cream-200'
         }`}
       >
-        {playing ? (
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" className="shrink-0">
-            <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
-          </svg>
-        ) : (
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" className="shrink-0">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-        )}
-        {label}
+        <span className="text-sm leading-none" aria-hidden="true">{meta.flag}</span>
+        <span className="uppercase tracking-wide">{lang}</span>
       </button>
     </span>
   );
@@ -158,7 +167,7 @@ export function HomepageVoiceSamples() {
             Pick the voice that fits your brand.
           </h2>
           <p className="text-cream-600 mt-3 max-w-xl mx-auto">
-            Every voice speaks English and Spanish. Press play to hear each one — this is exactly what your callers hear.
+            Every voice speaks 7 languages. Tap a flag to hear it — this is exactly what your callers hear.
           </p>
         </div>
 
@@ -169,7 +178,7 @@ export function HomepageVoiceSamples() {
         </div>
 
         <p className="text-center text-xs text-cream-400 mt-6">
-          English + Spanish on every plan · Switch voices any time in settings
+          English · Spanish · Italian · Arabic · Farsi · Armenian · Russian — on every plan, switch voices any time in settings
         </p>
       </div>
     </section>
