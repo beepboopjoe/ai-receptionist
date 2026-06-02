@@ -994,3 +994,38 @@ export type KbDocument = typeof kbDocuments.$inferSelect;
 export type NewKbDocument = typeof kbDocuments.$inferInsert;
 export type KbChunk = typeof kbChunks.$inferSelect;
 export type NewKbChunk = typeof kbChunks.$inferInsert;
+
+// ---- Email Templates (Phase 26c) ----
+// Per-tenant email templates that fire on call events. Mirror of migration
+// 0033_email_templates.sql — see that file for schema notes.
+export const emailTemplates = pgTable(
+  'email_templates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    /** Vertical scope. NULL = applies regardless of tenant vertical. */
+    vertical: text('vertical'),
+    /** Event that triggers the send (intake.completed, consult.reminder.24h, etc). */
+    triggerEvent: text('trigger_event').notNull(),
+    /** Short admin-facing name shown in the dashboard list. */
+    name: text('name').notNull(),
+    /** Email subject. Supports {{var}} substitutions. */
+    subject: text('subject').notNull(),
+    /** HTML body. Supports {{var}} substitutions. */
+    bodyHtml: text('body_html').notNull(),
+    /** JSON array of variable names the template uses — informational only. */
+    bodyVariables: jsonb('body_variables').notNull().default([]),
+    enabled: boolean('enabled').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tenantIdx: index('email_templates_tenant_idx').on(t.tenantId, t.triggerEvent),
+    enabledIdx: index('email_templates_enabled_idx').on(t.tenantId, t.enabled),
+  })
+);
+
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type NewEmailTemplate = typeof emailTemplates.$inferInsert;

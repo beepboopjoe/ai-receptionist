@@ -75,6 +75,7 @@ const settingsNav = [
   { href: '/settings/knowledge-base', label: 'Knowledge Base', icon: null },
   { href: '/settings/notifications', label: 'Notifications', icon: null },
   { href: '/settings/webhooks', label: 'Webhooks', icon: null },
+  { href: '/settings/email-templates', label: 'Email Templates', icon: null },
   { href: '/settings/api-keys', label: 'API Keys', icon: null },
   { href: '/settings/team', label: 'Team', icon: null },
   { href: '/settings/audit-log', label: 'Audit Log', icon: null },

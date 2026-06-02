@@ -50,6 +50,7 @@ import { sectionsPlugin } from './modules/sections/section.router.js';
 import { analyticsPlugin } from './modules/analytics/analytics.router.js';
 import { leadDiscoveryPlugin } from './modules/lead-discovery/lead-discovery.router.js';
 import { kbPlugin } from './modules/knowledge-base/kb.router.js';
+import { emailTemplatesPlugin } from './modules/email-templates/email-templates.router.js';
 import { salesforceOAuthPlugin } from './modules/crm/salesforce-oauth.router.js';
 import { clioOAuthPlugin } from './modules/crm/clio-oauth.router.js';
 import { filevineCredentialsPlugin } from './modules/crm/filevine-credentials.router.js';
@@ -181,6 +182,8 @@ async function buildApp() {
   await app.register(leadDiscoveryPlugin, { prefix: '/api/v1' });
   await app.register(kbPlugin, { prefix: '/api/v1' });
   console.log('[boot] kbPlugin registered (Phase 12.8 KB routes under /api/v1/kb/*)');
+  await app.register(emailTemplatesPlugin, { prefix: '/api/v1' });
+  console.log('[boot] emailTemplatesPlugin registered (Phase 26c routes under /api/v1/email-templates/*)');
   await app.register(salesforceOAuthPlugin, { prefix: '/api/v1' });
   await app.register(clioOAuthPlugin, { prefix: '/api/v1' });
   await app.register(filevineCredentialsPlugin, { prefix: '/api/v1' });

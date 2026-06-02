@@ -1080,3 +1080,66 @@ export const supportApi = {
     }),
   list: () => apiFetch<{ data: SupportTicket[] }>('/support/tickets'),
 };
+
+// ---- Email Templates (Phase 26c) ----
+export interface EmailTemplate {
+  id: string;
+  tenantId: string;
+  vertical: string | null;
+  triggerEvent: string;
+  name: string;
+  subject: string;
+  bodyHtml: string;
+  bodyVariables: string[];
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const emailTemplatesApi = {
+  list: () =>
+    apiFetch<{ templates: EmailTemplate[] }>('/email-templates'),
+  get: (id: string) =>
+    apiFetch<EmailTemplate>(`/email-templates/${id}`),
+  create: (input: {
+    triggerEvent: string;
+    name: string;
+    subject: string;
+    bodyHtml: string;
+    bodyVariables?: string[];
+    vertical?: string | null;
+    enabled?: boolean;
+  }) =>
+    apiFetch<EmailTemplate>('/email-templates', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  update: (
+    id: string,
+    patch: Partial<{
+      triggerEvent: string;
+      name: string;
+      subject: string;
+      bodyHtml: string;
+      bodyVariables: string[];
+      vertical: string | null;
+      enabled: boolean;
+    }>
+  ) =>
+    apiFetch<EmailTemplate>(`/email-templates/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    }),
+  remove: (id: string) =>
+    apiFetch<void>(`/email-templates/${id}`, { method: 'DELETE' }),
+  testSend: (id: string, to: string, vars: Record<string, unknown> = {}) =>
+    apiFetch<{ ok: true; sentTo: string }>(`/email-templates/${id}/test-send`, {
+      method: 'POST',
+      body: JSON.stringify({ to, vars }),
+    }),
+  seedDefaults: () =>
+    apiFetch<{ created: number; skipped: number }>(
+      '/email-templates/seed-defaults',
+      { method: 'POST' }
+    ),
+};
