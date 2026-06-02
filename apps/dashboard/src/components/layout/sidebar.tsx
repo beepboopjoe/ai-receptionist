@@ -42,6 +42,7 @@ import { useLiveCalls } from '@/lib/useLiveCalls';
 function buildNav(contactsLabel: string, appointmentsLabel: string) {
   return [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/workflows', label: 'Workflows', icon: Sparkles, requires: undefined as undefined | 'two_way_sms' },
     { href: '/calls', label: 'Call Log', icon: Phone, requires: undefined as undefined | 'two_way_sms' },
     { href: '/appointments', label: appointmentsLabel, icon: Calendar, requires: undefined as undefined | 'two_way_sms' },
     { href: '/contacts', label: contactsLabel, icon: Users, requires: undefined as undefined | 'two_way_sms' },
