@@ -118,7 +118,17 @@ export const callsApi = {
       { method: 'POST' }
     ),
   testCall: () =>
-    apiFetch<{ ok: boolean; callId?: string; toNumber?: string; error?: string; message?: string }>(
+    apiFetch<{
+      ok: boolean;
+      callId?: string;
+      toNumber?: string;
+      fromNumber?: string;
+      /** true when we dialed from the platform shared number instead of the
+       *  tenant's own — happens on trial tenants that haven't provisioned. */
+      usedDemoFallback?: boolean;
+      error?: string;
+      message?: string;
+    }>(
       `/calls/test-call`,
       { method: 'POST' }
     ),

@@ -723,8 +723,13 @@ export async function adminPlugin(app: FastifyInstance) {
         });
       }
 
-      // 2. Find the tenant's primary phone number to dial *from*. Without
-      //    a provisioned number we can't place outbound calls.
+      // 2. Find the tenant's primary phone number to dial *from*. If they
+      //    don't have one provisioned yet (typical for trial tenants on the
+      //    shared platform line), fall back to the platform demo number so
+      //    the test call still works — the AI routing is driven by tenantId
+      //    in client_state, not by the FROM number, so the tenant's own AI
+      //    still answers. Phase 26g: this fallback unblocks trial users
+      //    who otherwise can't test their AI at all.
       const { tenantPhoneNumbers } = await import('../../db/schema.js');
       const { isNull } = await import('drizzle-orm');
       const [primaryNumber] = await db
@@ -739,10 +744,18 @@ export async function adminPlugin(app: FastifyInstance) {
         )
         .limit(1);
 
-      if (!primaryNumber) {
-        return reply.status(400).send({
-          error: 'no_primary_number',
-          message: 'Provision a phone number in Settings → Phone Numbers before placing a test call.',
+      let fromNumberForDial: string;
+      let usedDemoFallback = false;
+      if (primaryNumber) {
+        fromNumberForDial = primaryNumber.phoneE164;
+      } else if (config.DEMO_FROM_NUMBER) {
+        fromNumberForDial = config.DEMO_FROM_NUMBER;
+        usedDemoFallback = true;
+      } else {
+        return reply.status(503).send({
+          error: 'test_call_unavailable',
+          message:
+            "Test calls aren't available in this environment yet. Provision a phone number in Settings → Phone Numbers, or contact support.",
         });
       }
 
@@ -755,7 +768,7 @@ export async function adminPlugin(app: FastifyInstance) {
           rcCallId: `pending-test-${Date.now()}`,
           direction: 'test',
           fromNumber: transferNumber, // the owner is the "caller" from the AI's POV
-          toNumber: primaryNumber.phoneE164,
+          toNumber: fromNumberForDial,
           status: 'active',
           startedAt: new Date(),
         })
@@ -769,7 +782,7 @@ export async function adminPlugin(app: FastifyInstance) {
       try {
         const result = await dialDirect({
           to: transferNumber,
-          from: primaryNumber.phoneE164,
+          from: fromNumberForDial,
           callId,
           tenantId,
           fromNumber: transferNumber,
@@ -777,7 +790,7 @@ export async function adminPlugin(app: FastifyInstance) {
         });
         callSid = result.callSid;
       } catch (err) {
-        request.log.error({ err, callId }, 'Test-call Telnyx dial failed');
+        request.log.error({ err, callId, usedDemoFallback }, 'Test-call Telnyx dial failed');
         await db
           .update(calls)
           .set({ status: 'failed', outcome: 'dial_error', updatedAt: new Date() })
@@ -800,10 +813,16 @@ export async function adminPlugin(app: FastifyInstance) {
         action: 'call.test_call_placed',
         entityType: 'call',
         entityId: callId,
-        metadata: { toNumber: transferNumber, fromNumber: primaryNumber.phoneE164, callSid },
+        metadata: { toNumber: transferNumber, fromNumber: fromNumberForDial, callSid, usedDemoFallback },
       });
 
-      return reply.send({ ok: true, callId, toNumber: transferNumber });
+      return reply.send({
+        ok: true,
+        callId,
+        toNumber: transferNumber,
+        fromNumber: fromNumberForDial,
+        usedDemoFallback,
+      });
     }
   );
 

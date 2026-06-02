@@ -425,7 +425,15 @@ export default function VoiceAgentPage() {
     try {
       const result = await callsApi.testCall();
       if (result.ok) {
-        toast.success(`Calling ${result.toNumber} now — pick up to hear your AI.`);
+        if (result.usedDemoFallback) {
+          // Trial tenant w/o a provisioned number: we used the platform
+          // shared line. Surface that so they know why caller ID looks unfamiliar.
+          toast.info(
+            `Calling ${result.toNumber} now from our platform line — your AI will still answer. Provision your own number in Settings → Phone Numbers to use yours.`
+          );
+        } else {
+          toast.success(`Calling ${result.toNumber} now — pick up to hear your AI.`);
+        }
       } else {
         toast.error(result.message ?? 'Could not place the test call.');
       }
