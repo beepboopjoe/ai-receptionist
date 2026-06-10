@@ -13,7 +13,15 @@ import { SectionAgent } from '@/components/dashboard/section-agent';
 
 export default function CallsPage() {
   const { data, isLoading, mutate } = useSWR('calls', () => callsApi.list({ limit: 50 }));
-  const calls = (data as any)?.data ?? [];
+  const allCalls = (data as any)?.data ?? [];
+
+  // Phase 29a — Missed Calls folded into this page as a filter tab.
+  // The dedicated /missed-calls page (with text-back tooling) still
+  // exists; the Missed tab links to it for the full workflow.
+  const [filter, setFilter] = useState<'all' | 'missed'>('all');
+  const calls = filter === 'missed'
+    ? allCalls.filter((c: any) => c.status === 'missed')
+    : allCalls;
 
   const { activeCalls } = useLiveCalls();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -97,7 +105,29 @@ export default function CallsPage() {
 
       <div className="card">
         <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h2 className="font-semibold text-gray-900">Recent Calls</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="font-semibold text-gray-900">Recent Calls</h2>
+            {/* All / Missed filter tabs (Phase 29a) */}
+            <div className="flex items-center gap-1 rounded-lg bg-gray-50 border border-gray-200 p-0.5">
+              {(['all', 'missed'] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md capitalize transition-colors ${
+                    filter === f ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  {f === 'all' ? 'All' : 'Missed'}
+                </button>
+              ))}
+            </div>
+            {filter === 'missed' && (
+              <Link href="/missed-calls" className="text-xs font-medium text-brand-600 hover:underline whitespace-nowrap">
+                Open text-back tools →
+              </Link>
+            )}
+          </div>
           <span className="text-sm text-gray-500">{(data as any)?.total ?? 0} total</span>
         </div>
         {isLoading ? (
@@ -105,8 +135,12 @@ export default function CallsPage() {
         ) : calls.length === 0 ? (
           <EmptyState
             icon={Phone}
-            label="No calls yet"
-            hint="Once your AI receptionist answers a call, it will show up here with a transcript and outcome."
+            label={filter === 'missed' ? 'No missed calls' : 'No calls yet'}
+            hint={
+              filter === 'missed'
+                ? 'Great news — your AI has been picking up. Missed calls would appear here.'
+                : 'Once your AI receptionist answers a call, it will show up here with a transcript and outcome.'
+            }
           />
         ) : (
           <div className="divide-y divide-gray-50">

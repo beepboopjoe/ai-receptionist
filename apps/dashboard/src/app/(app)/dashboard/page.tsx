@@ -2,7 +2,7 @@
 import useSWR from 'swr';
 import Link from 'next/link';
 import { callsApi, appointmentsApi, escalationsApi, campaignsApi, smsApi } from '@/lib/api';
-import { Phone, Calendar, AlertCircle, PhoneMissed, Wifi, WifiOff, Megaphone, MessageSquare, Zap, TrendingUp } from 'lucide-react';
+import { Phone, Calendar, AlertCircle, PhoneMissed, Wifi, WifiOff, Megaphone, MessageSquare, Zap, ArrowRight } from 'lucide-react';
 import { useActivityFeed, type ActivityEvent } from '@/lib/useActivityFeed';
 import { usePlan } from '@/lib/usePlan';
 import { useFeatureFlags } from '@/lib/featureFlags';
@@ -63,6 +63,62 @@ function StatCard({
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
           <Icon size={22} className="text-white" />
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── First-run setup checklist (Phase 29a) ─────────────────────
+// Shown on Home until the AI has handled its first call. Three plain
+// steps, no completion tracking — once a call exists, it disappears.
+const SETUP_STEPS = [
+  {
+    n: 1,
+    title: 'Forward your phone',
+    desc: 'Point your existing business number at your AI line — takes about 2 minutes with your carrier.',
+    href: '/settings/phone-numbers',
+    cta: 'Set up forwarding',
+  },
+  {
+    n: 2,
+    title: "Pick your AI's voice",
+    desc: 'Choose from 5 voices and tell the AI about your business in plain words.',
+    href: '/settings/voice-agent',
+    cta: 'Choose a voice',
+  },
+  {
+    n: 3,
+    title: 'Hear it yourself',
+    desc: 'Place a free test call — your AI rings your cell and you talk to it like a customer would.',
+    href: '/settings/voice-agent',
+    cta: 'Make a test call',
+  },
+];
+
+function SetupChecklist() {
+  return (
+    <div className="rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 to-amber-50/40 p-6">
+      <h2 className="font-serif text-xl text-cream-900 mb-1">Let&apos;s get your front desk answering</h2>
+      <p className="text-sm text-cream-700 mb-5">
+        Three quick steps and your AI takes its first call. No tech skills needed.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {SETUP_STEPS.map((step) => (
+          <Link
+            key={step.n}
+            href={step.href}
+            className="group rounded-xl bg-white border border-cream-200 hover:border-brand-300 hover:shadow-sm p-4 transition-all"
+          >
+            <div className="w-8 h-8 rounded-full bg-brand-600 text-white font-serif flex items-center justify-center mb-3 text-sm">
+              {step.n}
+            </div>
+            <p className="font-semibold text-sm text-cream-900 mb-1">{step.title}</p>
+            <p className="text-xs text-cream-600 leading-relaxed mb-3">{step.desc}</p>
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 group-hover:gap-1.5 transition-all">
+              {step.cta} <ArrowRight size={11} />
+            </span>
+          </Link>
+        ))}
       </div>
     </div>
   );
@@ -129,8 +185,8 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Dashboard</h1>
-          <p className="text-cream-600 mt-1">Overview of your AI receptionist activity</p>
+          <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Home</h1>
+          <p className="text-cream-600 mt-1">Your AI front desk at a glance</p>
         </div>
         {/* Live indicator */}
         <div className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ${connected ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
@@ -159,13 +215,26 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* ── First-run setup checklist (Phase 29a) — shown until the AI
+          has handled its first call. Plain words, three steps. ── */}
+      {(calls as any) && totalCalls === 0 && <SetupChecklist />}
+
       {/* ── Stats grid ── */}
-      <div className="grid grid-cols-2 xl:grid-cols-7 gap-4">
-        <StatCard label="Total Calls" value={totalCalls} icon={Phone} color="bg-brand-600" />
-        <StatCard label={`Upcoming ${cap(vertical.appointmentNounPlural)}`} value={upcomingAppts} icon={Calendar} color="bg-emerald-500" />
-        <StatCard label="Open Escalations" value={openEscalations} icon={AlertCircle} color="bg-amber-500" />
-        <StatCard label="Missed Calls" value={missedCount} icon={PhoneMissed} color="bg-red-500" />
-        <StatCard label="Recall Rate" value="68%" icon={TrendingUp} color="bg-sky-500" />
+      <div className="grid grid-cols-2 xl:grid-cols-6 gap-4">
+        <Link href="/calls" className="block">
+          <StatCard label="Total Calls" value={totalCalls} icon={Phone} color="bg-brand-600" />
+        </Link>
+        <Link href="/appointments" className="block">
+          <StatCard label={`Upcoming ${cap(vertical.appointmentNounPlural)}`} value={upcomingAppts} icon={Calendar} color="bg-emerald-500" />
+        </Link>
+        {/* "Needs Attention" replaces the Escalations nav item (Phase 29a) —
+            this card is now the main entry point to /escalations. */}
+        <Link href="/escalations" className="block">
+          <StatCard label="Needs Attention" value={openEscalations} icon={AlertCircle} color="bg-amber-500" />
+        </Link>
+        <Link href="/missed-calls" className="block">
+          <StatCard label="Missed Calls" value={missedCount} icon={PhoneMissed} color="bg-red-500" />
+        </Link>
 
         {/* Messages stat — locked on Starter/Trial */}
         {smsEnabled ? (

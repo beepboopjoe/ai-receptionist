@@ -7,17 +7,12 @@ import {
   Phone,
   Calendar,
   Users,
-  PhoneMissed,
-  Bell,
-  AlertCircle,
   Settings,
   LogOut,
-  Megaphone,
   MessageSquare,
   CreditCard,
   Zap,
   BarChart2,
-  Building2,
   Lock,
   Menu,
   X,
@@ -39,25 +34,28 @@ import { UpgradeModal } from '@/components/ui/upgrade-modal';
 import type { UpgradeReason } from '@/components/ui/upgrade-modal';
 import { useLiveCalls } from '@/lib/useLiveCalls';
 
+// Phase 29a — simplified nav for non-technical owners. 8 items, plain
+// words. Pages removed from the nav stay fully routable: Missed Calls
+// lives as a tab on /calls, Reminders is linked from Appointments and
+// the Workflows gallery, Campaigns is reached via Workflows cards, and
+// Escalations ("Needs Attention") surfaces as a card on Home.
 function buildNav(contactsLabel: string, appointmentsLabel: string) {
   return [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/dashboard', label: 'Home', icon: LayoutDashboard, requires: undefined as undefined | 'two_way_sms' },
     { href: '/workflows', label: 'Workflows', icon: Sparkles, requires: undefined as undefined | 'two_way_sms' },
-    { href: '/calls', label: 'Call Log', icon: Phone, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/calls', label: 'Calls', icon: Phone, requires: undefined as undefined | 'two_way_sms' },
     { href: '/appointments', label: appointmentsLabel, icon: Calendar, requires: undefined as undefined | 'two_way_sms' },
     { href: '/contacts', label: contactsLabel, icon: Users, requires: undefined as undefined | 'two_way_sms' },
-    { href: '/leads/discover', label: 'Lead Discovery', icon: Crosshair, requires: undefined as undefined | 'two_way_sms' },
-    { href: '/missed-calls', label: 'Missed Calls', icon: PhoneMissed, requires: undefined as undefined | 'two_way_sms' },
-    { href: '/reminders', label: 'Reminders', icon: Bell, requires: undefined as undefined | 'two_way_sms' },
-    { href: '/escalations', label: 'Escalations', icon: AlertCircle, requires: undefined as undefined | 'two_way_sms' },
-    { href: '/campaigns', label: 'Campaigns', icon: Megaphone, requires: undefined as undefined | 'two_way_sms' },
     { href: '/messages', label: 'Messages', icon: MessageSquare, requires: 'two_way_sms' as const },
+    { href: '/leads/discover', label: 'Get New Leads', icon: Crosshair, requires: undefined as undefined | 'two_way_sms' },
     { href: '/billing', label: 'Billing', icon: CreditCard, requires: undefined as undefined | 'two_way_sms' },
   ];
 }
 
 // Pro-locked nav entries. When `href` is set AND the tenant is entitled,
 // the item renders as a real Link; otherwise it shows the upgrade modal.
+// Phase 29a: the dead "Multi-location" teaser (no page behind it) was
+// removed — locked buttons with nothing behind them confuse non-tech users.
 const proNavItems: {
   label: string;
   icon: React.ElementType;
@@ -65,40 +63,44 @@ const proNavItems: {
   href?: string;
 }[] = [
   { label: 'Analytics', icon: BarChart2, reason: 'pro_analytics', href: '/analytics' },
-  { label: 'Multi-location', icon: Building2, reason: 'multi_location' },
 ];
 
-const settingsNav = [
+// Phase 29a — settings split into Essentials (always visible, plain
+// names) and Advanced (collapsed by default). URLs are unchanged.
+const settingsNavEssentials = [
+  { href: '/settings/voice-agent', label: 'My AI Receptionist', icon: null },
+  { href: '/settings/knowledge-base', label: 'Teach Your AI', icon: null },
   { href: '/settings/phone-numbers', label: 'Phone Numbers', icon: null },
-  { href: '/settings/integrations', label: 'Integrations', icon: null },
   { href: '/settings/office-hours', label: 'Office Hours', icon: null },
-  { href: '/settings/voice-agent', label: 'Voice Agent', icon: null },
-  { href: '/settings/knowledge-base', label: 'Knowledge Base', icon: null },
   { href: '/settings/notifications', label: 'Notifications', icon: null },
-  { href: '/settings/webhooks', label: 'Webhooks', icon: null },
-  { href: '/settings/email-templates', label: 'Email Templates', icon: null },
-  { href: '/settings/api-keys', label: 'API Keys', icon: null },
   { href: '/settings/team', label: 'Team', icon: null },
+  { href: '/support', label: 'Help & Support', icon: 'lifebuoy' as const },
+];
+
+const settingsNavAdvanced = [
+  { href: '/settings/integrations', label: 'Integrations', icon: null },
+  { href: '/settings/email-templates', label: 'Email Templates', icon: null },
+  { href: '/settings/webhooks', label: 'Webhooks', icon: null },
+  { href: '/settings/api-keys', label: 'API Keys', icon: null },
   { href: '/settings/audit-log', label: 'Audit Log', icon: null },
   { href: '/settings/compliance', label: 'Compliance', icon: 'shield' as const },
   { href: '/settings/agent', label: 'AI Agent', icon: 'sparkles' as const },
-  { href: '/support', label: 'Help & Support', icon: 'lifebuoy' as const },
 ];
 
 const PLAN_LABELS: Record<string, string> = {
   trial: 'Trial',
-  starter: 'Starter',
   growth: 'Growth',
   scale: 'Scale',
+  business: 'Business',
   enterprise: 'Enterprise',
 };
 
 const PLAN_COLORS: Record<string, string> = {
   trial: 'bg-gray-100 text-gray-600',
-  starter: 'bg-blue-50 text-blue-700',
   growth: 'bg-brand-50 text-brand-700',
   scale: 'bg-purple-50 text-purple-700',
-  enterprise: 'bg-amber-50 text-amber-700',
+  business: 'bg-amber-50 text-amber-700',
+  enterprise: 'bg-indigo-50 text-indigo-700',
 };
 
 export function Sidebar() {
@@ -160,6 +162,37 @@ export function Sidebar() {
   async function handleLogout() {
     await logout();
     router.replace('/login');
+  }
+
+  // Shared renderer for both Essentials + Advanced settings groups.
+  function renderSettingsLink({ href, label, icon }: { href: string; label: string; icon: string | null }) {
+    const isCompliance = icon === 'shield';
+    const isAgent = icon === 'sparkles';
+    const isSupport = icon === 'lifebuoy';
+    const NavIcon = isCompliance ? Shield : isAgent ? Sparkles : isSupport ? LifeBuoy : Settings;
+    const showBadge = isCompliance && showComplianceBadge;
+    return (
+      <Link
+        key={href}
+        href={href}
+        onClick={() => setMobileOpen(false)}
+        className={clsx(
+          'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+          pathname === href
+            ? 'bg-brand-50 text-brand-700'
+            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+        )}
+      >
+        <NavIcon size={16} className="opacity-60 shrink-0" />
+        <span className="flex-1">{label}</span>
+        {showBadge && (
+          <span
+            className="w-2 h-2 rounded-full bg-amber-500 shrink-0"
+            title="Business Associate Agreement not yet signed"
+          />
+        )}
+      </Link>
+    );
   }
 
   return (
@@ -357,35 +390,30 @@ export function Sidebar() {
           <div className="pt-4 pb-1">
             <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Settings</p>
           </div>
-          {settingsNav.map(({ href, label, icon }) => {
-            const isCompliance = icon === 'shield';
-            const isAgent = icon === 'sparkles';
-            const isSupport = icon === 'lifebuoy';
-            const NavIcon = isCompliance ? Shield : isAgent ? Sparkles : isSupport ? LifeBuoy : Settings;
-            const showBadge = isCompliance && showComplianceBadge;
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileOpen(false)}
-                className={clsx(
-                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  pathname === href
-                    ? 'bg-brand-50 text-brand-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                )}
-              >
-                <NavIcon size={16} className="opacity-60 shrink-0" />
-                <span className="flex-1">{label}</span>
-                {showBadge && (
-                  <span
-                    className="w-2 h-2 rounded-full bg-amber-500 shrink-0"
-                    title="Business Associate Agreement not yet signed"
-                  />
-                )}
-              </Link>
-            );
-          })}
+          {settingsNavEssentials.map((item) => renderSettingsLink(item))}
+
+          {/* Advanced settings — collapsed by default so non-technical
+              owners never see "Webhooks" unless they go looking. Opens
+              automatically when the current page lives inside it. */}
+          <details
+            className="group/adv"
+            open={settingsNavAdvanced.some(({ href }) => pathname === href)}
+          >
+            <summary className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 cursor-pointer list-none select-none transition-colors">
+              <Settings size={16} className="opacity-60 shrink-0" />
+              <span className="flex-1">Advanced</span>
+              {showComplianceBadge && (
+                <span
+                  className="w-2 h-2 rounded-full bg-amber-500 shrink-0"
+                  title="Business Associate Agreement not yet signed"
+                />
+              )}
+              <span className="text-gray-400 text-xs group-open/adv:rotate-90 transition-transform">›</span>
+            </summary>
+            <div className="pl-2 space-y-0.5">
+              {settingsNavAdvanced.map((item) => renderSettingsLink(item))}
+            </div>
+          </details>
         </nav>
 
         {/* Usage widget */}
