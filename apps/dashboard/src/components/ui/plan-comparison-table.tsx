@@ -69,7 +69,7 @@ const SECTIONS: {
     rows: [
       { label: 'Outbound test calls',                       cells: [false, true, true, true, true] },
       { label: 'Outbound calling campaigns',                cells: [false, true, true, true, true] },
-      { label: 'Voicemail drop + AMD',                      cells: [false, true, true, true, true] },
+      { label: 'Leaves voicemails when nobody answers',     cells: [false, true, true, true, true] },
       { label: 'Advanced campaign retries',                 cells: [false, false, true, true, true] },
       { label: 'Lead Discovery (Google Maps · $0.99/lead)', cells: [false, true, true, true, true] },
     ],
