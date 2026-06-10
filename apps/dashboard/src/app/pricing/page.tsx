@@ -39,7 +39,7 @@ const FAQS = [
   },
   {
     q: 'Does it handle both inbound and outbound calls?',
-    a: 'Inbound 24/7 answering is on every plan. Outbound calling campaigns (autodialer, voicemail drop, retries) are included on every paid plan. Most competitors charge $99–$199/mo extra for outbound — we bundle it from Growth up.',
+    a: 'Yes. Answering your phone 24/7 is on every plan. Your AI can also call out for you — reminders, follow-ups, win-backs — leaving a voicemail if nobody answers and trying again later. Most competitors charge $99–$199/mo extra for outbound calling; we include it on every paid plan.',
   },
   {
     q: 'Does SMS come included?',

@@ -254,7 +254,7 @@ export default function LandingPage() {
                   'Dials your lead lists automatically',
                   'Qualifies prospects with natural conversation',
                   'Books appointments from cold leads',
-                  'Retry logic with configurable schedules',
+                  'Tries again automatically if nobody picks up',
                 ].map((feat) => (
                   <li key={feat} className="flex items-start gap-2.5 text-sm text-cream-700">
                     <CheckCircle size={15} className="text-brand-500 shrink-0 mt-0.5" />
