@@ -33,6 +33,8 @@ import {
   ClipboardList,
   Mail,
   Receipt,
+  PhoneOutgoing,
+  Crosshair,
   type LucideIcon,
 } from 'lucide-react';
 import type { VerticalConfig } from './verticals';
@@ -151,6 +153,26 @@ export function buildWorkflowCatalog(v: VerticalConfig): WorkflowDef[] {
     },
 
     // ── Proactive — the outreach you never get to ───────────────
+    {
+      id: 'ask-your-ai',
+      name: 'Ask Your AI to Make a Call',
+      description: `Type a request in plain words — "call and confirm tomorrow's 2pm" — and your AI dials, handles the conversation, and shows you the transcript.`,
+      category: 'proactive',
+      channel: 'voice',
+      status: 'live',
+      setupHref: '/dashboard',
+      icon: PhoneOutgoing,
+    },
+    {
+      id: 'get-new-leads',
+      name: 'Get New Leads',
+      description: 'Describe who you want to reach — "dentists in Chicago, rated 4+" — and we find real businesses with phone numbers, ready to call. Pay only per lead you keep.',
+      category: 'proactive',
+      channel: 'voice',
+      status: 'live',
+      setupHref: '/leads/discover',
+      icon: Crosshair,
+    },
     {
       id: 'appointment-reminders',
       name: `${cap(appt)} Reminders`,

@@ -40,6 +40,10 @@ export interface MediaStreamParams {
   /** Outbound campaign params — omit for inbound calls */
   campaignContactId?: string;
   campaignId?: string;
+  /** Phase 29b — Ask-your-AI plain-English task for single-task calls.
+   *  When present, the prompt-builder renders a `# Your Task This Call`
+   *  section so the AI opens by stating its purpose and works the task. */
+  adHocTask?: string;
   /**
    * Telnyx does NOT require this. Set it only for legacy Twilio paths where
    * the streamSid must appear in every outbound audio message.
@@ -58,7 +62,7 @@ export async function handleMediaStream(
   providerSocket: WebSocket,
   params: MediaStreamParams
 ): Promise<void> {
-  const { callId, tenantId, fromNumber, callSid, campaignContactId, campaignId, streamSid } = params;
+  const { callId, tenantId, fromNumber, callSid, campaignContactId, campaignId, streamSid, adHocTask } = params;
   const isOutbound = !!campaignContactId;
 
   // 0. PROMO-TRIAL CAP CHECK — refuse to open the AI media stream if the
@@ -170,6 +174,7 @@ export async function handleMediaStream(
       transferNumber: settingsRow?.transferNumber ?? null,
       businessContext: settingsRow?.businessContext ?? null,
       ...(kbChunks.length > 0 && { kbChunks }),
+      ...(adHocTask && { adHocTask }), // Phase 29b — Ask-your-AI single-task call
     });
   }
 

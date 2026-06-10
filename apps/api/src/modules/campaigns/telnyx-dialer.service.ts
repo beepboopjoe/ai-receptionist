@@ -110,7 +110,13 @@ export interface DialDirectParams {
    *  owner's cell. Treated as inbound from the AI's perspective. */
   fromNumber: string;
   /** Why this call exists. Stamped into the audit log + the call record. */
-  mode: 'demo' | 'self_test';
+  mode: 'demo' | 'self_test' | 'ai_task';
+  /**
+   * Phase 29b — plain-English task for an "Ask your AI" single-task call.
+   * Rides in client_state; the prompt-builder injects it as a
+   * `# Your Task This Call` section.
+   */
+  adHocTask?: string;
 }
 
 /**
@@ -125,7 +131,7 @@ export interface DialDirectParams {
  * (the same path as a regular inbound call).
  */
 export async function dialDirect(params: DialDirectParams): Promise<DialResult> {
-  const { to, from, callId, tenantId, fromNumber, mode } = params;
+  const { to, from, callId, tenantId, fromNumber, mode, adHocTask } = params;
 
   const clientState = Buffer.from(
     JSON.stringify({
@@ -135,6 +141,7 @@ export async function dialDirect(params: DialDirectParams): Promise<DialResult> 
       callSid: '', // filled in below once Telnyx returns the call_control_id
       isOutbound: false, // skip AMD; treat call.answered as inbound-style
       mode, // surfaces in dispatched events for analytics
+      ...(adHocTask && { adHocTask }), // Phase 29b — Ask-your-AI task text
     })
   ).toString('base64');
 

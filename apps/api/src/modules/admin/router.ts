@@ -827,6 +827,128 @@ export async function adminPlugin(app: FastifyInstance) {
   );
 
   // ================================================================
+  // ASK YOUR AI (Phase 29b) — single-task outbound call from a
+  // plain-English instruction. "Call Maria and ask if she can move
+  // her Tuesday appointment to Thursday." One number per request —
+  // list-calling lives in Campaigns. Rate-limited; counts toward
+  // plan minutes like any call.
+  // ================================================================
+  app.post(
+    '/calls/ai-task',
+    {
+      onRequest: [app.requireRole('staff')],
+      config: { rateLimit: { max: 5, timeWindow: '1 hour' } },
+    },
+    async (request, reply) => {
+      const { tenantId, id: actorId } = request.authUser;
+      const body = (request.body ?? {}) as { to?: string; contactId?: string; task?: string };
+
+      const task = (body.task ?? '').trim();
+      if (!task) throw new ValidationError('Tell your AI what to do on the call (task is required).');
+      if (task.length > 500) throw new ValidationError('Keep the task under 500 characters.');
+
+      // Resolve the destination number — either a contact on file or a raw E164.
+      let toNumber = (body.to ?? '').trim();
+      if (!toNumber && body.contactId) {
+        const { contacts } = await import('../../db/schema.js');
+        const [contact] = await db
+          .select({ phoneE164: contacts.phoneE164 })
+          .from(contacts)
+          .where(and(eq(contacts.tenantId, tenantId), eq(contacts.id, body.contactId)))
+          .limit(1);
+        if (!contact) throw new NotFoundError('Contact not found');
+        toNumber = contact.phoneE164;
+      }
+      if (!/^\+1[2-9]\d{9}$/.test(toNumber)) {
+        throw new ValidationError('Enter a valid US/Canada phone number, like +15551234567.');
+      }
+
+      // From-number: tenant's primary line, falling back to the platform
+      // demo number (same trial-friendly logic as /calls/test-call).
+      const { tenantPhoneNumbers } = await import('../../db/schema.js');
+      const { isNull } = await import('drizzle-orm');
+      const [primaryNumber] = await db
+        .select({ phoneE164: tenantPhoneNumbers.phoneE164 })
+        .from(tenantPhoneNumbers)
+        .where(
+          and(
+            eq(tenantPhoneNumbers.tenantId, tenantId),
+            eq(tenantPhoneNumbers.isPrimary, true),
+            isNull(tenantPhoneNumbers.releasedAt)
+          )
+        )
+        .limit(1);
+      const fromNumberForDial = primaryNumber?.phoneE164 ?? config.DEMO_FROM_NUMBER;
+      if (!fromNumberForDial) {
+        return reply.status(503).send({
+          error: 'ai_task_unavailable',
+          message: 'Calls aren’t available in this environment yet. Provision a phone number in Settings → Phone Numbers first.',
+        });
+      }
+
+      // Call record — direction 'outbound' so it shows in the normal call
+      // log with transcript + summary once the call completes.
+      const [callRecord] = await db
+        .insert(calls)
+        .values({
+          tenantId,
+          rcCallId: `pending-aitask-${Date.now()}`,
+          direction: 'outbound',
+          fromNumber: fromNumberForDial,
+          toNumber,
+          status: 'active',
+          startedAt: new Date(),
+        })
+        .returning({ id: calls.id });
+      const callId = callRecord!.id;
+
+      const { dialDirect } = await import('../campaigns/telnyx-dialer.service.js');
+      let callSid: string;
+      try {
+        const result = await dialDirect({
+          to: toNumber,
+          from: fromNumberForDial,
+          callId,
+          tenantId,
+          // fromNumber = the callee from the AI's POV, so identifyCaller()
+          // resolves the contact and the AI knows who it's speaking with.
+          fromNumber: toNumber,
+          mode: 'ai_task',
+          adHocTask: task,
+        });
+        callSid = result.callSid;
+      } catch (err) {
+        request.log.error({ err, callId }, 'Ask-your-AI Telnyx dial failed');
+        await db
+          .update(calls)
+          .set({ status: 'failed', outcome: 'dial_error', updatedAt: new Date() })
+          .where(eq(calls.id, callId));
+        return reply.status(502).send({
+          error: 'dial_failed',
+          message: "Couldn't place the call right now. Please try again.",
+        });
+      }
+
+      await db
+        .update(calls)
+        .set({ rcCallId: callSid, updatedAt: new Date() })
+        .where(eq(calls.id, callId));
+
+      auditLog({
+        tenantId,
+        actorType: 'admin_user',
+        actorId,
+        action: 'call.ai_task_placed',
+        entityType: 'call',
+        entityId: callId,
+        metadata: { toNumber, fromNumber: fromNumberForDial, task, callSid },
+      });
+
+      return reply.send({ ok: true, callId, toNumber });
+    }
+  );
+
+  // ================================================================
   // APPOINTMENTS
   // ================================================================
   app.get(

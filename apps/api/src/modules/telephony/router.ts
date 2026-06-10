@@ -74,6 +74,8 @@ async function telephonyRoutes(
           callSid: state['callSid'] ?? start?.call_control_id ?? '',
           campaignContactId: state['campaignContactId'],
           campaignId: state['campaignId'],
+          // Phase 29b — Ask-your-AI plain-English task (single-task calls)
+          ...(state['adHocTask'] && { adHocTask: state['adHocTask'] }),
           // No streamSid for Telnyx — it's a Twilio-only requirement
         });
       }

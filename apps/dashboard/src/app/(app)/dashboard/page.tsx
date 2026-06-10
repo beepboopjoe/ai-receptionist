@@ -10,6 +10,7 @@ import { useVertical } from '@/lib/useVertical';
 import { LockedFeature } from '@/components/ui/locked-feature';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AgentSuggestionsCard } from '@/components/dashboard/agent-suggestions-card';
+import { AskYourAiCard } from '@/components/dashboard/ask-your-ai-card';
 import { TopCampaignSuggestion } from '@/components/dashboard/top-campaign-suggestion';
 import { LeadDiscoveryCard } from '@/components/dashboard/lead-discovery-card';
 import { KnowledgeBaseCard } from '@/components/dashboard/knowledge-base-card';
@@ -218,6 +219,9 @@ export default function DashboardPage() {
       {/* ── First-run setup checklist (Phase 29a) — shown until the AI
           has handled its first call. Plain words, three steps. ── */}
       {(calls as any) && totalCalls === 0 && <SetupChecklist />}
+
+      {/* ── Ask your AI (Phase 29b) — plain-English single-task calls ── */}
+      <AskYourAiCard />
 
       {/* ── Stats grid ── */}
       <div className="grid grid-cols-2 xl:grid-cols-6 gap-4">

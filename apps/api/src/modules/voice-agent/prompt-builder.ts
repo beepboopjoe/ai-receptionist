@@ -33,6 +33,12 @@ export interface PromptContext {
    *  a synthetic query (practiceName + vertical + appointment type). Injected as a new
    *  `# Knowledge Base Excerpts` section so the AI grounds its answers in tenant docs. */
   kbChunks?: string[];
+  /** Phase 29b — "Ask your AI" single-task calls. The business owner typed a
+   *  plain-English task ("Call Maria and ask if she can move Tuesday to
+   *  Thursday"); we placed the outbound call and this is the instruction.
+   *  Rendered as `# Your Task This Call` and overrides the receptionist
+   *  greeting behavior — the AI opens by stating who it is and why it's calling. */
+  adHocTask?: string;
 }
 
 /**
@@ -130,6 +136,25 @@ ${excerpts}`);
 - Today is ${now.format('dddd, MMMM D, YYYY')}
 - Current time: ${now.format('h:mm A')} ${ctx.timezone}
 - Office hours today: ${todayHours ? `${todayHours.open} – ${todayHours.close}` : 'CLOSED'}`);
+
+  // ---- Phase 29b: Ask-your-AI single-task call ----
+  // The business owner asked us to place this call with a specific job.
+  // This section takes precedence over the normal receptionist greeting:
+  // WE called THEM, so the AI opens by stating who it is and why.
+  if (ctx.adHocTask) {
+    sections.push(`# Your Task This Call (IMPORTANT — this call exists for one reason)
+${ctx.practiceName} asked you to place THIS outbound call to complete one specific task:
+
+"${ctx.adHocTask}"
+
+Rules for this call:
+- YOU called THEM. Open by introducing yourself: you are the AI assistant calling on behalf of ${ctx.practiceName}, then state why you're calling in one sentence.
+- Work the task above to completion. Be polite, efficient, and natural.
+- If the person asks to speak to a human, offer to have someone from ${ctx.practiceName} call them back${ctx.transferNumber ? ` or transfer them to ${ctx.transferNumber}` : ''}.
+- Never claim to be human. If asked, say you're ${ctx.practiceName}'s AI assistant.
+- If you reach voicemail, leave a brief message covering the task and a callback request, then end the call.
+- When the task is done (or clearly can't be done on this call), thank them and end the call politely. Keep the whole call as short as the task allows.`);
+  }
 
   // ---- Caller identity ----
   if (ctx.caller) {
