@@ -9,7 +9,6 @@ import { CheckCircle, Phone, Megaphone, MessageSquare, ArrowRight, Sparkles, Cro
 import { BRAND_NAME } from '@/lib/brand';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
-import { CallMeWidget } from '@/components/ui/call-me-widget';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { PLANS } from '@ai-receptionist/shared';
 
@@ -154,13 +153,7 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          {/* Call-me-now widget — visitor's phone rings in ~5s with a demo AI.
-              Highest-CVR conversion lever on the page. */}
-          <div className="mt-10">
-            <CallMeWidget />
-          </div>
-
-          <p className="text-xs text-cream-500 mt-5">
+          <p className="text-xs text-cream-500 mt-8">
             No contracts · Voice + SMS · Setup in 10 minutes
           </p>
         </div>
