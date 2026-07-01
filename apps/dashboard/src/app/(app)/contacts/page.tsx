@@ -11,7 +11,6 @@ import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 import { useToast } from '@/components/ui/toast';
 import { downloadCsv } from '@/lib/csv';
 import { SectionAgent } from '@/components/dashboard/section-agent';
-import { LeadDiscoveryCard } from '@/components/dashboard/lead-discovery-card';
 
 export default function ContactsPage() {
   const vertical = useVertical();
@@ -151,15 +150,6 @@ export default function ContactsPage() {
               hint={search ? 'Try a different search term.' : `Import a CSV from your CRM, or let us find leads for you.`}
               {...(search ? {} : { cta: { label: 'Go to Settings → Integrations', href: '/settings/integrations' } })}
             />
-            {!search && (
-              <LeadDiscoveryCard
-                eyebrow="Don't have a list?"
-                title={`We'll find your first ${vertical.contactNounPlural}.`}
-                description="Tell us the kind of business you want to reach and we pull real, current leads from Google Maps. Pay only for the ones you keep ($0.99/lead)."
-                cta="Find leads"
-                compact
-              />
-            )}
           </div>
         ) : (
           <>

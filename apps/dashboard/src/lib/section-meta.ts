@@ -20,7 +20,6 @@ import {
   MessageSquare,
   Megaphone,
   Bell,
-  Crosshair,
   BookOpen,
 } from 'lucide-react';
 import type { AgentSuggestionType } from './api';
@@ -34,7 +33,6 @@ export type SectionKey =
   | 'messages'
   | 'campaigns'
   | 'reminders'
-  | 'lead-discovery'
   | 'knowledge-base';
 
 export interface SectionAction {
@@ -181,19 +179,6 @@ export const SECTION_META: Record<SectionKey, SectionMeta> = {
     actions: () => [
       { label: 'Customize reminder copy', href: '/settings/notifications' },
       { label: 'Disable / re-enable SMS', href: '/settings/notifications' },
-    ],
-    relevantSuggestionTypes: [],
-  },
-
-  'lead-discovery': {
-    key: 'lead-discovery',
-    icon: Crosshair,
-    title: 'Lead Discovery',
-    whatThisIs: ({ contactPlural }) =>
-      `Describe who you want to call — business type, location, rating — and we scrape Google Maps for real, current ${contactPlural} you can import straight into a campaign. Pay only for the leads you keep.`,
-    actions: () => [
-      { label: 'See how pricing works', href: '/lead-discovery' },
-      { label: 'View past discoveries', href: '#history' },
     ],
     relevantSuggestionTypes: [],
   },

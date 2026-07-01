@@ -4,9 +4,8 @@
 //   - /dashboard home
 //   - /settings/voice-agent (next to the Curate-My-Agent card)
 //
-// Same visual language family as LeadDiscoveryCard but indigo
-// accent so the two promo cards are visually distinct when
-// stacked on the dashboard home.
+// Indigo accent so it reads as a distinct promo card on the
+// dashboard home.
 // ============================================================
 'use client';
 import Link from 'next/link';

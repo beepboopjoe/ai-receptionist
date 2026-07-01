@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { campaignsApi } from '@/lib/api';
-import { ArrowLeft, Save, Crosshair, Megaphone, Upload, ArrowRight, Scale, Sparkles } from 'lucide-react';
+import { ArrowLeft, Save, Megaphone, Upload, ArrowRight, Scale, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/toast';
 import { useVertical } from '@/lib/useVertical';
@@ -78,27 +78,8 @@ export default function NewCampaignPage() {
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">New Campaign</h1>
       </div>
 
-      {/* Pick your lead source — Phase 12.7 added the third option. */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Link
-          href="/leads/discover"
-          className="rounded-xl border border-brand-200 bg-gradient-to-br from-brand-50 to-amber-50/40 p-4 hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Crosshair size={14} className="text-brand-600" />
-            <p className="text-[11px] font-bold text-brand-700 uppercase tracking-wider">
-              Find new leads
-            </p>
-          </div>
-          <p className="font-semibold text-sm text-cream-900">Discover leads on Google Maps</p>
-          <p className="text-xs text-cream-700 mt-1 leading-relaxed">
-            Describe who you want to call. We scrape + import. Pay per lead.
-          </p>
-          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand-700">
-            Open discovery <ArrowRight size={12} />
-          </span>
-        </Link>
-
+      {/* Pick your lead source. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Link
           href="/campaigns"
           className="rounded-xl border border-cream-200 bg-white p-4 hover:shadow-md transition-shadow"

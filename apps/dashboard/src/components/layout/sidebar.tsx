@@ -19,7 +19,6 @@ import {
   Shield,
   Sparkles,
   LifeBuoy,
-  Crosshair,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { logout } from '@/lib/auth';
@@ -47,7 +46,6 @@ function buildNav(contactsLabel: string, appointmentsLabel: string) {
     { href: '/appointments', label: appointmentsLabel, icon: Calendar, requires: undefined as undefined | 'two_way_sms' },
     { href: '/contacts', label: contactsLabel, icon: Users, requires: undefined as undefined | 'two_way_sms' },
     { href: '/messages', label: 'Messages', icon: MessageSquare, requires: 'two_way_sms' as const },
-    { href: '/leads/discover', label: 'Get New Leads', icon: Crosshair, requires: undefined as undefined | 'two_way_sms' },
     { href: '/billing', label: 'Billing', icon: CreditCard, requires: undefined as undefined | 'two_way_sms' },
   ];
 }

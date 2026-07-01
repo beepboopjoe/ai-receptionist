@@ -14,7 +14,6 @@ import { useToast } from '@/components/ui/toast';
 import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 import { CampaignGoalGallery } from '@/components/campaigns/campaign-goal-gallery';
 import { SectionAgent } from '@/components/dashboard/section-agent';
-import { LeadDiscoveryCard } from '@/components/dashboard/lead-discovery-card';
 
 const STATUS_BADGE: Record<string, string> = {
   draft: 'badge-gray',
@@ -165,13 +164,6 @@ export default function CampaignsPage() {
               label="No campaigns yet"
               hint={`Create one to start dialing ${vertical.contactNounPlural} automatically — or pick a suggested campaign above.`}
               cta={{ label: 'Create campaign', href: '/campaigns/new' }}
-            />
-            <LeadDiscoveryCard
-              eyebrow="No leads to call?"
-              title="Find your first 50 in 5 minutes."
-              description="Describe the business type and location, and we pull a fresh list straight from Google Maps. The imported leads land in a draft campaign ready to launch."
-              cta="Try Lead Discovery"
-              compact
             />
           </div>
         ) : (

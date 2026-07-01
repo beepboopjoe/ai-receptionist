@@ -34,7 +34,6 @@ import {
   Mail,
   Receipt,
   PhoneOutgoing,
-  Crosshair,
   type LucideIcon,
 } from 'lucide-react';
 import type { VerticalConfig } from './verticals';
@@ -162,16 +161,6 @@ export function buildWorkflowCatalog(v: VerticalConfig): WorkflowDef[] {
       status: 'live',
       setupHref: '/dashboard',
       icon: PhoneOutgoing,
-    },
-    {
-      id: 'get-new-leads',
-      name: 'Get New Leads',
-      description: 'Describe who you want to reach — "dentists in Chicago, rated 4+" — and we find real businesses with phone numbers, ready to call. Pay only per lead you keep.',
-      category: 'proactive',
-      channel: 'voice',
-      status: 'live',
-      setupHref: '/leads/discover',
-      icon: Crosshair,
     },
     {
       id: 'appointment-reminders',

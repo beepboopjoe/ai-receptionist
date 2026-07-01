@@ -205,55 +205,6 @@ export const analyticsApi = {
     apiFetch<AnalyticsOverview>(`/analytics/overview?days=${days}`),
 };
 
-// ---- Lead Discovery (Phase 12.7) ----
-export interface LeadDiscoveryParams {
-  query: string;
-  locationQuery: string;
-  radiusMiles?: number;
-  minRating?: number;
-  requirePhone?: boolean;
-  maxResults: number;
-}
-
-export interface LeadDiscoveryJob {
-  id: string;
-  tenantId: string;
-  actorId: string;
-  apifyRunId: string | null;
-  status: 'pending' | 'running' | 'succeeded' | 'failed' | 'imported';
-  searchParams: LeadDiscoveryParams;
-  rawResults: Array<Record<string, unknown>> | null;
-  leadsFound: number;
-  leadsImported: number;
-  costCents: number;
-  importedCampaignId: string | null;
-  errorMessage: string | null;
-  startedAt: string;
-  completedAt: string | null;
-  importedAt: string | null;
-  createdAt: string;
-}
-
-export const leadDiscoveryApi = {
-  preview: (params: LeadDiscoveryParams) =>
-    apiFetch<{ estimatedLeads: number; costCents: number; perLeadCents: number }>(
-      `/leads/discover/preview`,
-      { method: 'POST', body: JSON.stringify(params) }
-    ),
-  start: (params: LeadDiscoveryParams) =>
-    apiFetch<{ jobId: string; apifyRunId: string; status: string }>(
-      `/leads/discover/jobs`,
-      { method: 'POST', body: JSON.stringify(params) }
-    ),
-  list: () => apiFetch<{ data: LeadDiscoveryJob[] }>(`/leads/discover/jobs`),
-  get: (id: string) => apiFetch<LeadDiscoveryJob>(`/leads/discover/jobs/${id}`),
-  import: (id: string, body: { selectedIndices?: number[]; campaignId?: string }) =>
-    apiFetch<{ campaignId: string; leadsImported: number; costCents: number }>(
-      `/leads/discover/jobs/${id}/import`,
-      { method: 'POST', body: JSON.stringify(body) }
-    ),
-};
-
 // ---- Search (cmd-K palette) ----
 // Shape mirrors apps/api/src/modules/admin/router.ts `GET /search`.
 export interface SearchHits {

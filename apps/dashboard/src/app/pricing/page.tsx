@@ -7,7 +7,7 @@
 // ============================================================
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { CheckCircle, Clock, Mic, Phone, Calendar, Sparkles, Zap, ArrowRight, MessageSquare, MapPin, Inbox } from 'lucide-react';
+import { CheckCircle, Clock, Mic, Phone, Calendar, Sparkles, Zap, MessageSquare, MapPin, Inbox } from 'lucide-react';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { PLANS, PAY_AS_YOU_GO } from '@ai-receptionist/shared';
@@ -193,37 +193,7 @@ export default function PricingPage() {
             Pay only when you use them — no separate subscription.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto">
-          {/* Lead Discovery add-on */}
-          <Link
-            href="/lead-discovery"
-            className="group block rounded-2xl bg-white border-2 border-amber-200 p-6 hover:border-amber-400 hover:shadow-md transition-all"
-          >
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-[0.2em] mb-1">
-                  Lead Discovery
-                </p>
-                <h3 className="font-serif text-xl text-cream-900 tracking-tight">
-                  Google Maps lead scraping
-                </h3>
-              </div>
-              <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1 whitespace-nowrap">
-                $0.99 / lead
-              </span>
-            </div>
-            <p className="text-sm text-cream-600 mb-4 leading-relaxed">
-              No list? Tell us who you want — &ldquo;dentists in Chicago, rated 3.5+&rdquo; — and we find them.
-              You pay only for leads you keep.
-            </p>
-            <p className="text-xs text-cream-500">
-              Available on Growth and Scale plans · Real-time Google Maps data
-            </p>
-            <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 group-hover:gap-2 transition-all">
-              See how it works <ArrowRight size={13} />
-            </span>
-          </Link>
-
+        <div className="grid grid-cols-1 gap-5 max-w-xl mx-auto">
           {/* Voice Clone add-on (existing) */}
           <div className="rounded-2xl bg-white border border-cream-200 p-6">
             <div className="flex items-start justify-between gap-3 mb-3">
