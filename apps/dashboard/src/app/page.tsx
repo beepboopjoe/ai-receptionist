@@ -5,7 +5,7 @@
 // ============================================================
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { CheckCircle, Phone, Megaphone, MessageSquare, ArrowRight, Sparkles, Crosshair } from 'lucide-react';
+import { CheckCircle, Phone, Megaphone, MessageSquare, ArrowRight, Sparkles } from 'lucide-react';
 import { BRAND_NAME } from '@/lib/brand';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
@@ -179,16 +179,16 @@ export default function LandingPage() {
       <section className="py-24 px-6 bg-cream-50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Four products. One platform.</p>
+            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Three products. One platform.</p>
             <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
               Handle every part of the customer journey.
             </h2>
             <p className="text-cream-600 mt-3 max-w-xl mx-auto">
-              Discover leads. Call them. Answer their callbacks. Text the ones who missed you. End-to-end.
+              Answer every call. Follow up automatically. Text the ones who missed you. End-to-end.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
             {/* Inbound card */}
             <Link
@@ -292,41 +292,6 @@ export default function LandingPage() {
               </ul>
               <div className="flex items-center gap-2 text-sm font-semibold text-brand-600 group-hover:gap-3 transition-all">
                 Included on Growth & Scale <ArrowRight size={15} />
-              </div>
-            </Link>
-
-            {/* Lead Discovery card (Phase 12.7) */}
-            <Link
-              href="/lead-discovery"
-              className="group block rounded-3xl bg-white border border-cream-200 p-8 hover:border-brand-300 hover:shadow-md transition-all"
-            >
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center">
-                  <Crosshair size={22} className="text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-amber-600 uppercase tracking-[0.2em]">Discovery</p>
-                  <h3 className="font-serif text-2xl text-cream-900 tracking-tight">Lead Finder</h3>
-                </div>
-              </div>
-              <p className="text-cream-600 text-sm mb-6 leading-relaxed">
-                No list to call yet? Describe who you want — &ldquo;dentists in Chicago, rated 4.0+&rdquo; — and we pull real, current leads from Google Maps straight into a campaign. Pay only per lead you keep.
-              </p>
-              <ul className="space-y-3 mb-6">
-                {[
-                  'Phone, address, rating, website on every lead',
-                  'Filter by location, radius, category, rating',
-                  'Review each lead before it counts toward billing',
-                  'Imports straight into a draft AI campaign',
-                ].map((feat) => (
-                  <li key={feat} className="flex items-start gap-2.5 text-sm text-cream-700">
-                    <CheckCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
-                    {feat}
-                  </li>
-                ))}
-              </ul>
-              <div className="flex items-center gap-2 text-sm font-semibold text-brand-600 group-hover:gap-3 transition-all">
-                $0.99 per imported lead <ArrowRight size={15} />
               </div>
             </Link>
 
@@ -545,14 +510,6 @@ export default function LandingPage() {
                 <div className="text-[10px] uppercase tracking-wide text-brand-600 font-bold">Two-way sync</div>
               </div>
             ))}
-          </div>
-          <div className="mt-10">
-            <Link
-              href="/legal"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-700 hover:text-indigo-900 underline-offset-4 hover:underline"
-            >
-              See Telfin for law firms <span aria-hidden>→</span>
-            </Link>
           </div>
         </div>
       </section>
