@@ -10,7 +10,7 @@
 // (it points at the same SWR key), so this is additive.
 // ============================================================
 'use client';
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import useSWR from 'swr';
 import { tenantsApi } from './api';
 import { getVertical, getSavedVertical, type VerticalConfig } from './verticals';
@@ -51,8 +51,13 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     { revalidateOnFocus: false, dedupingInterval: 60_000 }
   );
 
-  // Resolve vertical: API result first, then localStorage, then 'generic'.
-  const verticalId = data?.vertical ?? getSavedVertical();
+  // Avoid a hydration mismatch: getSavedVertical() reads localStorage, which is
+  // empty during SSR (→ 'generic') but populated on the client's first render
+  // (→ the real vertical). Pin to 'generic' until mounted so server and first
+  // client render agree, then resolve: API result first, then localStorage.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const verticalId = mounted ? (data?.vertical ?? getSavedVertical()) : 'generic';
   const vertical = getVertical(verticalId);
 
   const value: TenantContextValue = {

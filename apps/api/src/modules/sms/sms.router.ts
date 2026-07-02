@@ -8,7 +8,6 @@
 // All routes require at least 'staff' role.
 // ============================================================
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import fp from 'fastify-plugin';
 import { db } from '../../db/client.js';
 import { smsMessages, contacts, tenants } from '../../db/schema.js';
 import { and, asc, desc, eq, or } from 'drizzle-orm';
@@ -200,4 +199,6 @@ async function smsRouterPlugin(app: FastifyInstance) {
   );
 }
 
-export const smsPlugin = fp(smsRouterPlugin, { name: 'sms' });
+// Plain (encapsulated) plugin so the `/api/v1` prefix in main.ts applies.
+// fastify-plugin (fp) de-encapsulates and drops the prefix → routes 404.
+export const smsPlugin = smsRouterPlugin;

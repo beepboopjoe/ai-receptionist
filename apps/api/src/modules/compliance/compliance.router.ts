@@ -8,7 +8,6 @@
 //   GET  /compliance/events          — compliance audit trail (owner only)
 // ============================================================
 import type { FastifyInstance } from 'fastify';
-import fp from 'fastify-plugin';
 import { db } from '../../db/client.js';
 import { tenants, adminUsers, complianceEvents } from '../../db/schema.js';
 import { eq, desc } from 'drizzle-orm';
@@ -197,7 +196,6 @@ async function complianceRoutes(app: FastifyInstance): Promise<void> {
   });
 }
 
-export const compliancePlugin = fp(complianceRoutes, {
-  name: 'compliance-plugin',
-  dependencies: ['auth-middleware'],
-});
+// Plain (encapsulated) plugin so the `/api/v1` prefix in main.ts applies.
+// fastify-plugin (fp) de-encapsulates and drops the prefix → routes 404.
+export const compliancePlugin = complianceRoutes;

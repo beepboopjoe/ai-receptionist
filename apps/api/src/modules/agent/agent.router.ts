@@ -10,7 +10,6 @@
 //   PUT  /agent/settings                — owner only
 // ============================================================
 import type { FastifyInstance } from 'fastify';
-import fp from 'fastify-plugin';
 import {
   scanTenant,
   listSuggestions,
@@ -95,7 +94,7 @@ async function agentRoutes(app: FastifyInstance): Promise<void> {
   });
 }
 
-export const agentPlugin = fp(agentRoutes, {
-  name: 'agent-plugin',
-  dependencies: ['auth-middleware'],
-});
+// NOTE: registered as a plain (encapsulated) plugin so the `/api/v1` prefix in
+// main.ts applies. Wrapping in fastify-plugin (fp) de-encapsulates it and drops
+// the prefix, which mounts these routes at root and 404s the dashboard.
+export const agentPlugin = agentRoutes;

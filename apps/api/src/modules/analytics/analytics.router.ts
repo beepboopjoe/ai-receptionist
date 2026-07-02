@@ -18,7 +18,7 @@ import type { FastifyInstance } from 'fastify';
 import { db } from '../../db/client.js';
 import { calls, appointments, escalations } from '../../db/schema.js';
 import { and, eq, gte, count, sql } from 'drizzle-orm';
-import { redis } from '../../db/redis.js';
+import { cacheGet, cacheSet } from '../../db/redis.js';
 import { ValidationError } from '../../lib/errors.js';
 
 // Rough heuristic for "money saved" — average booking value per industry
@@ -41,7 +41,7 @@ export async function analyticsPlugin(app: FastifyInstance): Promise<void> {
       }
 
       const cacheKey = `analytics:${tenantId}:${days}`;
-      const cached = await redis.get(cacheKey).catch(() => null);
+      const cached = await cacheGet(cacheKey);
       if (cached) {
         return reply.send(JSON.parse(cached));
       }
@@ -211,7 +211,7 @@ export async function analyticsPlugin(app: FastifyInstance): Promise<void> {
       };
 
       // 5-minute cache. Data is read-only and doesn't need to be live.
-      await redis.set(cacheKey, JSON.stringify(payload), 'EX', 300).catch(() => null);
+      await cacheSet(cacheKey, JSON.stringify(payload), 300);
       return reply.send(payload);
     },
   });

@@ -25,7 +25,7 @@ import {
   tenantPhoneNumbers,
 } from '../../db/schema.js';
 import { eq, and, isNull } from 'drizzle-orm';
-import { redis } from '../../db/redis.js';
+import { cacheGet, cacheSet, cacheDel } from '../../db/redis.js';
 import type { Vertical } from '../voice-agent/prompt-builder.js';
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
 
@@ -182,7 +182,7 @@ export async function campaignsPlugin(app: FastifyInstance) {
       const { tenantId } = request.authUser;
 
       const cacheKey = `campaigns:suggestions:${tenantId}`;
-      const cached = await redis.get(cacheKey).catch(() => null);
+      const cached = await cacheGet(cacheKey);
       if (cached) {
         return reply.send(JSON.parse(cached));
       }
@@ -224,7 +224,7 @@ export async function campaignsPlugin(app: FastifyInstance) {
 
       const payload = { suggestions: results };
       // Cache 5 minutes; the underlying contact/appointment data doesn't churn fast.
-      await redis.set(cacheKey, JSON.stringify(payload), 'EX', 300).catch(() => null);
+      await cacheSet(cacheKey, JSON.stringify(payload), 300);
       return reply.send(payload);
     },
   });
@@ -314,7 +314,7 @@ export async function campaignsPlugin(app: FastifyInstance) {
       );
 
       // Invalidate the suggestions cache so the gallery refreshes its count.
-      await redis.del(`campaigns:suggestions:${tenantId}`).catch(() => null);
+      await cacheDel(`campaigns:suggestions:${tenantId}`);
 
       return reply.status(201).send({
         campaignId: campaign.id,

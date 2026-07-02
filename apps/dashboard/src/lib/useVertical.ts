@@ -10,6 +10,7 @@
 // (first paint, offline, or non-authenticated routes).
 // ============================================================
 'use client';
+import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { tenantsApi } from './api';
 import { getSavedVertical, getVertical, type VerticalConfig } from './verticals';
@@ -30,6 +31,15 @@ export function useVertical(): VerticalConfig {
     },
     { revalidateOnFocus: false, dedupingInterval: 60_000 }
   );
+
+  // Avoid a hydration mismatch: localStorage is empty during SSR (→ 'generic')
+  // but populated on the client's very first render (→ the real vertical), so
+  // any component rendering vertical-dependent text/emoji on first paint makes
+  // React discard the server HTML. Pin to 'generic' until mounted so server and
+  // first client render agree, then switch to the resolved value.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return getVertical('generic');
 
   // 1) API-resolved value (most authoritative)
   // 2) localStorage (set during step-0 or by a prior API hit)

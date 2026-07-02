@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onboardingApi, settingsApi } from '@/lib/api';
 import { ArrowLeft, ArrowRight, Save } from 'lucide-react';
-import { getSavedVertical, getVertical } from '@/lib/verticals';
+import { useVertical } from '@/lib/useVertical';
 
 const DEFAULT_HOURS = {
   mon: { open: '08:00', close: '17:00' },
@@ -15,7 +15,7 @@ const DEFAULT_HOURS = {
 
 export default function Step4RulesPage() {
   const router = useRouter();
-  const vertical = getVertical(getSavedVertical());
+  const vertical = useVertical();
   const [businessName, setBusinessName] = useState('');
   const [transferNumber, setTransferNumber] = useState('');
   const [afterHoursMode, setAfterHoursMode] = useState('voicemail');
