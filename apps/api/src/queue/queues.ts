@@ -32,3 +32,6 @@ export const crmEventSyncQueue = new Queue('crm-event-sync', { connection: redis
 
 /** Recurring campaign scanner (Phase 18) — fires every minute to re-enqueue due recurring campaigns. */
 export const recurringCampaignScanQueue = new Queue('recurring-campaign-scan', { connection: redis });
+
+/** Outbound pool scaling sweep — grows per-tenant dialer pools when volume concentrates. */
+export const outboundPoolScalingQueue = new Queue('outbound-pool-scaling', { connection: redis });

@@ -22,9 +22,8 @@ import {
   outboundCampaigns,
   campaignContacts,
   tenants,
-  tenantPhoneNumbers,
 } from '../../db/schema.js';
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { cacheGet, cacheSet, cacheDel } from '../../db/redis.js';
 import type { Vertical } from '../voice-agent/prompt-builder.js';
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
@@ -48,7 +47,8 @@ export async function campaignsPlugin(app: FastifyInstance) {
       const { tenantId } = request.authUser;
       const body = request.body as {
         name: string;
-        fromNumber: string;
+        /** Optional fixed caller ID override. Omitted = rotate the tenant's outbound pool. */
+        fromNumber?: string;
         dialWindowStart?: string;
         dialWindowEnd?: string;
         maxRetries?: number;
@@ -57,8 +57,8 @@ export async function campaignsPlugin(app: FastifyInstance) {
         voicemailMessage?: string;
       };
 
-      if (!body.name || !body.fromNumber) {
-        throw new ValidationError('name and fromNumber are required');
+      if (!body.name) {
+        throw new ValidationError('name is required');
       }
 
       const campaign = await createCampaign({ tenantId, ...body });
@@ -257,25 +257,10 @@ export async function campaignsPlugin(app: FastifyInstance) {
         });
       }
 
-      // Resolve the tenant's primary phone number — same pattern test-call uses.
-      const [primaryNumber] = await db
-        .select({ phoneE164: tenantPhoneNumbers.phoneE164 })
-        .from(tenantPhoneNumbers)
-        .where(
-          and(
-            eq(tenantPhoneNumbers.tenantId, tenantId),
-            eq(tenantPhoneNumbers.isPrimary, true),
-            isNull(tenantPhoneNumbers.releasedAt)
-          )
-        )
-        .limit(1);
-
-      if (!primaryNumber) {
-        return reply.status(400).send({
-          error: 'no_primary_number',
-          message: 'Provision a phone number in Settings → Phone Numbers before launching campaigns.',
-        });
-      }
+      // Make sure the tenant's rotating outbound pool exists — dials pick
+      // a number from it per call (fromNumber stays NULL on the campaign).
+      const { ensureOutboundPool } = await import('../outbound-pool/pool.service.js');
+      await ensureOutboundPool(tenantId);
 
       const now = new Date();
       const [campaign] = await db
@@ -283,7 +268,7 @@ export async function campaignsPlugin(app: FastifyInstance) {
         .values({
           tenantId,
           name: goal.defaultName(now),
-          fromNumber: primaryNumber.phoneE164,
+          fromNumber: null,
           status: 'draft',
           dialWindowStart: goal.defaultDialWindow.start,
           dialWindowEnd: goal.defaultDialWindow.end,

@@ -194,11 +194,48 @@ export const tenantPhoneNumbers = pgTable(
     isPorted: boolean('is_ported').notNull().default(false),
     /** FK to phone_port_requests when this came from a port; null for new buys. */
     portRequestId: uuid('port_request_id'),
+    /**
+     * 'inbound'       — tenant-managed, manually purchased (default; all
+     *                   pre-pool rows). Billed the per-number monthly fee.
+     * 'outbound_pool' — platform-managed, auto-provisioned, rotated per
+     *                   outbound dial. Never billed per-number; outbound
+     *                   minutes bill via the minute_usage overage pipeline.
+     */
+    purpose: text('purpose').notNull().default('inbound'),
+    /** Guard bit: tenant-facing list/release endpoints must skip these rows. */
+    poolAutoManaged: boolean('pool_auto_managed').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     tenantIdx: index('tenant_phone_numbers_tenant_idx').on(t.tenantId, t.releasedAt),
+    poolIdx: index('tenant_phone_numbers_pool_idx').on(t.tenantId, t.purpose, t.releasedAt),
+  })
+);
+
+// ---- Outbound Pool Number Stats ----
+// Rotation-hot-path counters, 1:1 with tenant_phone_numbers rows where
+// purpose='outbound_pool'. Kept separate so per-dial writes don't touch
+// the numbers table the settings page reads. last_dialed_at drives the
+// least-recently-used selection; dials_last_24h feeds the scaling sweep
+// (reset each sweep).
+export const outboundPoolNumberStats = pgTable(
+  'outbound_pool_number_stats',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    phoneNumberId: uuid('phone_number_id')
+      .notNull()
+      .unique()
+      .references(() => tenantPhoneNumbers.id, { onDelete: 'cascade' }),
+    lastDialedAt: timestamp('last_dialed_at', { withTimezone: true }),
+    dialsLast24h: integer('dials_last_24h').notNull().default(0),
+    totalDials: integer('total_dials').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tenantIdx: index('outbound_pool_stats_tenant_idx').on(t.tenantId, t.lastDialedAt),
   })
 );
 
@@ -525,7 +562,9 @@ export const outboundCampaigns = pgTable(
       .references(() => tenants.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     status: text('status').notNull().default('draft'), // draft|running|paused|completed|cancelled
-    fromNumber: text('from_number').notNull(),
+    /** NULL = rotate through the tenant's outbound pool at dial time.
+     *  Non-null = fixed caller ID (legacy / explicit override). */
+    fromNumber: text('from_number'),
     maxRetries: integer('max_retries').notNull().default(3),
     retryDelayMinutes: integer('retry_delay_minutes').notNull().default(60),
     maxConcurrentCalls: integer('max_concurrent_calls').notNull().default(3),

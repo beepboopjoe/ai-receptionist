@@ -148,6 +148,17 @@ export async function processOutboundDial(job: Job<OutboundDialJobData>): Promis
     .set({ status: 'dialing', lastDialedAt: new Date(), updatedAt: new Date() })
     .where(eq(campaignContacts.id, campaignContactId));
 
+  // 4b. Resolve the caller ID for THIS dial. Campaigns normally store
+  //     fromNumber=NULL, meaning: rotate the tenant's outbound pool
+  //     (least-recently-dialed) so no single number concentrates enough
+  //     volume to get spam-flagged. A non-null fromNumber (legacy /
+  //     explicit override) pins that fixed number, exactly as before.
+  let fromNumber = campaign.fromNumber;
+  if (!fromNumber) {
+    const { selectPoolNumberForDial } = await import('../../modules/outbound-pool/pool.service.js');
+    fromNumber = await selectPoolNumberForDial(tenantId);
+  }
+
   // 5. Create call DB record — must happen BEFORE dialLead() so callId can
   //    be encoded into client_state and travel through the entire call lifecycle.
   const [callRecord] = await db
@@ -157,7 +168,7 @@ export async function processOutboundDial(job: Job<OutboundDialJobData>): Promis
       contactId: cc.contactId,
       rcCallId: `pending-${campaignContactId}`, // updated with real call_control_id after dial
       direction: 'outbound',
-      fromNumber: campaign.fromNumber,
+      fromNumber,
       toNumber: cc.phoneE164,
       status: 'active',
       startedAt: new Date(),
@@ -171,7 +182,7 @@ export async function processOutboundDial(job: Job<OutboundDialJobData>): Promis
   try {
     const result = await dialLead({
       to: cc.phoneE164,
-      from: campaign.fromNumber,
+      from: fromNumber,
       campaignContactId,
       tenantId,
       campaignId,

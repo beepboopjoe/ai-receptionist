@@ -664,6 +664,19 @@ export const phoneNumbersApi = {
     apiFetch<void>(`/phone-numbers/port-requests/${id}`, { method: 'DELETE' }),
 };
 
+// ---- Outbound number pool (auto-managed, read-only) ----
+export interface PoolNumber {
+  id: string;
+  phoneE164: string;
+  region: string | null;
+  purchasedAt: string;
+  lastDialedAt: string | null;
+  totalDials: number;
+}
+export const outboundPoolApi = {
+  list: () => apiFetch<{ data: PoolNumber[] }>('/outbound-pool/numbers'),
+};
+
 // ---- Campaigns ----
 export const campaignsApi = {
   list: (status?: string) => {
@@ -673,7 +686,8 @@ export const campaignsApi = {
   get: (id: string) => apiFetch<unknown>(`/campaigns/${id}`),
   create: (body: {
     name: string;
-    fromNumber: string;
+    /** Optional fixed caller-ID override — omit to use the rotating outbound pool. */
+    fromNumber?: string;
     dialWindowStart?: string;
     dialWindowEnd?: string;
     maxRetries?: number;

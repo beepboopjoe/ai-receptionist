@@ -181,6 +181,37 @@ recurringCampaignScanWorker.on('failed', (job, err) => {
   console.error('[worker:recurring-campaign-scan] ❌ failed to schedule:', err);
 });
 
+// ---- Outbound pool scaling sweep ----
+// Every 6 hours: grow per-tenant rotating dialer pools whose recent
+// volume concentrates too many dials per number (spam-flag protection).
+const outboundPoolScalingWorker = new Worker(
+  'outbound-pool-scaling',
+  async (job: Job) => {
+    const { processPoolScalingSweep } = await import('./jobs/outbound-pool-scaling.job.js');
+    await processPoolScalingSweep(job);
+  },
+  { connection: redis, concurrency: 1 } // single-worker — serialize the sweep
+);
+outboundPoolScalingWorker.on('failed', (job, err) => {
+  console.error(`[worker:outbound-pool-scaling] ❌ job ${job?.id} failed:`, err.message);
+});
+
+// Schedule the repeatable sweep once on worker boot (deduped by jobId).
+(async () => {
+  const { outboundPoolScalingQueue } = await import('./queues.js');
+  await outboundPoolScalingQueue.add(
+    'sweep',
+    {},
+    {
+      repeat: { pattern: '0 */6 * * *' }, // every 6 hours
+      jobId: 'pool-scaling-singleton',
+    }
+  );
+  console.log('[worker:outbound-pool-scaling] ✅ repeatable sweep scheduled (every 6h)');
+})().catch((err) => {
+  console.error('[worker:outbound-pool-scaling] ❌ failed to schedule:', err);
+});
+
 // ---- CRM event sync worker (Phase 13) ----
 // Fans out call/appointment/escalation events to each tenant's connected CRMs.
 const crmEventSyncWorker = new Worker(
@@ -259,6 +290,7 @@ async function shutdown() {
     crmSyncWorker.close(),
     hubspotSyncWorker.close(),
     outboundDialerWorker.close(),
+    outboundPoolScalingWorker.close(),
   ]);
   await redis.quit();
   process.exit(0);

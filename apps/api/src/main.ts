@@ -54,6 +54,7 @@ import { salesforceOAuthPlugin } from './modules/crm/salesforce-oauth.router.js'
 import { clioOAuthPlugin } from './modules/crm/clio-oauth.router.js';
 import { filevineCredentialsPlugin } from './modules/crm/filevine-credentials.router.js';
 import { zohoOAuthPlugin } from './modules/crm/zoho-oauth.router.js';
+import { outboundPoolPlugin } from './modules/outbound-pool/pool.router.js';
 import { openapiPlugin } from './modules/public-api/openapi.plugin.js';
 import { smsPlugin } from './modules/sms/sms.router.js';
 import { compliancePlugin } from './modules/compliance/compliance.router.js';
@@ -188,6 +189,7 @@ async function buildApp() {
   await app.register(zohoOAuthPlugin, { prefix: '/api/v1' });
   await app.register(billingPlugin, { prefix: '/api/v1' });
   await app.register(phoneNumbersPlugin, { prefix: '/api/v1' });
+  await app.register(outboundPoolPlugin, { prefix: '/api/v1' });
   await app.register(affiliatePlugin, { prefix: '/api/v1' });
   await app.register(partnerPlugin, { prefix: '/api/v1' });
   await app.register(hubspotOAuthPlugin, { prefix: '/api/v1' });

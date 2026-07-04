@@ -18,7 +18,6 @@ export default function NewCampaignPage() {
 
   const [form, setForm] = useState({
     name: '',
-    fromNumber: '',
     dialWindowStart: '09:00',
     dialWindowEnd: '17:00',
     maxRetries: 3,
@@ -41,16 +40,15 @@ export default function NewCampaignPage() {
       maxRetries: t.maxRetries,
       retryDelayMinutes: t.retryDelayMinutes,
       maxConcurrentCalls: t.maxConcurrentCalls,
-      // fromNumber intentionally not touched — the user supplies their own caller ID.
     }));
     setAppliedTemplateId(t.id);
-    toast.info(`Template applied: ${t.title}. Review the fields and add your caller ID.`);
+    toast.info(`Template applied: ${t.title}. Review the fields below.`);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name.trim() || !form.fromNumber.trim()) {
-      toast.error('Campaign name and caller ID are required.');
+    if (!form.name.trim()) {
+      toast.error('Campaign name is required.');
       return;
     }
     setSaving(true);
@@ -141,16 +139,12 @@ export default function NewCampaignPage() {
               required
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Caller ID *</label>
-            <input
-              value={form.fromNumber}
-              onChange={(e) => set('fromNumber', e.target.value)}
-              placeholder="+15551234567"
-              className="input font-mono"
-              required
-            />
-            <p className="text-xs text-gray-400 mt-1">Must be a number provisioned for your account</p>
+          <div className="rounded-lg bg-cream-50 border border-cream-200 px-4 py-3">
+            <p className="text-xs font-semibold text-cream-800 mb-0.5">Caller ID — handled for you</p>
+            <p className="text-xs text-cream-700 leading-relaxed">
+              Calls are placed from your account&apos;s rotating outbound number pool. We provision
+              and rotate the numbers automatically so none of them get spam-flagged — no setup needed.
+            </p>
           </div>
         </div>
 
@@ -274,7 +268,7 @@ function LegalCampaignTemplateGallery({
           <h2 className="font-semibold text-gray-900">Start from a law-firm template</h2>
           <p className="text-sm text-gray-600 mt-1">
             Seven proactive campaigns built for law-firm workflows. Picking one pre-fills
-            the form below — review, add your caller ID, then save.
+            the form below — review, then save.
           </p>
         </div>
       </div>
@@ -307,8 +301,8 @@ function LegalCampaignTemplateGallery({
         })}
       </div>
       <p className="text-xs text-gray-500 mt-5">
-        Picking a template only fills the form fields below. You still review, set your caller
-        ID, and click <span className="font-semibold">Create Campaign</span> to actually save.
+        Picking a template only fills the form fields below. You still review and click{' '}
+        <span className="font-semibold">Create Campaign</span> to actually save.
       </p>
     </section>
   );

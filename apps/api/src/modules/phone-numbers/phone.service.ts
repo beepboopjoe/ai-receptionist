@@ -7,7 +7,7 @@
 // ============================================================
 import { db } from '../../db/client.js';
 import { tenantPhoneNumbers, tenants } from '../../db/schema.js';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull, ne } from 'drizzle-orm';
 import {
   searchAvailableNumbers as telnyxSearch,
   purchaseNumber as telnyxPurchase,
@@ -74,10 +74,19 @@ export interface OwnedNumber {
 }
 
 export async function listTenantNumbers(tenantId: string): Promise<OwnedNumber[]> {
+  // Excludes auto-managed outbound-pool numbers — those have their own
+  // read-only endpoint (/outbound-pool/numbers) and must never appear in
+  // the tenant-managed buy/release list.
   const rows = await db
     .select()
     .from(tenantPhoneNumbers)
-    .where(and(eq(tenantPhoneNumbers.tenantId, tenantId), isNull(tenantPhoneNumbers.releasedAt)))
+    .where(
+      and(
+        eq(tenantPhoneNumbers.tenantId, tenantId),
+        isNull(tenantPhoneNumbers.releasedAt),
+        ne(tenantPhoneNumbers.purpose, 'outbound_pool')
+      )
+    )
     .orderBy(asc(tenantPhoneNumbers.purchasedAt));
   return rows.map((r) => ({
     id: r.id,
@@ -206,6 +215,11 @@ export async function releaseTenantNumber(params: {
     .where(and(eq(tenantPhoneNumbers.id, params.numberId), eq(tenantPhoneNumbers.tenantId, params.tenantId)))
     .limit(1);
   if (!row) throw new NotFoundError('PhoneNumber', params.numberId);
+  if (row.poolAutoManaged) {
+    throw new ValidationError(
+      'This number is part of your auto-managed outbound pool and cannot be released manually'
+    );
+  }
   if (row.releasedAt) throw new ValidationError('Number already released');
   if (!row.telnyxPhoneId) {
     throw new IntegrationError('carrier', `Number ${row.phoneE164} has no carrier phone id — release manually`);

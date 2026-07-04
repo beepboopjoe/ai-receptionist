@@ -20,7 +20,9 @@ const logger = pino({ name: 'campaign.service' });
 export interface CreateCampaignInput {
   tenantId: string;
   name: string;
-  fromNumber: string;
+  /** Optional fixed caller ID override. Omitted (the normal case) =
+   *  NULL on the row, and each dial rotates the tenant's outbound pool. */
+  fromNumber?: string;
   dialWindowStart?: string;
   dialWindowEnd?: string;
   maxRetries?: number;
@@ -30,12 +32,22 @@ export interface CreateCampaignInput {
 }
 
 export async function createCampaign(input: CreateCampaignInput): Promise<OutboundCampaign> {
+  // Provision the rotating dialer pool up-front (idempotent) so the
+  // campaign always has numbers to dial from. Awaited on purpose — a
+  // Telnyx failure should surface as a create error, not a silent
+  // campaign with nothing to dial from. Skipped when the caller pins
+  // an explicit fromNumber (legacy/override path).
+  if (!input.fromNumber) {
+    const { ensureOutboundPool } = await import('../outbound-pool/pool.service.js');
+    await ensureOutboundPool(input.tenantId);
+  }
+
   const [campaign] = await db
     .insert(outboundCampaigns)
     .values({
       tenantId: input.tenantId,
       name: input.name,
-      fromNumber: input.fromNumber,
+      fromNumber: input.fromNumber ?? null,
       dialWindowStart: input.dialWindowStart ?? '09:00',
       dialWindowEnd: input.dialWindowEnd ?? '17:00',
       maxRetries: input.maxRetries ?? 3,

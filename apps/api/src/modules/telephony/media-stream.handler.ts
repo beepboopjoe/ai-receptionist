@@ -331,12 +331,22 @@ export async function handleMediaStream(
       logger.error({ err, callSid }, 'Failed to fetch transcript/summary from Grok');
     }
 
+    // Conversation duration — measured from stream start, i.e. actual AI
+    // talk-time, not ring time. Persisted on the call row so minute
+    // billing, promo-trial caps, and analytics all see real durations
+    // (previously only the RingCentral path ever wrote duration_seconds).
+    const durationSeconds = Math.round((Date.now() - liveStartedAt) / 1000);
+
+    // If the Grok session never produced a transcript, treat as missed.
+    const isMissed = !transcript || transcript.length === 0;
+
     try {
       await db
         .update(calls)
         .set({
           status: 'completed',
           endedAt: new Date(),
+          durationSeconds,
           summary,
           transcript: transcript as unknown as Record<string, unknown>[],
           updatedAt: new Date(),
@@ -346,21 +356,31 @@ export async function handleMediaStream(
       logger.error({ err, callId }, 'Failed to persist call record after Grok close');
     }
 
+    // Track minute usage for billing — fire-and-forget (never blocks call
+    // teardown). Fires for both inbound and outbound (pool or fixed-number)
+    // calls; missed calls don't bill (no agent voice time), mirroring the
+    // RingCentral handler's rule.
+    if (!isMissed && durationSeconds > 0) {
+      const minutes = durationSeconds / 60;
+      void import('../billing/usage.service.js').then(({ incrementMinuteUsage }) =>
+        incrementMinuteUsage(tenantId, minutes).catch((err) => {
+          logger.error({ err, callId }, 'incrementMinuteUsage failed');
+        })
+      );
+    }
+
     // Clean up session memory
     await voiceAdapter.endSession(grokSessionId).catch(() => void 0);
 
     // Tell the live monitor the call has ended so it can close any open
     // viewer drawer. Sent before call_completed/call_missed so the dashboard
     // can transition state cleanly.
-    const durationSeconds = Math.round((Date.now() - liveStartedAt) / 1000);
     pushActivity(tenantId, 'call_live_ended', {
       callId,
       durationSeconds,
     });
 
     // Fire webhooks + activity for call completion. Both helpers never throw.
-    // If the Grok session never produced a transcript, treat as missed.
-    const isMissed = !transcript || transcript.length === 0;
     if (isMissed) {
       void emitWebhook(tenantId, 'call.missed', {
         callId, callSid, fromNumber, vertical,
@@ -372,7 +392,7 @@ export async function handleMediaStream(
         callSid,
         fromNumber,
         direction: isOutbound ? 'outbound' : 'inbound',
-        durationSeconds: undefined, // populated downstream once persisted
+        durationSeconds,
         summary,
         vertical,
         ...(isOutbound ? { campaignContactId, campaignId } : {}),

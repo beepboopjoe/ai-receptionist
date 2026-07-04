@@ -10,7 +10,7 @@
 // ============================================================
 import { useState } from 'react';
 import useSWR, { mutate } from 'swr';
-import { phoneNumbersApi, type AvailableNumber, type OwnedNumber, type PortRequestRow } from '@/lib/api';
+import { phoneNumbersApi, outboundPoolApi, type AvailableNumber, type OwnedNumber, type PortRequestRow } from '@/lib/api';
 import { Phone, Search, Trash2, Star, X, ArrowRight, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Zap, Shield, BarChart2, MapPin, Layers } from 'lucide-react';
 import { useToast } from '@/components/ui/toast';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -31,6 +31,12 @@ export default function PhoneNumbersPage() {
   const toast = useToast();
   const { data, isLoading } = useSWR('phone-numbers', () => phoneNumbersApi.list());
   const owned = data?.data ?? [];
+
+  // Auto-managed rotating outbound campaign numbers (read-only).
+  const { data: poolData, isLoading: poolLoading } = useSWR('outbound-pool-numbers', () =>
+    outboundPoolApi.list()
+  );
+  const poolNumbers = poolData?.data ?? [];
 
   // Active per-month rates. Promo-trial tenants get wholesale Telnyx
   // rates ($1 / $2); everyone else gets the retail $5 / $10.
@@ -259,9 +265,9 @@ export default function PhoneNumbersPage() {
               },
               {
                 icon: Shield,
-                title: 'Protect your main number',
-                body: 'Outbound campaigns risk being flagged as spam by carriers over time. Dedicate a separate number to campaigns — if it gets flagged, your primary inbound number stays clean and trusted.',
-                highlight: 'Recommended for outbound campaigns',
+                title: 'Your main number stays protected',
+                body: 'Outbound campaigns never dial from your inbound number. The platform automatically provisions and rotates a separate pool of campaign numbers (see below), so your primary number stays clean and trusted with carriers.',
+                highlight: 'Campaign numbers are auto-managed — free',
               },
               {
                 icon: MapPin,
@@ -414,6 +420,56 @@ export default function PhoneNumbersPage() {
           ))}
         </div>
       )}
+
+      {/* ── Outbound campaign number pool (auto-managed, read-only) ── */}
+      <div className="card overflow-hidden">
+        <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Shield size={14} className="text-brand-600 shrink-0" />
+            <h2 className="text-sm font-semibold text-gray-900">Outbound campaign numbers</h2>
+          </div>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Automatically provisioned and rotated by the platform so your campaigns never
+            get spam-flagged. Billed through your per-minute usage — no separate monthly fee,
+            and nothing to manage.
+          </p>
+        </div>
+        {poolLoading ? (
+          <div className="p-4 space-y-3">
+            <UiSkeleton width="w-full" height="h-10" />
+            <UiSkeleton width="w-full" height="h-10" />
+          </div>
+        ) : poolNumbers.length === 0 ? (
+          <p className="px-4 py-5 text-sm text-gray-500">
+            No campaigns have run yet — numbers are provisioned automatically when you create
+            your first outbound campaign.
+          </p>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {poolNumbers.map((n) => (
+              <div key={n.id} className="p-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0">
+                    <Phone size={18} className="text-gray-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 truncate">{formatNumber(n.phoneE164)}</p>
+                    <p className="text-xs text-gray-500">
+                      Local{n.region ? ` · ${n.region}` : ''}
+                      {n.lastDialedAt
+                        ? ` · Last used ${new Date(n.lastDialedAt).toLocaleDateString()}`
+                        : ' · Not used yet'}
+                    </p>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 px-2 py-1 rounded-full shrink-0">
+                  <Zap size={11} /> Auto-managed
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* ── Search/purchase modal ───────────────────────────── */}
       {searchOpen && (
