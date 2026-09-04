@@ -19,6 +19,7 @@ import {
   Shield,
   Sparkles,
   LifeBuoy,
+  Mic,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { logout } from '@/lib/auth';
@@ -43,6 +44,7 @@ function buildNav(contactsLabel: string, appointmentsLabel: string) {
     { href: '/dashboard', label: 'Home', icon: LayoutDashboard, requires: undefined as undefined | 'two_way_sms' },
     { href: '/workflows', label: 'Workflows', icon: Sparkles, requires: undefined as undefined | 'two_way_sms' },
     { href: '/calls', label: 'Calls', icon: Phone, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/voice-demo', label: 'Try your AI', icon: Mic, requires: undefined as undefined | 'two_way_sms' },
     { href: '/appointments', label: appointmentsLabel, icon: Calendar, requires: undefined as undefined | 'two_way_sms' },
     { href: '/contacts', label: contactsLabel, icon: Users, requires: undefined as undefined | 'two_way_sms' },
     { href: '/messages', label: 'Messages', icon: MessageSquare, requires: 'two_way_sms' as const },
