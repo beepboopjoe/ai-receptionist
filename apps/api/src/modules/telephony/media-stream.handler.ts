@@ -86,7 +86,7 @@ export async function handleMediaStream(
 
   // 2. Fetch tenant + settings in one parallel round-trip
   const [[tenantRow], [settingsRow]] = await Promise.all([
-    db.select({ timezone: tenants.timezone, name: tenants.name, vertical: tenants.vertical })
+    db.select({ timezone: tenants.timezone, name: tenants.name, vertical: tenants.vertical, storeTranscripts: tenants.storeTranscripts })
       .from(tenants)
       .where(eq(tenants.id, tenantId))
       .limit(1),
@@ -106,6 +106,10 @@ export async function handleMediaStream(
   // Use the actual tenant/business name — not a hardcoded placeholder
   const practiceName = tenantRow?.name ?? 'Our Office';
   const vertical = (tenantRow?.vertical ?? 'dental') as Vertical;
+  // PHI minimization: when a tenant opts out of transcript storage, we keep
+  // the summary + duration (needed for billing/analytics) but never persist
+  // the verbatim conversation.
+  const storeTranscripts = tenantRow?.storeTranscripts ?? true;
   const apptTypes    = (settingsRow?.appointmentTypes ?? []) as AppointmentType[];
   const officeHours  = (settingsRow?.officeHours ?? {}) as OfficeHours;
 
@@ -348,7 +352,11 @@ export async function handleMediaStream(
           endedAt: new Date(),
           durationSeconds,
           summary,
-          transcript: transcript as unknown as Record<string, unknown>[],
+          // Honor the tenant's PHI-minimization setting: when transcript
+          // storage is off, keep the summary but drop the verbatim transcript.
+          transcript: storeTranscripts
+            ? (transcript as unknown as Record<string, unknown>[])
+            : null,
           updatedAt: new Date(),
         })
         .where(eq(calls.id, callId));

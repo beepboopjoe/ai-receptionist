@@ -175,6 +175,9 @@ export default function CompliancePage() {
   // HIPAA mode state
   const [savingMode, setSavingMode] = useState(false);
 
+  // Transcript-storage toggle state
+  const [savingTranscripts, setSavingTranscripts] = useState(false);
+
   // Retention state
   const [retentionDays, setRetentionDays] = useState<number | null>(null);
   const [savingRetention, setSavingRetention] = useState(false);
@@ -208,6 +211,19 @@ export default function CompliancePage() {
       toast.error(err instanceof Error ? err.message : 'Failed to update settings');
     } finally {
       setSavingMode(false);
+    }
+  }
+
+  async function handleToggleTranscripts(store: boolean) {
+    setSavingTranscripts(true);
+    try {
+      await complianceApi.updateSettings({ storeTranscripts: store });
+      await mutate();
+      toast.success(store ? 'Transcript storage enabled' : 'Transcript storage disabled');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update settings');
+    } finally {
+      setSavingTranscripts(false);
     }
   }
 
@@ -374,6 +390,39 @@ export default function CompliancePage() {
         </section>
       )}
 
+      {/* ── Section 2b: Transcript storage (PHI minimization) ─────────────── */}
+      {status?.baaAccepted && (
+        <section className="card p-6 space-y-4">
+          <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+            <FileText size={18} className="text-brand-600" />
+            Call transcript storage
+          </h2>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-gray-700 font-medium">Store verbatim call transcripts</p>
+              <p className="text-sm text-gray-500 mt-0.5">
+                When enabled, the full turn-by-turn transcript of every call is saved and
+                viewable on the call detail page. When disabled, we keep only the AI summary
+                and call duration — the verbatim conversation is never written to our
+                database. Turn this off for maximum PHI minimization.
+              </p>
+            </div>
+            <Toggle
+              checked={status.storeTranscripts}
+              onChange={handleToggleTranscripts}
+              disabled={savingTranscripts}
+            />
+          </div>
+          {!status.storeTranscripts && (
+            <div className="rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800 flex items-center gap-2">
+              <AlertTriangle size={15} className="text-amber-600 shrink-0" />
+              Transcript storage is off — new calls keep only a summary. Existing transcripts
+              are unaffected.
+            </div>
+          )}
+        </section>
+      )}
+
       {/* ── Section 3: Data Retention ─────────────────────────────────────── */}
       {status?.baaAccepted && (
         <section className="card p-6 space-y-4">
@@ -465,16 +514,33 @@ export default function CompliancePage() {
                 : 'Enable HIPAA Mode above to activate'
             }
           />
+          <ControlItem
+            done
+            label="Automatic data retention & deletion"
+            note="Records past your retention window are deleted daily and logged to the event trail"
+          />
+          <ControlItem
+            done
+            label="Data-subject erasure"
+            note="Erase a contact and all of their calls, messages, and appointments on request"
+          />
         </div>
 
-        <div className="pt-3 border-t border-gray-100">
+        <div className="pt-3 border-t border-gray-100 space-y-1">
           <p className="text-xs text-gray-400">
-            Need a Security Assessment Report or penetration test summary for your audit?{' '}
+            Vendors that may process your data are listed in our{' '}
+            <Link href="/legal/subprocessors" className="text-brand-600 hover:underline">
+              subprocessor list
+            </Link>
+            .
+          </p>
+          <p className="text-xs text-gray-400">
+            Questions about our compliance posture or a countersigned BAA?{' '}
             <a
-              href="mailto:compliance@aireceptionist.com"
+              href="mailto:compliance@aireceptionist.ai"
               className="text-brand-600 hover:underline"
             >
-              Contact compliance@aireceptionist.com
+              Contact compliance@aireceptionist.ai
             </a>
           </p>
         </div>

@@ -29,6 +29,8 @@ async function complianceRoutes(app: FastifyInstance): Promise<void> {
         baaAcceptedBy: tenants.baaAcceptedBy,
         hipaaMode: tenants.hipaaMode,
         dataRetentionDays: tenants.dataRetentionDays,
+        storeTranscripts: tenants.storeTranscripts,
+        retentionEnforced: tenants.retentionEnforced,
       })
       .from(tenants)
       .where(eq(tenants.id, tenantId))
@@ -53,6 +55,8 @@ async function complianceRoutes(app: FastifyInstance): Promise<void> {
       baaSignerEmail,
       hipaaMode: tenant.hipaaMode,
       dataRetentionDays: tenant.dataRetentionDays,
+      storeTranscripts: tenant.storeTranscripts,
+      retentionEnforced: tenant.retentionEnforced,
     };
   });
 
@@ -113,9 +117,11 @@ async function complianceRoutes(app: FastifyInstance): Promise<void> {
   app.put('/compliance/settings', {
     onRequest: [app.requireRole('owner')],
   }, async (request) => {
-    const { hipaaMode, dataRetentionDays } = (request.body ?? {}) as {
+    const { hipaaMode, dataRetentionDays, storeTranscripts, retentionEnforced } = (request.body ?? {}) as {
       hipaaMode?: boolean;
       dataRetentionDays?: number;
+      storeTranscripts?: boolean;
+      retentionEnforced?: boolean;
     };
     const { tenantId, id: userId, email } = request.authUser;
 
@@ -129,7 +135,12 @@ async function complianceRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
-    if (hipaaMode === undefined && dataRetentionDays === undefined) {
+    if (
+      hipaaMode === undefined &&
+      dataRetentionDays === undefined &&
+      storeTranscripts === undefined &&
+      retentionEnforced === undefined
+    ) {
       throw new ValidationError('No settings provided to update');
     }
 
@@ -142,9 +153,16 @@ async function complianceRoutes(app: FastifyInstance): Promise<void> {
     if (!tenant) throw new NotFoundError('Tenant not found');
 
     // Build a typed patch object that Drizzle's .set() can accept
-    const patch: { hipaaMode?: boolean; dataRetentionDays?: number } = {};
+    const patch: {
+      hipaaMode?: boolean;
+      dataRetentionDays?: number;
+      storeTranscripts?: boolean;
+      retentionEnforced?: boolean;
+    } = {};
     if (hipaaMode !== undefined) patch.hipaaMode = hipaaMode;
     if (dataRetentionDays !== undefined) patch.dataRetentionDays = dataRetentionDays;
+    if (storeTranscripts !== undefined) patch.storeTranscripts = storeTranscripts;
+    if (retentionEnforced !== undefined) patch.retentionEnforced = retentionEnforced;
 
     const updatesMeta: Record<string, unknown> = { ...patch };
 

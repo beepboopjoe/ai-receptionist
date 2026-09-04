@@ -109,6 +109,7 @@ export const callsApi = {
     return apiFetch<{ data: unknown[]; total: number }>(`/calls${q ? '?' + q : ''}`);
   },
   get: (id: string) => apiFetch<unknown>(`/calls/${id}`),
+  delete: (id: string) => apiFetch<{ deleted: boolean }>(`/calls/${id}`, { method: 'DELETE' }),
   getMissed: () => apiFetch<{ data: unknown[] }>('/calls/missed'),
   escalate: (id: string, reason: string) =>
     apiFetch(`/calls/${id}/escalate`, { method: 'POST', body: JSON.stringify({ reason }) }),
@@ -275,6 +276,11 @@ export const contactsApi = {
     apiFetch<{ deleted: number }>('/contacts/bulk-delete', {
       method: 'POST',
       body: JSON.stringify({ ids }),
+    }),
+  /** DSAR erase — deletes the contact and ALL of their PHI (calls, SMS, appointments). */
+  erase: (id: string) =>
+    apiFetch<{ erased: boolean; calls: number; sms: number }>(`/contacts/${id}/erase`, {
+      method: 'POST',
     }),
 };
 
@@ -779,6 +785,8 @@ export interface ComplianceStatus {
   baaSignerEmail: string | null;
   hipaaMode: boolean;
   dataRetentionDays: number;
+  storeTranscripts: boolean;
+  retentionEnforced: boolean;
 }
 
 export interface ComplianceEventRecord {
@@ -797,7 +805,7 @@ export const complianceApi = {
     apiFetch<{ ok: boolean; acceptedAt: string }>('/compliance/baa/accept', {
       method: 'POST',
     }),
-  updateSettings: (body: { hipaaMode?: boolean; dataRetentionDays?: number }) =>
+  updateSettings: (body: { hipaaMode?: boolean; dataRetentionDays?: number; storeTranscripts?: boolean; retentionEnforced?: boolean }) =>
     apiFetch<{ ok: boolean }>('/compliance/settings', {
       method: 'PUT',
       body: JSON.stringify(body),

@@ -16,6 +16,8 @@ import {
   integrations,
   tenants,
   passwordResetTokens,
+  smsMessages,
+  complianceEvents,
 } from '../../db/schema.js';
 import crypto from 'node:crypto';
 import { eq, and, desc, asc, count, gte, ilike, or, sql, inArray } from 'drizzle-orm';
@@ -1124,6 +1126,99 @@ export async function adminPlugin(app: FastifyInstance) {
       });
 
       return reply.send({ deleted: result.length });
+    }
+  );
+
+  // Delete a single call + its transcript (admin+). Tenant-scoped, audited.
+  // Used for one-off PHI removal from the call detail page.
+  app.delete(
+    '/calls/:id',
+    { onRequest: [app.requireRole('admin')] },
+    async (request, reply) => {
+      const { tenantId, id: actorId } = request.authUser;
+      const { id } = request.params as { id: string };
+
+      const result = await db
+        .delete(calls)
+        .where(and(eq(calls.id, id), eq(calls.tenantId, tenantId)))
+        .returning({ id: calls.id });
+
+      if (result.length === 0) throw new NotFoundError('Call not found');
+
+      auditLog({
+        tenantId,
+        actorType: 'admin',
+        actorId,
+        action: 'call.deleted',
+        entityType: 'call',
+        entityId: id,
+        metadata: {},
+      });
+
+      return reply.send({ deleted: true });
+    }
+  );
+
+  // Data-Subject Erasure (DSAR) — erase a contact and ALL of their PHI:
+  // calls (+ transcripts), SMS, and appointments. One tenant-scoped
+  // transaction. Owner-only (irreversible), audited + logged to
+  // compliance_events so the erasure is provable.
+  app.post(
+    '/contacts/:id/erase',
+    { onRequest: [app.requireRole('owner')] },
+    async (request, reply) => {
+      const { tenantId, id: actorId, email } = request.authUser;
+      const { id } = request.params as { id: string };
+
+      const [contact] = await db
+        .select({ id: contacts.id, firstName: contacts.firstName, lastName: contacts.lastName })
+        .from(contacts)
+        .where(and(eq(contacts.id, id), eq(contacts.tenantId, tenantId)))
+        .limit(1);
+      if (!contact) throw new NotFoundError('Contact not found');
+
+      const deleted = await db.transaction(async (tx) => {
+        // Explicitly delete calls + SMS (their FK is SET NULL, so they'd
+        // otherwise survive the contact delete). Appointments cascade on
+        // the contact delete below.
+        const delCalls = await tx
+          .delete(calls)
+          .where(and(eq(calls.tenantId, tenantId), eq(calls.contactId, id)))
+          .returning({ id: calls.id });
+        const delSms = await tx
+          .delete(smsMessages)
+          .where(and(eq(smsMessages.tenantId, tenantId), eq(smsMessages.contactId, id)))
+          .returning({ id: smsMessages.id });
+        await tx
+          .delete(contacts)
+          .where(and(eq(contacts.id, id), eq(contacts.tenantId, tenantId)));
+
+        await tx.insert(complianceEvents).values({
+          tenantId,
+          eventType: 'contact_erased',
+          actorId,
+          actorEmail: email,
+          metadata: {
+            contactId: id,
+            callsDeleted: delCalls.length,
+            smsDeleted: delSms.length,
+          },
+        });
+
+        return { calls: delCalls.length, sms: delSms.length };
+      });
+
+      auditLog({
+        tenantId,
+        actorType: 'admin',
+        actorId,
+        action: 'contact.erased',
+        entityType: 'contact',
+        entityId: id,
+        metadata: deleted,
+      });
+
+      return reply.send({ erased: true, ...deleted });
     }
   );
 

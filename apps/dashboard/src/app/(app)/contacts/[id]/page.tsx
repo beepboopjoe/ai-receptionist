@@ -1,8 +1,9 @@
 'use client';
 import useSWR, { mutate } from 'swr';
 import { contactsApi, callsApi } from '@/lib/api';
-import { ArrowLeft, Save, Phone } from 'lucide-react';
+import { ArrowLeft, Save, Phone, ShieldX } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useVertical } from '@/lib/useVertical';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -41,6 +42,25 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
   }, [c]);
 
   const toast = useToast();
+  const router = useRouter();
+  const [erasing, setErasing] = useState(false);
+
+  async function handleErase() {
+    const name = `${c?.firstName ?? ''} ${c?.lastName ?? ''}`.trim() || 'this contact';
+    if (!confirm(
+      `Erase ALL data for ${name}? This permanently deletes the contact and every linked call (with transcripts), SMS, and appointment. Used to fulfill a data-deletion request. This cannot be undone.`
+    )) return;
+    setErasing(true);
+    try {
+      const res = await contactsApi.erase(params.id);
+      toast.success(`Erased contact + ${res.calls} call(s), ${res.sms} message(s)`);
+      router.push('/contacts');
+    } catch (err: any) {
+      toast.error(err.message ?? 'Failed to erase contact');
+      setErasing(false);
+    }
+  }
+
   async function handleSave() {
     setSaving(true);
     try {
@@ -79,6 +99,14 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
         <span className={`badge ${c.contactType === 'new' ? 'badge-blue' : 'badge-gray'}`}>
           {c.contactType === 'new' ? `New ${vertical.contactNoun}` : `Returning ${vertical.contactNoun}`}
         </span>
+        <button
+          onClick={handleErase}
+          disabled={erasing}
+          className="btn-danger ml-auto text-sm"
+          title="Erase all data for this contact (data-deletion request)"
+        >
+          <ShieldX size={14} /> {erasing ? 'Erasing…' : 'Erase all data'}
+        </button>
       </div>
 
       {/* Info card */}

@@ -84,6 +84,12 @@ export const tenants = pgTable('tenants', {
   baaAcceptedBy: uuid('baa_accepted_by'),
   hipaaMode: boolean('hipaa_mode').notNull().default(false),
   dataRetentionDays: integer('data_retention_days').notNull().default(2555),
+  // storeTranscripts: when false, the voice pipeline keeps summary + duration
+  //   but never persists the verbatim transcript (PHI minimization).
+  // retentionEnforced: when true, the daily retention job may delete this
+  //   tenant's data older than dataRetentionDays (legal-hold escape hatch).
+  storeTranscripts: boolean('store_transcripts').notNull().default(true),
+  retentionEnforced: boolean('retention_enforced').notNull().default(true),
   // ---- AI Agent ----
   // agentEnabled: master switch for the dashboard agent (suggestions feed).
   // agentAutoExecute: when true, "safe" suggestion types execute without

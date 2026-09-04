@@ -1,14 +1,33 @@
 'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { callsApi } from '@/lib/api';
-import { ArrowLeft, XCircle } from 'lucide-react';
+import { ArrowLeft, XCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useToast } from '@/components/ui/toast';
 
 export default function CallDetailPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const toast = useToast();
   const { data: call, isLoading } = useSWR(`call-${params.id}`, () => callsApi.get(params.id));
   const c = call as any;
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!confirm('Permanently delete this call and its transcript? This cannot be undone.')) return;
+    setDeleting(true);
+    try {
+      await callsApi.delete(params.id);
+      toast.success('Call deleted');
+      router.push('/calls');
+    } catch (err: any) {
+      toast.error(err.message ?? 'Failed to delete call');
+      setDeleting(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -37,6 +56,14 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
           <ArrowLeft size={16} /> Back
         </Link>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Call Detail</h1>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="btn-danger ml-auto text-sm"
+          title="Permanently delete this call + transcript"
+        >
+          <Trash2 size={14} /> {deleting ? 'Deleting…' : 'Delete'}
+        </button>
       </div>
 
       {/* Meta */}

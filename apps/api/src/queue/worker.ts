@@ -10,6 +10,7 @@ import cron from 'node-cron';
 import { redis } from '../db/redis.js';
 import { runUsageWarningSweep } from './jobs/usage-warning.job.js';
 import { runAppointmentReminderSweep } from './jobs/appointment-reminder.job.js';
+import { runDataRetentionSweep } from './jobs/data-retention.job.js';
 import { processSendNotification, type SendNotificationJobData } from './jobs/send-reminder.job.js';
 import { processMissedCallRecovery, type MissedCallRecoveryJobData } from './jobs/missed-call-recovery.job.js';
 import { processCrmSync, type CrmSyncJobData } from './jobs/crm-sync.job.js';
@@ -279,11 +280,28 @@ const appointmentReminderTask = cron.schedule('*/15 * * * *', async () => {
   }
 });
 
+// Daily at 03:30 — enforce per-tenant data retention (delete PHI-bearing
+// records older than dataRetentionDays for tenants with retention_enforced).
+// Runs once/day off-peak; every removing purge is written to compliance_events.
+const dataRetentionTask = cron.schedule('30 3 * * *', async () => {
+  try {
+    const result = await runDataRetentionSweep();
+    if (result.rowsDeleted > 0) {
+      console.log(
+        `[cron:data-retention] purged ${result.rowsDeleted} rows across ${result.tenantsPurged}/${result.tenantsChecked} tenants`
+      );
+    }
+  } catch (err) {
+    console.error('[cron:data-retention] sweep failed:', err);
+  }
+});
+
 // ---- Graceful shutdown ----
 async function shutdown() {
   console.log('[worker] Shutting down workers...');
   usageWarningTask.stop();
   appointmentReminderTask.stop();
+  dataRetentionTask.stop();
   await Promise.all([
     notificationsWorker.close(),
     remindersWorker.close(),
