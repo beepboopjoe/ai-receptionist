@@ -234,11 +234,17 @@ export function Sidebar() {
         />
       )}
 
+      {/* Mobile: `fixed` so the drawer is OUT of the flex flow — otherwise it
+          reserves its full w-64 and squeezes <main> into the remainder even
+          while translated off-screen. (A stray `sticky top-0` used to win over
+          `fixed` here, since Tailwind emits sticky after fixed, which crushed
+          every authenticated page on phones.)
+          Desktop: `md:sticky` re-enters the flow and pins alongside content. */}
       <aside
-        className={`bg-cream-100 border-r border-cream-200 flex flex-col h-screen sticky top-0
+        className={`bg-cream-100 border-r border-cream-200 flex flex-col h-screen
           w-64 shrink-0
-          md:translate-x-0 md:static
           fixed top-0 left-0 z-50 transition-transform duration-200
+          md:sticky md:top-0 md:translate-x-0
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
         {/* Mobile close button */}
