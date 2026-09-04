@@ -2,7 +2,6 @@
 // Telephony router — webhook ingestion + OAuth integration routes
 // ============================================================
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import fp from 'fastify-plugin';
 import { validateRingCentralWebhook } from '../../lib/webhook-validator.js';
 import { handleRingCentralEvent } from './handler.js';
 import { handleTelnyxWebhook } from './telnyx-webhook.handler.js';
@@ -177,4 +176,11 @@ async function telephonyRoutes(
   });
 }
 
-export const telephonyPlugin = fp(telephonyRoutes, { name: 'telephony' });
+// Plain (encapsulated) plugin so the `/api/v1` prefix in main.ts applies.
+// fastify-plugin (fp) de-encapsulates and mounts these at the ROOT instead,
+// which broke the whole inbound-call path: Telnyx posts to
+// /api/v1/webhooks/telnyx (404 under fp), and telnyx-webhook.handler.ts hands
+// Telnyx a wss://<host>/api/v1/webhooks/telnyx/stream media-stream URL that
+// likewise did not exist. This router registers no decorators/hooks, so
+// encapsulation is safe — it inherits app.authenticate from the parent scope.
+export const telephonyPlugin = telephonyRoutes;
