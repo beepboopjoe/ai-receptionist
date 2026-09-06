@@ -62,7 +62,7 @@ EXPOSE 3001
 # Future: split into a separate Railway service so worker health is
 # observable independently and crashes can be alerted on.
 #
-# Order: migrate → boot worker (background) → boot API (foreground).
-# `wait` makes the shell forward signals correctly so Railway can stop
-# both processes when the container is replaced.
-CMD ["sh", "-c", "node dist/migrate.js && node dist/worker.js & node dist/main.js"]
+# Bind HTTP first (so /health succeeds), then migrate + spawn worker.
+# Used to be `migrate.js && worker & main`, which left the port closed
+# until every SQL file applied — a failed migrate = Railway 502.
+CMD ["node", "dist/main.js"]

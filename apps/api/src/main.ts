@@ -63,6 +63,11 @@ import { agentPlugin } from './modules/agent/agent.router.js';
 import { platformPlugin } from './modules/platform/platform.router.js';
 import { supportPlugin } from './modules/support/support.router.js';
 import { startAgentScannerWorker, stopAgentScannerWorker } from './workers/agent-scanner.worker.js';
+import { runMigrations } from './db/run-migrations.js';
+import { spawn, type ChildProcess } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 async function buildApp() {
   const app = Fastify({
@@ -225,18 +230,15 @@ async function buildApp() {
 
 async function main() {
   const app = await buildApp();
-
-  // Start the webhook delivery worker — drains the deliveries queue every
-  // 15s, retrying with exponential backoff. Skipped in test mode.
-  if (config.NODE_ENV !== 'test') {
-    startWebhookDrainWorker();
-    startAgentScannerWorker();
-  }
+  let queueWorker: ChildProcess | undefined;
 
   const shutdown = async (signal: string) => {
     app.log.info(`Received ${signal}, shutting down gracefully`);
     stopWebhookDrainWorker();
     stopAgentScannerWorker();
+    if (queueWorker && !queueWorker.killed) {
+      queueWorker.kill('SIGTERM');
+    }
     await app.close();
     await closeDb();
     process.exit(0);
@@ -245,12 +247,44 @@ async function main() {
   process.on('SIGTERM', () => { void shutdown('SIGTERM'); });
   process.on('SIGINT', () => { void shutdown('SIGINT'); });
 
+  // Bind first so Railway's /health probe can succeed while migrations run.
+  // The previous CMD (`migrate.js && …`) left the port closed until every
+  // SQL file applied — a failed or slow migrate made the deploy 502.
   try {
     await app.listen({ port: config.PORT, host: '0.0.0.0' });
     app.log.info(`🚀 Telfin API running at http://localhost:${config.PORT}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);
+  }
+
+  try {
+    app.log.info('Running database migrations');
+    const result = await runMigrations();
+    if (result.ok) {
+      app.log.info({ applied: result.applied }, 'Migrations complete');
+    } else {
+      app.log.error({ reason: result.reason }, 'Migrations skipped');
+    }
+  } catch (err) {
+    app.log.error({ err }, 'Migration failed — process staying up for /health');
+  }
+
+  if (config.NODE_ENV !== 'test') {
+    startWebhookDrainWorker();
+    startAgentScannerWorker();
+    const workerPath = join(dirname(fileURLToPath(import.meta.url)), 'worker.js');
+    if (existsSync(workerPath)) {
+      queueWorker = spawn(process.execPath, [workerPath], {
+        stdio: 'inherit',
+        env: process.env,
+      });
+      queueWorker.on('exit', (code, signal) => {
+        app.log.error({ code, signal }, 'Queue worker process exited');
+      });
+    } else {
+      app.log.info('Queue worker not spawned (no dist/worker.js). In dev run `pnpm --filter @ai-receptionist/api dev:worker`.');
+    }
   }
 }
 
