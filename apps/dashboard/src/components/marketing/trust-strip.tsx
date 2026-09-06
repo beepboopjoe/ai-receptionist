@@ -35,7 +35,7 @@ const DEFAULT_LOGOS: TrustLogo[] = [
 ];
 
 export function TrustStrip({
-  counter = 'Trusted by 300+ businesses',
+  counter = 'Built for phone-heavy businesses',
   logos = DEFAULT_LOGOS,
   background = 'white',
   forceRealMode,

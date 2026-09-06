@@ -6,11 +6,11 @@
 
 export const BRAND_NAME = 'Telfin';
 export const BRAND_TAGLINE = 'AI-powered phone receptionist for appointment-based businesses';
+/** Short, customer-friendly stack line for marketing heroes. */
+export const BRAND_STACK_LINE = 'Natural Grok voice · Reliable Telnyx calling';
 export const BRAND_AGENT_NAME = 'Aria';
-// Domain + support email kept as-is for now — separate concern from the wordmark
-// rebrand (would require new DNS + email setup). Update when telfin.com / similar is provisioned.
-export const BRAND_DOMAIN = 'aireceptionist.ai';
-export const BRAND_SUPPORT_EMAIL = 'hello@aireceptionist.ai';
+export const BRAND_DOMAIN = 'telfin.ai';
+export const BRAND_SUPPORT_EMAIL = 'hello@telfin.ai';
 // App icon initials shown in the orange-square logo on every chrome surface.
 // Phase 19 rebrand: 'AR' (AI Receptionist) → 'TF' (Telfin).
 export const BRAND_ICON_INITIALS = 'TF';

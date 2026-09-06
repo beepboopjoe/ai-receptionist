@@ -4,10 +4,8 @@
 // Used by every public marketing page (/, /inbound, /outbound,
 // /pricing, /demo, etc.). Active link highlights in brand-600.
 //
-// Phase 30: the "Leads" link (lead-buying UI removed) and the
-// "Verticals" dropdown (vertical landings hidden for now) were
-// removed. Nav is now a flat list of links. The vertical routes
-// still exist but are unlinked.
+// Primary nav: How it works, Pricing, Hear it, Sign in, Try Free.
+// Affiliate / Partners / inbound-outbound product links live in the footer.
 // ============================================================
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -18,12 +16,9 @@ import { BRAND_NAME } from '@/lib/brand';
 type NavItem = { label: string; href: string };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Inbound',   href: '/inbound' },
-  { label: 'Outbound',  href: '/outbound' },
-  { label: 'Docs',      href: '/knowledge-base' },
-  { label: 'Pricing',   href: '/pricing' },
-  { label: 'Demo',      href: '/demo' },
-  { label: 'Affiliate', href: '/resellers' },
+  { label: 'How it works', href: '/#how-it-works' },
+  { label: 'Pricing',      href: '/pricing' },
+  { label: 'Hear it',      href: '/demo' },
 ];
 
 export function MarketingHeader() {
@@ -31,7 +26,9 @@ export function MarketingHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   function isActive(href: string) {
-    return pathname === href || pathname.startsWith(href + '/');
+    const path = href.split('#')[0] || '/';
+    if (path === '/') return false;
+    return pathname === path || pathname.startsWith(`${path}/`);
   }
 
   return (

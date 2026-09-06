@@ -6,6 +6,7 @@ import { Phone, Calendar, Zap, CheckCircle, ExternalLink } from 'lucide-react';
 import { Skeleton as UiSkeleton, StatCardSkeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
 import { PLANS as SHARED_PLANS, type BillingCycle } from '@ai-receptionist/shared';
+import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 import { formatMinutesLimit, planDisplayName, planPriceLabel } from '@/lib/plan-display';
 
 // Local view-model overlay for the badge color + the legacy "trial" tier
@@ -406,10 +407,10 @@ export default function BillingPage() {
             <p className="text-sm text-gray-500">
               Questions? Contact us at{' '}
               <a
-                href="mailto:hello@aireceptionist.ai"
+                href={`mailto:${BRAND_SUPPORT_EMAIL}`}
                 className="text-brand-600 hover:underline font-medium"
               >
-                hello@aireceptionist.ai
+                {BRAND_SUPPORT_EMAIL}
               </a>
             </p>
           </div>

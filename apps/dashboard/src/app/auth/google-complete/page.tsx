@@ -7,6 +7,7 @@
 // ============================================================
 import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { BRAND_ICON_INITIALS } from '@/lib/brand';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,8 +45,8 @@ export default function GoogleCompletePage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-600 mb-4 animate-pulse">
-          <span className="text-2xl">🦷</span>
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-600 mb-4 animate-pulse text-white font-serif text-lg">
+          {BRAND_ICON_INITIALS}
         </div>
         <p className="text-sm text-gray-600">Signing you in with Google…</p>
       </div>

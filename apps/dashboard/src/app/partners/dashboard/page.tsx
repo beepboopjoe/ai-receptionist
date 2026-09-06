@@ -12,6 +12,7 @@ import {
   DollarSign, Users, TrendingUp, Clock, Copy, CheckCircle,
   LogOut, ExternalLink, AlertCircle, ChevronDown,
 } from 'lucide-react';
+import { BRAND_ICON_INITIALS } from '@/lib/brand';
 
 const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/api/v1';
 const DASHBOARD_URL = process.env['NEXT_PUBLIC_APP_URL'] ?? 'https://ai-receptionist-dashboard-sigma.vercel.app';
@@ -295,7 +296,7 @@ export default function PartnerDashboardPage() {
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white font-serif text-base">
-              ar
+              {BRAND_ICON_INITIALS}
             </Link>
             <span className="text-sm font-semibold text-gray-900">Partner Dashboard</span>
           </div>

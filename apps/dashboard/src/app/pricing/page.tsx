@@ -15,6 +15,7 @@ import { PricingCards } from '@/components/ui/pricing-cards';
 import { PlanComparisonTable } from '@/components/ui/plan-comparison-table';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 const RoiSection = dynamic(
   () => import('@/components/ui/roi-section').then((m) => m.RoiSection),
@@ -80,12 +81,12 @@ export default function PricingPage() {
             Simple, transparent pricing
           </div>
           <h1 className="font-serif text-5xl md:text-6xl text-cream-900 tracking-tight leading-[1.05]">
-            AI phone agents for inbound calls,
+            One AI receptionist.
             <br />
-            <span className="gradient-text">outbound follow-up, and lead intake.</span>
+            <span className="gradient-text">Clear plans. No surprises.</span>
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
-            Answer every call, qualify every lead, and follow up automatically — without hiring more staff.
+            Answer every call, book the calendar, and follow up by phone or text — without hiring more staff.
           </p>
           <p className="text-sm text-cream-500 mt-4">
             Monthly or annual · Cancel anytime · 30-day money-back guarantee
@@ -182,7 +183,6 @@ export default function PricingPage() {
         </p>
       </section>
 
-
       {/* ── What counts as an AI voice minute? ───────────── */}
       <section className="bg-white border-y border-cream-200 py-20 px-6">
         <div className="max-w-4xl mx-auto">
@@ -246,10 +246,9 @@ export default function PricingPage() {
           </div>
           <div className="rounded-2xl bg-cream-50 border border-cream-200 px-8 py-5 text-center">
             <p className="text-sm text-cream-600">
-              <span className="font-semibold text-cream-900">Example:</span> Growth plan (380 min/mo) typically handles{' '}
-              <span className="font-semibold text-cream-900">100–200 inbound calls</span> per month,
-              or a mix of inbound + outbound campaigns. Overage at $0.35/min — about 1 in 4 customers
-              pay overage in a peak month, and most are still net-positive vs. a human receptionist.
+              <span className="font-semibold text-cream-900">Example:</span> Growth plan (380 min/mo) typically covers{' '}
+              <span className="font-semibold text-cream-900">a few hundred inbound minutes</span> per month,
+              or a mix of inbound + outbound. Extra minutes bill at $0.35/min — you get an 80% usage email first.
             </p>
           </div>
         </div>
@@ -266,7 +265,7 @@ export default function PricingPage() {
               Every missed call is a missed appointment.
             </h2>
             <p className="text-cream-600 mt-3 leading-relaxed">
-              67% of callers reach out outside business hours. Your AI answers every call, qualifies the lead, and books the appointment on the spot — even at 11 PM on a Sunday. At $150–$600 per booking, one recovered call per day pays for the plan many times over.
+              A lot of callers reach you after hours. Your AI answers, qualifies the lead, and can book the appointment on the spot — even at 11 PM on a Sunday. One recovered booking often covers the plan.
             </p>
             <a href="#plans" className="glow-btn mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-6 py-3 text-sm font-semibold text-white transition-colors">
               <Phone size={16} /> Choose your plan ↑
@@ -275,9 +274,9 @@ export default function PricingPage() {
           <div className="grid grid-cols-2 gap-4">
             {[
               { stat: '24/7', label: 'Always available' },
-              { stat: '< 2s', label: 'Answer time' },
-              { stat: '94%', label: 'Booking success rate' },
-              { stat: '$0', label: 'Missed call cost' },
+              { stat: '< 2s', label: 'Typical answer time' },
+              { stat: 'Live', label: 'Calendar-backed booking' },
+              { stat: '$0', label: 'Missed-call voicemail tax' },
             ].map(({ stat, label }) => (
               <div key={label} className="rounded-xl bg-white border border-cream-200 p-5 text-center">
                 <p className="font-serif text-3xl text-cream-900">{stat}</p>
@@ -332,23 +331,29 @@ export default function PricingPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="font-serif text-4xl text-white mb-3">Ready to stop missing calls?</h2>
           <p className="text-cream-300 mb-10 max-w-xl mx-auto">
-            Pick a plan, pay securely with Stripe, and your AI is live in under 10 minutes.
+            Try Free with 10 inbound minutes, then pick a paid plan when you&apos;re ready.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-              href="#plans"
+            <Link
+              href="/signup?plan=trial"
               className="glow-btn inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-8 py-4 text-base font-bold text-white transition-colors"
             >
-              <CheckCircle size={18} /> Choose your plan ↑
+              Try Free →
+            </Link>
+            <a
+              href="#plans"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/20 hover:bg-white/10 px-8 py-4 text-base font-semibold text-white transition-colors"
+            >
+              <CheckCircle size={18} /> See pricing
             </a>
             <Link
               href="/demo"
               className="inline-flex items-center gap-2 rounded-xl border border-white/20 hover:bg-white/10 px-8 py-4 text-base font-semibold text-white transition-colors"
             >
-              <Mic size={18} /> Hear a Live Demo
+              <Mic size={18} /> Listen to sample calls
             </Link>
             <a
-              href="mailto:hello@aireceptionist.ai"
+              href={`mailto:${BRAND_SUPPORT_EMAIL}`}
               className="inline-flex items-center gap-2 rounded-xl border border-white/20 hover:bg-white/10 px-8 py-4 text-base font-semibold text-cream-300 transition-colors"
             >
               Contact Sales
@@ -356,8 +361,8 @@ export default function PricingPage() {
           </div>
           <p className="text-xs text-cream-500 mt-8">
             Questions? Email{' '}
-            <a href="mailto:hello@aireceptionist.ai" className="text-brand-300 hover:underline">
-              hello@aireceptionist.ai
+            <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="text-brand-300 hover:underline">
+              {BRAND_SUPPORT_EMAIL}
             </a>
           </p>
         </div>

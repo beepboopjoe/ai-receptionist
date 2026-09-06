@@ -5,7 +5,7 @@
 // and shows a representative sample view. Used on /inbound,
 // /outbound, and /demo as a "command-centre" teaser.
 // ============================================================
-import { BRAND_NAME } from '@/lib/brand';
+import { BRAND_NAME, BRAND_ICON_INITIALS } from '@/lib/brand';
 import { useState } from 'react';
 
 // ── Tab + view IDs ───────────────────────────────────────────
@@ -976,7 +976,7 @@ export function DashboardTeaser() {
             <div className="w-3 h-3 rounded-full bg-green-400" />
           </div>
           <div className="flex-1 bg-white rounded-md px-3 py-1.5 text-xs text-gray-400 border border-gray-200 max-w-sm mx-auto text-center select-none">
-            app.aireceptionist.com/{activeTab.replace('_', '-')}
+            dashboard · {activeTab.replace('_', '-')}
           </div>
           <div className="w-16" />
         </div>
@@ -987,7 +987,7 @@ export function DashboardTeaser() {
           <aside className="w-52 shrink-0 bg-white border-r border-gray-100 flex flex-col">
             {/* Logo */}
             <div className="flex items-center gap-2 px-4 py-4 border-b border-gray-100">
-              <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center text-sm">🦷</div>
+              <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center text-white font-serif text-[11px]">{BRAND_ICON_INITIALS}</div>
               <span className="text-sm font-semibold text-gray-900">{BRAND_NAME}</span>
             </div>
 

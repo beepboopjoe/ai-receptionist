@@ -132,13 +132,13 @@ export function OutboundRoi() {
             </div>
 
             <Link
-              href="/onboarding/plan"
+              href="/signup?plan=trial"
               className="glow-btn mt-7 inline-flex items-center justify-center gap-2 w-full py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              Start free trial →
+              Try Free →
             </Link>
             <p className="text-[11px] text-cream-500 text-center mt-3">
-              14-day trial · 200 outbound minutes free · No credit card
+              10 inbound minutes · no credit card
             </p>
           </div>
         </div>

@@ -12,7 +12,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { teamApi } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BRAND_NAME } from '@/lib/brand';
+import { BRAND_NAME, BRAND_ICON_INITIALS } from '@/lib/brand';
 
 interface InviteInfo {
   email: string;
@@ -80,7 +80,7 @@ export default function AcceptInvitePage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-600 mb-4 text-white font-serif text-2xl">
-            ar
+            {BRAND_ICON_INITIALS}
           </div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">{BRAND_NAME}</h1>
           <p className="text-cream-600 mt-1">Accept your invitation</p>

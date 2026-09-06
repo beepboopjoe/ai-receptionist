@@ -68,6 +68,34 @@ export async function cacheDel(key: string): Promise<void> {
   }
 }
 
+/**
+ * INCR + set TTL on first increment. Returns the new count, or null when
+ * Redis is unavailable (callers should fail open or closed explicitly).
+ */
+export async function cacheIncr(key: string, ttlSeconds: number): Promise<number | null> {
+  if (redis.status !== 'ready') return null;
+  try {
+    const count = await withTimeout(redis.incr(key), CACHE_OP_TIMEOUT_MS);
+    if (count === 1) {
+      await withTimeout(redis.expire(key, ttlSeconds), CACHE_OP_TIMEOUT_MS);
+    }
+    return count;
+  } catch {
+    return null;
+  }
+}
+
+/** SET NX with TTL. true = key was set, false = already existed, null = Redis down. */
+export async function cacheSetNx(key: string, value: string, ttlSeconds: number): Promise<boolean | null> {
+  if (redis.status !== 'ready') return null;
+  try {
+    const result = await withTimeout(redis.set(key, value, 'EX', ttlSeconds, 'NX'), CACHE_OP_TIMEOUT_MS);
+    return result === 'OK';
+  } catch {
+    return null;
+  }
+}
+
 export async function closeRedis(): Promise<void> {
   await redis.quit();
 }
