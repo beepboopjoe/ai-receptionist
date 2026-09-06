@@ -182,43 +182,6 @@ export default function PricingPage() {
         </p>
       </section>
 
-      {/* ── Add-ons (Phase 12.7 — Lead Discovery as a per-use add-on) ──── */}
-      <section className="max-w-7xl mx-auto px-6 pb-16">
-        <div className="text-center mb-8">
-          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Add-ons</p>
-          <h2 className="font-serif text-3xl text-cream-900 tracking-tight">
-            Use-as-you-need extensions.
-          </h2>
-          <p className="text-cream-600 mt-2 max-w-xl mx-auto">
-            Pay only when you use them — no separate subscription.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-5 max-w-xl mx-auto">
-          {/* Voice Clone add-on (existing) */}
-          <div className="rounded-2xl bg-white border border-cream-200 p-6">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <p className="text-[10px] font-bold text-brand-600 uppercase tracking-[0.2em] mb-1">
-                  Voice Clone
-                </p>
-                <h3 className="font-serif text-xl text-cream-900 tracking-tight">
-                  Use your own voice
-                </h3>
-              </div>
-              <span className="text-[11px] font-bold text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-2.5 py-1 whitespace-nowrap">
-                $49 / mo
-              </span>
-            </div>
-            <p className="text-sm text-cream-600 mb-4 leading-relaxed">
-              Upload 1–5 voice samples and we&apos;ll clone your voice with ElevenLabs. Every AI call sounds
-              like you.
-            </p>
-            <p className="text-xs text-cream-500">
-              Available on Scale plan and above · Cancel anytime
-            </p>
-          </div>
-        </div>
-      </section>
 
       {/* ── What counts as an AI voice minute? ───────────── */}
       <section className="bg-white border-y border-cream-200 py-20 px-6">

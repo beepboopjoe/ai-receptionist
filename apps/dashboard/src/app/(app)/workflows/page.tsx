@@ -19,13 +19,37 @@ import {
   STATUS_META,
   type WorkflowCategory,
   type WorkflowDef,
+  type WorkflowStatus,
 } from '@/lib/workflow-catalog';
+import { useGoLive } from '@/lib/useGoLive';
 
 const CATEGORY_ORDER: WorkflowCategory[] = ['reactive', 'proactive', 'admin'];
 
+function resolveWorkflowStatus(
+  workflow: WorkflowDef,
+  goLive: { hasPhone: boolean; hasPendingPort: boolean; hasCalendar: boolean; hasOpenHours: boolean; hasTransfer: boolean }
+): WorkflowStatus {
+  if (workflow.status !== 'live') return workflow.status;
+  const phoneReady = goLive.hasPhone || goLive.hasPendingPort;
+  if (workflow.id === 'call-answering' || workflow.id === 'lead-intake') {
+    return phoneReady ? 'live' : 'setup';
+  }
+  if (workflow.id === 'appointment-booking') {
+    return phoneReady && (goLive.hasCalendar || goLive.hasOpenHours) ? 'live' : 'setup';
+  }
+  if (workflow.id === 'ask-your-ai') {
+    return phoneReady && goLive.hasTransfer ? 'live' : 'setup';
+  }
+  return workflow.status;
+}
+
 export default function WorkflowsPage() {
   const vertical = useVertical();
-  const catalog = buildWorkflowCatalog(vertical);
+  const goLive = useGoLive();
+  const catalog = buildWorkflowCatalog(vertical).map((w) => ({
+    ...w,
+    status: resolveWorkflowStatus(w, goLive),
+  }));
 
   const liveCount = catalog.filter((w) => w.status === 'live').length;
   const setupCount = catalog.filter((w) => w.status === 'setup').length;

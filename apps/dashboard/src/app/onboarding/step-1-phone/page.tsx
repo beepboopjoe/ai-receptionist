@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { onboardingApi } from '@/lib/api';
+import { integrationsApi, onboardingApi } from '@/lib/api';
 import { usePlan } from '@/lib/usePlan';
 import { CheckCircle, ArrowRight, Info } from 'lucide-react';
 import { useVertical } from '@/lib/useVertical';
@@ -147,7 +147,7 @@ export default function Step1PhonePage() {
         {option === 'ringcentral' && (
           <div className="mt-4">
             <a
-              href="/api/v1/integrations/ringcentral/connect"
+              href={integrationsApi.connectUrl('ringcentral')}
               className="btn-primary inline-flex"
             >
               Connect RingCentral

@@ -5,7 +5,11 @@ import { db } from '../../db/client.js';
 import { tenantSettings, tenants } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import type { OfficeHours, AppointmentType } from '@ai-receptionist/shared';
+import { VERTICAL_VALUES as _VERTICAL_VALUES, isVertical as _isVertical } from '@ai-receptionist/shared';
 import { ValidationError, NotFoundError } from '../../lib/errors.js';
+import { coerceVoiceSettings } from './voice-coerce.js';
+
+export { coerceVoiceSettings } from './voice-coerce.js';
 
 // ---- Read ----
 
@@ -19,7 +23,8 @@ export async function getSettings(tenantId: string) {
   if (!settings) {
     throw new NotFoundError('Settings not found for this tenant');
   }
-  return settings;
+  const coerced = coerceVoiceSettings(settings);
+  return { ...settings, ...coerced };
 }
 
 export async function getTenantInfo(tenantId: string) {
@@ -43,7 +48,7 @@ export interface UpdateSettingsInput {
   transferNumber?: string;
   maxHoldSeconds?: number;
   voiceName?: string;
-  voiceProvider?: 'grok' | 'elevenlabs';
+  voiceProvider?: 'grok';
   telephonyProvider?: 'telnyx' | 'ringcentral';
   provisionedNumber?: string;
   provisionedNumberSid?: string;
@@ -57,6 +62,16 @@ export interface UpdateSettingsInput {
 }
 
 export async function updateSettings(tenantId: string, input: UpdateSettingsInput) {
+  const payload: UpdateSettingsInput = { ...input };
+  if (input.voiceName !== undefined || input.voiceProvider !== undefined) {
+    const coerced = coerceVoiceSettings({
+      voiceName: input.voiceName,
+      voiceProvider: input.voiceProvider,
+    });
+    payload.voiceName = coerced.voiceName;
+    payload.voiceProvider = coerced.voiceProvider;
+  }
+
   const [existing] = await db
     .select({ id: tenantSettings.id })
     .from(tenantSettings)
@@ -67,17 +82,51 @@ export async function updateSettings(tenantId: string, input: UpdateSettingsInpu
     // Auto-create if missing (first call after account creation)
     const [created] = await db
       .insert(tenantSettings)
-      .values({ tenantId, ...input })
+      .values({ tenantId, ...payload })
       .returning();
     return created;
   }
 
   const [updated] = await db
     .update(tenantSettings)
-    .set(input)
+    .set(payload)
     .where(eq(tenantSettings.tenantId, tenantId))
     .returning();
 
+  return updated;
+}
+
+export async function updateTenantProfile(
+  tenantId: string,
+  input: { name?: string; timezone?: string; vertical?: string }
+) {
+  const patch: Record<string, unknown> = { updatedAt: new Date() };
+  if (typeof input.name === 'string' && input.name.trim()) {
+    patch.name = input.name.trim().slice(0, 120);
+  }
+  if (typeof input.timezone === 'string' && input.timezone.trim()) {
+    patch.timezone = input.timezone.trim();
+  }
+  if (input.vertical) {
+    if (!_isVertical(input.vertical)) {
+      throw new ValidationError(
+        `Unknown vertical "${input.vertical}". Must be one of: ${_VERTICAL_VALUES.join(', ')}`
+      );
+    }
+    patch.vertical = input.vertical;
+  }
+
+  if (Object.keys(patch).length === 1) {
+    return getTenantInfo(tenantId);
+  }
+
+  const [updated] = await db
+    .update(tenants)
+    .set(patch)
+    .where(eq(tenants.id, tenantId))
+    .returning();
+
+  if (!updated) throw new NotFoundError('Tenant not found');
   return updated;
 }
 
@@ -95,7 +144,6 @@ export async function updateAppointmentTypes(tenantId: string, appointmentTypes:
 // ---- Vertical (industry) ----
 
 export { VERTICAL_VALUES, type Vertical, isVertical } from '@ai-receptionist/shared';
-import { VERTICAL_VALUES as _VERTICAL_VALUES, isVertical as _isVertical } from '@ai-receptionist/shared';
 
 export async function updateVertical(tenantId: string, vertical: string) {
   if (!_isVertical(vertical)) {

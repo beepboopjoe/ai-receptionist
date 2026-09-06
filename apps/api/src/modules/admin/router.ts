@@ -31,7 +31,7 @@ import {
   activateTenant,
   getOnboardingStatus,
   getTenantInfo,
-  updateVertical,
+  updateTenantProfile,
 } from './settings.service.js';
 import { createTelephonyAdapter } from '../telephony/adapters/telephony.factory.js';
 import { AuthError, NotFoundError, ValidationError } from '../../lib/errors.js';
@@ -379,6 +379,7 @@ export async function adminPlugin(app: FastifyInstance) {
       // Effective cap: promo-trial override wins over the plan default,
       // otherwise honor grandfathered (legacy_pricing) caps via the helper.
       const minutesIncluded = tenant.minutesOverride ?? planLimits.minutes;
+      const unlimited = minutesIncluded < 0;
 
       // Calculate this month's usage
       const now = new Date();
@@ -406,7 +407,9 @@ export async function adminPlugin(app: FastifyInstance) {
         plan,
         minutesUsed,
         minutesIncluded,
-        usagePercent: Math.min(100, Math.round((minutesUsed / Math.max(1, minutesIncluded)) * 100)),
+        usagePercent: unlimited
+          ? 0
+          : Math.min(100, Math.round((minutesUsed / Math.max(1, minutesIncluded)) * 100)),
         callsThisMonth: Number(usageRow?.callCount) ?? 0,
         appointmentsThisMonth: Number(apptRow?.apptCount) ?? 0,
         renewalDate,
@@ -1506,9 +1509,12 @@ export async function adminPlugin(app: FastifyInstance) {
       const { tenantId, id: actorId } = request.authUser;
       const body = request.body as { vertical?: string; name?: string; timezone?: string };
 
-      let updated;
+      const updated = await updateTenantProfile(tenantId, {
+        vertical: body.vertical,
+        name: body.name,
+        timezone: body.timezone,
+      });
       if (body.vertical) {
-        updated = await updateVertical(tenantId, body.vertical);
         auditLog({
           tenantId,
           actorType: 'admin_user',
@@ -1518,8 +1524,17 @@ export async function adminPlugin(app: FastifyInstance) {
           entityId: tenantId,
           metadata: { vertical: body.vertical },
         });
-      } else {
-        updated = await getTenantInfo(tenantId);
+      }
+      if (body.name || body.timezone) {
+        auditLog({
+          tenantId,
+          actorType: 'admin_user',
+          actorId,
+          action: 'tenant.profile_updated',
+          entityType: 'tenant',
+          entityId: tenantId,
+          metadata: { name: body.name, timezone: body.timezone },
+        });
       }
       return reply.send(updated);
     }

@@ -24,6 +24,7 @@ import { NotFoundError, ValidationError } from '../../lib/errors.js';
 import { sniffMime, parseDocument, SUPPORTED_MIME } from './document-parsers.js';
 import { chunkText } from './chunker.js';
 import { embedTexts, embedQuery } from './openai-embeddings.client.js';
+import { sanitizeKbErrorMessage, KB_PROCESSING_UNAVAILABLE } from './kb-error.js';
 import { kbQueue } from '../../queue/queues.js';
 import pino from 'pino';
 
@@ -135,7 +136,7 @@ export interface DocumentSummary {
 }
 
 export async function listDocuments(tenantId: string): Promise<DocumentSummary[]> {
-  return db
+  const rows = await db
     .select({
       id: kbDocuments.id,
       filename: kbDocuments.filename,
@@ -150,6 +151,10 @@ export async function listDocuments(tenantId: string): Promise<DocumentSummary[]
     .from(kbDocuments)
     .where(eq(kbDocuments.tenantId, tenantId))
     .orderBy(desc(kbDocuments.createdAt));
+  return rows.map((row) => ({
+    ...row,
+    errorMessage: sanitizeKbErrorMessage(row.errorMessage),
+  }));
 }
 
 export async function getDocument(tenantId: string, docId: string): Promise<DocumentSummary> {
@@ -169,7 +174,7 @@ export async function getDocument(tenantId: string, docId: string): Promise<Docu
     .where(and(eq(kbDocuments.id, docId), eq(kbDocuments.tenantId, tenantId)))
     .limit(1);
   if (!row) throw new NotFoundError('Document', docId);
-  return row;
+  return { ...row, errorMessage: sanitizeKbErrorMessage(row.errorMessage) };
 }
 
 export async function deleteDocument(tenantId: string, docId: string): Promise<void> {
@@ -289,7 +294,7 @@ export async function processDocument(documentId: string): Promise<void> {
         status: 'ready',
         chunkCount: chunks.length,
         processedAt: new Date(),
-        errorMessage: embeddings ? null : 'OPENAI_API_KEY unset — chunks stored without embeddings',
+        errorMessage: embeddings ? null : KB_PROCESSING_UNAVAILABLE,
       })
       .where(eq(kbDocuments.id, documentId));
 
@@ -302,7 +307,11 @@ export async function processDocument(documentId: string): Promise<void> {
     logger.error({ err, documentId }, 'KB document processing failed');
     await db
       .update(kbDocuments)
-      .set({ status: 'failed', errorMessage: message.slice(0, 1000), processedAt: new Date() })
+      .set({
+        status: 'failed',
+        errorMessage: sanitizeKbErrorMessage(message) ?? KB_PROCESSING_UNAVAILABLE,
+        processedAt: new Date(),
+      })
       .where(eq(kbDocuments.id, documentId));
   }
 }

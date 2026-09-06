@@ -89,8 +89,6 @@ export default function IntegrationsPage() {
     }
   }
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-
   return (
     <div className="space-y-6">
       <div>
@@ -132,7 +130,7 @@ export default function IntegrationsPage() {
                     </button>
                   ) : (
                     <a
-                      href={`/api/v1/integrations/${provider.id.replace('_', '-')}/connect`}
+                      href={integrationsApi.connectUrl(provider.id)}
                       className="btn-primary text-sm"
                     >
                       <ExternalLink size={14} /> Connect
@@ -250,7 +248,17 @@ export default function IntegrationsPage() {
                       </>
                     ) : isOAuth ? (
                       <a
-                        href={`${apiBase}/api/v1/integrations/${provider.id}/connect`}
+                        href={
+                          provider.id === 'hubspot'
+                            ? integrationsApi.connectHubspotUrl()
+                            : provider.id === 'salesforce'
+                              ? integrationsApi.connectSalesforceUrl()
+                              : provider.id === 'clio'
+                                ? integrationsApi.connectClioUrl()
+                                : provider.id === 'zoho'
+                                  ? integrationsApi.connectZohoUrl()
+                                  : integrationsApi.connectUrl(provider.id)
+                        }
                         className="btn-primary text-sm flex items-center gap-1.5"
                       >
                         <ExternalLink size={13} /> Connect {provider.label}

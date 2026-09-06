@@ -25,8 +25,10 @@ import { clsx } from 'clsx';
 import { logout } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { usePlan } from '@/lib/usePlan';
+import { formatMinutesUsedOfLimit, planDisplayName } from '@/lib/plan-display';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { useVertical } from '@/lib/useVertical';
+import { useGoLive } from '@/lib/useGoLive';
 import { BRAND_NAME } from '@/lib/brand';
 import { complianceApi, platformApi } from '@/lib/api';
 import useSWR from 'swr';
@@ -68,6 +70,7 @@ const proNavItems: {
 // Phase 29a — settings split into Essentials (always visible, plain
 // names) and Advanced (collapsed by default). URLs are unchanged.
 const settingsNavEssentials = [
+  { href: '/settings/profile', label: 'Business Profile', icon: null },
   { href: '/settings/voice-agent', label: 'My AI Receptionist', icon: null },
   { href: '/settings/knowledge-base', label: 'Teach Your AI', icon: null },
   { href: '/settings/phone-numbers', label: 'Phone Numbers', icon: null },
@@ -87,14 +90,6 @@ const settingsNavAdvanced = [
   { href: '/settings/agent', label: 'AI Agent', icon: 'sparkles' as const },
 ];
 
-const PLAN_LABELS: Record<string, string> = {
-  trial: 'Trial',
-  growth: 'Growth',
-  scale: 'Scale',
-  business: 'Business',
-  enterprise: 'Enterprise',
-};
-
 const PLAN_COLORS: Record<string, string> = {
   trial: 'bg-gray-100 text-gray-600',
   growth: 'bg-brand-50 text-brand-700',
@@ -109,6 +104,8 @@ export function Sidebar() {
   const { plan, usagePercent, minutesUsed, minutesIncluded, loading } = usePlan();
   const { has } = useFeatureFlags();
   const analyticsEnabled = has('analytics');
+  const goLive = useGoLive();
+  const showAdvancedNav = goLive.ready;
   const vertical = useVertical();
   const [upgradeReason, setUpgradeReason] = useState<UpgradeReason | null>(null);
   // Mobile drawer state — sidebar is hidden on mobile and revealed via the
@@ -155,6 +152,9 @@ export function Sidebar() {
     },
     { revalidateOnFocus: false, dedupingInterval: 5 * 60 * 1000 }
   );
+  // Founder chrome stays off first-run customer tenants even if this
+  // email is in ADMIN_EMAILS (Joey testing a law-firm account).
+  const isPlatformAdmin = platformAdmin?.ok === true && goLive.ready;
 
   const isHighUsage = usagePercent >= 80;
   const showUpgradeCta = !loading && plan === 'trial';
@@ -292,8 +292,8 @@ export function Sidebar() {
 
         {/* Main nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {/* Platform-admin link — only visible to emails in ADMIN_EMAILS */}
-          {platformAdmin?.ok && (
+          {/* Platform-admin — ADMIN_EMAILS + go-live complete. Hidden on first-run. */}
+          {isPlatformAdmin && (
             <Link
               href="/platform"
               onClick={() => setMobileOpen(false)}
@@ -357,39 +357,23 @@ export function Sidebar() {
           {/* Pro-locked nav items. Analytics is a real page when the
               tenant is entitled (Scale plan); otherwise it stays a
               locked button that opens the upgrade modal. */}
-          {proNavItems.map(({ label, icon: Icon, reason, href }) => {
-            if (analyticsEnabled && href) {
-              return (
-                <Link
-                  key={label}
-                  href={href}
-                  onClick={() => setMobileOpen(false)}
-                  className={clsx(
-                    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                    pathname === href || pathname.startsWith(href + '/')
-                      ? 'bg-brand-50 text-brand-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  )}
-                >
-                  <Icon size={18} />
-                  {label}
-                </Link>
-              );
-            }
-            // Locked (free/Starter/Growth) — show upgrade prompt
-            if (analyticsEnabled) return null;
+          {analyticsEnabled && proNavItems.map(({ label, icon: Icon, href }) => {
+            if (!href) return null;
             return (
-              <button
+              <Link
                 key={label}
-                type="button"
-                onClick={() => setUpgradeReason(reason)}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-50 w-full text-left transition-colors"
-                title={`${label} — requires Scale plan`}
+                href={href}
+                onClick={() => setMobileOpen(false)}
+                className={clsx(
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                  pathname === href || pathname.startsWith(href + '/')
+                    ? 'bg-brand-50 text-brand-700'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                )}
               >
-                <Icon size={18} className="opacity-50" />
-                <span className="flex-1">{label}</span>
-                <Lock size={13} className="opacity-40" />
-              </button>
+                <Icon size={18} />
+                {label}
+              </Link>
             );
           })}
 
@@ -398,9 +382,8 @@ export function Sidebar() {
           </div>
           {settingsNavEssentials.map((item) => renderSettingsLink(item))}
 
-          {/* Advanced settings — collapsed by default so non-technical
-              owners never see "Webhooks" unless they go looking. Opens
-              automatically when the current page lives inside it. */}
+          {/* Advanced — hidden until the go-live checklist is complete. */}
+          {showAdvancedNav && (
           <details
             className="group/adv"
             open={settingsNavAdvanced.some(({ href }) => pathname === href)}
@@ -420,6 +403,7 @@ export function Sidebar() {
               {settingsNavAdvanced.map((item) => renderSettingsLink(item))}
             </div>
           </details>
+          )}
         </nav>
 
         {/* Usage widget */}
@@ -427,7 +411,7 @@ export function Sidebar() {
           <div className="mx-3 mb-2 rounded-xl border border-gray-100 bg-gray-50 p-3">
             <div className="flex items-center justify-between mb-2">
               <span className={clsx('text-xs font-semibold px-2 py-0.5 rounded-full', PLAN_COLORS[plan] ?? PLAN_COLORS['trial'])}>
-                {PLAN_LABELS[plan] ?? plan}
+                {planDisplayName(plan)}
               </span>
               {isHighUsage && (
                 <Link href="/billing" className="text-xs text-amber-600 font-medium flex items-center gap-1">
@@ -437,7 +421,7 @@ export function Sidebar() {
             </div>
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
               <span>AI Minutes</span>
-              <span>{minutesUsed} / {minutesIncluded}</span>
+              <span>{formatMinutesUsedOfLimit(minutesUsed, minutesIncluded)}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
               <div
