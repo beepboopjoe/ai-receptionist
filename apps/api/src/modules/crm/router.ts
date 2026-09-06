@@ -1,59 +1,23 @@
 // ============================================================
-// CRM router — contacts CRUD + CSV import + caller identification
+// CRM router — contact create, related records, CSV import
+// List / get / patch live on adminPlugin. Identify lives on
+// workflowPlugin. Duplicating those crashes Fastify after the
+// /api/v1 unwrap (FST_ERR_DUPLICATED_ROUTE).
 // ============================================================
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import { db } from '../../db/client.js';
-import { contacts, calls, appointments } from '../../db/schema.js';
-import { eq, and, desc, count, or, ilike } from 'drizzle-orm';
-import { identifyCaller, createContact, updateContact, searchContacts } from './crm.service.js';
+import { calls, appointments } from '../../db/schema.js';
+import { eq, and, desc } from 'drizzle-orm';
+import { createContact } from './crm.service.js';
 import { importContactsCsv, getImportJobStatus } from './adapters/csv-import.adapter.js';
-import { parsePagination, paginationToOffset, buildPaginatedResponse } from '../../lib/pagination.js';
+import { parsePagination, paginationToOffset } from '../../lib/pagination.js';
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
 import { randomUUID } from 'crypto';
 
 async function crmRoutes(app: FastifyInstance, _opts: FastifyPluginOptions): Promise<void> {
-  // ---- Internal: identify caller (used by voice agent) ----
-  app.post('/internal/contacts/identify', async (request) => {
-    const { tenantId, phone } = request.body as { tenantId: string; phone: string };
-    const contact = await identifyCaller(phone, tenantId);
-    return { contact, isNew: !contact };
-  });
-
-  // ---- Admin: list contacts ----
-  app.get('/contacts', { preHandler: [app.authenticate] }, async (request) => {
-    const tenantId = (request.user as { tenantId: string }).tenantId;
-    const query = request.query as { q?: string };
-    const pagination = parsePagination(request.query as Record<string, unknown>);
-    const { limit, offset } = paginationToOffset(pagination);
-
-    let whereClause = and(eq(contacts.tenantId, tenantId));
-    if (query.q) {
-      const term = `%${query.q}%`;
-      whereClause = and(
-        eq(contacts.tenantId, tenantId),
-        or(ilike(contacts.firstName, term), ilike(contacts.lastName, term), ilike(contacts.phoneE164, term))
-      );
-    }
-
-    const [rows, [{ value: total }]] = await Promise.all([
-      db.select().from(contacts).where(whereClause).orderBy(desc(contacts.createdAt)).limit(limit).offset(offset),
-      db.select({ value: count() }).from(contacts).where(whereClause),
-    ]);
-
-    return buildPaginatedResponse(rows, Number(total), pagination);
-  });
-
-  // ---- Admin: get contact ----
-  app.get('/contacts/:id', { preHandler: [app.authenticate] }, async (request) => {
-    const tenantId = (request.user as { tenantId: string }).tenantId;
-    const { id } = request.params as { id: string };
-
-    const [contact] = await db.select().from(contacts)
-      .where(and(eq(contacts.id, id), eq(contacts.tenantId, tenantId))).limit(1);
-
-    if (!contact) throw new NotFoundError('Contact', id);
-    return contact;
-  });
+  // List / get / patch live on adminPlugin. Internal identify lives
+  // on workflowPlugin. Duplicating those here crashes Fastify after
+  // the /api/v1 unwrap (FST_ERR_DUPLICATED_ROUTE).
 
   // ---- Admin: contact call history ----
   app.get('/contacts/:id/calls', { preHandler: [app.authenticate] }, async (request) => {
@@ -92,15 +56,6 @@ async function crmRoutes(app: FastifyInstance, _opts: FastifyPluginOptions): Pro
 
     const contact = await createContact({ ...body, source: 'manual' }, tenantId);
     return reply.status(201).send(contact);
-  });
-
-  // ---- Admin: update contact ----
-  app.patch('/contacts/:id', { preHandler: [app.authenticate] }, async (request) => {
-    const tenantId = (request.user as { tenantId: string }).tenantId;
-    const { id } = request.params as { id: string };
-    const body = request.body as Parameters<typeof updateContact>[1];
-
-    return updateContact(id, body, tenantId);
   });
 
   // ---- CSV Import ----

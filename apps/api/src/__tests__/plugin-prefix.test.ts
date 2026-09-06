@@ -32,6 +32,49 @@ describe('critical routers keep the /api/v1 prefix', () => {
   });
 });
 
+const INTERNAL_ROUTE_FILES = [
+  'modules/scheduler/router.ts',
+  'modules/crm/router.ts',
+  'modules/workflow-engine/router.ts',
+];
+
+describe('internal voice-agent routes are registered once', () => {
+  it.each(['/internal/slots/search', '/internal/appointments/book', '/internal/contacts/identify'])(
+    '%s is declared in exactly one router',
+    (route) => {
+      const hits = INTERNAL_ROUTE_FILES.filter((rel) =>
+        readFileSync(join(srcRoot, rel), 'utf8').includes(`'${route}'`)
+      );
+      expect(hits, `${route} declared in: ${hits.join(', ') || '(none)'}`).toEqual([
+        'modules/workflow-engine/router.ts',
+      ]);
+    }
+  );
+});
+
+const TENANT_CRUD_FILES = [
+  'modules/scheduler/router.ts',
+  'modules/crm/router.ts',
+  'modules/admin/router.ts',
+];
+
+describe('tenant CRUD routes are registered once after /api/v1 unwrap', () => {
+  it.each([
+    ['GET', '/appointments', 'modules/admin/router.ts'],
+    ['GET', '/appointments/:id', 'modules/admin/router.ts'],
+    ['PATCH', '/appointments/:id', 'modules/admin/router.ts'],
+    ['GET', '/contacts', 'modules/admin/router.ts'],
+    ['GET', '/contacts/:id', 'modules/admin/router.ts'],
+    ['PATCH', '/contacts/:id', 'modules/admin/router.ts'],
+  ] as const)('%s %s lives only in %s', (method, path, owner) => {
+    const routeRe = new RegExp(
+      `app\\.${method.toLowerCase()}\\(\\s*['\`]${path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['\`]`
+    );
+    const hits = TENANT_CRUD_FILES.filter((rel) => routeRe.test(readFileSync(join(srcRoot, rel), 'utf8')));
+    expect(hits, `${method} ${path} declared in: ${hits.join(', ') || '(none)'}`).toEqual([owner]);
+  });
+});
+
 describe('escalations schema-drift migration', () => {
   it('adds updated_at so PATCH /escalations cannot 500', () => {
     const sql = readFileSync(
