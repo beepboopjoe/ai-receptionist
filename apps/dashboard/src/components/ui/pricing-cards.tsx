@@ -1,7 +1,7 @@
 'use client';
 // ============================================================
 // Pricing card grid with monthly/annual toggle.
-// Handles all 4 purchasable plans (Starter → Enterprise).
+// Handles Trial + Growth + Scale + Business + Enterprise.
 // Enterprise renders a "Contact Sales" CTA instead of checkout.
 // ============================================================
 import Link from 'next/link';

@@ -167,7 +167,7 @@ export function HomepageVoiceSamples() {
             Pick the voice that fits your brand.
           </h2>
           <p className="text-cream-600 mt-3 max-w-xl mx-auto">
-            Every voice speaks 7 languages. Tap a flag to hear it — this is exactly what your callers hear.
+            Natural Grok voices, seven languages. Tap a flag to hear it — this is what your callers hear.
           </p>
         </div>
 

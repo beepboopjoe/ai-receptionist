@@ -7,7 +7,7 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { CheckCircle, Phone, ShieldCheck, Sparkles, Moon, Globe, MessageSquare, Clock, Reply } from 'lucide-react';
-import { BRAND_NAME } from '@/lib/brand';
+import { BRAND_STACK_LINE } from '@/lib/brand';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 
@@ -34,29 +34,29 @@ export const metadata = {
 const USE_CASES = [
   {
     title: 'Appointment Booking',
-    bookingRange: '85–94%',
+    footnote: 'Live calendar',
     sample:
       '"Hi! Thanks for calling [Your Business Name]. I\'d be happy to book that for you — would Tuesday at 10 or Thursday at 2 work better?"',
     bullets: [
       'Reads your live calendar availability',
       'Books straight into Google or Outlook',
-      'Sends SMS confirmation in seconds',
+      'Sends SMS confirmation on paid plans',
     ],
   },
   {
     title: 'After-Hours Coverage',
-    bookingRange: '24/7',
+    footnote: 'Nights & weekends',
     sample:
       '"Thanks for calling — our team is closed for the day, but I can take down details and book you for tomorrow at 9 AM if you\'d like."',
     bullets: [
       'Answers nights, weekends, holidays',
       'Books real appointments, not voicemails',
-      'Escalates urgent calls via SMS to staff',
+      'Escalates urgent calls to staff',
     ],
   },
   {
     title: 'Spanish Bilingual',
-    bookingRange: '~22%',
+    footnote: 'Included',
     sample:
       '"Hola, gracias por llamar. ¿Le gustaría agendar una cita para esta semana? Tenemos disponibilidad el martes a las dos."',
     bullets: [
@@ -70,7 +70,7 @@ const USE_CASES = [
 const QUALITY = [
   {
     title: 'Sounds like a real receptionist',
-    desc: "Our latest voice model — natural cadence, conversational pauses, handles interruption. Most callers don't realize it's AI.",
+    desc: "Natural Grok voice — conversational cadence, handles interruption. Most callers don't realize it's AI.",
   },
   {
     title: 'No hold music',
@@ -116,14 +116,17 @@ export default function InboundPage() {
               Try Free — 10 min →
             </Link>
             <Link
-              href="/demo"
+              href="/pricing"
               className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-cream-800 bg-white border border-cream-200 rounded-xl hover:bg-cream-50 transition-colors"
             >
-              Try it live →
+              See pricing
             </Link>
           </div>
-          <p className="text-xs text-cream-500 mt-5">
-            No credit card required · See plans below · No contracts
+          <p className="text-xs font-semibold text-cream-500 mt-5 tracking-wide">
+            {BRAND_STACK_LINE}
+          </p>
+          <p className="text-xs text-cream-500 mt-2">
+            No credit card required · Cancel anytime · No contracts
           </p>
         </div>
       </section>
@@ -194,8 +197,8 @@ export default function InboundPage() {
                   ))}
                 </ul>
                 <div className="pt-4 border-t border-cream-200 flex items-center justify-between">
-                  <span className="text-xs text-cream-500">Booking / availability</span>
-                  <span className="font-serif text-xl text-cream-900">{c.bookingRange}</span>
+                  <span className="text-xs text-cream-500">Coverage</span>
+                  <span className="text-sm font-semibold text-cream-800">{c.footnote}</span>
                 </div>
               </div>
             ))}
@@ -366,10 +369,10 @@ export default function InboundPage() {
       <section className="bg-cream-900 text-white py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="font-serif text-4xl md:text-5xl tracking-tight">
-            Inbound + SMS included on every plan.
+            Inbound answering on every plan. SMS on paid plans.
           </h2>
           <p className="text-cream-300 mt-4 max-w-xl mx-auto">
-            Starter ($79/mo) covers 200 minutes. Growth ($199/mo) adds outbound campaigns and 750 minutes. Scale ($399/mo) handles 1,500. Bilingual + SMS + transcripts included on all of them.
+            Free trial is 10 inbound minutes. Growth ($199/mo) adds outbound campaigns, SMS, and 380 minutes. Scale ($399/mo) is 780 minutes; Business ($599/mo) is 1,100. Bilingual + transcripts on all of them.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link

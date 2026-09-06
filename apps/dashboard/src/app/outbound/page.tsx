@@ -10,7 +10,7 @@ import { CheckCircle, Phone, ShieldCheck, Sparkles, AlertCircle, MessageSquare, 
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { CampaignFlowDiagram } from '@/components/ui/campaign-flow-diagram';
-import { BRAND_NAME } from '@/lib/brand';
+import { BRAND_STACK_LINE } from '@/lib/brand';
 
 // SampleCallPlayer uses Web Speech API at click-time. Lazy-load it
 // so the marketing page's first paint isn't blocked on its TTS code.
@@ -36,7 +36,7 @@ export const metadata = {
 const CAMPAIGN_TYPES = [
   {
     title: 'Inactive Contact Reactivation',
-    bookingRange: '6–11%',
+    footnote: 'Win-backs',
     sample: '"Hi Emma, this is Aria from [Your Business Name]. It\'s been a while since your last visit — we\'d love to get you back in. Do you have any availability this week?"',
     bullets: [
       'Contacts inactive 3–24+ months',
@@ -46,7 +46,7 @@ const CAMPAIGN_TYPES = [
   },
   {
     title: 'Lead Follow-Up',
-    bookingRange: '20–28%',
+    footnote: 'Unbooked leads',
     sample: '"Hi Michael — you reached out last week about scheduling a consultation. I have a few openings this week if you\'d like to get it on the calendar."',
     bullets: [
       'Leads who expressed interest but didn\'t book',
@@ -56,7 +56,7 @@ const CAMPAIGN_TYPES = [
   },
   {
     title: 'Appointment Reminders & Recall',
-    bookingRange: '12–18%',
+    footnote: 'Recall lists',
     sample: '"Hi Sarah, this is Aria from [Your Business Name]. I noticed you\'re overdue for a follow-up — would Tuesday at 2 work, or is morning better?"',
     bullets: [
       'Contacts past their scheduled return window',
@@ -98,9 +98,9 @@ export default function OutboundPage() {
             AI outbound calling — for any appointment-based business
           </div>
           <h1 className="font-serif text-5xl md:text-7xl text-cream-900 tracking-tight leading-[1.05]">
-            Inbound is table stakes.
+            Same receptionist.
             <br />
-            <span className="gradient-text">Outbound fills the calendar.</span>
+            <span className="gradient-text">Now it dials out.</span>
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
             Your AI calls inactive contacts, follows up on unbooked leads,
@@ -115,14 +115,17 @@ export default function OutboundPage() {
               Try Free — 10 min →
             </Link>
             <Link
-              href="/demo"
+              href="/pricing"
               className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-cream-800 bg-white border border-cream-200 rounded-xl hover:bg-cream-50 transition-colors"
             >
-              Try it live →
+              See pricing
             </Link>
           </div>
-          <p className="text-xs text-cream-500 mt-5">
-            No credit card required · Outbound campaigns unlock on Growth and Scale · No contracts
+          <p className="text-xs font-semibold text-cream-500 mt-5 tracking-wide">
+            {BRAND_STACK_LINE}
+          </p>
+          <p className="text-xs text-cream-500 mt-2">
+            No credit card required · Outbound unlocks on paid plans · No contracts
           </p>
         </div>
       </section>
@@ -161,8 +164,8 @@ export default function OutboundPage() {
                   ))}
                 </ul>
                 <div className="pt-4 border-t border-cream-200 flex items-center justify-between">
-                  <span className="text-xs text-cream-500">Typical booking rate</span>
-                  <span className="font-serif text-xl text-cream-900">{c.bookingRange}</span>
+                  <span className="text-xs text-cream-500">Best for</span>
+                  <span className="text-sm font-semibold text-cream-800">{c.footnote}</span>
                 </div>
               </div>
             ))}
@@ -260,7 +263,7 @@ export default function OutboundPage() {
             Every booking gets a text — automatically.
           </h2>
           <p className="text-cream-600 mt-3 max-w-2xl mx-auto leading-relaxed">
-            Appointment reminders fire 24 hours and 2 hours before every booked slot. Two-way replies route to the same inbox your team is already using. Included on every plan.
+            Appointment reminders fire 24 hours and 2 hours before every booked slot. Two-way replies route to the same inbox your team is already using. Included on paid plans.
           </p>
         </div>
 

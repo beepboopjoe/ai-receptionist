@@ -75,35 +75,7 @@ export default function DentalLandingPage() {
 
       <RoiCalculator vertical="dental" />
 
-      {/* TrustStrip + TestimonialGrid removed until real customer logos + quotes. */}
-
-      <section className="py-20 px-6 bg-white border-y border-cream-200">
-        <div className="max-w-3xl mx-auto">
-          <div
-            className={`rounded-2xl p-8 ${
-              c.testimonial.real
-                ? 'bg-cream-50 border border-cream-200'
-                : 'bg-amber-50 border-2 border-dashed border-amber-300'
-            }`}
-          >
-            {!c.testimonial.real && (
-              <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-4">
-                Placeholder — swap me when you have a real quote
-              </p>
-            )}
-            <p className="text-xl text-cream-800 leading-relaxed italic">
-              &ldquo;{c.testimonial.quote}&rdquo;
-            </p>
-            <div className="mt-6 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-cream-300" aria-hidden />
-              <div>
-                <div className="font-semibold text-cream-900">{c.testimonial.name}</div>
-                <div className="text-sm text-cream-600">{c.testimonial.firmOrPractice}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Placeholder testimonials stay unmounted until we have real named quotes. */}
 
       <VerticalFaq {...(c.faq.heading ? { heading: c.faq.heading } : {})} items={c.faq.items} />
 
@@ -116,7 +88,7 @@ export default function DentalLandingPage() {
           </h2>
           <p className="text-cream-400 text-lg mb-10 max-w-xl mx-auto">{c.finalCta.subhead}</p>
           <Link
-            href="/signup"
+            href="/signup?plan=trial"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition-colors"
           >
             {c.finalCta.primaryCtaLabel} <ArrowRight size={16} />

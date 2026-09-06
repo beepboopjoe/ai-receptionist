@@ -10,9 +10,11 @@ import dynamic from 'next/dynamic';
 import { Phone, Sparkles, ShieldCheck } from 'lucide-react';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
-import { VERTICALS, type Vertical } from '@/lib/verticals';
+import type { Vertical } from '@/lib/verticals';
 import { SampleCallPlayer } from '@/components/ui/sample-call-player';
 import { VoiceLanguageDemo } from '@/components/ui/voice-language-demo';
+import { BRAND_STACK_LINE } from '@/lib/brand';
+import { CallMeWidget } from '@/components/ui/call-me-widget';
 
 // Heavy interactive widget — load on demand, no SSR needed.
 const DashboardTeaser = dynamic(
@@ -54,21 +56,27 @@ export default function DemoPage() {
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
             Scripted scenarios across six industries — in English and Spanish. Press play,
-            hear the voice quality, and see the conversation unfold. No sign-up required.
+            or enter your number and we&apos;ll call you. No sign-up required.
+          </p>
+          <p className="text-xs font-semibold text-cream-500 mt-4 tracking-wide">
+            {BRAND_STACK_LINE}
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/signup"
+              href="/signup?plan=trial"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              <Phone size={15} /> Start free trial
+              <Phone size={15} /> Try Free
             </Link>
             <Link
               href="/pricing"
               className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-cream-800 bg-white border border-cream-200 rounded-xl hover:bg-cream-50 transition-colors"
             >
-              See pricing →
+              See pricing
             </Link>
+          </div>
+          <div className="mt-10">
+            <CallMeWidget />
           </div>
         </div>
       </section>
@@ -161,8 +169,8 @@ export default function DemoPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
             {
-              title: 'State-of-the-art voice model',
-              desc: 'Natural cadence, conversational pauses, handles interruption. Callers hang up surprised — not annoyed.',
+              title: 'Natural Grok voice',
+              desc: 'Conversational cadence, handles interruption. Callers hang up surprised — not annoyed.',
             },
             {
               title: 'English + Spanish in one call',
@@ -192,14 +200,14 @@ export default function DemoPage() {
             Ready to put your AI receptionist on the line?
           </h2>
           <p className="text-cream-300 mt-4 max-w-xl mx-auto">
-            14-day free trial. No credit card. Set up takes under 10 minutes.
+            10 free inbound minutes. No credit card. Set up takes under 10 minutes.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/signup"
+              href="/signup?plan=trial"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              <Phone size={15} /> Start free trial
+              <Phone size={15} /> Try Free
             </Link>
             <Link
               href="/pricing"

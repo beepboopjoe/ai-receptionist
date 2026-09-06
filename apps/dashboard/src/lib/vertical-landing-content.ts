@@ -245,7 +245,7 @@ const legal: VerticalLandingContent = {
     headingGradientSuffix: 'Start the trial.',
     subhead:
       'Free trial. No card. No setup fees. Connect Clio or Filevine in 60 seconds and place a test call.',
-    primaryCtaLabel: 'Start free trial',
+    primaryCtaLabel: 'Try Free',
     secondaryNote: 'Encrypted at rest · Never used for training · Cancel anytime',
   },
 };
@@ -357,7 +357,7 @@ const dental: VerticalLandingContent = {
     headingGradientSuffix: 'Start the trial.',
     subhead:
       'Free trial. No card. No setup fees. Place a test call and book a mock new-patient appointment in under 90 seconds.',
-    primaryCtaLabel: 'Start free trial',
+    primaryCtaLabel: 'Try Free',
     secondaryNote: 'HIPAA-ready · Encrypted at rest · BAA available on Scale plan',
   },
 };
@@ -468,7 +468,7 @@ const insurance: VerticalLandingContent = {
     headingGradientSuffix: 'Start the trial.',
     subhead:
       'Free trial. No card. No setup fees. Place a test FNOL call and watch the transcript land in HubSpot in under a minute.',
-    primaryCtaLabel: 'Start free trial',
+    primaryCtaLabel: 'Try Free',
     secondaryNote: 'Encrypted at rest · SOC 2 controls · Cancel anytime',
   },
 };
@@ -579,7 +579,7 @@ const realEstate: VerticalLandingContent = {
     headingGradientSuffix: 'Always be answering.',
     subhead:
       'Free trial. No card. No setup fees. Place a test buyer-lead call and watch it land in Follow Up Boss in under a minute.',
-    primaryCtaLabel: 'Start free trial',
+    primaryCtaLabel: 'Try Free',
     secondaryNote: 'Encrypted at rest · Calendar sync included · Cancel anytime',
   },
 };
@@ -691,7 +691,7 @@ const homeServices: VerticalLandingContent = {
     headingGradientSuffix: 'Answer every one.',
     subhead:
       'Free trial. No card. No setup fees. Place a test emergency call and watch the dispatch land in HubSpot in seconds.',
-    primaryCtaLabel: 'Start free trial',
+    primaryCtaLabel: 'Try Free',
     secondaryNote: 'Encrypted at rest · Multi-tech routing · Cancel anytime',
   },
 };

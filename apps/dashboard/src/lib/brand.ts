@@ -6,6 +6,8 @@
 
 export const BRAND_NAME = 'Telfin';
 export const BRAND_TAGLINE = 'AI-powered phone receptionist for appointment-based businesses';
+/** Short, customer-friendly stack line for marketing heroes. */
+export const BRAND_STACK_LINE = 'Natural Grok voice · Reliable Telnyx calling';
 export const BRAND_AGENT_NAME = 'Aria';
 // Domain + support email kept as-is for now — separate concern from the wordmark
 // rebrand (would require new DNS + email setup). Update when telfin.com / similar is provisioned.

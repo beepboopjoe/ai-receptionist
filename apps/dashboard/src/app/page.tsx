@@ -1,12 +1,12 @@
 // ============================================================
 // / — Marketing home page.
-// Cream theme matching /inbound, /outbound, /pricing.
-// Uses shared MarketingHeader + MarketingFooter.
+// One AI phone receptionist (Grok voice + Telnyx calling).
+// Cream theme. Shared MarketingHeader + MarketingFooter.
 // ============================================================
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { CheckCircle, Phone, Megaphone, MessageSquare, ArrowRight, Sparkles } from 'lucide-react';
-import { BRAND_NAME } from '@/lib/brand';
+import { CheckCircle, Phone, Megaphone, MessageSquare, ArrowRight } from 'lucide-react';
+import { BRAND_NAME, BRAND_STACK_LINE } from '@/lib/brand';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
@@ -20,27 +20,31 @@ const DashboardTeaser = dynamic(
   () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
   { ssr: false }
 );
+const CallMeWidget = dynamic(
+  () => import('@/components/ui/call-me-widget').then((m) => m.CallMeWidget),
+  { ssr: false }
+);
 
 const FAQS = [
   {
     q: 'Do I need to change my phone system?',
-    a: 'No. You simply forward calls to your AI line. Works with any landline, VoIP, or cell phone. Setup takes under 10 minutes.',
+    a: 'No. Forward calls to your AI line, or we provision a new number. Works with any landline, VoIP, or cell. Setup takes under 10 minutes.',
   },
   {
     q: 'What if a caller has an urgent situation?',
-    a: 'The AI detects urgency in real-time and transfers the call to your staff within seconds — no delay.',
+    a: 'The AI detects urgency in the conversation and can transfer to your staff — the same way a good receptionist would hand off a call.',
   },
   {
-    q: 'How accurate is the appointment booking?',
-    a: 'The AI connects directly to your Google or Microsoft Calendar. It only offers genuinely available slots. Zero double-bookings reported across our entire customer base.',
+    q: 'How does appointment booking work?',
+    a: 'The AI connects to your Google or Microsoft Calendar and only offers slots that are actually open, then writes the booking back. You review every appointment in the dashboard.',
   },
   {
     q: 'Can I listen to call recordings?',
-    a: 'Yes. Every call is transcribed, recorded, and summarized by AI. Review the full transcript, play the audio, and see every decision the AI made — all in your dashboard.',
+    a: 'Yes. Every call is transcribed, recorded, and summarized. Review the transcript, play the audio, and see what the AI did — all in your dashboard.',
   },
   {
     q: 'What happens when I reach my minute limit?',
-    a: "You'll get an alert at 80% usage. Calls continue — you're never cut off mid-conversation. We'll help you upgrade to the right plan seamlessly.",
+    a: "You'll get an alert at 80% usage. Calls continue — you're never cut off mid-conversation. Extra minutes are billed at your plan's overage rate.",
   },
   {
     q: 'Is Spanish bilingual included?',
@@ -48,7 +52,7 @@ const FAQS = [
   },
   {
     q: 'Does SMS come included?',
-    a: 'The two-way SMS inbox and automated appointment reminders (24h + 2h) are included on Growth and Scale plans. Starter sends missed-call text-backs only. SMS is sent from your provisioned business number.',
+    a: 'Two-way SMS, appointment reminders (24h + 2h), and missed-call text-backs are included on paid plans (Growth, Scale, Business, Enterprise). The free trial is inbound voice only and does not include SMS. Texts send from your provisioned business number.',
   },
 ];
 
@@ -57,47 +61,34 @@ const INDUSTRIES = [
     emoji: '🦷',
     label: 'Healthcare / Dental',
     bullets: ['Appointment booking & recall', 'Emergency triage & escalation', 'Insurance verification'],
-    quote: '"We added 41 net-new patients in our first month — without hiring."',
-    attribution: 'Dental practice owner · Austin, TX',
   },
   {
     emoji: '📋',
     label: 'Insurance Agency',
     bullets: ['Inbound lead qualification', 'Quote follow-up calls', 'Renewal reminders'],
-    quote: '"Our quote-to-bind rate jumped from 18% to 27% once we stopped missing callbacks."',
-    attribution: 'Independent agency · Denver, CO',
   },
   {
     emoji: '⚖️',
-    label: 'Law Firm',
+    label: 'Law Firm / PI',
     bullets: ['24/7 new case intake', 'Consultation scheduling', 'Client follow-up'],
-    quote: '"After-hours intake captures 6–8 new matters a week we used to lose to voicemail."',
-    attribution: 'PI firm · Phoenix, AZ',
   },
   {
     emoji: '🏠',
     label: 'Real Estate',
     bullets: ['Instant lead qualification', 'Showing scheduling', 'Buyer & seller follow-up'],
-    quote: '"Showings are now booked while the lead is still on the phone — not 3 days later."',
-    attribution: 'Brokerage · Tampa, FL',
   },
   {
     emoji: '🔧',
     label: 'Home Services',
     bullets: ['24/7 job booking', 'Emergency dispatch', 'Maintenance reminders'],
-    quote: '"We stopped losing emergency calls to a voicemail box. That alone paid for itself."',
-    attribution: 'HVAC company · Houston, TX',
   },
   {
     emoji: '💼',
-    label: 'Other Appointment-Based Businesses',
+    label: 'Other appointment-based businesses',
     bullets: ['24/7 call answering', 'Appointment booking', 'Outbound follow-up'],
-    quote: '"It just works. Customers don\'t even realize it\'s AI."',
-    attribution: 'Multi-location service business',
   },
 ];
 
-// Derived from shared catalog — single source of truth.
 const PLANS_PREVIEW = PLANS.filter((p) => ['growth', 'scale', 'business'].includes(p.key)).map((p) => ({
   key: p.key,
   name: p.name,
@@ -108,89 +99,80 @@ const PLANS_PREVIEW = PLANS.filter((p) => ['growth', 'scale', 'business'].includ
   popular: !!p.popular,
 }));
 
-// ─────────────────────────────────────────────────────────────
-// Page
-// ─────────────────────────────────────────────────────────────
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-cream-50 text-cream-900 font-sans antialiased">
 
       <MarketingHeader />
 
-      {/* ══════════════════════════════════════════════════════
-          HERO
-      ══════════════════════════════════════════════════════ */}
-      <section className="mesh-gradient-light pt-24 pb-20 px-6">
+      <section className="mesh-gradient-light pt-24 pb-16 px-6">
         <div className="max-w-5xl mx-auto text-center">
 
           <div className="inline-flex items-center gap-2 bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold px-4 py-2 rounded-full mb-7">
-            <Sparkles size={13} />
-            Trusted by 500+ businesses across 6 industries
+            Built for phone-heavy businesses
           </div>
 
           <h1 className="font-serif text-5xl md:text-7xl text-cream-900 tracking-tight leading-[1.05]">
-            Your phones.<br />
-            <span className="gradient-text">Handled by AI.</span>
+            Your AI phone<br />
+            <span className="gradient-text">receptionist.</span>
           </h1>
 
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
-            Book appointments, handle missed calls, send two-way SMS, and run outbound campaigns — all on autopilot.
-            Never miss a call again.
+            {BRAND_NAME} answers every inbound call, books the calendar, and follows up by phone or text —
+            one receptionist, not three products.
           </p>
 
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+          <p className="text-sm text-cream-600 mt-4 max-w-xl mx-auto">
+            Who it&apos;s for: dental · legal / PI · insurance · real estate · home services
+          </p>
+
+          <p className="text-xs font-semibold text-cream-500 mt-3 tracking-wide">
+            {BRAND_STACK_LINE}
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/signup?plan=trial"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              Try Free — 10 min →
+              Try Free →
             </Link>
             <Link
-              href="/pricing#plans"
+              href="/pricing"
               className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-cream-800 bg-white border border-cream-200 rounded-xl hover:bg-cream-50 transition-colors"
             >
-              See plans &amp; pricing →
+              See pricing
             </Link>
           </div>
 
-          <p className="text-xs text-cream-500 mt-8">
-            No contracts · Voice + SMS · Setup in 10 minutes
-          </p>
+          <div className="mt-10">
+            <CallMeWidget />
+          </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          VOICE SAMPLES
-      ══════════════════════════════════════════════════════ */}
       <HomepageVoiceSamples />
 
-      {/* ══════════════════════════════════════════════════════
-          DASHBOARD PREVIEW — position 3, mirrors /inbound
-      ══════════════════════════════════════════════════════ */}
       <section className="bg-white border-y border-cream-200 py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <DashboardTeaser />
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          PRODUCT GRID — INBOUND + OUTBOUND + MESSAGING + DISCOVERY
-      ══════════════════════════════════════════════════════ */}
       <section className="py-24 px-6 bg-cream-50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Three products. One platform.</p>
+            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">What it does</p>
             <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
-              Handle every part of the customer journey.
+              One receptionist. Inbound, follow-up, and texts.
             </h2>
             <p className="text-cream-600 mt-3 max-w-xl mx-auto">
-              Answer every call. Follow up automatically. Text the ones who missed you. End-to-end.
+              Answering the phone is the core. Outbound campaigns and SMS ride along on the same number and the same AI.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-            {/* Inbound card */}
             <Link
               href="/inbound"
               className="group block rounded-3xl bg-white border border-cream-200 p-8 hover:border-brand-300 hover:shadow-md transition-all"
@@ -200,19 +182,19 @@ export default function LandingPage() {
                   <Phone size={22} className="text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.2em]">Inbound</p>
-                  <h3 className="font-serif text-2xl text-cream-900 tracking-tight">{BRAND_NAME}</h3>
+                  <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.2em]">Core</p>
+                  <h3 className="font-serif text-2xl text-cream-900 tracking-tight">Answers every call</h3>
                 </div>
               </div>
               <p className="text-cream-600 text-sm mb-6 leading-relaxed">
-                Your AI answers every inbound call — day, night, weekends, holidays — books appointments straight into your calendar, and switches to Spanish automatically when the caller does.
+                Day, night, weekends, holidays — books appointments into your calendar and switches to Spanish when the caller does.
               </p>
               <ul className="space-y-3 mb-6">
                 {[
-                  'Answers every call 24/7 — no hold music',
+                  'Picks up 24/7 — no hold music',
                   'Books, reschedules & cancels appointments',
-                  'Escalates emergencies to staff within seconds',
-                  'Full call transcript + AI summary in dashboard',
+                  'Escalates emergencies to staff',
+                  'Transcript + AI summary in the dashboard',
                 ].map((feat) => (
                   <li key={feat} className="flex items-start gap-2.5 text-sm text-cream-700">
                     <CheckCircle size={15} className="text-emerald-500 shrink-0 mt-0.5" />
@@ -221,11 +203,10 @@ export default function LandingPage() {
                 ))}
               </ul>
               <div className="flex items-center gap-2 text-sm font-semibold text-brand-600 group-hover:gap-3 transition-all">
-                Learn more about Inbound <ArrowRight size={15} />
+                How inbound answering works <ArrowRight size={15} />
               </div>
             </Link>
 
-            {/* Outbound card */}
             <Link
               href="/outbound"
               className="group block rounded-3xl bg-white border border-cream-200 p-8 hover:border-brand-300 hover:shadow-md transition-all"
@@ -235,19 +216,19 @@ export default function LandingPage() {
                   <Megaphone size={22} className="text-brand-600" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-brand-600 uppercase tracking-[0.2em]">Outbound</p>
-                  <h3 className="font-serif text-2xl text-cream-900 tracking-tight">AI Caller</h3>
+                  <p className="text-[10px] font-bold text-brand-600 uppercase tracking-[0.2em]">Included</p>
+                  <h3 className="font-serif text-2xl text-cream-900 tracking-tight">Calls people back</h3>
                 </div>
               </div>
               <p className="text-cream-600 text-sm mb-6 leading-relaxed">
-                Your AI calls inactive contacts, follows up on unbooked leads, and runs recall campaigns — booking real appointments while your team handles the people in front of them.
+                The same receptionist dials inactive contacts, unbooked leads, and recall lists — on paid plans.
               </p>
               <ul className="space-y-3 mb-6">
                 {[
-                  'Dials your lead lists automatically',
-                  'Qualifies prospects with natural conversation',
-                  'Books appointments from cold leads',
-                  'Tries again automatically if nobody picks up',
+                  'Dials your contact lists automatically',
+                  'Qualifies with a natural conversation',
+                  'Books appointments from follow-ups',
+                  'Tries again if nobody picks up',
                 ].map((feat) => (
                   <li key={feat} className="flex items-start gap-2.5 text-sm text-cream-700">
                     <CheckCircle size={15} className="text-brand-500 shrink-0 mt-0.5" />
@@ -256,13 +237,12 @@ export default function LandingPage() {
                 ))}
               </ul>
               <div className="flex items-center gap-2 text-sm font-semibold text-brand-600 group-hover:gap-3 transition-all">
-                Learn more about Outbound <ArrowRight size={15} />
+                How outbound follow-up works <ArrowRight size={15} />
               </div>
             </Link>
 
-            {/* Messaging card */}
             <Link
-              href="/pricing#plans"
+              href="/pricing"
               className="group block rounded-3xl bg-white border border-cream-200 p-8 hover:border-brand-300 hover:shadow-md transition-all"
             >
               <div className="flex items-center gap-4 mb-6">
@@ -270,18 +250,18 @@ export default function LandingPage() {
                   <MessageSquare size={22} className="text-indigo-600" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-[0.2em]">Messaging</p>
-                  <h3 className="font-serif text-2xl text-cream-900 tracking-tight">Two-way SMS</h3>
+                  <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-[0.2em]">Included</p>
+                  <h3 className="font-serif text-2xl text-cream-900 tracking-tight">Texts when needed</h3>
                 </div>
               </div>
               <p className="text-cream-600 text-sm mb-6 leading-relaxed">
-                Your AI texts back missed callers in seconds, sends appointment reminders, and your team picks up the thread from a shared inbox — all from your business number.
+                Missed-call text-backs, appointment reminders, and a shared inbox — on paid plans, from your business number.
               </p>
               <ul className="space-y-3 mb-6">
                 {[
-                  'Two-way SMS inbox tied to every contact',
-                  'Appointment reminder SMS (24h + 2h)',
-                  'Missed-call text-back under 10 seconds',
+                  'Two-way SMS inbox tied to each contact',
+                  'Appointment reminders (24h + 2h)',
+                  'Missed-call text-back in seconds',
                   'Reply CONFIRM / CANCEL to manage bookings',
                 ].map((feat) => (
                   <li key={feat} className="flex items-start gap-2.5 text-sm text-cream-700">
@@ -291,7 +271,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <div className="flex items-center gap-2 text-sm font-semibold text-brand-600 group-hover:gap-3 transition-all">
-                Included on Growth & Scale <ArrowRight size={15} />
+                See which plans include SMS <ArrowRight size={15} />
               </div>
             </Link>
 
@@ -299,15 +279,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          HOW IT WORKS
-      ══════════════════════════════════════════════════════ */}
-      <section className="bg-white border-y border-cream-200 py-20 px-6">
+      <section id="how-it-works" className="bg-white border-y border-cream-200 py-20 px-6 scroll-mt-20">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">How it works</p>
             <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
-              From first ring to booked appointment — in seconds.
+              From first ring to booked appointment.
             </h2>
           </div>
 
@@ -321,12 +298,12 @@ export default function LandingPage() {
               {
                 n: '2',
                 title: 'AI handles every call',
-                desc: 'Greets callers, books appointments, answers questions, and escalates emergencies — instantly, 24/7.',
+                desc: 'Greets callers, books appointments, answers questions, and escalates emergencies — 24/7.',
               },
               {
                 n: '3',
                 title: 'Watch the results',
-                desc: 'Every call logged, every booking tracked. Full transcripts, recordings, and analytics in one dashboard.',
+                desc: 'Every call logged, every booking tracked. Transcripts, recordings, and analytics in one dashboard.',
               },
             ].map((step) => (
               <div key={step.n} className="rounded-2xl bg-cream-50 border border-cream-200 p-7">
@@ -341,9 +318,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          INDUSTRIES
-      ══════════════════════════════════════════════════════ */}
       <section className="bg-white border-y border-cream-200 py-24 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
@@ -351,7 +325,7 @@ export default function LandingPage() {
             <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
               Built for businesses<br />that live on the phone.
             </h2>
-            <p className="text-cream-600 mt-3 text-lg">Six verticals. One AI receptionist tuned for each.</p>
+            <p className="text-cream-600 mt-3 text-lg">Six verticals. One receptionist, tuned for each.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -364,7 +338,7 @@ export default function LandingPage() {
                   <span className="text-3xl shrink-0">{v.emoji}</span>
                   <p className="font-serif text-lg text-cream-900 leading-tight">{v.label}</p>
                 </div>
-                <ul className="space-y-1.5 mb-5">
+                <ul className="space-y-1.5">
                   {v.bullets.map((b) => (
                     <li key={b} className="text-sm text-cream-700 flex items-start gap-2">
                       <span className="text-brand-500 mt-1 shrink-0">•</span>
@@ -372,19 +346,12 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-auto pt-5 border-t border-cream-200">
-                  <p className="text-sm text-cream-800 italic leading-relaxed mb-2">{v.quote}</p>
-                  <p className="text-xs text-cream-500">— {v.attribution}</p>
-                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          PRICING PREVIEW
-      ══════════════════════════════════════════════════════ */}
       <section className="py-24 px-6 bg-cream-50">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
@@ -392,7 +359,7 @@ export default function LandingPage() {
             <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
               Simple pricing.<br />No surprises.
             </h2>
-            <p className="text-cream-600 mt-3 text-lg">Monthly or annual. Cancel anytime.</p>
+            <p className="text-cream-600 mt-3 text-lg">Trial, Growth, Scale, Business, or Enterprise. Cancel anytime.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
@@ -408,7 +375,7 @@ export default function LandingPage() {
                 {plan.popular && (
                   <div className="text-center mb-3">
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-700 bg-brand-100 border border-brand-200 rounded-full px-3 py-1 uppercase tracking-widest">
-                      ⭐ Most Popular
+                      Most Popular
                     </span>
                   </div>
                 )}
@@ -448,9 +415,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          FAQ
-      ══════════════════════════════════════════════════════ */}
       <section className="bg-white border-t border-cream-200 py-24 px-6">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
@@ -480,9 +444,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          LIVES INSIDE YOUR CRM (Phase 13)
-      ══════════════════════════════════════════════════════ */}
       <section className="bg-cream-50 py-20 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">
@@ -514,17 +475,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TrustStrip removed (Phase 19.2) until we have real customer logos.
-          Re-mount with real `logos` prop (each entry needs realLogoSrc).
-          TestimonialGrid removed (Phase 19.1) until we have real customer
-          quotes. Re-mount with real `testimonials` prop. */}
+      {/* TrustStrip / TestimonialGrid stay unmounted until real logos + quotes exist. */}
 
-      {/* ── ROI calculator (Phase 17) ── */}
       <RoiCalculator vertical="generic" />
 
-      {/* ══════════════════════════════════════════════════════
-          WORKS WITH STRIP
-      ══════════════════════════════════════════════════════ */}
       <section className="bg-white border-y border-cream-200 py-8 px-6">
         <div className="max-w-5xl mx-auto">
           <p className="text-center text-xs font-semibold text-cream-500 uppercase tracking-[0.2em] mb-5">
@@ -543,9 +497,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          FINAL CTA
-      ══════════════════════════════════════════════════════ */}
       <section className="bg-cream-900 text-white py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-xs font-bold text-cream-400 uppercase tracking-[0.2em] mb-6">Get started today</p>
@@ -554,20 +505,20 @@ export default function LandingPage() {
             <span className="gradient-text">No contracts.</span>
           </h2>
           <p className="text-cream-400 text-lg mb-10 max-w-xl mx-auto">
-            Join 500+ businesses that let AI handle the phones.
+            Try the receptionist free, then pick Growth, Scale, Business, or Enterprise when you&apos;re ready.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/pricing#plans"
+              href="/signup?plan=trial"
               className="glow-btn inline-flex items-center gap-2 px-9 py-4 text-base font-bold text-white bg-brand-600 rounded-2xl"
             >
-              See plans &amp; pricing →
+              Try Free →
             </Link>
             <Link
-              href="/demo"
+              href="/pricing"
               className="inline-flex items-center gap-2 px-8 py-4 text-base font-semibold text-cream-200 border border-white/20 rounded-2xl hover:bg-white/5 transition-all"
             >
-              See a live demo
+              See pricing
             </Link>
           </div>
           <p className="mt-6 text-sm text-cream-500">Pay monthly or annual · Cancel anytime · Setup under 10 minutes</p>

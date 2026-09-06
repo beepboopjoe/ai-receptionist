@@ -59,7 +59,7 @@ const FAQ = [
   },
   {
     q: 'How many documents can I upload?',
-    a: 'Trial: 2 docs / 2 MB. Starter: 5 docs / 10 MB. Growth: 25 docs / 100 MB. Scale: unlimited (soft cap 500 docs / 2 GB).',
+    a: 'Trial: 2 docs / 2 MB. Growth: 25 docs / 100 MB. Scale, Business, and Enterprise: 500 docs / 2 GB (soft cap).',
   },
 ];
 
@@ -104,10 +104,10 @@ export default function KnowledgeBaseLandingPage() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/signup"
+              href="/signup?plan=trial"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition-colors"
             >
-              Start free trial <ArrowRight size={16} />
+              Try Free <ArrowRight size={16} />
             </Link>
             <Link
               href="/pricing"
@@ -189,9 +189,9 @@ export default function KnowledgeBaseLandingPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center px-4">
-              <div className="text-5xl font-serif text-brand-600 mb-3">68%</div>
+              <div className="text-5xl font-serif text-brand-600 mb-3">First call</div>
               <p className="text-cream-700 leading-relaxed text-sm">
-                of callers want a price quote on their first call. Without a knowledge base, the AI can't give one and callers drop off.
+                Callers often ask for a price on the first ring. Without a knowledge base, the AI has to take a message instead of answering from your docs.
               </p>
             </div>
             <div className="text-center px-4">
@@ -223,9 +223,9 @@ export default function KnowledgeBaseLandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { plan: 'Trial', docs: '2 docs', size: '2 MB' },
-              { plan: 'Starter', docs: '5 docs', size: '10 MB' },
               { plan: 'Growth', docs: '25 docs', size: '100 MB' },
               { plan: 'Scale', docs: '500 docs', size: '2 GB' },
+              { plan: 'Business+', docs: '500 docs', size: '2 GB' },
             ].map((tier) => (
               <div key={tier.plan} className="bg-white rounded-xl border border-cream-200 p-5">
                 <p className="text-xs font-bold text-cream-500 uppercase tracking-wider mb-2">{tier.plan}</p>
@@ -273,12 +273,12 @@ export default function KnowledgeBaseLandingPage() {
           <p className="text-cream-400 text-lg mb-10 max-w-xl mx-auto">
             Start the trial, upload your fee schedule, place a test call. See the difference in 90 seconds.
           </p>
-          <Link
-            href="/signup"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition-colors"
-          >
-            Start free trial <ArrowRight size={16} />
-          </Link>
+            <Link
+              href="/signup?plan=trial"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition-colors"
+            >
+              Try Free <ArrowRight size={16} />
+            </Link>
           <div className="flex items-center justify-center gap-2 mt-8 text-xs text-cream-500">
             <Shield size={12} />
             <span>Encrypted at rest · Not shared across tenants · Delete anytime</span>
