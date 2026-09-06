@@ -12,7 +12,7 @@ const PLAN_LABELS: Record<string, string> = {
 
 /** Human plan name. Unknown keys fall back to the raw value. */
 export function planDisplayName(plan: string | null | undefined): string {
-  if (!plan) return PLAN_LABELS.trial;
+  if (!plan) return 'Free Trial';
   return PLAN_LABELS[plan] ?? plan;
 }
 
