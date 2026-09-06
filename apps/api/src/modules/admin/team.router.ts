@@ -88,7 +88,7 @@ export async function teamPlugin(app: FastifyInstance): Promise<void> {
 
     auditLog({
       tenantId: invite.tenantId,
-      actorType: 'admin',
+      actorType: 'admin_user',
       actorId: user.id,
       action: 'team.invite_accepted',
       entityType: 'admin_user',
@@ -230,7 +230,7 @@ export async function teamPlugin(app: FastifyInstance): Promise<void> {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'team.member_invited',
         entityType: 'invitation',
@@ -266,7 +266,7 @@ export async function teamPlugin(app: FastifyInstance): Promise<void> {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'team.invite_revoked',
         entityType: 'invitation',
@@ -309,7 +309,7 @@ export async function teamPlugin(app: FastifyInstance): Promise<void> {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'team.role_changed',
         entityType: 'admin_user',
@@ -342,7 +342,7 @@ export async function teamPlugin(app: FastifyInstance): Promise<void> {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'team.member_removed',
         entityType: 'admin_user',

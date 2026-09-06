@@ -10,9 +10,14 @@ import useSWR, { mutate } from 'swr';
 import { useState } from 'react';
 import { Plus, Key, Trash2, Copy, CheckCircle2, ExternalLink } from 'lucide-react';
 import { apiKeysApi, type ApiKey } from '@/lib/api';
+import { BRAND_DOMAIN } from '@/lib/brand';
 import { useToast } from '@/components/ui/toast';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListRowSkeleton } from '@/components/ui/skeleton';
+
+const PUBLIC_API_EXAMPLE = (
+  process.env['NEXT_PUBLIC_API_URL'] ?? `https://api.${BRAND_DOMAIN}/api/v1`
+).replace(/\/$/, '');
 
 export default function ApiKeysPage() {
   const toast = useToast();
@@ -93,7 +98,7 @@ export default function ApiKeysPage() {
         <p className="font-semibold text-gray-900">Quick start</p>
         <pre className="bg-white border border-gray-200 rounded-md p-3 text-xs font-mono overflow-x-auto">
 {`curl -H "Authorization: Bearer ark_live_…" \\
-  https://ai-receptionist-production-de7b.up.railway.app/api/v1/public/whoami`}
+  ${PUBLIC_API_EXAMPLE}/public/whoami`}
         </pre>
         <a href="/docs" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline text-xs">
           Full API reference <ExternalLink size={11} />

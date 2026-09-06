@@ -5,31 +5,37 @@
 // ============================================================
 import type { FastifyInstance } from 'fastify';
 import { getAvailableSlots, bookAppointment } from '../scheduler/scheduler.service.js';
-import { identifyCaller, createContact } from '../crm/crm.service.js';
+import { identifyCaller } from '../crm/crm.service.js';
 import { getCallState, updateCallState } from '../voice-agent/session-manager.js';
 import { ValidationError, NotFoundError } from '../../lib/errors.js';
 
 export async function workflowPlugin(app: FastifyInstance) {
-  // Search available slots (called during AI conversation)
+  // Search available slots (called during AI conversation).
+  // Sole registration of POST /api/v1/internal/slots/search.
   app.post('/internal/slots/search', async (request, reply) => {
     const {
       tenantId,
       date,
-      durationMinutes,
-      provider,
+      appointmentType,
+      timezone,
     } = request.body as {
       tenantId: string;
       date: string; // YYYY-MM-DD
-      durationMinutes: number;
-      provider?: string;
+      appointmentType: string;
+      timezone?: string;
     };
 
-    if (!tenantId || !date || !durationMinutes) {
-      throw new ValidationError('tenantId, date, and durationMinutes are required');
+    if (!tenantId || !date || !appointmentType) {
+      throw new ValidationError('tenantId, date, and appointmentType are required');
     }
 
-    const slots = await getAvailableSlots({ tenantId, date, durationMinutes, provider });
-    return reply.send({ slots });
+    const slots = await getAvailableSlots({
+      tenantId,
+      date: new Date(date),
+      appointmentType,
+      timezone: timezone ?? 'America/New_York',
+    });
+    return reply.send({ slots: slots.slice(0, 3) });
   });
 
   // Book an appointment (called after caller confirms slot)
@@ -65,7 +71,7 @@ export async function workflowPlugin(app: FastifyInstance) {
     if (!phone || !tenantId) throw new ValidationError('phone and tenantId are required');
 
     const contact = await identifyCaller(phone, tenantId);
-    return reply.send({ contact });
+    return reply.send({ contact, isNew: !contact });
   });
 
   // Update call state (e.g., after AI collects data mid-conversation)

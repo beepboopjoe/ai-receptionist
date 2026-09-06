@@ -167,19 +167,53 @@ const envSchema = z.object({
   KB_BYTES_LIMIT_TRIAL: z.coerce.number().int().min(0).default(2_097_152),          // 2 MB
 });
 
-function loadConfig() {
-  const result = envSchema.safeParse(process.env);
-  if (!result.success) {
-    console.error('❌ Invalid environment variables:');
-    console.error(result.error.flatten().fieldErrors);
-    // In non-test environments, crash early on bad config
-    if (process.env['NODE_ENV'] !== 'test') {
-      process.exit(1);
-    }
+/** False when required env is missing — /health still binds; /health/ready is degraded. */
+export let configValid = true;
+
+const PLACEHOLDER_SECRET = 'x'.repeat(32);
+const PLACEHOLDER_ENCRYPTION_KEY = '0'.repeat(64);
+
+/**
+ * Parse env. Never process.exit — a missing DATABASE_URL/JWT on a Railway
+ * preview (or a half-configured prod deploy) used to kill the process
+ * before listen(), so /health never bound and Railway reported 502.
+ */
+export function resolveConfig(env: NodeJS.ProcessEnv): {
+  config: z.infer<typeof envSchema>;
+  valid: boolean;
+  missing: string[];
+} {
+  const result = envSchema.safeParse(env);
+  if (result.success) {
+    return { config: result.data, valid: true, missing: [] };
   }
-  // Return parsed data or a partial stub for tests
-  return result.success ? result.data : ({} as z.infer<typeof envSchema>);
+
+  const missing = Object.keys(result.error.flatten().fieldErrors);
+  console.error('❌ Invalid environment variables:');
+  console.error(result.error.flatten().fieldErrors);
+
+  if (env['NODE_ENV'] === 'test') {
+    return { config: {} as z.infer<typeof envSchema>, valid: false, missing };
+  }
+
+  console.error(
+    'Continuing in degraded mode so /health can bind. Set the missing vars and restart. Missing:',
+    missing.join(', ')
+  );
+
+  const filled = envSchema.parse({
+    ...env,
+    DATABASE_URL: env['DATABASE_URL'] || 'postgres://127.0.0.1:5432/unconfigured',
+    JWT_SECRET: env['JWT_SECRET'] || PLACEHOLDER_SECRET,
+    JWT_REFRESH_SECRET: env['JWT_REFRESH_SECRET'] || PLACEHOLDER_SECRET,
+    ENCRYPTION_KEY: env['ENCRYPTION_KEY'] || PLACEHOLDER_ENCRYPTION_KEY,
+    XAI_API_KEY: env['XAI_API_KEY'] || 'unconfigured',
+  });
+  return { config: filled, valid: false, missing };
 }
 
-export const config = loadConfig();
+const resolved = resolveConfig(process.env);
+configValid = resolved.valid;
+export const config = resolved.config;
+export const configMissing = resolved.missing;
 export type Config = z.infer<typeof envSchema>;

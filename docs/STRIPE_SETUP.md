@@ -24,7 +24,7 @@ When creating each price, copy the **price ID** (starts with `price_…`) — yo
 
 Stripe → **Developers** → **Webhooks** → **+ Add endpoint**.
 
-- **Endpoint URL**: `https://ai-receptionist-production-de7b.up.railway.app/webhooks/stripe`
+- **Endpoint URL**: `{API_PUBLIC_URL}/webhooks/stripe` (the live Fastify origin — Stripe is registered at the root, not under `/api/v1`. The old Railway hostname `ai-receptionist-production-de7b.up.railway.app` returned Railway's "Application not found" 404 and must be replaced with whatever host the current API deploy actually serves.)
 - **Events to send**:
   - `checkout.session.completed`
   - `customer.subscription.created`

@@ -47,7 +47,13 @@ CREATE INDEX IF NOT EXISTS email_templates_enabled_idx
   WHERE enabled = TRUE;
 
 -- Reuse the existing updated_at trigger function from 0001_initial.sql.
-DROP TRIGGER IF EXISTS email_templates_updated_at ON email_templates;
-CREATE TRIGGER email_templates_updated_at
-  BEFORE UPDATE ON email_templates
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+-- EXECUTE PROCEDURE works on PG11+ (EXECUTE FUNCTION is PG14+ only).
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'update_updated_at') THEN
+    DROP TRIGGER IF EXISTS email_templates_updated_at ON email_templates;
+    CREATE TRIGGER email_templates_updated_at
+      BEFORE UPDATE ON email_templates
+      FOR EACH ROW EXECUTE PROCEDURE update_updated_at();
+  END IF;
+END $$;

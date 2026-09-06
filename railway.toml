@@ -5,7 +5,12 @@ dockerfilePath = "apps/api/Dockerfile"
 buildContext = "."
 
 [deploy]
-healthcheckPath = "/health/ready"
+# Liveness only. /health/ready pings DB+Redis and returns 503 when
+# degraded — using it as Railway's only probe made deploys fail (or
+# hang forever on a Redis offline-queue ping).
+# healthcheckTimeout is measured from container start (migrate.js
+# runs before listen), not per HTTP request — keep it generous.
+healthcheckPath = "/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
