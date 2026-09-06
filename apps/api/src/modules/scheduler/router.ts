@@ -2,7 +2,6 @@
 // Scheduler router — appointment CRUD + availability
 // ============================================================
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import fp from 'fastify-plugin';
 import { db } from '../../db/client.js';
 import { appointments } from '../../db/schema.js';
 import { eq, and, desc, count } from 'drizzle-orm';
@@ -137,4 +136,6 @@ async function schedulerRoutes(app: FastifyInstance, _opts: FastifyPluginOptions
   });
 }
 
-export const schedulerPlugin = fp(schedulerRoutes, { name: 'scheduler' });
+// Plain plugin so the `/api/v1` prefix in main.ts applies.
+// fp() dropped the prefix — `/api/v1/appointments/availability` 404'd.
+export const schedulerPlugin = schedulerRoutes;

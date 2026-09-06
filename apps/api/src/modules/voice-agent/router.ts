@@ -2,7 +2,6 @@
 // Voice agent router — session management + voice clone endpoints
 // ============================================================
 import type { FastifyInstance, FastifyPluginOptions, FastifyRequest, FastifyReply } from 'fastify';
-import fp from 'fastify-plugin';
 import { getCallState } from './session-manager.js';
 import { db } from '../../db/client.js';
 import { calls, tenants } from '../../db/schema.js';
@@ -136,4 +135,6 @@ async function voiceAgentRoutes(
   });
 }
 
-export const voiceAgentPlugin = fp(voiceAgentRoutes, { name: 'voice-agent' });
+// Plain plugin so the `/api/v1` prefix in main.ts applies.
+// fp() dropped the prefix — `/api/v1/settings/voice/clone` 404'd.
+export const voiceAgentPlugin = voiceAgentRoutes;

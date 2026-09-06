@@ -256,7 +256,7 @@ export async function adminPlugin(app: FastifyInstance) {
 
     auditLog({
       tenantId: tenant.id,
-      actorType: 'admin',
+      actorType: 'admin_user',
       actorId: user.id,
       action: 'tenant.registered',
       entityType: 'tenant',
@@ -619,7 +619,7 @@ export async function adminPlugin(app: FastifyInstance) {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'call.manually_escalated',
         entityType: 'call',
@@ -1118,7 +1118,7 @@ export async function adminPlugin(app: FastifyInstance) {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'contacts.bulk_deleted',
         entityType: 'contact',
@@ -1147,7 +1147,7 @@ export async function adminPlugin(app: FastifyInstance) {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'call.deleted',
         entityType: 'call',
@@ -1210,7 +1210,7 @@ export async function adminPlugin(app: FastifyInstance) {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'contact.erased',
         entityType: 'contact',
@@ -1271,7 +1271,7 @@ export async function adminPlugin(app: FastifyInstance) {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'escalation.updated',
         entityType: 'escalation',
@@ -1511,7 +1511,7 @@ export async function adminPlugin(app: FastifyInstance) {
         updated = await updateVertical(tenantId, body.vertical);
         auditLog({
           tenantId,
-          actorType: 'admin',
+          actorType: 'admin_user',
           actorId,
           action: 'tenant.vertical_changed',
           entityType: 'tenant',
@@ -1564,7 +1564,7 @@ export async function adminPlugin(app: FastifyInstance) {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'tenant.activated',
         entityType: 'tenant',
@@ -1596,7 +1596,7 @@ export async function adminPlugin(app: FastifyInstance) {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'telephony.number_provisioned',
         entityType: 'tenant',

@@ -2,7 +2,6 @@
 // CRM router — contacts CRUD + CSV import + caller identification
 // ============================================================
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import fp from 'fastify-plugin';
 import { db } from '../../db/client.js';
 import { contacts, calls, appointments } from '../../db/schema.js';
 import { eq, and, desc, count, or, ilike } from 'drizzle-orm';
@@ -131,4 +130,8 @@ async function crmRoutes(app: FastifyInstance, _opts: FastifyPluginOptions): Pro
   });
 }
 
-export const crmPlugin = fp(crmRoutes, { name: 'crm' });
+// Plain plugin so the `/api/v1` prefix in main.ts applies.
+// fastify-plugin (fp) de-encapsulates and mounts these at the ROOT
+// instead — dashboard calls `/api/v1/contacts` (create, CSV import,
+// history) 404'd while list/get/patch happened to work via adminPlugin.
+export const crmPlugin = crmRoutes;

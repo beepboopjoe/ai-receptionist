@@ -17,6 +17,7 @@ import { closeDb, db } from './db/client.js';
 import { redis } from './db/redis.js';
 import { sql } from 'drizzle-orm';
 import { AppError } from './lib/errors.js';
+import { livenessBody, probe, probeRedis } from './lib/health.js';
 
 // Auth middleware (must be registered before any protected plugin)
 import { authMiddleware } from './modules/admin/auth.middleware.js';
@@ -119,38 +120,22 @@ async function buildApp() {
   // ---- API key middleware (adds app.requireApiKey decorator) ----
   await app.register(apiKeyMiddleware);
 
-  // ---- Health checks (no auth) ----
-  // Liveness: process is up. Cheap, no I/O. Used by k8s livenessProbe.
-  app.get('/health', async () => ({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-  }));
+  // ---- Health checks (no auth, not rate-limited) ----
+  // Liveness: process is up. Cheap, no I/O. Railway healthcheckPath
+  // points here so a Redis/DB blip cannot fail a deploy.
+  const healthOpts = { config: { rateLimit: false } };
+  app.get('/health', healthOpts, async () => livenessBody());
 
-  // Readiness: all backing services reachable. Used by load-balancer
-  // readiness probes — when this fails, drop the pod from rotation.
-  app.get('/health/ready', async (_request, reply) => {
+  // Readiness: backing services reachable. Returns 503 + per-check
+  // reasons when DB or Redis is down. Every check is timed so a
+  // Redis offline-queue hang can never stall the probe.
+  app.get('/health/ready', healthOpts, async (_request, reply) => {
     const checks: Record<string, 'ok' | string> = {};
-    let healthy = true;
 
-    try {
-      await db.execute(sql`SELECT 1`);
-      checks['db'] = 'ok';
-    } catch (err) {
-      checks['db'] = err instanceof Error ? err.message : 'fail';
-      healthy = false;
-    }
+    checks['db'] = await probe('db', () => db.execute(sql`SELECT 1`));
+    checks['redis'] = await probeRedis(redis);
 
-    try {
-      // ioredis returns 'PONG' on success.
-      const pong = await redis.ping();
-      checks['redis'] = pong === 'PONG' ? 'ok' : `unexpected: ${pong}`;
-      if (pong !== 'PONG') healthy = false;
-    } catch (err) {
-      checks['redis'] = err instanceof Error ? err.message : 'fail';
-      healthy = false;
-    }
-
+    const healthy = checks['db'] === 'ok' && checks['redis'] === 'ok';
     return reply.status(healthy ? 200 : 503).send({
       status: healthy ? 'ok' : 'degraded',
       checks,

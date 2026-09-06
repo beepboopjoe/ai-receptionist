@@ -5,7 +5,11 @@ dockerfilePath = "apps/api/Dockerfile"
 buildContext = "."
 
 [deploy]
-healthcheckPath = "/health/ready"
-healthcheckTimeout = 120
+# Liveness only. /health/ready pings DB+Redis and returns 503 when
+# degraded — using it as Railway's only probe made deploys fail (or
+# hang forever on a Redis offline-queue ping) and the hostname then
+# served Railway's "Application not found" 404.
+healthcheckPath = "/health"
+healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

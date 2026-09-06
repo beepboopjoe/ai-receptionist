@@ -79,7 +79,7 @@ export async function apiKeyAdminPlugin(app: FastifyInstance): Promise<void> {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'api_key.created',
         entityType: 'api_key',
@@ -118,7 +118,7 @@ export async function apiKeyAdminPlugin(app: FastifyInstance): Promise<void> {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'api_key.revoked',
         entityType: 'api_key',

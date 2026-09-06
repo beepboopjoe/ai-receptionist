@@ -81,7 +81,7 @@ export async function webhookPlugin(app: FastifyInstance): Promise<void> {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'webhook.endpoint_created',
         entityType: 'webhook_endpoint',
@@ -151,7 +151,7 @@ export async function webhookPlugin(app: FastifyInstance): Promise<void> {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'webhook.secret_rotated',
         entityType: 'webhook_endpoint',
@@ -177,7 +177,7 @@ export async function webhookPlugin(app: FastifyInstance): Promise<void> {
 
       auditLog({
         tenantId,
-        actorType: 'admin',
+        actorType: 'admin_user',
         actorId,
         action: 'webhook.endpoint_deleted',
         entityType: 'webhook_endpoint',

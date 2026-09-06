@@ -26,10 +26,18 @@ ALTER TABLE escalations
 -- The trigger function `update_updated_at()` was created in
 -- 0001_initial.sql (line ~192) and is reused by tenants,
 -- tenant_settings, integrations, contacts, calls, appointments.
-DROP TRIGGER IF EXISTS escalations_updated_at ON escalations;
-CREATE TRIGGER escalations_updated_at
-  BEFORE UPDATE ON escalations
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+-- EXECUTE PROCEDURE is valid on PG11+; EXECUTE FUNCTION is PG14+ only.
+-- Guard the function so a partial 0001 apply cannot abort this migration
+-- after ADD COLUMN (this file runs in one transaction).
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'update_updated_at') THEN
+    DROP TRIGGER IF EXISTS escalations_updated_at ON escalations;
+    CREATE TRIGGER escalations_updated_at
+      BEFORE UPDATE ON escalations
+      FOR EACH ROW EXECUTE PROCEDURE update_updated_at();
+  END IF;
+END $$;
 
 -- 2. Allow call_id to be NULL. The schema.ts definition is
 --    `callId: uuid('call_id').references(() => calls.id, { onDelete: 'set null' })`
