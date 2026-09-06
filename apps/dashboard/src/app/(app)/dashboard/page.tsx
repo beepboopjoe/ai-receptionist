@@ -2,7 +2,7 @@
 import useSWR from 'swr';
 import Link from 'next/link';
 import { callsApi, appointmentsApi, escalationsApi, campaignsApi, smsApi } from '@/lib/api';
-import { Phone, Calendar, AlertCircle, PhoneMissed, Wifi, WifiOff, Megaphone, MessageSquare, Zap, ArrowRight } from 'lucide-react';
+import { Phone, Calendar, AlertCircle, PhoneMissed, Wifi, WifiOff, Megaphone, MessageSquare, Zap } from 'lucide-react';
 import { useActivityFeed, type ActivityEvent } from '@/lib/useActivityFeed';
 import { usePlan } from '@/lib/usePlan';
 import { useFeatureFlags } from '@/lib/featureFlags';
@@ -13,6 +13,9 @@ import { AgentSuggestionsCard } from '@/components/dashboard/agent-suggestions-c
 import { AskYourAiCard } from '@/components/dashboard/ask-your-ai-card';
 import { TopCampaignSuggestion } from '@/components/dashboard/top-campaign-suggestion';
 import { KnowledgeBaseCard } from '@/components/dashboard/knowledge-base-card';
+import { GoLiveChecklist } from '@/components/dashboard/go-live-checklist';
+import { useGoLive } from '@/lib/useGoLive';
+import { formatMinutesLimit } from '@/lib/plan-display';
 
 interface EventStyle { color: string; dot: string }
 
@@ -68,61 +71,6 @@ function StatCard({
   );
 }
 
-// ── First-run setup checklist (Phase 29a) ─────────────────────
-// Shown on Home until the AI has handled its first call. Three plain
-// steps, no completion tracking — once a call exists, it disappears.
-const SETUP_STEPS = [
-  {
-    n: 1,
-    title: 'Forward your phone',
-    desc: 'Point your existing business number at your AI line — takes about 2 minutes with your carrier.',
-    href: '/settings/phone-numbers',
-    cta: 'Set up forwarding',
-  },
-  {
-    n: 2,
-    title: "Pick your AI's voice",
-    desc: 'Choose from 5 voices and tell the AI about your business in plain words.',
-    href: '/settings/voice-agent',
-    cta: 'Choose a voice',
-  },
-  {
-    n: 3,
-    title: 'Hear it yourself',
-    desc: 'Place a free test call — your AI rings your cell and you talk to it like a customer would.',
-    href: '/settings/voice-agent',
-    cta: 'Make a test call',
-  },
-];
-
-function SetupChecklist() {
-  return (
-    <div className="rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 to-amber-50/40 p-6">
-      <h2 className="font-serif text-xl text-cream-900 mb-1">Let&apos;s get your front desk answering</h2>
-      <p className="text-sm text-cream-700 mb-5">
-        Three quick steps and your AI takes its first call. No tech skills needed.
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {SETUP_STEPS.map((step) => (
-          <Link
-            key={step.n}
-            href={step.href}
-            className="group rounded-xl bg-white border border-cream-200 hover:border-brand-300 hover:shadow-sm p-4 transition-all"
-          >
-            <div className="w-8 h-8 rounded-full bg-brand-600 text-white font-serif flex items-center justify-center mb-3 text-sm">
-              {step.n}
-            </div>
-            <p className="font-semibold text-sm text-cream-900 mb-1">{step.title}</p>
-            <p className="text-xs text-cream-600 leading-relaxed mb-3">{step.desc}</p>
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 group-hover:gap-1.5 transition-all">
-              {step.cta} <ArrowRight size={11} />
-            </span>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // Placeholder stat card shown blurred behind LockedFeature
 function LockedStatCard({ label }: { label: string }) {
@@ -160,6 +108,7 @@ export default function DashboardPage() {
     () => smsApi.listConversations(),
     { refreshInterval: 30000 }
   );
+  const goLive = useGoLive();
   const vertical = useVertical();
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const eventLabels = buildEventLabels(vertical.appointmentNoun);
@@ -205,7 +154,7 @@ export default function DashboardPage() {
                 You&apos;ve used {usagePercent}% of your AI minutes
               </p>
               <p className="text-sm text-amber-700 mt-0.5">
-                {minutesUsed.toLocaleString()} of {minutesIncluded.toLocaleString()} minutes used this month. Upgrade before calls get dropped.
+                {minutesUsed.toLocaleString()} of {formatMinutesLimit(minutesIncluded)} minutes used this month. Upgrade before calls get dropped.
               </p>
             </div>
           </div>
@@ -215,9 +164,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── First-run setup checklist (Phase 29a) — shown until the AI
-          has handled its first call. Plain words, three steps. ── */}
-      {(calls as any) && totalCalls === 0 && <SetupChecklist />}
+      <GoLiveChecklist />
 
       {/* ── Ask your AI (Phase 29b) — plain-English single-task calls ── */}
       <AskYourAiCard />
@@ -260,11 +207,12 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── Top campaign opportunity (goal-driven, Phase 12.4) ── */}
-      <TopCampaignSuggestion />
-
-      {/* ── Knowledge Base promo (Phase 12.8 / 14) ── */}
-      <KnowledgeBaseCard />
+      {goLive.ready && (
+        <>
+          <TopCampaignSuggestion />
+          <KnowledgeBaseCard />
+        </>
+      )}
 
       {/* ── AI Agent Suggestions ── */}
       <AgentSuggestionsCard />

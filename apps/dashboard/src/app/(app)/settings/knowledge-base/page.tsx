@@ -19,6 +19,18 @@ import { kbApi, type KbDocument, type KbUsage } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { SectionAgent } from '@/components/dashboard/section-agent';
 
+function sanitizeKbError(raw: string): string {
+  const leaked =
+    /api[_-]?key/i.test(raw) ||
+    /sk-[a-z0-9]/i.test(raw) ||
+    /openai/i.test(raw) ||
+    /embeddings/i.test(raw) ||
+    /integration error/i.test(raw) ||
+    raw.includes('{');
+  if (leaked) return 'Document processing unavailable — contact support. You can try Reprocess.';
+  return raw;
+}
+
 const ACCEPT = '.pdf,.docx,.txt,.md';
 const ACCEPT_MIME = new Set([
   'application/pdf',
@@ -219,7 +231,7 @@ export default function KnowledgeBasePage() {
                   </p>
                   {doc.errorMessage && (
                     <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1 mt-1">
-                      ⚠️ {doc.errorMessage}
+                      ⚠️ {sanitizeKbError(doc.errorMessage)}
                     </p>
                   )}
                 </div>

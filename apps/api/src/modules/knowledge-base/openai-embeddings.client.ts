@@ -50,9 +50,12 @@ export async function embedTexts(texts: string[]): Promise<EmbeddingResult[] | n
 
     if (!res.ok) {
       const body = await res.text();
+      logger.error({ status: res.status, bodyLen: body.length }, 'OpenAI embeddings call failed');
       throw new IntegrationError(
         'openai',
-        `Embeddings call failed (${res.status}): ${body.slice(0, 500)}`
+        res.status === 401 || res.status === 403
+          ? 'Document processing unavailable'
+          : `Embeddings call failed (${res.status})`
       );
     }
 

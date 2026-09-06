@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { onboardingApi } from '@/lib/api';
+import { integrationsApi, onboardingApi } from '@/lib/api';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { useVertical } from '@/lib/useVertical';
 
@@ -24,7 +24,7 @@ export default function Step2CalendarPage() {
 
       <div className="space-y-4">
         <a
-          href="/api/v1/integrations/google-calendar/connect"
+          href={integrationsApi.connectUrl('google_calendar')}
           className="card p-5 flex items-center gap-4 hover:ring-1 hover:ring-gray-300 transition-all cursor-pointer"
         >
           <div className="text-3xl">📅</div>
@@ -36,7 +36,7 @@ export default function Step2CalendarPage() {
         </a>
 
         <a
-          href="/api/v1/integrations/microsoft-calendar/connect"
+          href={integrationsApi.connectUrl('microsoft_calendar')}
           className="card p-5 flex items-center gap-4 hover:ring-1 hover:ring-gray-300 transition-all cursor-pointer"
         >
           <div className="text-3xl">📆</div>

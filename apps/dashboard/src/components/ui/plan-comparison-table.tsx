@@ -91,7 +91,6 @@ const SECTIONS: {
     rows: [
       { label: 'Multi-location support',      cells: [false, false, true, true, true] },
       { label: 'Advanced analytics',          cells: [false, false, true, true, true] },
-      { label: 'Custom voice clone add-on',   cells: [false, false, true, true, true] },
       { label: 'Priority support',            cells: [false, false, false, true, true] },
       { label: 'Dedicated account manager',   cells: [false, false, false, true, true] },
       { label: 'HIPAA-ready / BAA',           cells: [false, false, false, false, true] },
