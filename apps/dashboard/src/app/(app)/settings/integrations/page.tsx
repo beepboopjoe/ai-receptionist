@@ -6,6 +6,7 @@ import { useVertical } from '@/lib/useVertical';
 import type { Vertical } from '@/lib/verticals';
 import { useState } from 'react';
 import { FilevineCredentialsModal } from '@/components/integrations/filevine-credentials-modal';
+import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 const PROVIDERS = [
   { id: 'google_calendar', label: 'Google Calendar', description: 'Appointment scheduling + slot lookup', icon: '📅' },
@@ -166,7 +167,7 @@ export default function IntegrationsPage() {
                 <p className="text-sm text-gray-500 mt-0.5">{p.description}</p>
               </div>
               <a
-                href={`mailto:hello@aireceptionist.ai?subject=Waitlist — ${p.label}`}
+                href={`mailto:${BRAND_SUPPORT_EMAIL}?subject=Waitlist — ${p.label}`}
                 className="btn-secondary text-sm flex items-center gap-1.5 shrink-0"
               >
                 <Mail size={13} /> Join waitlist
@@ -265,7 +266,7 @@ export default function IntegrationsPage() {
                     ) : null
                   ) : (
                     <a
-                      href={`mailto:hello@aireceptionist.ai?subject=Integration — ${provider.label}`}
+                      href={`mailto:${BRAND_SUPPORT_EMAIL}?subject=Integration — ${provider.label}`}
                       className="btn-primary text-sm flex items-center gap-1.5"
                     >
                       <Mail size={13} /> Request access

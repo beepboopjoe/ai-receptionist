@@ -169,7 +169,7 @@ function VoicePlayer({ voice, lang }: { voice: VoiceId; lang: LangCode }) {
           <p className="text-xs text-center py-6 text-cream-400">
             🎙️ Audio not yet generated.{' '}
             <a href="/demo" className="text-brand-500 hover:underline font-medium">
-              Try the live AI demo →
+              Listen to sample calls →
             </a>
           </p>
         ) : visibleLines === 0 ? (

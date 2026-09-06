@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { CheckCircle, Mail } from 'lucide-react';
 import type { Plan, BillingCycle } from '@ai-receptionist/shared';
 import { billingApi } from '@/lib/api';
+import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 interface PricingCardsProps {
   plans: readonly Plan[];
@@ -180,7 +181,7 @@ export function PricingCards({ plans }: PricingCardsProps) {
               {/* CTA */}
               {isEnterprise ? (
                 <a
-                  href="mailto:hello@aireceptionist.ai"
+                  href={`mailto:${BRAND_SUPPORT_EMAIL}`}
                   className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl font-semibold text-sm transition-colors bg-white/10 hover:bg-white/20 text-white border border-white/20"
                 >
                   <Mail size={14} /> Contact Sales

@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Users, TrendingUp, DollarSign, Zap, CheckCircle, ArrowRight, Phone } from 'lucide-react';
+import { BRAND_ICON_INITIALS, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/api/v1';
 
@@ -67,7 +68,7 @@ export default function PartnersPage() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-serif text-lg shadow-sm">
-              ar
+              {BRAND_ICON_INITIALS}
             </div>
             <span className="font-semibold text-cream-900 text-sm hidden sm:inline">Telfin</span>
           </Link>
@@ -250,7 +251,7 @@ export default function PartnersPage() {
             <Link href="/" className="hover:text-cream-900 transition-colors">Home</Link>
             <Link href="/pricing" className="hover:text-cream-900 transition-colors">Pricing</Link>
             <Link href="/partners/login" className="hover:text-cream-900 transition-colors">Partner login</Link>
-            <a href="mailto:hello@aireceptionist.ai" className="hover:text-cream-900 transition-colors">Contact</a>
+            <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="hover:text-cream-900 transition-colors">Contact</a>
           </div>
         </div>
       </footer>

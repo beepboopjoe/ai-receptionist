@@ -6,6 +6,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LogIn } from 'lucide-react';
+import { BRAND_ICON_INITIALS } from '@/lib/brand';
 
 const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/api/v1';
 
@@ -46,7 +47,7 @@ export default function PartnerLoginPage() {
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white font-serif text-base">
-              ar
+              {BRAND_ICON_INITIALS}
             </div>
             <span className="text-sm font-semibold text-cream-900">Telfin</span>
           </Link>

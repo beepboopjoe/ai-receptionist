@@ -26,6 +26,7 @@ import {
   Package,
   Crown,
 } from 'lucide-react';
+import { BRAND_ICON_INITIALS, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 // ── Commission calculator ─────────────────────────────────────────────────────
 type TierKey = 'affiliate' | 'reseller' | 'white_label';
@@ -210,7 +211,7 @@ const TIERS = [
       'Custom domain (app.yourco.com)',
       'Full white-label branding',
     ],
-    cta: { label: 'Apply as reseller →', href: 'mailto:resellers@aireceptionist.ai?subject=Reseller%20Program%20Inquiry' },
+    cta: { label: 'Apply as reseller →', href: `mailto:${BRAND_SUPPORT_EMAIL}?subject=Reseller%20Program%20Inquiry` },
     ctaStyle: 'bg-brand-600 text-white hover:bg-brand-700',
   },
   {
@@ -233,7 +234,7 @@ const TIERS = [
       'Custom contract & SLA',
     ],
     notIncluded: [],
-    cta: { label: 'Schedule a call →', href: 'mailto:whitelabel@aireceptionist.ai?subject=White-Label%20Inquiry' },
+    cta: { label: 'Schedule a call →', href: `mailto:${BRAND_SUPPORT_EMAIL}?subject=White-Label%20Inquiry` },
     ctaStyle: 'bg-amber-600 text-white hover:bg-amber-700',
   },
 ];
@@ -260,7 +261,7 @@ export default function ResellersPage() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-serif text-lg shadow-sm">
-              ar
+              {BRAND_ICON_INITIALS}
             </div>
             <span className="font-semibold text-cream-900 text-sm hidden sm:inline">Telfin</span>
           </Link>
@@ -422,7 +423,7 @@ export default function ResellersPage() {
 
         <div className="mt-10 text-center">
           <a
-            href="mailto:whitelabel@aireceptionist.ai?subject=White-Label%20Inquiry"
+            href={`mailto:${BRAND_SUPPORT_EMAIL}?subject=White-Label%20Inquiry`}
             className="glow-btn inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 px-8 py-4 text-base font-bold text-white transition-colors"
           >
             <Mail size={16} /> Talk to us about White-Label
@@ -503,7 +504,7 @@ export default function ResellersPage() {
             <Star size={16} /> Apply as Affiliate
           </Link>
           <a
-            href="mailto:resellers@aireceptionist.ai?subject=Reseller%20Program%20Inquiry"
+            href={`mailto:${BRAND_SUPPORT_EMAIL}?subject=Reseller%20Program%20Inquiry`}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-cream-300 bg-white hover:bg-cream-50 px-7 py-4 text-base font-semibold text-cream-900 transition-colors"
           >
             <ArrowRight size={16} /> Reseller / White-Label inquiry
@@ -520,7 +521,7 @@ export default function ResellersPage() {
             <Link href="/pricing" className="hover:text-cream-900 transition-colors">Pricing</Link>
             <Link href="/partners" className="hover:text-cream-900 transition-colors">Affiliate signup</Link>
             <Link href="/partners/login" className="hover:text-cream-900 transition-colors">Partner login</Link>
-            <a href="mailto:hello@aireceptionist.ai" className="hover:text-cream-900 transition-colors">Contact</a>
+            <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="hover:text-cream-900 transition-colors">Contact</a>
           </div>
         </div>
       </footer>

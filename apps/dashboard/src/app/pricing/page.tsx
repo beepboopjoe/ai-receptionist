@@ -15,6 +15,7 @@ import { PricingCards } from '@/components/ui/pricing-cards';
 import { PlanComparisonTable } from '@/components/ui/plan-comparison-table';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 const RoiSection = dynamic(
   () => import('@/components/ui/roi-section').then((m) => m.RoiSection),
@@ -351,10 +352,10 @@ export default function PricingPage() {
               href="/demo"
               className="inline-flex items-center gap-2 rounded-xl border border-white/20 hover:bg-white/10 px-8 py-4 text-base font-semibold text-white transition-colors"
             >
-              <Mic size={18} /> Hear a Live Demo
+              <Mic size={18} /> Listen to sample calls
             </Link>
             <a
-              href="mailto:hello@aireceptionist.ai"
+              href={`mailto:${BRAND_SUPPORT_EMAIL}`}
               className="inline-flex items-center gap-2 rounded-xl border border-white/20 hover:bg-white/10 px-8 py-4 text-base font-semibold text-cream-300 transition-colors"
             >
               Contact Sales
@@ -362,8 +363,8 @@ export default function PricingPage() {
           </div>
           <p className="text-xs text-cream-500 mt-8">
             Questions? Email{' '}
-            <a href="mailto:hello@aireceptionist.ai" className="text-brand-300 hover:underline">
-              hello@aireceptionist.ai
+            <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="text-brand-300 hover:underline">
+              {BRAND_SUPPORT_EMAIL}
             </a>
           </p>
         </div>

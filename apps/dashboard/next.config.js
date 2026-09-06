@@ -39,6 +39,8 @@ const nextConfig = {
     return [
       { source: '/patients', destination: '/contacts', permanent: true },
       { source: '/patients/:id', destination: '/contacts/:id', permanent: true },
+      { source: '/terms', destination: '/legal/terms', permanent: true },
+      { source: '/privacy', destination: '/legal/privacy', permanent: true },
     ];
   },
   // The shared package uses NodeNext module resolution, which means its

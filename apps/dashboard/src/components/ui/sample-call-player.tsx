@@ -180,7 +180,7 @@ function CallCard({ call, dark = false }: { call: SampleCall; dark?: boolean }) 
           <p className={`text-xs text-center py-4 ${mutedText}`}>
             🎙️ Sample audio not available yet.{' '}
             <a href="/demo" className="text-brand-500 hover:underline font-medium">
-              Try the live AI demo →
+              Listen to sample calls →
             </a>
           </p>
         ) : visibleLines === 0 ? (

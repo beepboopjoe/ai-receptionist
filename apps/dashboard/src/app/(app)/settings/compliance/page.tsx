@@ -33,6 +33,7 @@ import { complianceApi } from '@/lib/api';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListRowSkeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
+import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 import { useTenant } from '@/lib/TenantProvider';
 
 // ── BAA text (abbreviated summary for display) ────────────────────────────────
@@ -284,10 +285,10 @@ export default function CompliancePage() {
               <p className="text-xs text-green-600 mt-2">
                 This agreement is permanently recorded. Contact{' '}
                 <a
-                  href="mailto:compliance@aireceptionist.com"
+                  href={`mailto:${BRAND_SUPPORT_EMAIL}`}
                   className="underline hover:text-green-800"
                 >
-                  compliance@aireceptionist.com
+                  {BRAND_SUPPORT_EMAIL}
                 </a>{' '}
                 if you need a copy for your records.
               </p>
@@ -537,10 +538,10 @@ export default function CompliancePage() {
           <p className="text-xs text-gray-400">
             Questions about our compliance posture or a countersigned BAA?{' '}
             <a
-              href="mailto:compliance@aireceptionist.ai"
+              href={`mailto:${BRAND_SUPPORT_EMAIL}`}
               className="text-brand-600 hover:underline"
             >
-              Contact compliance@aireceptionist.ai
+              Contact {BRAND_SUPPORT_EMAIL}
             </a>
           </p>
         </div>

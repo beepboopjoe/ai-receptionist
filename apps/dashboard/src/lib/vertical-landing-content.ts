@@ -566,7 +566,7 @@ const realEstate: VerticalLandingContent = {
       },
       {
         q: 'What CRMs do you connect to?',
-        a: 'Native sync with HubSpot, Salesforce, and Zoho today. Follow Up Boss adapter coming soon. Lead Discovery (find new leads via Google Maps) is bundled in Growth and Scale plans.',
+        a: 'Native sync with HubSpot, Salesforce, and Zoho today. Follow Up Boss adapter coming soon.',
       },
       {
         q: 'What about urgent calls (closing-day issues, inspection problems)?',

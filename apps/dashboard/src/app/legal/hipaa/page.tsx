@@ -1,4 +1,4 @@
-import { BRAND_NAME } from '@/lib/brand';
+import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 import Link from 'next/link';
 import { ShieldCheck } from 'lucide-react';
 
@@ -73,8 +73,8 @@ export default function HipaaPage() {
           <h2 className="font-serif text-xl text-cream-900 mt-8 mb-3">Request a BAA</h2>
           <p className="leading-relaxed">
             To request a countersigned Business Associate Agreement or discuss compliance requirements, contact our compliance team at{' '}
-            <a href="mailto:compliance@aireceptionist.ai" className="text-brand-600 hover:underline">
-              compliance@aireceptionist.ai
+            <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="text-brand-600 hover:underline">
+              {BRAND_SUPPORT_EMAIL}
             </a>
           </p>
         </div>

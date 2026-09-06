@@ -13,6 +13,7 @@ import { Fragment, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Check, Minus } from 'lucide-react';
 import { billingApi } from '@/lib/api';
+import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 type PlanCol = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise';
 
@@ -71,7 +72,6 @@ const SECTIONS: {
       { label: 'Outbound calling campaigns',                cells: [false, true, true, true, true] },
       { label: 'Leaves voicemails when nobody answers',     cells: [false, true, true, true, true] },
       { label: 'Advanced campaign retries',                 cells: [false, false, true, true, true] },
-      { label: 'Lead Discovery (Google Maps · $0.99/lead)', cells: [false, true, true, true, true] },
     ],
   },
   {
@@ -91,7 +91,6 @@ const SECTIONS: {
     rows: [
       { label: 'Multi-location support',      cells: [false, false, true, true, true] },
       { label: 'Advanced analytics',          cells: [false, false, true, true, true] },
-      { label: 'Custom voice clone add-on',   cells: [false, false, true, true, true] },
       { label: 'Priority support',            cells: [false, false, false, true, true] },
       { label: 'Dedicated account manager',   cells: [false, false, false, true, true] },
       { label: 'HIPAA-ready / BAA',           cells: [false, false, false, false, true] },
@@ -118,7 +117,7 @@ export function PlanComparisonTable() {
 
   async function handleCheckout(planKey: PlanCol) {
     if (planKey === 'enterprise') {
-      window.location.href = 'mailto:hello@aireceptionist.ai';
+      window.location.href = `mailto:${BRAND_SUPPORT_EMAIL}`;
       return;
     }
     setCheckingOut(planKey);
@@ -134,7 +133,7 @@ export function PlanComparisonTable() {
     if (planKey === 'enterprise') {
       return (
         <a
-          href="mailto:hello@aireceptionist.ai"
+          href={`mailto:${BRAND_SUPPORT_EMAIL}`}
           className="block w-full text-center py-2.5 px-3 rounded-xl text-xs font-semibold bg-cream-900 text-white hover:bg-cream-800 transition-colors"
         >
           Contact Sales

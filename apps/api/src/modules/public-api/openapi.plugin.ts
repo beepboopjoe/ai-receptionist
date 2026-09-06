@@ -26,7 +26,7 @@ export async function openapiPlugin(app: FastifyInstance): Promise<void> {
           'All requests require an API key (mint one in Settings → API Keys). Send the key as ' +
           '`Authorization: Bearer ark_live_…` or `X-API-Key: ark_live_…`.',
         version: '1.0.0',
-        contact: { name: 'Telfin Support', email: 'hello@aireceptionist.ai' },
+        contact: { name: 'Telfin Support', email: 'hello@telfin.ai' },
       },
       servers: [{ url: '/', description: 'Same-origin (relative path)' }],
       components: {

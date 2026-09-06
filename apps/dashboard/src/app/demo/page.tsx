@@ -50,13 +50,11 @@ export default function DemoPage() {
             See it before you sign up
           </div>
           <h1 className="font-serif text-5xl md:text-7xl text-cream-900 tracking-tight leading-[1.05]">
-            Hear the AI handle
-            <br />
-            <span className="gradient-text">real calls, one ring at a time.</span>
+            Listen to sample calls
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
-            Scripted scenarios across six industries — in English and Spanish. Press play,
-            or enter your number and we&apos;ll call you. No sign-up required.
+            Scripted scenarios across six industries — in English and Spanish. Press play
+            to hear the voice, or enter your number and we&apos;ll call you. No sign-up required.
           </p>
           <p className="text-xs font-semibold text-cream-500 mt-4 tracking-wide">
             {BRAND_STACK_LINE}
@@ -94,7 +92,7 @@ export default function DemoPage() {
                 Sample calls by industry
               </p>
               <h3 className="font-serif text-2xl md:text-3xl text-cream-900 tracking-tight">
-                Hear the AI handle real scenarios.
+                Listen to sample calls by industry.
               </h3>
               <p className="text-cream-600 mt-2 text-sm max-w-lg mx-auto">
                 Real scripts. Same voice your customers hear. Press play — no account required.

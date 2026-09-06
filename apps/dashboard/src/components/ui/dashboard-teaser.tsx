@@ -5,7 +5,7 @@
 // and shows a representative sample view. Used on /inbound,
 // /outbound, and /demo as a "command-centre" teaser.
 // ============================================================
-import { BRAND_NAME } from '@/lib/brand';
+import { BRAND_NAME, BRAND_ICON_INITIALS } from '@/lib/brand';
 import { useState } from 'react';
 
 // ── Tab + view IDs ───────────────────────────────────────────
@@ -987,7 +987,7 @@ export function DashboardTeaser() {
           <aside className="w-52 shrink-0 bg-white border-r border-gray-100 flex flex-col">
             {/* Logo */}
             <div className="flex items-center gap-2 px-4 py-4 border-b border-gray-100">
-              <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center text-sm">🦷</div>
+              <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center text-white font-serif text-[11px]">{BRAND_ICON_INITIALS}</div>
               <span className="text-sm font-semibold text-gray-900">{BRAND_NAME}</span>
             </div>
 

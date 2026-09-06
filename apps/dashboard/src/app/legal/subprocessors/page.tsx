@@ -1,4 +1,4 @@
-import { BRAND_NAME } from '@/lib/brand';
+import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 import Link from 'next/link';
 import { Network } from 'lucide-react';
 
@@ -9,7 +9,7 @@ export const metadata = {
 // Vendors that may process customer data (including PHI, where a practice
 // enables it). "PHI" flags those that can receive call audio / transcripts /
 // contact records. BAA status is maintained by our compliance team and shown
-// here for transparency; contact compliance@aireceptionist.ai for executed copies.
+// here for transparency; contact hello@telfin.ai for executed copies.
 const SUBPROCESSORS: {
   name: string;
   purpose: string;
@@ -48,7 +48,7 @@ export default function SubprocessorsPage() {
               To deliver the service, {BRAND_NAME} uses the third-party subprocessors below. Those marked
               <strong> “PHI”</strong> may process Protected Health Information when a healthcare practice enables it.
               If you are a covered entity, contact{' '}
-              <a href="mailto:compliance@aireceptionist.ai" className="underline">compliance@aireceptionist.ai</a>{' '}
+              <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="underline">{BRAND_SUPPORT_EMAIL}</a>{' '}
               for the current Business Associate Agreement status of any subprocessor before enabling PHI processing.
             </p>
           </div>

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { authApi } from '@/lib/api';
-import { BRAND_NAME } from '@/lib/brand';
+import { BRAND_NAME, BRAND_ICON_INITIALS } from '@/lib/brand';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -29,8 +29,8 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-600 mb-4">
-            <span className="text-3xl">🦷</span>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-600 mb-4 text-white font-serif text-2xl">
+            {BRAND_ICON_INITIALS}
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{BRAND_NAME}</h1>
           <p className="text-gray-500 mt-1">Reset your password</p>
