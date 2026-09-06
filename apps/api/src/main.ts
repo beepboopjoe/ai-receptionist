@@ -12,7 +12,7 @@ import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
-import { config } from './config.js';
+import { config, configValid, configMissing } from './config.js';
 import { closeDb, db } from './db/client.js';
 import { redis } from './db/redis.js';
 import { sql } from 'drizzle-orm';
@@ -137,10 +137,11 @@ async function buildApp() {
   app.get('/health/ready', healthOpts, async (_request, reply) => {
     const checks: Record<string, 'ok' | string> = {};
 
+    checks['config'] = configValid ? 'ok' : `missing: ${configMissing.join(', ') || 'required env'}`;
     checks['db'] = await probe('db', () => db.execute(sql`SELECT 1`));
     checks['redis'] = await probeRedis(redis);
 
-    const healthy = checks['db'] === 'ok' && checks['redis'] === 'ok';
+    const healthy = configValid && checks['db'] === 'ok' && checks['redis'] === 'ok';
     return reply.status(healthy ? 200 : 503).send({
       status: healthy ? 'ok' : 'degraded',
       checks,
