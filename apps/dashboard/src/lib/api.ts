@@ -403,6 +403,11 @@ export const webhooksApi = {
 // ---- Tenant (current tenant info & vertical/industry update) ----
 export const tenantsApi = {
   get: () => apiFetch<{ id: string; name: string; slug: string; plan: string; vertical: string; timezone: string; isActive: boolean; onboardingStep: number }>('/tenant'),
+  update: (body: { vertical?: string; name?: string; timezone?: string }) =>
+    apiFetch<{ id: string; name: string; timezone: string; vertical: string }>('/tenant', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
   updateVertical: (vertical: string) =>
     apiFetch<{ id: string; vertical: string }>('/tenant', {
       method: 'PATCH',
@@ -451,6 +456,9 @@ export const integrationsApi = {
     apiUrl(`/integrations/zoho/connect?dc=${encodeURIComponent(dc)}`),
   disconnectZoho: () =>
     apiFetch('/integrations/zoho/disconnect', { method: 'POST' }),
+  /** Calendar / CRM OAuth start URL. Base already includes `/api/v1`. */
+  connectUrl: (providerId: string) =>
+    apiUrl(`/integrations/${providerId.replace(/_/g, '-')}/connect`),
 };
 
 // ---- Knowledge Base (Phase 12.8 / 14) ----

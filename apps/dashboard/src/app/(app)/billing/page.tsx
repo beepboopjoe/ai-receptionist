@@ -7,6 +7,7 @@ import { Skeleton as UiSkeleton, StatCardSkeleton } from '@/components/ui/skelet
 import { useToast } from '@/components/ui/toast';
 import { PLANS as SHARED_PLANS, type BillingCycle } from '@ai-receptionist/shared';
 import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
+import { formatMinutesLimit, planDisplayName, planPriceLabel } from '@/lib/plan-display';
 
 // Local view-model overlay for the badge color + the legacy "trial" tier
 // (Stripe doesn't sell a trial — it's the pre-checkout state).
@@ -282,7 +283,7 @@ export default function BillingPage() {
                   }`}
                 >
                   <Zap size={13} />
-                  {planConfig.label}
+                  {planDisplayName(billing.plan)}
                 </span>
                 {billing.legacyPricing && (
                   <span
@@ -294,9 +295,7 @@ export default function BillingPage() {
                 )}
               </div>
               <p className="text-3xl font-bold text-gray-900">
-                {planConfig.price === 0
-                  ? 'Free'
-                  : `$${planConfig.price}/mo`}
+                {planPriceLabel(billing.plan, planConfig.price)}
               </p>
               <p className="text-sm text-gray-500">
                 Renews{' '}
@@ -337,7 +336,7 @@ export default function BillingPage() {
               <p className="text-2xl font-bold text-gray-900">
                 {Math.round(minutesUsed).toLocaleString()}
                 <span className="text-base font-normal text-gray-400">
-                  {' '}/ {minutesIncluded === -1 ? '∞' : minutesIncluded.toLocaleString()}
+                  {' '}/ {formatMinutesLimit(minutesIncluded)}
                 </span>
               </p>
               <div>

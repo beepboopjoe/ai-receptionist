@@ -47,7 +47,7 @@ export interface SectionMeta {
   key: SectionKey;
   icon: LucideIcon;
   /** Title to show in the agent header. Will fall back to the page's own H1 if omitted. */
-  title: string;
+  title: string | ((ctx: VerticalCopyCtx) => string);
   /**
    * "What this is" copy — short, plain-language explanation of the section.
    * Receives `{ contactPlural, appointmentPlural }` so it can swap nouns by vertical.
@@ -133,7 +133,8 @@ export const SECTION_META: Record<SectionKey, SectionMeta> = {
   contacts: {
     key: 'contacts',
     icon: Users,
-    title: 'Contacts',
+    title: ({ contactPlural }) =>
+      contactPlural.charAt(0).toUpperCase() + contactPlural.slice(1),
     whatThisIs: ({ contactPlural }) =>
       `Everyone who has called or interacted with your AI. ${contactPlural[0]?.toUpperCase() + contactPlural.slice(1)} are auto-created on first inbound call and enriched as you interact.`,
     actions: () => [

@@ -183,8 +183,6 @@ export default function PricingPage() {
         </p>
       </section>
 
-      {/* Voice Clone / ElevenLabs add-on stays removed. */}
-
       {/* ── What counts as an AI voice minute? ───────────── */}
       <section className="bg-white border-y border-cream-200 py-20 px-6">
         <div className="max-w-4xl mx-auto">

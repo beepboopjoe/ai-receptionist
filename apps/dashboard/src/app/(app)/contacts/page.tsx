@@ -147,7 +147,7 @@ export default function ContactsPage() {
             <EmptyState
               icon={Users}
               label={`No ${vertical.contactNounPlural} found`}
-              hint={search ? 'Try a different search term.' : `Import a CSV from your CRM, or let us find leads for you.`}
+              hint={search ? 'Try a different search term.' : `Import a CSV from your CRM, or add ${vertical.contactNounPlural} as they call in.`}
               {...(search ? {} : { cta: { label: 'Go to Settings → Integrations', href: '/settings/integrations' } })}
             />
           </div>

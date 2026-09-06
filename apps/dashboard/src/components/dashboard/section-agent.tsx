@@ -106,7 +106,7 @@ export function SectionAgent({ section }: SectionAgentProps) {
           <div className="flex items-center gap-2">
             <Icon size={14} className="text-cream-500" />
             <p className="text-[11px] font-bold text-brand-700 uppercase tracking-wider">
-              {meta.title}
+              {typeof meta.title === 'function' ? meta.title(copyCtx) : meta.title}
             </p>
           </div>
           {!collapsed && (

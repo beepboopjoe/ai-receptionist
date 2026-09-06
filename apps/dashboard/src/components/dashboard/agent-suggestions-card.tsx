@@ -22,6 +22,7 @@ import {
 import { useState } from 'react';
 import { agentApi, type AgentSuggestion, type AgentSuggestionType } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { useVertical } from '@/lib/useVertical';
 import { SUGGESTION_TYPE_META } from './agent-suggestion-row';
 
 // Which section page each suggestion type belongs on. Drives the
@@ -34,8 +35,19 @@ const TYPE_DESTINATION: Record<AgentSuggestionType, { label: string; href: strin
   stale_lead_followup: { label: 'Contacts', href: '/contacts' },
 };
 
+function destinationForType(
+  type: AgentSuggestionType,
+  contactsLabel: string
+): { label: string; href: string } {
+  if (type === 'stale_lead_followup') return { label: contactsLabel, href: '/contacts' };
+  return TYPE_DESTINATION[type];
+}
+
 export function AgentSuggestionsCard() {
   const toast = useToast();
+  const vertical = useVertical();
+  const contactsLabel =
+    vertical.contactNounPlural.charAt(0).toUpperCase() + vertical.contactNounPlural.slice(1);
   const [scanning, setScanning] = useState(false);
 
   const { data, isLoading, mutate } = useSWR(
@@ -112,7 +124,7 @@ export function AgentSuggestionsCard() {
         <div className="divide-y divide-gray-50">
           {typeKeys.map((type) => {
             const meta = SUGGESTION_TYPE_META[type];
-            const dest = TYPE_DESTINATION[type];
+            const dest = destinationForType(type, contactsLabel);
             const count = byType[type]!.length;
             const Icon = meta.icon;
             return (
