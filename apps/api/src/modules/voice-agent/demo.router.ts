@@ -6,6 +6,7 @@
 import type { FastifyInstance } from 'fastify';
 import { WebSocket } from 'ws';
 import { config } from '../../config.js';
+import { buildGrokRealtimeUrl, xaiAuthorizationHeader } from '../../lib/xai-auth.js';
 
 // ── System prompts for all verticals — imported from central file ─────────────
 import { VERTICAL_PROMPTS } from './vertical-prompts.js';
@@ -61,10 +62,10 @@ export async function demoPlugin(app: FastifyInstance) {
 
     // Open connection to xAI Realtime API
     const xaiWs = new WebSocket(
-      `wss://api.x.ai/v1/realtime?model=grok-voice-think-fast-1.0`,
+      buildGrokRealtimeUrl(config.XAI_REALTIME_MODEL),
       {
         headers: {
-          Authorization: `Bearer ${config.XAI_API_KEY}`,
+          Authorization: xaiAuthorizationHeader(config.XAI_API_KEY),
         },
       }
     );

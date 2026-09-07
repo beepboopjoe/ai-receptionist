@@ -7,6 +7,11 @@
 // cannot play g711_ulaw frames from xAI.
 // ============================================================
 import type { WebSocket } from 'ws';
+import {
+  clipXaiLogBody,
+  httpStatusFromWsConnectError,
+  type XaiApiKeyLogFields,
+} from '../../lib/xai-auth.js';
 
 /** Official Call Control action. `stream_start` is not a Telnyx route. */
 export const TELNYX_STREAMING_START_ACTION = 'streaming_start';
@@ -285,12 +290,47 @@ export function formatStreamingStoppedEventLog(params: {
   return `Telnyx streaming.stopped callControlId=${params.callControlId || 'unset'} streamUrl=${params.streamUrl || 'unset'}`;
 }
 
-export function formatGrokConnectFailureLog(params: {
+export interface GrokConnectFailureLogFields extends Partial<XaiApiKeyLogFields> {
   callSid: string;
   tenantId?: string;
   err: unknown;
-}): string {
-  return `Grok realtime connect failed callSid=${params.callSid || 'unset'} tenantId=${params.tenantId || 'unset'} err=${errMessageOf(params.err) || 'empty'}`;
+  httpStatus?: number | null;
+  bodyClipped?: string;
+  authHeaderPresent?: boolean;
+  model?: string;
+  wsUrl?: string;
+}
+
+/**
+ * Railway MCP/dashboard filter only keeps pino `msg`. Put handshake
+ * status, clipped body, and key presence (never the secret) in the
+ * message so a 403 is diagnosable without opening structured fields.
+ */
+export function formatGrokConnectFailureLog(params: GrokConnectFailureLogFields): string {
+  const status = params.httpStatus ?? httpStatusFromWsConnectError(params.err);
+  const body = params.bodyClipped ? clipXaiLogBody(params.bodyClipped) : 'none';
+  const prefix = params.apiKeyPrefix || 'none';
+  const present = params.apiKeyPresent == null ? 'unknown' : String(params.apiKeyPresent);
+  const len = params.apiKeyLen == null ? 'unknown' : String(params.apiKeyLen);
+  const auth = params.authHeaderPresent == null ? 'unknown' : String(params.authHeaderPresent);
+  const model = params.model || 'unset';
+  const wsUrl = params.wsUrl || 'unset';
+  return [
+    'Grok realtime connect failed',
+    `callSid=${params.callSid || 'unset'}`,
+    `tenantId=${params.tenantId || 'unset'}`,
+    `err=${errMessageOf(params.err) || 'empty'}`,
+    `httpStatus=${status ?? 'unset'}`,
+    `body=${body || 'empty'}`,
+    `apiKeyPresent=${present}`,
+    `apiKeyLen=${len}`,
+    `apiKeyPrefix=${prefix}`,
+    `authHeader=${auth}`,
+    `model=${model}`,
+    `wsUrl=${wsUrl}`,
+    `keySanitized=${params.keySanitized === true}`,
+    `placeholder=${params.placeholder === true}`,
+  ].join(' ');
 }
 
 export function formatGrokGreetingLog(params: { callSid: string; grokSessionId?: string }): string {

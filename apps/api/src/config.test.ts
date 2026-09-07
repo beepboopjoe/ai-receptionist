@@ -103,6 +103,27 @@ describe('resolveConfig', () => {
     expect(config.TELNYX_API_KEY).toBe('KEYabcdefghijklmnopqrstuvwxyz012345');
   });
 
+  it('sanitizes XAI_API_KEY quotes, whitespace, and Bearer prefix', () => {
+    const { config } = resolveConfig({
+      ...validEnv,
+      XAI_API_KEY: '  "Bearer xai-abcdefghijklmnopqrstuvwxyz012345" \n',
+    });
+    expect(config.XAI_API_KEY).toBe('xai-abcdefghijklmnopqrstuvwxyz012345');
+  });
+
+  it('defaults XAI_REALTIME_MODEL to grok-voice-think-fast-1.0', () => {
+    const { config } = resolveConfig(validEnv);
+    expect(config.XAI_REALTIME_MODEL).toBe('grok-voice-think-fast-1.0');
+  });
+
+  it('honors XAI_REALTIME_MODEL override', () => {
+    const { config } = resolveConfig({
+      ...validEnv,
+      XAI_REALTIME_MODEL: 'grok-voice-think-fast-2.0',
+    });
+    expect(config.XAI_REALTIME_MODEL).toBe('grok-voice-think-fast-2.0');
+  });
+
   it('accepts demo cooldown ops flags as raw strings', () => {
     const { config } = resolveConfig({
       ...validEnv,

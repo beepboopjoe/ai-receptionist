@@ -29,7 +29,7 @@ Unit tests (21/21 passing) already cover CSV parsing, dial-window logic, and the
 - [ ] Telnyx Connection Profile exists with the webhook URL configured: `https://<YOUR_TUNNEL>/api/v1/webhooks/telnyx`
 - [ ] Telnyx Connection Profile has **media streaming enabled** and stream URL set to `wss://<YOUR_TUNNEL>/api/v1/webhooks/telnyx/stream`
 - [ ] AMD is enabled on the connection profile: **answering machine detection = detect_beep**
-- [ ] xAI API key has Grok Voice beta access (test via `wscat -c wss://api.x.ai/v1/realtime -H "Authorization: Bearer $XAI_API_KEY"`)
+- [ ] xAI API key has Grok Voice access (test via `wscat -c "wss://api.x.ai/v1/realtime?model=${XAI_REALTIME_MODEL:-grok-voice-think-fast-1.0}" -H "Authorization: Bearer $XAI_API_KEY"`). A 403 is credits/ACL — see `docs/runbooks/grok-realtime-403.md`.
 - [ ] Google Calendar is OAuth-connected for the test tenant (check `integrations` table: `status='connected'`, `provider='google_calendar'`)
 - [ ] Test tenant has at least one `appointmentType` with `duration_min` configured in `tenant_settings.appointment_types`
 

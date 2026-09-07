@@ -30,6 +30,7 @@ export function createVoiceAdapter(
 
   const defaultCredentials: Record<string, string> = {
     xai_api_key: config.XAI_API_KEY ?? '',
+    xai_realtime_model: config.XAI_REALTIME_MODEL ?? '',
     elevenlabs_api_key: config.ELEVENLABS_API_KEY ?? '',
     voice_id: config.ELEVENLABS_DEFAULT_VOICE_ID ?? '',
   };
