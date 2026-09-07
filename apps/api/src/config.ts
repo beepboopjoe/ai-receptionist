@@ -2,10 +2,17 @@
 // Configuration — validated at startup via zod
 // ============================================================
 import { z } from 'zod';
+import { resolveAppUrl } from './lib/public-url.js';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(3001),
+  /**
+   * Public origin of THIS API (no path). Used as the Telnyx/RingCentral
+   * webhook base and the media-stream WSS host. Prefer APP_URL; if unset
+   * (or localhost in production) we fall back to API_PUBLIC_URL's origin
+   * so a Railway deploy that only has API_PUBLIC_URL still works.
+   */
   APP_URL: z.string().url().default('http://localhost:3001'),
   DASHBOARD_URL: z.string().url().default('http://localhost:3000'),
 
@@ -183,7 +190,12 @@ export function resolveConfig(env: NodeJS.ProcessEnv): {
   valid: boolean;
   missing: string[];
 } {
-  const result = envSchema.safeParse(env);
+  const result = envSchema.safeParse({
+    ...env,
+    // Resolve before zod defaults APP_URL to localhost, so an unset
+    // APP_URL can still pick up Railway's API_PUBLIC_URL origin.
+    APP_URL: resolveAppUrl(env),
+  });
   if (result.success) {
     return { config: result.data, valid: true, missing: [] };
   }
@@ -203,6 +215,7 @@ export function resolveConfig(env: NodeJS.ProcessEnv): {
 
   const filled = envSchema.parse({
     ...env,
+    APP_URL: resolveAppUrl(env),
     DATABASE_URL: env['DATABASE_URL'] || 'postgres://127.0.0.1:5432/unconfigured',
     JWT_SECRET: env['JWT_SECRET'] || PLACEHOLDER_SECRET,
     JWT_REFRESH_SECRET: env['JWT_REFRESH_SECRET'] || PLACEHOLDER_SECRET,

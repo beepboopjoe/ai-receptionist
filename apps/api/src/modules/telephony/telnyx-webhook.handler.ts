@@ -30,6 +30,7 @@ import { outboundDialerQueue } from '../../queue/queues.js';
 import { sendSms } from '../notifications/adapters/telnyx-sms.adapter.js';
 import { getTenantFromNumber } from '../sms/tenant-from-number.js';
 import { config } from '../../config.js';
+import { telnyxMediaStreamUrl } from '../../lib/public-url.js';
 import pino from 'pino';
 
 const logger = pino({ name: 'telnyx-webhook' });
@@ -376,8 +377,7 @@ async function startStream(
   callControlId: string,
   state: TelnyxCallState
 ): Promise<void> {
-  const host = new URL(config.APP_URL).host;
-  const streamUrl = `wss://${host}/api/v1/webhooks/telnyx/stream`;
+  const streamUrl = telnyxMediaStreamUrl(config.APP_URL);
 
   // Re-encode so WS handler gets the full params from the start event
   const clientState = encodeState({ ...state, callSid: callControlId });

@@ -13,6 +13,7 @@ import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
 import { config, configValid, configMissing } from './config.js';
+import { localhostAppUrlWarning } from './lib/public-url.js';
 import { closeDb, db } from './db/client.js';
 import { redis } from './db/redis.js';
 import { sql } from 'drizzle-orm';
@@ -142,10 +143,14 @@ async function buildApp() {
     checks['db'] = await probe('db', () => db.execute(sql`SELECT 1`));
     checks['redis'] = await probeRedis(redis);
 
+    const appUrlWarning = localhostAppUrlWarning(config.APP_URL, config.NODE_ENV);
+    const warnings = appUrlWarning ? [appUrlWarning] : undefined;
+
     const healthy = configValid && checks['db'] === 'ok' && checks['redis'] === 'ok';
     return reply.status(healthy ? 200 : 503).send({
       status: healthy ? 'ok' : 'degraded',
       checks,
+      ...(warnings ? { warnings } : {}),
       timestamp: new Date().toISOString(),
     });
   });
@@ -256,6 +261,11 @@ async function main() {
   try {
     await app.listen({ port: config.PORT, host: '0.0.0.0' });
     app.log.info(`🚀 Telfin API running at http://localhost:${config.PORT}`);
+    app.log.info({ appUrl: config.APP_URL }, 'Public API origin (carrier webhooks + media streams)');
+    const appUrlWarning = localhostAppUrlWarning(config.APP_URL, config.NODE_ENV);
+    if (appUrlWarning) {
+      app.log.warn(appUrlWarning);
+    }
   } catch (err) {
     app.log.error(err);
     process.exit(1);
