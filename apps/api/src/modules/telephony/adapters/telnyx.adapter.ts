@@ -6,6 +6,7 @@
 import type { ITelephonyAdapter, ProvisionedNumber } from '@ai-receptionist/shared';
 import { config } from '../../../config.js';
 import { IntegrationError } from '../../../lib/errors.js';
+import { telnyxAuthorizationHeader } from '../../../lib/telnyx-auth.js';
 
 interface TelnyxApiResponse<T> {
   data: T;
@@ -28,12 +29,13 @@ export class TelnyxAdapter implements ITelephonyAdapter {
   // ---- Internal helpers ----
 
   private get headers(): HeadersInit {
-    if (!config.TELNYX_API_KEY) {
+    const authorization = telnyxAuthorizationHeader(config.TELNYX_API_KEY);
+    if (!authorization) {
       throw new IntegrationError('telnyx', 'TELNYX_API_KEY is not configured');
     }
     return {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.TELNYX_API_KEY}`,
+      Authorization: authorization,
     };
   }
 

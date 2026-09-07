@@ -12,21 +12,23 @@
 // ============================================================
 import { config } from '../../config.js';
 import { IntegrationError } from '../../lib/errors.js';
+import { telnyxAuthorizationHeader } from '../../lib/telnyx-auth.js';
 
 const TELNYX_BASE = 'https://api.telnyx.com/v2';
 
-function requireKey(): string {
-  if (!config.TELNYX_API_KEY) {
+function requireAuthorization(): string {
+  const header = telnyxAuthorizationHeader(config.TELNYX_API_KEY);
+  if (!header) {
     throw new IntegrationError('telnyx', 'TELNYX_API_KEY is not configured');
   }
-  return config.TELNYX_API_KEY;
+  return header;
 }
 
 async function tx<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${TELNYX_BASE}${path}`, {
     ...init,
     headers: {
-      Authorization: `Bearer ${requireKey()}`,
+      Authorization: requireAuthorization(),
       'Content-Type': 'application/json',
       Accept: 'application/json',
       ...(init.headers ?? {}),

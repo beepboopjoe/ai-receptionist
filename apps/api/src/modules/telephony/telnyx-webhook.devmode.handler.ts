@@ -21,6 +21,7 @@ import type { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
 import type { WebSocket as WsWebSocket } from 'ws';
 import { WebSocket as WsClient } from 'ws';
 import pino from 'pino';
+import { telnyxAuthorizationHeader } from '../../lib/telnyx-auth.js';
 
 const logger = pino({ name: 'telnyx-devmode' });
 
@@ -58,15 +59,15 @@ function decodeState(s?: string): Record<string, unknown> {
 }
 
 async function telnyxPost(path: string, body: object): Promise<void> {
-  const apiKey = process.env['TELNYX_API_KEY'];
-  if (!apiKey) {
+  const authorization = telnyxAuthorizationHeader(process.env['TELNYX_API_KEY']);
+  if (!authorization) {
     logger.warn('TELNYX_API_KEY missing — cannot call Telnyx API');
     return;
   }
   const res = await fetch(`${TELNYX_API}${path}`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: authorization,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),

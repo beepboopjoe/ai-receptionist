@@ -4,6 +4,7 @@
 // ============================================================
 import { config } from '../../../config.js';
 import { IntegrationError } from '../../../lib/errors.js';
+import { telnyxAuthorizationHeader } from '../../../lib/telnyx-auth.js';
 
 interface TelnyxMessageResponse {
   data: {
@@ -23,7 +24,8 @@ interface TelnyxMessageResponse {
  * @returns     Telnyx message UUID
  */
 export async function sendSms(to: string, body: string, from?: string): Promise<string> {
-  if (!config.TELNYX_API_KEY) {
+  const authorization = telnyxAuthorizationHeader(config.TELNYX_API_KEY);
+  if (!authorization) {
     throw new IntegrationError('telnyx', 'TELNYX_API_KEY is not configured');
   }
   const fromNumber = from ?? config.TELNYX_FROM_NUMBER;
@@ -46,7 +48,7 @@ export async function sendSms(to: string, body: string, from?: string): Promise<
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.TELNYX_API_KEY}`,
+      Authorization: authorization,
     },
     body: JSON.stringify(payload),
   });

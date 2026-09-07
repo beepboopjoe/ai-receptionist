@@ -7,7 +7,7 @@
 // ============================================================
 import { config } from '../../config.js';
 import { telnyxWebhookUrl } from '../../lib/public-url.js';
-import { clipCarrierErrorBody } from '../public-api/public-demo.helpers.js';
+import { telnyxAuthorizationHeader, TelnyxHttpError } from '../../lib/telnyx-auth.js';
 import pino from 'pino';
 
 const logger = pino({ name: 'telnyx-dialer' });
@@ -33,19 +33,23 @@ export interface DialResult {
 // ---- Internal REST helper ----
 
 async function post(path: string, body: object): Promise<unknown> {
+  const authorization = telnyxAuthorizationHeader(config.TELNYX_API_KEY);
+  if (!authorization) {
+    throw new TelnyxHttpError(path, 401, 'TELNYX_API_KEY is empty');
+  }
+
   const url = `${TELNYX_API}${path}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${config.TELNYX_API_KEY}`,
+      Authorization: authorization,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
   });
 
   if (!res.ok) {
-    const text = clipCarrierErrorBody(await res.text());
-    throw new Error(`Carrier ${path} → ${res.status}: ${text}`);
+    throw new TelnyxHttpError(path, res.status, await res.text());
   }
 
   const ct = res.headers.get('content-type') ?? '';

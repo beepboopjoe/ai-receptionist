@@ -31,7 +31,9 @@ import {
   errMessageOf,
   maskPhoneLast4,
   publicCallMeDialFailureMessage,
+  formatPublicCallMeDialFailureLog,
 } from './public-demo.helpers.js';
+import { telnyxApiKeyLogFields, telnyxFailureFields } from '../../lib/telnyx-auth.js';
 
 const DEMO_UNAVAILABLE = {
   error: 'demo_unavailable',
@@ -150,16 +152,33 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         callSid = result.callSid;
       } catch (err) {
         const errMessage = errMessageOf(err);
+        const { httpStatus, bodyClipped } = telnyxFailureFields(err);
+        const keyFields = telnyxApiKeyLogFields(process.env['TELNYX_API_KEY']);
+        const { message, fields } = formatPublicCallMeDialFailureLog({
+          httpStatus,
+          bodyClipped,
+          ...keyFields,
+          connectionIdPresent: Boolean(config.TELNYX_APP_ID?.trim()),
+          fromMasked: maskPhoneLast4(demoFromNumber),
+        });
         request.log.error(
           {
-            err,
             errMessage,
+            httpStatus: fields.httpStatus,
+            bodyClipped: fields.bodyClipped,
+            apiKeyPresent: fields.apiKeyPresent,
+            apiKeyLen: fields.apiKeyLen,
+            apiKeyPrefix: fields.apiKeyPrefix,
+            keySanitized: fields.keySanitized,
+            strippedQuotes: fields.strippedQuotes,
+            strippedWhitespace: fields.strippedWhitespace,
+            strippedBearerPrefix: fields.strippedBearerPrefix,
+            connectionIdPresent: fields.connectionIdPresent,
+            fromMasked: fields.fromMasked,
             callId,
-            demoFromNumber: maskPhoneLast4(demoFromNumber),
             appUrlOrigin: toPublicOrigin(config.APP_URL),
-            hasConnectionId: Boolean(config.TELNYX_APP_ID?.trim()),
           },
-          'Public call-me Telnyx dial failed',
+          message,
         );
         await db
           .update(calls)

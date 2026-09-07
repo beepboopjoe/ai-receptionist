@@ -15,6 +15,7 @@ import {
   maskPhoneLast4,
   clipCarrierErrorBody,
   publicCallMeDialFailureMessage,
+  formatPublicCallMeDialFailureLog,
   CARRIER_ERROR_MAX_CHARS,
   type DemoCallMeRedis,
 } from '../modules/public-api/public-demo.helpers.js';
@@ -283,5 +284,55 @@ describe('publicCallMeDialFailureMessage', () => {
         localhostOrigin: false,
       }),
     ).toBe(generic);
+  });
+});
+
+describe('formatPublicCallMeDialFailureLog', () => {
+  it('puts every ops field in the message string Railway will show', () => {
+    const { message, fields } = formatPublicCallMeDialFailureLog({
+      httpStatus: 401,
+      bodyClipped: '{"errors":[{"title":"Invalid API Key"}]}',
+      apiKeyPresent: true,
+      apiKeyLen: 36,
+      apiKeyPrefix: 'KEY',
+      strippedWhitespace: true,
+      strippedQuotes: true,
+      strippedBearerPrefix: false,
+      keySanitized: true,
+      connectionIdPresent: true,
+      fromMasked: '***1212',
+    });
+    expect(message).toContain('Public call-me Telnyx dial failed');
+    expect(message).toContain('httpStatus=401');
+    expect(message).toContain('apiKeyPresent=true');
+    expect(message).toContain('apiKeyLen=36');
+    expect(message).toContain('apiKeyPrefix=KEY');
+    expect(message).toContain('keySanitized=true');
+    expect(message).toContain('strippedQuotes=true');
+    expect(message).toContain('strippedWhitespace=true');
+    expect(message).toContain('connectionIdPresent=true');
+    expect(message).toContain('fromMasked=***1212');
+    expect(message).toContain('body={"errors":[{"title":"Invalid API Key"}]}');
+    expect(fields.httpStatus).toBe(401);
+    expect(JSON.stringify({ message, fields })).not.toMatch(/Bearer /);
+  });
+
+  it('uses unset/none/empty placeholders when values are missing', () => {
+    const { message } = formatPublicCallMeDialFailureLog({
+      httpStatus: null,
+      bodyClipped: '',
+      apiKeyPresent: false,
+      apiKeyLen: 0,
+      apiKeyPrefix: '',
+      strippedWhitespace: false,
+      strippedQuotes: false,
+      strippedBearerPrefix: false,
+      keySanitized: false,
+      connectionIdPresent: false,
+      fromMasked: 'unset',
+    });
+    expect(message).toContain('httpStatus=unset');
+    expect(message).toContain('apiKeyPrefix=none');
+    expect(message).toContain('body=empty');
   });
 });

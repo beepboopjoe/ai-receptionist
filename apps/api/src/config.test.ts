@@ -95,6 +95,14 @@ describe('resolveConfig', () => {
     expect(config.DEMO_ENSURE_TENANT).toBe('');
   });
 
+  it('sanitizes TELNYX_API_KEY quotes, whitespace, and Bearer prefix', () => {
+    const { config } = resolveConfig({
+      ...validEnv,
+      TELNYX_API_KEY: '  "Bearer KEYabcdefghijklmnopqrstuvwxyz012345" \n',
+    });
+    expect(config.TELNYX_API_KEY).toBe('KEYabcdefghijklmnopqrstuvwxyz012345');
+  });
+
   it('accepts demo cooldown ops flags as raw strings', () => {
     const { config } = resolveConfig({
       ...validEnv,

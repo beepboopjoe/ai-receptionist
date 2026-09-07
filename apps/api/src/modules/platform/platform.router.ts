@@ -18,6 +18,7 @@ import { config } from '../../config.js';
 import { AuthError, NotFoundError, ValidationError } from '../../lib/errors.js';
 import { auditLog } from '../../audit/audit-logger.js';
 import { getStripe } from '../billing/stripe.client.js';
+import { probeTelnyxAuth } from '../../lib/telnyx-auth.js';
 
 /** Gate: caller's JWT email must appear in ADMIN_EMAILS. */
 async function requirePlatformAdmin(
@@ -72,6 +73,18 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
       const email = request.authUser.email.toLowerCase();
       const isPlatformAdmin = allowed.length > 0 && allowed.includes(email);
       return { ok: isPlatformAdmin, email };
+    }
+  );
+
+  // ── Telnyx credential probe (no dial) ──────────────────────────────
+  // GET /v2/balance with the sanitized API key. Platform-admin only.
+  // Returns log-safe key diagnostics + httpStatus so ops can confirm a
+  // 401 without placing a homepage call-me.
+  app.get(
+    '/platform/telnyx-auth',
+    { onRequest: [requirePlatformAdmin] },
+    async (_request, _reply) => {
+      return probeTelnyxAuth(process.env['TELNYX_API_KEY'], config.TELNYX_APP_ID);
     }
   );
 
