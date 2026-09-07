@@ -25,9 +25,26 @@ import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone.js';
 import utc from 'dayjs/plugin/utc.js';
 import {
+  base64PayloadBytes,
+  buildTelnyxOutboundMediaMessage,
+  extractGrokAudioPayload,
+  extractTelnyxInboundAudioPayload,
+  formatFirstGrokAudioEventLog,
+  formatFirstGrokAudioToTelnyxLog,
+  formatFirstTelnyxInboundMediaLog,
+  formatGrokAudioDroppedLog,
   formatGrokConnectFailureLog,
+  formatGrokEmptyResponseLog,
+  formatGrokGreetingFallbackLog,
   formatGrokGreetingLog,
+  formatGrokNoAudioWatchdogLog,
+  formatGrokRelaySummaryLog,
+  formatGrokSessionUpdateLog,
+  formatGrokUnexpectedBinaryLog,
   GROK_GREETING_CREATE,
+  GROK_GREETING_FALLBACK_MS,
+  isGrokAudioDeltaType,
+  summarizeEventCounts,
 } from './telnyx-stream.helpers.js';
 import pino from 'pino';
 
@@ -256,8 +273,55 @@ export async function handleMediaStream(
     );
   });
 
-  // 7. Send session.update immediately after WS is open, then response.create
-  //    so Grok speaks the greeting without waiting for the callee to talk.
+  // Relay counters — Railway MCP only keeps pino `msg`, so every first-frame
+  // / empty-response line embeds counts (never raw audio).
+  const grokEventCounts: Record<string, number> = {};
+  let telnyxInboundFrames = 0;
+  let telnyxInboundBytes = 0;
+  let grokAudioDeltasReceived = 0;
+  let grokAudioBytesToTelnyx = 0;
+  let loggedFirstTelnyxInbound = false;
+  let loggedFirstGrokAudioEvent = false;
+  let loggedFirstGrokToTelnyx = false;
+  let loggedUnexpectedBinary = false;
+  let greetingSent = false;
+  let greetingFallbackTimer: ReturnType<typeof setTimeout> | undefined;
+  let noAudioWatchdog: ReturnType<typeof setTimeout> | undefined;
+
+  const noteGrokEvent = (type: string) => {
+    grokEventCounts[type] = (grokEventCounts[type] ?? 0) + 1;
+  };
+
+  const sendGreeting = (reason: 'session.updated' | 'fallback') => {
+    if (greetingSent || grokSocket.readyState !== WS.OPEN) return;
+    greetingSent = true;
+    if (greetingFallbackTimer) {
+      clearTimeout(greetingFallbackTimer);
+      greetingFallbackTimer = undefined;
+    }
+    grokSocket.send(JSON.stringify(GROK_GREETING_CREATE));
+    logger.info(
+      { callSid, grokSessionId, tenantId, reason },
+      formatGrokGreetingLog({ callSid, grokSessionId }),
+    );
+    // If Grok never emits audio (wrong event type / empty response), surface it.
+    noAudioWatchdog = setTimeout(() => {
+      if (grokAudioBytesToTelnyx > 0) return;
+      logger.warn(
+        { callSid, tenantId, grokEventCounts },
+        formatGrokNoAudioWatchdogLog({
+          callSid,
+          audioDeltasReceived: grokAudioDeltasReceived,
+          audioBytesToTelnyx: grokAudioBytesToTelnyx,
+          eventCounts: summarizeEventCounts(grokEventCounts),
+        }),
+      );
+    }, 8_000);
+  };
+
+  // 7. session.update on open. Do NOT response.create here — current xAI
+  //    defaults to audio/pcm @ 24 kHz until session.updated applies audio/pcmu.
+  //    Greeting in the default codec is forwarded as PCMU and plays as silence.
   grokSocket.on('open', () => {
     const sessionUpdate = GrokVoiceAdapter.buildSessionUpdate({
       sessionId: grokSessionId,
@@ -267,35 +331,87 @@ export async function handleMediaStream(
       audioOutputFormat: 'pcmu',
     });
     grokSocket.send(JSON.stringify(sessionUpdate));
-    grokSocket.send(JSON.stringify(GROK_GREETING_CREATE));
     logger.info(
       { callSid, grokSessionId, tenantId },
-      formatGrokGreetingLog({ callSid, grokSessionId }),
+      formatGrokSessionUpdateLog({ callSid, grokSessionId }),
     );
+    greetingFallbackTimer = setTimeout(() => {
+      logger.warn({ callSid, tenantId }, formatGrokGreetingFallbackLog({ callSid }));
+      sendGreeting('fallback');
+    }, GROK_GREETING_FALLBACK_MS);
   });
 
-  // 8. Relay audio: Telnyx → Grok
+  // 8. Relay audio: Telnyx inbound track → Grok (never echo outbound)
   providerSocket.on('message', (data: Buffer) => {
-    const msg = JSON.parse(data.toString()) as Record<string, unknown>;
+    let msg: Record<string, unknown>;
+    try {
+      msg = JSON.parse(data.toString()) as Record<string, unknown>;
+    } catch (err) {
+      logger.warn({ err, callSid }, 'Telnyx media-stream bad JSON');
+      return;
+    }
 
     if (msg['event'] === 'media') {
-      const payload = (msg['media'] as Record<string, string> | undefined)?.['payload'];
-      if (payload && grokSocket.readyState === WS.OPEN) {
+      const inbound = extractTelnyxInboundAudioPayload(msg);
+      if (!inbound) return;
+      telnyxInboundFrames += 1;
+      telnyxInboundBytes += inbound.bytes;
+      if (!loggedFirstTelnyxInbound) {
+        loggedFirstTelnyxInbound = true;
+        logger.info(
+          { callSid, tenantId, track: inbound.track, payloadBytes: inbound.bytes },
+          formatFirstTelnyxInboundMediaLog({
+            callSid,
+            track: inbound.track,
+            payloadBytes: inbound.bytes,
+          }),
+        );
+      }
+      if (grokSocket.readyState === WS.OPEN) {
         grokSocket.send(JSON.stringify({
           type: 'input_audio_buffer.append',
-          audio: payload,
+          audio: inbound.payload,
         }));
       }
     } else if (msg['event'] === 'stop') {
       grokSocket.close();
+    } else if (msg['event'] === 'error') {
+      const payload = msg['payload'] as Record<string, unknown> | undefined;
+      const detail = typeof payload?.['detail'] === 'string'
+        ? payload['detail']
+        : JSON.stringify(msg);
+      logger.error(
+        { msg, callSid, tenantId },
+        `Telnyx media-stream error frame callSid=${callSid} err=${detail}`,
+      );
     }
   });
 
   // 9. Relay audio: Grok → Telnyx + accumulate transcript + fan out live deltas
   const liveStartedAt = Date.now();
   grokSocket.on('message', (data: Buffer) => {
-    const event = JSON.parse(data.toString()) as Record<string, unknown>;
-    const eventType = event['type'] as string;
+    const raw = Buffer.isBuffer(data) ? data : Buffer.from(data as ArrayBuffer);
+    const asText = raw.toString();
+    if (!asText.startsWith('{') && !asText.startsWith('[')) {
+      if (!loggedUnexpectedBinary) {
+        loggedUnexpectedBinary = true;
+        logger.warn(
+          { callSid, tenantId, bytes: raw.byteLength },
+          formatGrokUnexpectedBinaryLog({ callSid, bytes: raw.byteLength }),
+        );
+      }
+      return;
+    }
+
+    let event: Record<string, unknown>;
+    try {
+      event = JSON.parse(asText) as Record<string, unknown>;
+    } catch (err) {
+      logger.warn({ err, callSid }, 'Grok media-stream bad JSON');
+      return;
+    }
+    const eventType = typeof event['type'] === 'string' ? event['type'] : 'unknown';
+    noteGrokEvent(eventType);
 
     // Capture the real Grok session ID when the server confirms it,
     // then announce the live call to the dashboard.
@@ -312,6 +428,11 @@ export async function handleMediaStream(
         vertical,
         startedAt: new Date(liveStartedAt).toISOString(),
       });
+    }
+
+    // Codec is applied on session.updated — greet only then (not on created).
+    if (eventType === 'session.updated') {
+      sendGreeting('session.updated');
     }
 
     // Let the adapter process transcript events and tell us what was finalized.
@@ -342,21 +463,87 @@ export async function handleMediaStream(
       );
     }
 
-    // Stream audio back to the caller
-    if (eventType === 'response.audio.delta') {
-      const audioPayload = event['delta'] as string | undefined;
-      if (audioPayload && providerSocket.readyState === WS.OPEN) {
-        // Telnyx: no streamSid needed. Twilio legacy: include it.
-        const outMsg = streamSid
-          ? { event: 'media', streamSid, media: { payload: audioPayload } }
-          : { event: 'media', media: { payload: audioPayload } };
-        providerSocket.send(JSON.stringify(outMsg));
+    if (eventType === 'response.done' && grokAudioBytesToTelnyx === 0) {
+      logger.warn(
+        { callSid, tenantId, grokEventCounts },
+        formatGrokEmptyResponseLog({
+          callSid,
+          audioDeltasReceived: grokAudioDeltasReceived,
+          audioBytesToTelnyx: grokAudioBytesToTelnyx,
+          eventCounts: summarizeEventCounts(grokEventCounts),
+        }),
+      );
+    }
+
+    // Stream audio back to the callee — current xAI uses output_audio.delta.
+    if (isGrokAudioDeltaType(eventType)) {
+      const audioPayload = extractGrokAudioPayload(event);
+      const payloadBytes = audioPayload ? base64PayloadBytes(audioPayload) : 0;
+      if (audioPayload) {
+        grokAudioDeltasReceived += 1;
+        if (!loggedFirstGrokAudioEvent) {
+          loggedFirstGrokAudioEvent = true;
+          const field = typeof event['delta'] === 'string' && event['delta'] ? 'delta' : 'audio';
+          logger.info(
+            { callSid, tenantId, eventType, payloadBytes },
+            formatFirstGrokAudioEventLog({
+              callSid,
+              eventType,
+              payloadBytes,
+              field,
+            }),
+          );
+        }
+        if (providerSocket.readyState === WS.OPEN) {
+          providerSocket.send(JSON.stringify(buildTelnyxOutboundMediaMessage(audioPayload, streamSid)));
+          grokAudioBytesToTelnyx += payloadBytes;
+          if (!loggedFirstGrokToTelnyx) {
+            loggedFirstGrokToTelnyx = true;
+            logger.info(
+              { callSid, tenantId, eventType, payloadBytes },
+              formatFirstGrokAudioToTelnyxLog({ callSid, eventType, payloadBytes }),
+            );
+          }
+        } else {
+          logger.warn(
+            { callSid, tenantId, payloadBytes },
+            formatGrokAudioDroppedLog({
+              callSid,
+              reason: 'telnyx_ws_not_open',
+              payloadBytes,
+            }),
+          );
+        }
+      } else {
+        logger.warn(
+          { callSid, tenantId, eventType },
+          formatGrokEmptyResponseLog({
+            callSid,
+            audioDeltasReceived: grokAudioDeltasReceived,
+            audioBytesToTelnyx: grokAudioBytesToTelnyx,
+            eventCounts: `${eventType}:empty-payload`,
+          }),
+        );
       }
     }
   });
 
   // 10. Post-call: persist transcript + trigger workflow
   grokSocket.on('close', async () => {
+    if (greetingFallbackTimer) clearTimeout(greetingFallbackTimer);
+    if (noAudioWatchdog) clearTimeout(noAudioWatchdog);
+    logger.info(
+      { callSid, tenantId, grokEventCounts },
+      formatGrokRelaySummaryLog({
+        callSid,
+        inboundFrames: telnyxInboundFrames,
+        inboundBytes: telnyxInboundBytes,
+        audioDeltasReceived: grokAudioDeltasReceived,
+        audioBytesToTelnyx: grokAudioBytesToTelnyx,
+        eventCounts: summarizeEventCounts(grokEventCounts),
+      }),
+    );
+
     // Flush any buffered agent transcript with a synthetic 'response.done'
     GrokVoiceAdapter.processEvent(grokSessionId, { type: 'response.done' });
 

@@ -102,6 +102,16 @@ async function telephonyRoutes(
           }),
         );
 
+        const start = msg['start'] as {
+          media_format?: { encoding?: string; sample_rate?: number; channels?: number };
+        } | undefined;
+        const encoding = start?.media_format?.encoding ?? 'unset';
+        const sampleRate = start?.media_format?.sample_rate ?? 0;
+        streamLogger.info(
+          { callSid: resolved.callSid, encoding, sampleRate },
+          `Telnyx media-stream format callSid=${resolved.callSid || 'unset'} encoding=${encoding} sampleRate=${sampleRate}`,
+        );
+
         void handleMediaStream(socket, {
           callId: resolved.callId,
           tenantId: resolved.tenantId,

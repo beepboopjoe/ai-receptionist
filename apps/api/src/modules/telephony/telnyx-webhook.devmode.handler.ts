@@ -91,7 +91,12 @@ async function startMediaStream(
 ): Promise<void> {
   await telnyxPost(`/calls/${callControlId}/actions/streaming_start`, {
     stream_url: streamUrl,
-    stream_track: 'both_tracks',
+    stream_track: 'inbound_track',
+    stream_codec: 'PCMU',
+    stream_bidirectional_mode: 'rtp',
+    stream_bidirectional_codec: 'PCMU',
+    stream_bidirectional_sampling_rate: 8000,
+    stream_bidirectional_target_legs: 'both',
     enable_dialogflow: false,
     client_state: clientState,
   });
@@ -182,17 +187,18 @@ function bridgeMediaStream(telnyxSocket: WsWebSocket): void {
         JSON.stringify({
           type: 'session.update',
           session: {
-            modalities: ['audio', 'text'],
             instructions: SYSTEM_PROMPT,
-            voice: 'alloy',
+            voice: 'eve',
+            audio: {
+              input: { format: { type: 'audio/pcmu' }, transport: 'json' },
+              output: { format: { type: 'audio/pcmu' }, transport: 'json' },
+            },
             input_audio_format: 'g711_ulaw',
             output_audio_format: 'g711_ulaw',
             turn_detection: { type: 'server_vad' },
           },
         })
       );
-      // Trigger initial greeting
-      grokSocket!.send(JSON.stringify({ type: 'response.create' }));
       grokReady = true;
       // Flush queue
       for (const chunk of queuedAudio) {
@@ -206,10 +212,15 @@ function bridgeMediaStream(telnyxSocket: WsWebSocket): void {
     grokSocket.on('message', (raw) => {
       try {
         const msg = JSON.parse(raw.toString());
-        if (msg.type === 'response.audio.delta' && msg.delta) {
+        if (
+          (msg.type === 'response.output_audio.delta' || msg.type === 'response.audio.delta') &&
+          (msg.delta || msg.audio)
+        ) {
           telnyxSocket.send(
-            JSON.stringify({ event: 'media', media: { payload: msg.delta } })
+            JSON.stringify({ event: 'media', media: { payload: msg.delta || msg.audio } })
           );
+        } else if (msg.type === 'session.updated') {
+          grokSocket!.send(JSON.stringify({ type: 'response.create' }));
         } else if (msg.type === 'error') {
           logger.error({ msg }, 'Grok error');
         }
@@ -232,7 +243,7 @@ function bridgeMediaStream(telnyxSocket: WsWebSocket): void {
       if (msg.event === 'start') {
         logger.info({ streamId: msg.stream_id }, 'Telnyx stream started');
         connectGrok();
-      } else if (msg.event === 'media' && msg.media?.payload) {
+      } else if (msg.event === 'media' && msg.media?.payload && msg.media?.track !== 'outbound') {
         if (grokReady && grokSocket?.readyState === WsClient.OPEN) {
           grokSocket.send(
             JSON.stringify({

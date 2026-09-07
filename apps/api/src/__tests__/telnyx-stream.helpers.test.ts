@@ -33,9 +33,34 @@ import {
   formatMediaStreamStartLog,
   formatMediaStreamCallSidResolvedLog,
   formatMediaStreamHandlerFailureLog,
+  formatFirstTelnyxInboundMediaLog,
+  formatFirstGrokAudioEventLog,
+  formatFirstGrokAudioToTelnyxLog,
+  formatGrokEmptyResponseLog,
+  formatGrokAudioDroppedLog,
+  formatGrokSessionUpdateLog,
+  formatGrokGreetingFallbackLog,
+  formatGrokNoAudioWatchdogLog,
+  formatGrokRelaySummaryLog,
+  formatGrokUnexpectedBinaryLog,
   resolveFastifyWebsocket,
   GROK_GREETING_CREATE,
+  GROK_GREETING_FALLBACK_MS,
+  GROK_AUDIO_DELTA_TYPES,
+  isGrokAudioDeltaType,
+  isGrokTranscriptDeltaType,
+  extractGrokAudioPayload,
+  extractTelnyxInboundAudioPayload,
+  isTelnyxInboundMediaTrack,
+  buildTelnyxOutboundMediaMessage,
+  base64PayloadBytes,
+  summarizeEventCounts,
 } from '../modules/telephony/telnyx-stream.helpers.js';
+import {
+  GrokVoiceAdapter,
+  toXaiCodec,
+  toLegacyXaiFormat,
+} from '../modules/voice-agent/adapters/grok.adapter.js';
 
 const srcRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -48,7 +73,7 @@ describe('streaming_start action', () => {
   it('requests bidirectional PCMU RTP so Grok audio can play', () => {
     const body = buildStreamingStartBody('wss://api.example.com/api/v1/webhooks/telnyx/stream', 'c3RhdGU=');
     expect(body.stream_url).toBe('wss://api.example.com/api/v1/webhooks/telnyx/stream');
-    expect(body.stream_track).toBe('both_tracks');
+    expect(body.stream_track).toBe('inbound_track');
     expect(body.stream_codec).toBe('PCMU');
     expect(body.stream_bidirectional_mode).toBe('rtp');
     expect(body.stream_bidirectional_codec).toBe('PCMU');
@@ -357,8 +382,191 @@ describe('production sources use the working Telnyx + Grok path', () => {
     expect(router).not.toMatch(/connection\.socket as unknown as WebSocket/);
     expect(router).not.toMatch(/state\['callSid'\] \?\? start\?\.call_control_id/);
 
+    const adapter = readFileSync(join(srcRoot, 'modules/voice-agent/adapters/grok.adapter.ts'), 'utf8');
+    expect(adapter).toContain("type: 'audio/pcmu'");
+    expect(adapter).not.toMatch(/model:\s*'whisper-1'/);
+
     const media = readFileSync(join(srcRoot, 'modules/telephony/media-stream.handler.ts'), 'utf8');
     expect(media).toContain('GROK_GREETING_CREATE');
     expect(media).toContain('formatGrokConnectFailureLog');
+    expect(media).toContain('isGrokAudioDeltaType');
+    expect(media).toContain('extractGrokAudioPayload');
+    expect(media).toContain('extractTelnyxInboundAudioPayload');
+    expect(media).toContain("eventType === 'session.updated'");
+    expect(media).toContain('formatFirstTelnyxInboundMediaLog');
+    expect(media).toContain('formatFirstGrokAudioToTelnyxLog');
+    expect(media).toContain('formatGrokEmptyResponseLog');
+    expect(media).not.toMatch(/eventType === 'response\.audio\.delta'/);
+  });
+});
+
+describe('Grok audio delta event types (xAI 2026)', () => {
+  it('accepts both current and OpenAI-compat names', () => {
+    expect(GROK_AUDIO_DELTA_TYPES).toContain('response.output_audio.delta');
+    expect(GROK_AUDIO_DELTA_TYPES).toContain('response.audio.delta');
+    expect(isGrokAudioDeltaType('response.output_audio.delta')).toBe(true);
+    expect(isGrokAudioDeltaType('response.audio.delta')).toBe(true);
+    expect(isGrokAudioDeltaType('response.done')).toBe(false);
+    expect(isGrokTranscriptDeltaType('response.output_audio_transcript.delta')).toBe(true);
+    expect(isGrokTranscriptDeltaType('response.audio_transcript.delta')).toBe(true);
+  });
+
+  it('reads audio from delta or audio and skips empty payloads', () => {
+    expect(extractGrokAudioPayload({ delta: 'YWJj' })).toBe('YWJj');
+    expect(extractGrokAudioPayload({ audio: 'ZGVm' })).toBe('ZGVm');
+    expect(extractGrokAudioPayload({ delta: '  ', audio: 'ZGVm' })).toBe('ZGVm');
+    expect(extractGrokAudioPayload({ delta: '', audio: '' })).toBeUndefined();
+    expect(extractGrokAudioPayload({})).toBeUndefined();
+  });
+});
+
+describe('Telnyx inbound-only media filter', () => {
+  it('treats missing track as inbound and drops outbound echo', () => {
+    expect(isTelnyxInboundMediaTrack(undefined)).toBe(true);
+    expect(isTelnyxInboundMediaTrack('')).toBe(true);
+    expect(isTelnyxInboundMediaTrack('inbound')).toBe(true);
+    expect(isTelnyxInboundMediaTrack('inbound_track')).toBe(true);
+    expect(isTelnyxInboundMediaTrack('outbound')).toBe(false);
+    expect(isTelnyxInboundMediaTrack('outbound_track')).toBe(false);
+  });
+
+  it('extracts inbound PCMU and ignores outbound / empty', () => {
+    const inbound = extractTelnyxInboundAudioPayload({
+      event: 'media',
+      media: { track: 'inbound', payload: 'YWJj' },
+    });
+    expect(inbound?.payload).toBe('YWJj');
+    expect(inbound?.track).toBe('inbound');
+    expect(inbound?.bytes).toBe(3);
+
+    expect(extractTelnyxInboundAudioPayload({
+      event: 'media',
+      media: { track: 'outbound', payload: 'YWJj' },
+    })).toBeUndefined();
+
+    expect(extractTelnyxInboundAudioPayload({
+      event: 'start',
+      media: { payload: 'YWJj' },
+    })).toBeUndefined();
+  });
+});
+
+describe('Telnyx outbound media frame', () => {
+  it('matches the official Client Media Frame (event + media.payload)', () => {
+    expect(buildTelnyxOutboundMediaMessage('YWJj')).toEqual({
+      event: 'media',
+      media: { payload: 'YWJj' },
+    });
+    expect(buildTelnyxOutboundMediaMessage('YWJj', 'sid-1')).toEqual({
+      event: 'media',
+      streamSid: 'sid-1',
+      media: { payload: 'YWJj' },
+    });
+  });
+
+  it('counts decoded bytes not base64 string length', () => {
+    expect(base64PayloadBytes('YWJj')).toBe(3);
+    expect(summarizeEventCounts({ 'response.output_audio.delta': 4, 'session.updated': 1 }))
+      .toBe('response.output_audio.delta:4,session.updated:1');
+    expect(summarizeEventCounts({})).toBe('none');
+  });
+});
+
+describe('Grok session.update uses audio/pcmu for Telnyx', () => {
+  it('maps pcmu to nested audio/pcmu plus legacy g711_ulaw', () => {
+    expect(toXaiCodec('pcmu')).toEqual({ type: 'audio/pcmu' });
+    expect(toXaiCodec('pcma')).toEqual({ type: 'audio/pcma' });
+    expect(toXaiCodec('pcm')).toEqual({ type: 'audio/pcm', rate: 24000 });
+    expect(toLegacyXaiFormat('pcmu')).toBe('g711_ulaw');
+
+    const update = GrokVoiceAdapter.buildSessionUpdate({
+      sessionId: 'grok_1',
+      systemPrompt: 'You are Aria.',
+      voice: 'Eve',
+      audioInputFormat: 'pcmu',
+      audioOutputFormat: 'pcmu',
+    });
+
+    expect(update.type).toBe('session.update');
+    expect(update.session.voice).toBe('eve');
+    expect(update.session.audio.input.format).toEqual({ type: 'audio/pcmu' });
+    expect(update.session.audio.output.format).toEqual({ type: 'audio/pcmu' });
+    expect(update.session.audio.input.transport).toBe('json');
+    expect(update.session.input_audio_format).toBe('g711_ulaw');
+    expect(update.session).not.toHaveProperty('input_audio_transcription');
+    expect(JSON.stringify(update)).not.toContain('whisper-1');
+  });
+
+  it('flushes agent transcript from the current xAI delta name', () => {
+    const sessionId = 'grok_transcript_test';
+    GrokVoiceAdapter.processEvent(sessionId, {
+      type: 'response.output_audio_transcript.delta',
+      delta: 'Hello there',
+    });
+    const done = GrokVoiceAdapter.processEvent(sessionId, { type: 'response.done' });
+    expect(done.flushedAgentText).toBe('Hello there');
+  });
+});
+
+describe('Railway-visible audio-path log messages', () => {
+  it('puts byte counts and event types on first-frame / empty-response lines', () => {
+    expect(formatFirstTelnyxInboundMediaLog({
+      callSid: 'v2:abc',
+      track: 'inbound',
+      payloadBytes: 160,
+    })).toContain('Telnyx first inbound media frame');
+    expect(formatFirstTelnyxInboundMediaLog({
+      callSid: 'v2:abc',
+      track: 'inbound',
+      payloadBytes: 160,
+    })).toContain('payloadBytes=160');
+
+    expect(formatFirstGrokAudioEventLog({
+      callSid: 'v2:abc',
+      eventType: 'response.output_audio.delta',
+      payloadBytes: 320,
+      field: 'delta',
+    })).toContain('Grok first audio delta received');
+
+    expect(formatFirstGrokAudioToTelnyxLog({
+      callSid: 'v2:abc',
+      eventType: 'response.output_audio.delta',
+      payloadBytes: 320,
+    })).toContain('Grok first audio frame sent to Telnyx');
+
+    expect(formatGrokEmptyResponseLog({
+      callSid: 'v2:abc',
+      audioDeltasReceived: 0,
+      audioBytesToTelnyx: 0,
+      eventCounts: 'session.updated:1,response.done:1',
+    })).toContain('Grok empty-response warning');
+
+    expect(formatGrokAudioDroppedLog({
+      callSid: 'v2:abc',
+      reason: 'telnyx_ws_not_open',
+      payloadBytes: 80,
+    })).toContain('reason=telnyx_ws_not_open');
+
+    expect(formatGrokSessionUpdateLog({ callSid: 'v2:abc', grokSessionId: 'grok_1' }))
+      .toContain('codec=audio/pcmu');
+    expect(formatGrokGreetingFallbackLog({ callSid: 'v2:abc' }))
+      .toContain('Grok greeting fallback');
+    expect(formatGrokNoAudioWatchdogLog({
+      callSid: 'v2:abc',
+      audioDeltasReceived: 0,
+      audioBytesToTelnyx: 0,
+      eventCounts: 'none',
+    })).toContain('Grok no-audio watchdog');
+    expect(formatGrokRelaySummaryLog({
+      callSid: 'v2:abc',
+      inboundFrames: 12,
+      inboundBytes: 1920,
+      audioDeltasReceived: 8,
+      audioBytesToTelnyx: 2560,
+      eventCounts: 'response.output_audio.delta:8',
+    })).toContain('inboundFrames=12');
+    expect(formatGrokUnexpectedBinaryLog({ callSid: 'v2:abc', bytes: 40 }))
+      .toContain('Grok unexpected binary frame');
+    expect(GROK_GREETING_FALLBACK_MS).toBe(1500);
   });
 });
