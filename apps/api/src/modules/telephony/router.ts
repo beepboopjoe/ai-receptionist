@@ -14,7 +14,15 @@ import { encryptCredentials } from '../../lib/encryption.js';
 import { config } from '../../config.js';
 import { ringcentralWebhookUrl } from '../../lib/public-url.js';
 import { audit } from '../../audit/audit-logger.js';
-import type { WebSocket } from 'ws';
+import pino from 'pino';
+import {
+  formatMediaStreamHandlerFailureLog,
+  formatMediaStreamStartLog,
+  formatMediaStreamWsConnectedLog,
+  resolveFastifyWebsocket,
+} from './telnyx-stream.helpers.js';
+
+const streamLogger = pino({ name: 'telnyx-stream-ws' });
 
 async function telephonyRoutes(
   app: FastifyInstance,
@@ -34,15 +42,25 @@ async function telephonyRoutes(
   });
 
   /**
-   * Telnyx media stream WebSocket — Telnyx connects here after stream_start.
+   * Telnyx media stream WebSocket — Telnyx connects here after streaming_start.
    * Call params are decoded from client_state inside the 'start' event message.
+   *
+   * @fastify/websocket v10 passes the WebSocket as the first argument (not
+   * `{ socket }`). resolveFastifyWebsocket accepts both shapes.
    */
   app.get('/webhooks/telnyx/stream', { websocket: true }, (connection, _request) => {
-    const socket = connection.socket as unknown as WebSocket;
+    const socket = resolveFastifyWebsocket(connection);
+    streamLogger.info(formatMediaStreamWsConnectedLog());
     let started = false;
 
     socket.on('message', (data: Buffer) => {
-      const msg = JSON.parse(data.toString()) as Record<string, unknown>;
+      let msg: Record<string, unknown>;
+      try {
+        msg = JSON.parse(data.toString()) as Record<string, unknown>;
+      } catch (err) {
+        streamLogger.warn({ err }, 'Telnyx media-stream bad JSON');
+        return;
+      }
 
       if (msg['event'] === 'connected') {
         // Telnyx sends a 'connected' handshake first — nothing to do
@@ -67,7 +85,7 @@ async function telephonyRoutes(
           } catch { /* malformed client_state — proceed with empty state */ }
         }
 
-        void handleMediaStream(socket, {
+        const params = {
           callId: state['callId'] ?? '',
           tenantId: state['tenantId'] ?? '',
           fromNumber: state['fromNumber'] ?? '',
@@ -77,8 +95,39 @@ async function telephonyRoutes(
           // Phase 29b — Ask-your-AI plain-English task (single-task calls)
           ...(state['adHocTask'] && { adHocTask: state['adHocTask'] }),
           // No streamSid for Telnyx — it's a Twilio-only requirement
+        };
+
+        const missing = (['callId', 'tenantId', 'fromNumber', 'callSid'] as const)
+          .filter((k) => !params[k]);
+        streamLogger.info(
+          { callId: params.callId, tenantId: params.tenantId, callSid: params.callSid },
+          formatMediaStreamStartLog({
+            callId: params.callId,
+            tenantId: params.tenantId,
+            callSid: params.callSid,
+            missingFields: missing,
+          }),
+        );
+
+        void handleMediaStream(socket, params).catch((err) => {
+          streamLogger.error(
+            { err, callSid: params.callSid, tenantId: params.tenantId },
+            formatMediaStreamHandlerFailureLog({
+              callSid: params.callSid,
+              tenantId: params.tenantId,
+              err,
+            }),
+          );
+          try { socket.close(1011, 'media stream handler failed'); } catch { /* ignore */ }
         });
       }
+    });
+
+    socket.on('error', (err: Error) => {
+      streamLogger.error(
+        { err },
+        `Telnyx media-stream WS error err=${err instanceof Error ? err.message : String(err)}`,
+      );
     });
   });
 

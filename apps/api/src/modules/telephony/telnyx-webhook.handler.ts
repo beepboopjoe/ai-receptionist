@@ -6,11 +6,13 @@
 //
 // Event routing:
 //   call.initiated   (inbound) → answer call
-//   call.answered    (inbound) → start media stream immediately
-//                   (outbound) → wait for AMD result
+//   call.answered    (inbound + dialDirect/demo, isOutbound≠true) → streaming_start
+//                   (campaign outbound) → wait for AMD result
+//   call.bridged     (dialDirect/inbound only) → streaming_start fallback
 //   call.machine.detection.ended → if human: start stream + mark connected
 //                                  if machine: handle voicemail
 //   call.speak.ended             → hang up (voicemail message finished)
+//   streaming.started / streaming.failed → Railway-visible status
 //   call.hangup                  → update DB call record
 //
 // Custom params travel through the call in base64-encoded `client_state`
@@ -31,6 +33,14 @@ import { sendSms } from '../notifications/adapters/telnyx-sms.adapter.js';
 import { getTenantFromNumber } from '../sms/tenant-from-number.js';
 import { config } from '../../config.js';
 import { telnyxMediaStreamUrl } from '../../lib/public-url.js';
+import {
+  formatStreamingFailedEventLog,
+  formatStreamingStartFailureLog,
+  formatStreamingStartLog,
+  formatTelnyxEventLog,
+  formatUnhandledTelnyxEventLog,
+  shouldStartStreamOnAnswer,
+} from './telnyx-stream.helpers.js';
 import pino from 'pino';
 
 const logger = pino({ name: 'telnyx-webhook' });
@@ -69,6 +79,8 @@ interface TelnyxEventPayload {
   result?: string;
   hangup_cause?: string;
   hangup_source?: string;
+  stream_url?: string;
+  failure_reason?: string;
 }
 
 interface TelnyxEvent {
@@ -140,7 +152,10 @@ export async function handleTelnyxWebhook(
 
   // Process the call event asynchronously so we never time out
   void dispatch(eventType, payload).catch((err) => {
-    logger.error({ err, eventType, callControlId: payload.call_control_id }, 'Unhandled Telnyx event error');
+    logger.error(
+      { err, eventType, callControlId: payload.call_control_id },
+      formatUnhandledTelnyxEventLog(eventType, err),
+    );
   });
 }
 
@@ -153,7 +168,10 @@ async function dispatch(
   const { call_control_id, client_state } = payload;
   const state = decodeState(client_state);
 
-  logger.info({ eventType, callControlId: call_control_id, isOutbound: state.isOutbound }, 'Telnyx event');
+  logger.info(
+    { eventType, callControlId: call_control_id, isOutbound: state.isOutbound },
+    formatTelnyxEventLog({ eventType, callControlId: call_control_id, isOutbound: state.isOutbound }),
+  );
 
   switch (eventType) {
     case 'call.initiated':
@@ -162,6 +180,14 @@ async function dispatch(
 
     case 'call.answered':
       await onCallAnswered(call_control_id, state, payload);
+      break;
+
+    case 'call.bridged':
+      // Some outbound legs emit bridged instead of / in addition to answered.
+      // Only start media for dialDirect/inbound — campaign outbound still waits for AMD.
+      if (shouldStartStreamOnAnswer(state)) {
+        await startStream(call_control_id, state);
+      }
       break;
 
     case 'call.machine.detection.ended':
@@ -177,8 +203,26 @@ async function dispatch(
       await onCallHangup(call_control_id, state, payload);
       break;
 
+    case 'streaming.started':
+      logger.info(
+        { eventType, callControlId: call_control_id, streamUrl: payload.stream_url },
+        `Telnyx streaming.started callControlId=${call_control_id} streamUrl=${payload.stream_url ?? 'unset'}`,
+      );
+      break;
+
+    case 'streaming.failed':
+      logger.error(
+        { eventType, callControlId: call_control_id, streamUrl: payload.stream_url },
+        formatStreamingFailedEventLog({
+          callControlId: call_control_id,
+          streamUrl: payload.stream_url,
+          failureReason: payload.failure_reason ?? payload.hangup_cause,
+        }),
+      );
+      break;
+
     default:
-      logger.debug({ eventType }, 'Telnyx event type not handled');
+      logger.info({ eventType, callControlId: call_control_id }, `Telnyx event type not handled eventType=${eventType}`);
   }
 }
 
@@ -247,8 +291,8 @@ async function onCallAnswered(
   state: TelnyxCallState,
   payload: TelnyxEventPayload
 ): Promise<void> {
-  if (state.isOutbound) {
-    // Update dialed count on campaign
+  if (!shouldStartStreamOnAnswer(state)) {
+    // Campaign outbound — AMD is running; wait for call.machine.detection.ended.
     if (state.campaignId) {
       await db
         .update(outboundCampaigns)
@@ -258,11 +302,12 @@ async function onCallAnswered(
         })
         .where(eq(outboundCampaigns.id, state.campaignId));
     }
-    logger.info({ callControlId }, 'Outbound call answered — awaiting AMD result');
-  } else {
-    // Inbound — start stream straight away
-    await startStream(callControlId, state);
+    logger.info({ callControlId }, `Outbound call answered — awaiting AMD result callControlId=${callControlId}`);
+    return;
   }
+
+  // Inbound + dialDirect/demo (isOutbound:false) — start stream immediately.
+  await startStream(callControlId, state);
 }
 
 /**
@@ -382,7 +427,20 @@ async function startStream(
   // Re-encode so WS handler gets the full params from the start event
   const clientState = encodeState({ ...state, callSid: callControlId });
 
-  await startMediaStream(callControlId, streamUrl, clientState);
+  logger.info(
+    { callControlId, streamUrl, callId: state.callId, tenantId: state.tenantId },
+    formatStreamingStartLog({ callControlId, streamUrl }),
+  );
+
+  try {
+    await startMediaStream(callControlId, streamUrl, clientState);
+  } catch (err) {
+    logger.error(
+      { err, callControlId, streamUrl, callId: state.callId, tenantId: state.tenantId },
+      formatStreamingStartFailureLog({ callControlId, streamUrl, err }),
+    );
+    throw err;
+  }
 }
 
 async function handleMachineDetected(
