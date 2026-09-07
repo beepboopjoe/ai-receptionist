@@ -51,10 +51,13 @@ const DEFAULT_TESTIMONIALS: Testimonial[] = [
 
 export function TestimonialGrid({
   eyebrow = 'What customers say',
-  heading = 'Real businesses. Real outcomes.',
+  heading = 'What customers say',
   testimonials = DEFAULT_TESTIMONIALS,
   background = 'white',
 }: TestimonialGridProps) {
+  const realOnly = testimonials.filter((t) => t.real);
+  if (realOnly.length === 0) return null;
+
   const bgClass = background === 'cream' ? 'bg-cream-50' : 'bg-white border-y border-cream-200';
 
   return (
@@ -73,7 +76,7 @@ export function TestimonialGrid({
           )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {testimonials.map((t, i) => (
+          {realOnly.map((t, i) => (
             <div
               key={i}
               className={`rounded-2xl p-6 flex flex-col ${

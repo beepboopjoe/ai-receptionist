@@ -101,7 +101,7 @@ export default function InboundPage() {
           <h1 className="font-serif text-5xl md:text-7xl text-cream-900 tracking-tight leading-[1.05]">
             Voicemail loses the customer.
             <br />
-            <span className="gradient-text">Your AI never misses a call.</span>
+            <span className="gradient-text">Your AI can answer around the clock.</span>
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
             Your AI answers every inbound call — day, night, weekends, holidays —

@@ -14,3 +14,15 @@ export const BRAND_SUPPORT_EMAIL = 'hello@telfin.ai';
 // App icon initials shown in the orange-square logo on every chrome surface.
 // Phase 19 rebrand: 'AR' (AI Receptionist) → 'TF' (Telfin).
 export const BRAND_ICON_INITIALS = 'TF';
+
+/** Public-facing operator / service address (Pasadena, CA). */
+export const BRAND_OPERATOR = 'Joey / Telfin';
+export const BRAND_ADDRESS_LINE1 = '1335 Riviera Dr';
+export const BRAND_ADDRESS_CITY_LINE = 'Pasadena, CA 91107';
+export const BRAND_ADDRESS = `${BRAND_ADDRESS_LINE1}, ${BRAND_ADDRESS_CITY_LINE}`;
+/**
+ * Formal registered entity name + EIN are not confirmed in-repo.
+ * Privacy/Terms flag this as a placeholder for Joey + counsel.
+ */
+export const BRAND_LEGAL_ENTITY = 'Telfin (registered legal entity name pending)';
+export const BRAND_EIN_PLACEHOLDER = '[EIN to be added by operator]';

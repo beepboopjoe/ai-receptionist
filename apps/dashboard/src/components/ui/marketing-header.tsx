@@ -82,9 +82,12 @@ export function MarketingHeader() {
 
           {/* Mobile hamburger */}
           <button
+            type="button"
             onClick={() => setMobileOpen(true)}
-            className="md:hidden p-2 -mr-1 rounded-lg hover:bg-cream-200 transition-colors"
+            className="md:hidden p-2 -mr-1 rounded-lg hover:bg-cream-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
             aria-label="Open menu"
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
           >
             <Menu size={20} className="text-cream-800" />
           </button>
@@ -102,6 +105,7 @@ export function MarketingHeader() {
 
       {/* Mobile drawer */}
       <div
+        id="mobile-nav"
         className={`fixed top-0 right-0 bottom-0 z-50 w-72 bg-white border-l border-cream-200 shadow-xl transition-transform duration-200 md:hidden overflow-y-auto ${
           mobileOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
@@ -109,8 +113,9 @@ export function MarketingHeader() {
         <div className="flex items-center justify-between px-5 h-16 border-b border-cream-200">
           <span className="font-serif text-lg text-cream-900">{BRAND_NAME}</span>
           <button
+            type="button"
             onClick={() => setMobileOpen(false)}
-            className="p-2 rounded-lg hover:bg-cream-100"
+            className="p-2 rounded-lg hover:bg-cream-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
             aria-label="Close menu"
           >
             <X size={18} className="text-cream-700" />

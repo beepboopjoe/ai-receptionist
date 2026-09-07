@@ -44,11 +44,17 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
   const [raw, setRaw] = useState('');
   const [status, setStatus] = useState<WidgetStatus>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [consented, setConsented] = useState(false);
 
   const display = useMemo(() => formatNational(digitsOnly(raw)), [raw]);
 
   const submit = useCallback(async () => {
     if (status === 'calling') return;
+    if (!consented) {
+      setError('Check the box to confirm we may call this number for a live AI demo.');
+      setStatus('error');
+      return;
+    }
     setError(null);
     setStatus('calling');
 
@@ -77,7 +83,7 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
       setStatus('error');
       setError("We couldn't reach the demo line. Hear a sample instead — the page still works.");
     }
-  }, [raw, status]);
+  }, [raw, status, consented]);
 
   const reset = useCallback(() => {
     setStatus('idle');
@@ -141,13 +147,40 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
             />
             <button
               type="submit"
-              disabled={status === 'calling' || digitsOnly(raw).replace(/^1/, '').length < 10}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2.5 shrink-0"
+              disabled={
+                status === 'calling' ||
+                !consented ||
+                digitsOnly(raw).replace(/^1/, '').length < 10
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2.5 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
             >
-              <Phone size={14} />
-              {status === 'calling' ? 'Calling…' : 'Call me'}
+              <Phone size={14} aria-hidden />
+              {status === 'calling' ? 'Calling…' : 'Call me now'}
             </button>
           </form>
+
+          <label htmlFor="call-me-consent" className="mt-3 flex items-start gap-2.5 text-xs text-cream-700 leading-relaxed cursor-pointer">
+            <input
+              id="call-me-consent"
+              type="checkbox"
+              checked={consented}
+              onChange={(e) => {
+                setConsented(e.target.checked);
+                if (e.target.checked && error) setError(null);
+              }}
+              className="mt-0.5 rounded border-cream-400 text-brand-600 focus:ring-brand-500"
+            />
+            <span>
+              I request that Telfin place an automated / AI voice call to the number I entered
+              for a live receptionist demo. I understand the call may be recorded or
+              transcribed, that consent is not required to buy anything, and that I should
+              only enter my own number.{' '}
+              <Link href="/privacy" className="text-brand-700 underline underline-offset-2">
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          </label>
 
           {status === 'error' && error && (
             <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5">

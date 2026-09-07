@@ -1,6 +1,23 @@
 import type { Metadata } from 'next';
+import { Inter, Instrument_Serif } from 'next/font/google';
 import './globals.css';
 import { BRAND_NAME, BRAND_TAGLINE } from '@/lib/brand';
+import { CookieConsentBanner } from '@/components/ui/cookie-consent-banner';
+import { GatedAnalytics } from '@/components/ui/gated-analytics';
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-sans',
+});
+
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-serif',
+});
 
 export const metadata: Metadata = {
   title: BRAND_NAME,
@@ -9,12 +26,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      </head>
-      <body>{children}</body>
+    <html lang="en" className={`${inter.variable} ${instrumentSerif.variable}`}>
+      <body className={inter.className}>
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
+        <div id="main-content">{children}</div>
+        <CookieConsentBanner />
+        <GatedAnalytics />
+      </body>
     </html>
   );
 }

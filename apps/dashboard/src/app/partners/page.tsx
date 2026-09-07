@@ -35,11 +35,17 @@ const BENEFITS = [
 
 export default function PartnersPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [agreed, setAgreed] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!agreed) {
+      setErrorMsg('Please agree to the Terms and Privacy Policy.');
+      setStatus('error');
+      return;
+    }
     setStatus('loading');
     setErrorMsg('');
     try {
@@ -135,10 +141,12 @@ export default function PartnersPage() {
               <p className="text-sm text-cream-500 mb-6">Free to join · No commitments</p>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-cream-700 mb-1">Full name</label>
+                  <label htmlFor="partner-name" className="block text-xs font-semibold text-cream-700 mb-1">Full name</label>
                   <input
+                    id="partner-name"
                     type="text"
                     required
+                    autoComplete="name"
                     placeholder="Jane Smith"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -146,10 +154,12 @@ export default function PartnersPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-cream-700 mb-1">Work email</label>
+                  <label htmlFor="partner-email" className="block text-xs font-semibold text-cream-700 mb-1">Work email</label>
                   <input
+                    id="partner-email"
                     type="email"
                     required
+                    autoComplete="email"
                     placeholder="jane@agency.com"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -157,17 +167,37 @@ export default function PartnersPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-cream-700 mb-1">Password</label>
+                  <label htmlFor="partner-password" className="block text-xs font-semibold text-cream-700 mb-1">Password</label>
                   <input
+                    id="partner-password"
                     type="password"
                     required
                     minLength={8}
+                    autoComplete="new-password"
                     placeholder="At least 8 characters"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     className="w-full rounded-lg border border-cream-300 bg-cream-50 px-3 py-2.5 text-sm text-cream-900 placeholder-cream-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
                   />
                 </div>
+
+                <label htmlFor="partner-agree" className="flex items-start gap-2.5 text-xs text-cream-700 leading-relaxed cursor-pointer">
+                  <input
+                    id="partner-agree"
+                    type="checkbox"
+                    required
+                    checked={agreed}
+                    onChange={(e) => setAgreed(e.target.checked)}
+                    className="mt-0.5 rounded border-cream-400 text-brand-600 focus:ring-brand-500"
+                  />
+                  <span>
+                    I agree to the{' '}
+                    <Link href="/terms" className="text-brand-700 underline underline-offset-2">Terms</Link>
+                    {' '}and{' '}
+                    <Link href="/privacy" className="text-brand-700 underline underline-offset-2">Privacy Policy</Link>
+                    . Telfin may email me about this partner application.
+                  </span>
+                </label>
 
                 {status === 'error' && (
                   <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
@@ -177,8 +207,8 @@ export default function PartnersPage() {
 
                 <button
                   type="submit"
-                  disabled={status === 'loading'}
-                  className="w-full glow-btn rounded-lg bg-brand-600 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                  disabled={status === 'loading' || !agreed}
+                  className="w-full glow-btn rounded-lg bg-brand-600 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
                 >
                   {status === 'loading' ? 'Submitting…' : (
                     <><ArrowRight size={15} /> Apply now — it's free</>
@@ -245,13 +275,15 @@ export default function PartnersPage() {
 
       {/* ── Footer ──────────────────────────────────────────────── */}
       <footer className="border-t border-cream-200 py-8">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-cream-400">
-          <span>© 2026 Telfin</span>
-          <div className="flex items-center gap-6">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-cream-700">
+          <span>© 2026 Telfin · Pasadena, CA</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             <Link href="/" className="hover:text-cream-900 transition-colors">Home</Link>
             <Link href="/pricing" className="hover:text-cream-900 transition-colors">Pricing</Link>
+            <Link href="/privacy" className="hover:text-cream-900 transition-colors underline underline-offset-2">Privacy</Link>
+            <Link href="/terms" className="hover:text-cream-900 transition-colors underline underline-offset-2">Terms</Link>
             <Link href="/partners/login" className="hover:text-cream-900 transition-colors">Partner login</Link>
-            <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="hover:text-cream-900 transition-colors">Contact</a>
+            <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="hover:text-cream-900 transition-colors">{BRAND_SUPPORT_EMAIL}</a>
           </div>
         </div>
       </footer>
