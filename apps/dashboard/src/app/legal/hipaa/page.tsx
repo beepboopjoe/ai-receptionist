@@ -1,84 +1,83 @@
 import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 import Link from 'next/link';
 import { ShieldCheck } from 'lucide-react';
+import { LegalNotAdviceBanner } from '@/components/legal/legal-document';
+import { MarketingHeader } from '@/components/ui/marketing-header';
+import { MarketingFooter } from '@/components/ui/marketing-footer';
+import { LEGAL_LAST_UPDATED } from '@/lib/legal';
 
 export const metadata = {
-  title: 'HIPAA Compliance — Telfin',
+  title: 'HIPAA / BAA — Telfin',
 };
 
 export default function HipaaPage() {
   return (
     <div className="min-h-screen bg-cream-50">
-      <nav className="border-b border-cream-200 px-6 py-4 flex items-center justify-between bg-white">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center text-white font-serif text-sm">TF</div>
-          <span className="font-serif text-cream-900 font-semibold">{BRAND_NAME}</span>
-        </Link>
-        <Link href="/" className="text-sm text-cream-600 hover:text-cream-900 transition-colors">← Back to home</Link>
-      </nav>
+      <MarketingHeader />
 
       <main className="max-w-3xl mx-auto px-6 py-16">
         <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Legal</p>
-        <h1 className="font-serif text-4xl text-cream-900 tracking-tight mb-4">HIPAA Compliance</h1>
-        <p className="text-cream-500 text-sm mb-10">Last updated: January 1, 2026</p>
+        <h1 className="font-serif text-4xl text-cream-900 tracking-tight mb-4">HIPAA / Business Associate Agreement</h1>
+        <p className="text-cream-600 text-sm mb-6">Last updated: {LEGAL_LAST_UPDATED}</p>
 
-        <div className="space-y-6 text-cream-700">
-          <div className="rounded-xl bg-green-50 border border-green-200 p-5 flex gap-4">
-            <ShieldCheck size={22} className="text-green-700 shrink-0 mt-0.5" />
+        <LegalNotAdviceBanner />
+
+        <div className="space-y-6 text-cream-700 mt-8">
+          <div className="rounded-xl bg-amber-50 border border-amber-200 p-5 flex gap-4">
+            <ShieldCheck size={22} className="text-amber-800 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-green-900 mb-1">Built for healthcare practices</p>
-              <p className="text-sm text-green-800">
-                Telfin offers a Business Associate Agreement and implements the technical and
-                administrative safeguards described below for practices that process PHI.
+              <p className="text-sm font-semibold text-amber-950 mb-1">Not a HIPAA certification</p>
+              <p className="text-sm text-amber-900">
+                {BRAND_NAME} is not HIPAA-certified and does not claim a third-party HIPAA audit
+                on this site. We offer a Business Associate Agreement and in-product controls
+                (idle timeout, audit log, retention) for customers who need them. Do not process
+                PHI until a BAA is executed.
               </p>
             </div>
           </div>
 
           <p className="leading-relaxed">
-            As a service provider to healthcare practices, Telfin acts as a Business Associate under the
-            Health Insurance Portability and Accountability Act (HIPAA) when we process Protected Health Information
-            (PHI) on your behalf. Because delivering the service involves sending call audio and transcripts to
-            our voice and telephony providers, any practice processing PHI should complete a BAA with us and review
-            our <Link href="/legal/subprocessors" className="text-brand-600 hover:underline">subprocessor list</Link> before
-            enabling PHI processing.
+            If we process Protected Health Information on a covered entity’s behalf after a BAA
+            is signed, we intend to act as a Business Associate. Voice audio and transcripts go
+            to our voice and telephony subprocessors. Review the{' '}
+            <Link href="/legal/subprocessors" className="text-brand-700 underline underline-offset-2">
+              subprocessor list
+            </Link>{' '}
+            before enabling PHI.
           </p>
 
           <h2 className="font-serif text-xl text-cream-900 mt-8 mb-3">Business Associate Agreement</h2>
           <p className="leading-relaxed">
-            A Business Associate Agreement is available to customers processing PHI. You can review and accept
-            the BAA directly in your dashboard under <strong>Settings → Compliance</strong>; a countersigned copy
-            is available from our compliance team on request. The BAA outlines our obligations to protect PHI and
-            the permitted uses of PHI in delivering our services.
-          </p>
-
-          <h2 className="font-serif text-xl text-cream-900 mt-8 mb-3">Technical Safeguards</h2>
-          <ul className="list-disc list-inside space-y-2 text-sm leading-relaxed">
-            <li>Data encrypted in transit (TLS 1.2+) and at rest at the database/infrastructure layer (AES-256)</li>
-            <li>Call transcripts stored with role-based access controls and complete audit logging</li>
-            <li>Optional per-account control to disable verbatim transcript storage (PHI minimization)</li>
-            <li>Automatic session timeouts (HIPAA mode) and least-privilege, tenant-isolated access</li>
-          </ul>
-
-          <h2 className="font-serif text-xl text-cream-900 mt-8 mb-3">Administrative Safeguards</h2>
-          <ul className="list-disc list-inside space-y-2 text-sm leading-relaxed">
-            <li>Configurable data retention with automatic deletion of records past the retention window</li>
-            <li>Immutable compliance event log (BAA acceptance, setting changes, data purges, erasures)</li>
-            <li>On-request data-subject erasure of a contact and all of their calls, messages, and appointments</li>
-            <li>
-              Subprocessor management — see our{' '}
-              <Link href="/legal/subprocessors" className="text-brand-600 hover:underline">subprocessor list</Link>
-            </li>
-          </ul>
-
-          <h2 className="font-serif text-xl text-cream-900 mt-8 mb-3">Request a BAA</h2>
-          <p className="leading-relaxed">
-            To request a countersigned Business Associate Agreement or discuss compliance requirements, contact our compliance team at{' '}
-            <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="text-brand-600 hover:underline">
+            A BAA is available in the dashboard under <strong>Settings → Compliance</strong>, or
+            by emailing{' '}
+            <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="text-brand-700 underline underline-offset-2">
               {BRAND_SUPPORT_EMAIL}
             </a>
+            . A countersigned copy may be requested from our team. The BAA—not this marketing
+            page—is the contract that governs PHI.
+          </p>
+
+          <h2 className="font-serif text-xl text-cream-900 mt-8 mb-3">Controls we offer</h2>
+          <ul className="list-disc list-inside space-y-2 text-sm leading-relaxed">
+            <li>TLS in transit; encryption at rest at the database/infrastructure layer</li>
+            <li>Role-based access and an audit log of compliance events</li>
+            <li>Optional HIPAA mode idle timeout</li>
+            <li>Configurable retention and on-request contact erasure where enabled</li>
+          </ul>
+          <p className="text-sm">
+            These are product features, not a warranty that your practice is HIPAA-compliant
+            by using {BRAND_NAME}.
+          </p>
+
+          <p className="leading-relaxed">
+            <Link href="/privacy" className="text-brand-700 underline underline-offset-2">Privacy Policy</Link>
+            {' · '}
+            <Link href="/terms" className="text-brand-700 underline underline-offset-2">Terms</Link>
           </p>
         </div>
       </main>
+
+      <MarketingFooter />
     </div>
   );
 }

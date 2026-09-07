@@ -178,9 +178,9 @@ export const PLANS: readonly Plan[] = [
   {
     key: 'enterprise',
     name: 'Enterprise',
-    badge: 'HIPAA + white-label',
-    tagline: 'Compliance-grade AI receptionist with custom integrations.',
-    description: 'HIPAA-ready with signed BAA, white-label dashboard, unlimited concurrent calls, dedicated onboarding, and SLA-backed uptime.',
+    badge: 'Custom + BAA option',
+    tagline: 'High-volume AI receptionist with custom integrations.',
+    description: 'White-label dashboard, high concurrent-call capacity, dedicated onboarding, and a Business Associate Agreement when you need one. Any uptime terms are only those in a signed enterprise order form — not an advertised SLA.',
     monthlyPrice: 0, // shown as "Custom" in UI
     annualMonthlyPrice: 0,
     monthlyMinutes: -1,
@@ -191,11 +191,11 @@ export const PLANS: readonly Plan[] = [
     concurrentOutbound: -1,
     features: [
       '🌐 Speaks 7 languages, switches automatically',
-      'HIPAA-ready with a signed BAA',
+      'Business Associate Agreement available on request',
       'Your branding on the dashboard',
       'No limit on simultaneous calls',
       'Custom connections to your systems',
-      'Guaranteed uptime agreement',
+      'Written service terms only if agreed in an order form',
       'Dedicated onboarding + account team',
       'As many phone numbers as you need',
     ],

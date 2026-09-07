@@ -93,7 +93,7 @@ const SECTIONS: {
       { label: 'Advanced analytics',          cells: [false, false, true, true, true] },
       { label: 'Priority support',            cells: [false, false, false, true, true] },
       { label: 'Dedicated account manager',   cells: [false, false, false, true, true] },
-      { label: 'HIPAA-ready / BAA',           cells: [false, false, false, false, true] },
+      { label: 'BAA available (not a certification)', cells: [false, false, false, false, true] },
       { label: 'White-label',                 cells: [false, false, false, false, true] },
       { label: 'Dedicated onboarding',        cells: [false, false, false, false, true] },
       { label: 'SLA-backed uptime',           cells: [false, false, false, false, true] },

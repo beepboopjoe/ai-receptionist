@@ -139,7 +139,7 @@ const legal: VerticalLandingContent = {
       {
         icon: RefreshCw,
         title: 'Stale-lead reactivation',
-        body: 'AI calls every prospect who inquired but never booked, on a configurable cadence. Dormant pipeline that would otherwise rot in your CRM becomes signed retainers — usually 8-12× lift on cases that were already paid for in marketing.',
+        body: 'AI can call prospects who inquired but never booked, on a cadence you set. Results vary by list quality and practice — we do not guarantee retainers or a specific lift.',
       },
       {
         icon: Star,
@@ -152,20 +152,20 @@ const legal: VerticalLandingContent = {
     heading: 'Why law firms switch.',
     stats: [
       {
-        value: '63%',
-        body: 'of after-hours legal-intake calls go to voicemail without an AI receptionist. Almost all of those callers hire the next firm that picks up.',
+        value: 'After hours',
+        body: 'Many intake calls arrive when the front desk is closed. An unanswered line often means the caller tries another firm. Figures on this page are illustrative, not Telfin-measured guarantees.',
       },
       {
         value: '$2,400',
         body: 'average value of a closed PI case. The math on one missed call vs. one signed retainer is not subtle.',
       },
       {
-        value: '~50%',
-        body: 'typical no-show reduction when the AI runs consult-reminder calls at the 24-hour and 2-hour marks. Cancellations reschedule on the spot.',
+        value: 'Reminders',
+        body: 'Consult-reminder calls at 24 hours and 2 hours are designed to reduce no-shows and let cancellations reschedule on the same call. Outcomes depend on your list and scripts.',
       },
       {
-        value: '8-12×',
-        body: 'reactivation lift on stale leads that never returned the initial callback. The AI catches them; your intake team converts them.',
+        value: 'Follow-up',
+        body: 'Stale-lead campaigns can re-open conversations your team did not have time to dial. We do not promise a multiplier or signed-retainer rate.',
       },
       {
         value: '0',
@@ -212,7 +212,7 @@ const legal: VerticalLandingContent = {
       },
       {
         q: 'Is this UPL (unauthorized practice of law)?',
-        a: 'No. The AI is explicitly instructed in every system prompt to never give legal advice, never form an attorney-client relationship, and never predict case outcomes. It is intake software — legally analogous to a trained paralegal taking initial intake notes. The retainer agreement your firm executes with the client downstream is what establishes representation.',
+        a: 'The AI is instructed not to give legal advice, form an attorney-client relationship, or predict case outcomes. It is intake software. Whether that is enough under your jurisdiction’s unauthorized-practice rules is a question for your ethics counsel — we do not certify UPL compliance.',
       },
       {
         q: 'What about state-bar advertising rules?',
@@ -256,7 +256,7 @@ const dental: VerticalLandingContent = {
   seo: {
     title: 'Telfin for Dental Practices — Recall, Booking, EHR Sync',
     description:
-      "24/7 AI receptionist for dental practices. Handles new-patient bookings, recall follow-ups, insurance verification handoff, after-hours emergency triage. Connects to Dentrix, Eaglesoft, Open Dental. HIPAA-ready. English + Spanish.",
+      "24/7 AI receptionist for dental practices. Handles new-patient bookings, recall follow-ups, insurance verification handoff, after-hours emergency triage. Connects to Dentrix, Eaglesoft, Open Dental. BAA available on request (not a HIPAA certification). English + Spanish.",
   },
   hero: {
     eyebrow: 'For Dental Practices',
@@ -327,8 +327,8 @@ const dental: VerticalLandingContent = {
   faq: {
     items: [
       {
-        q: 'Is the platform HIPAA-ready?',
-        a: 'Yes. Scale plan includes a Business Associate Agreement (BAA). Call transcripts and patient data are encrypted at rest, access-controlled to your practice only, and never used for AI training. Idle-timeout, audit log, and compliance settings are surfaced in /settings.',
+        q: 'Is the platform HIPAA-certified?',
+        a: 'No. We are not HIPAA-certified. A Business Associate Agreement is available on request, and the dashboard includes idle-timeout, audit log, and retention controls. Encryption at rest and access controls apply to transcripts. Using Telfin does not by itself make a practice HIPAA-compliant.',
       },
       {
         q: 'Can it verify insurance during the call?',
@@ -358,7 +358,7 @@ const dental: VerticalLandingContent = {
     subhead:
       'Free trial. No card. No setup fees. Place a test call and book a mock new-patient appointment in under 90 seconds.',
     primaryCtaLabel: 'Try Free',
-    secondaryNote: 'HIPAA-ready · Encrypted at rest · BAA available on Scale plan',
+    secondaryNote: 'Encrypted at rest · BAA available on request · Not a HIPAA certification',
   },
 };
 
@@ -469,7 +469,7 @@ const insurance: VerticalLandingContent = {
     subhead:
       'Free trial. No card. No setup fees. Place a test FNOL call and watch the transcript land in HubSpot in under a minute.',
     primaryCtaLabel: 'Try Free',
-    secondaryNote: 'Encrypted at rest · SOC 2 controls · Cancel anytime',
+    secondaryNote: 'Encrypted at rest · Cancel anytime',
   },
 };
 

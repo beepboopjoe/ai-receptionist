@@ -115,6 +115,7 @@ export default function SignupPage() {
   // direct Stripe checkout after account creation rather than free trial.
   const [fromPricingPage, setFromPricingPage] = useState(false);
   const [pricingCycle, setPricingCycle] = useState<BillingCycle>('monthly');
+  const [agreed, setAgreed] = useState(false);
 
   const planInfo = PLAN_OPTIONS.find((p) => p.key === selectedPlan)!;
 
@@ -133,6 +134,11 @@ export default function SignupPage() {
 
     if (password !== confirmPassword) {
       setError("Passwords don't match");
+      return;
+    }
+
+    if (!agreed) {
+      setError('Please agree to the Terms, Privacy Policy, and auto-renewal notice.');
       return;
     }
 
@@ -379,10 +385,32 @@ export default function SignupPage() {
               </div>
             </div>
 
+            <label htmlFor="signup-agree" className="flex items-start gap-2.5 text-xs text-gray-600 leading-relaxed cursor-pointer">
+              <input
+                id="signup-agree"
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                required
+              />
+              <span>
+                I agree to the{' '}
+                <Link href="/terms" className="text-brand-700 underline underline-offset-2">Terms of Service</Link>
+                {', '}
+                <Link href="/privacy" className="text-brand-700 underline underline-offset-2">Privacy Policy</Link>
+                {', and '}
+                <Link href="/refunds" className="text-brand-700 underline underline-offset-2">Refund Policy</Link>
+                . Paid plans <strong>renew automatically</strong> each billing period until I cancel.
+                I understand Telfin is an AI receptionist (not a human) and is not HIPAA-certified
+                unless we execute a BAA.
+              </span>
+            </label>
+
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !agreed}
               className="btn-primary w-full justify-center disabled:opacity-60"
             >
               {loading
@@ -407,11 +435,10 @@ export default function SignupPage() {
           </p>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-4">
-          By creating an account you agree to our{' '}
-          <Link href="/legal/terms" className="underline hover:text-gray-600">Terms</Link>
-          {' '}and{' '}
-          <Link href="/legal/privacy" className="underline hover:text-gray-600">Privacy Policy</Link>.
+        <p className="text-center text-xs text-gray-500 mt-4">
+          Also see our{' '}
+          <Link href="/cookies" className="underline hover:text-gray-700">Cookie Policy</Link>
+          . These legal pages are compliance templates, not formal legal advice.
         </p>
       </div>
     </div>

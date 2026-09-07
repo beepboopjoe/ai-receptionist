@@ -31,6 +31,11 @@ export function VerticalRoiBlock({ heading, stats }: VerticalRoiBlockProps) {
             </div>
           ))}
         </div>
+        <p className="text-center text-xs text-cream-600 mt-10 max-w-2xl mx-auto leading-relaxed">
+          Figures on this page are illustrative industry context or product capabilities — not
+          audited Telfin customer results and not a guarantee of revenue, bookings, or case
+          outcomes.
+        </p>
       </div>
     </section>
   );

@@ -71,8 +71,9 @@ export default function PartnerLoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-cream-700 mb-1">Email</label>
+                <label htmlFor="partner-login-email" className="block text-xs font-semibold text-cream-700 mb-1">Email</label>
                 <input
+                  id="partner-login-email"
                   type="email"
                   required
                   autoComplete="email"
@@ -82,8 +83,9 @@ export default function PartnerLoginPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-cream-700 mb-1">Password</label>
+                <label htmlFor="partner-login-password" className="block text-xs font-semibold text-cream-700 mb-1">Password</label>
                 <input
+                  id="partner-login-password"
                   type="password"
                   required
                   autoComplete="current-password"

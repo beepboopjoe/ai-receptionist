@@ -2,8 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Body sans + editorial serif for headings — warm/calm pairing */
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&family=Instrument+Serif:ital@0;1&display=swap');
+/* Fonts are self-hosted via next/font in app/layout.tsx (no runtime Google Fonts request). */
 
 @layer base {
   :root {
@@ -25,6 +24,31 @@
   body {
     @apply bg-cream-50 text-cream-900 font-sans antialiased;
     font-feature-settings: 'cv11', 'ss01';
+  }
+
+  /* Visible keyboard focus — WCAG 2.4.7 */
+  :focus-visible {
+    outline: 2px solid #c96442;
+    outline-offset: 2px;
+  }
+
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 200;
+    padding: 0.6rem 1rem;
+    border-radius: 0.5rem;
+    background: #c96442;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .skip-link:focus,
+  .skip-link:focus-visible {
+    top: 1rem;
+    outline: 2px solid #1f1e1c;
+    outline-offset: 2px;
   }
 
   h1, h2, h3 {
@@ -99,7 +123,7 @@
 
 /* One-shot serif headline helper */
 .heading-serif {
-  font-family: 'Instrument Serif', 'Source Serif Pro', Georgia, serif;
+  font-family: var(--font-serif), 'Source Serif Pro', Georgia, serif;
   font-weight: 400;
   letter-spacing: -0.015em;
 }

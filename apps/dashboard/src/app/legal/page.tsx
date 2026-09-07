@@ -136,7 +136,7 @@ export default function LegalLandingPage() {
               {
                 Icon: RefreshCw,
                 title: 'Stale-lead reactivation',
-                body: 'Every prospect who inquired but never booked gets a follow-up call on a configurable cadence. Dormant pipeline you already paid to acquire becomes signed retainers — typical 8-12× reactivation lift.',
+                body: 'Every prospect who inquired but never booked can get a follow-up call on a cadence you set. Results depend on your list and scripts — we do not promise a reactivation multiplier.',
               },
               {
                 Icon: Banknote,
@@ -334,7 +334,7 @@ export default function LegalLandingPage() {
               The questions every careful attorney <span className="gradient-text">asks first.</span>
             </h2>
             <p className="text-cream-600 max-w-2xl mx-auto">
-              We&apos;ve built the product to give the answers your state bar wants to hear.
+              Product design choices — not a legal opinion, and not a substitute for your ethics counsel.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

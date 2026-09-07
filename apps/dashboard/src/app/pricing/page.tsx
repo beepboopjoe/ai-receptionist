@@ -64,7 +64,7 @@ const FAQS = [
   },
   {
     q: 'Is my data secure? What about HIPAA?',
-    a: 'All call recordings and contact data are encrypted at rest and in transit. For healthcare practices we sign a Business Associate Agreement (BAA) and maintain HIPAA-compliant workflows. Contact us to set this up on any plan.',
+    a: 'Call recordings and contact data are encrypted at rest and in transit. We are not HIPAA-certified. Healthcare practices that need a Business Associate Agreement can request one before processing PHI — see /legal/hipaa. Using Telfin does not by itself make a practice HIPAA-compliant.',
   },
 ];
 
@@ -126,7 +126,7 @@ export default function PricingPage() {
                 </div>
                 <h4 className="text-sm font-semibold text-cream-900 mb-1">Local presence</h4>
                 <p className="text-xs text-cream-600 leading-relaxed">
-                  Calls placed from a local area code get answered roughly 3× more often than out-of-state or toll-free numbers.
+                  Local caller IDs are often answered more readily than unfamiliar or toll-free numbers. Results vary; we do not guarantee pickup rates.
                 </p>
               </div>
               <div className="rounded-2xl bg-cream-50 border border-cream-200 p-5">
@@ -174,7 +174,7 @@ export default function PricingPage() {
 
       {/* ── PAYG footnote strip ───────────────────────────── */}
       <section className="max-w-7xl mx-auto px-6 pb-8">
-        <p className="text-center text-xs text-cream-400">
+        <p className="text-center text-xs text-cream-600">
           Not ready for a subscription?{' '}
           <Link href="/signup?plan=payg" className="text-brand-500 hover:underline font-medium">
             Pay as you go at ${PAY_AS_YOU_GO.perMinute.toFixed(2)}/min

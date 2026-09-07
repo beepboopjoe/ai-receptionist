@@ -1,6 +1,10 @@
 import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 import Link from 'next/link';
 import { Network } from 'lucide-react';
+import { LegalNotAdviceBanner } from '@/components/legal/legal-document';
+import { MarketingHeader } from '@/components/ui/marketing-header';
+import { MarketingFooter } from '@/components/ui/marketing-footer';
+import { LEGAL_LAST_UPDATED } from '@/lib/legal';
 
 export const metadata = {
   title: 'Subprocessors — Telfin',
@@ -28,18 +32,15 @@ const SUBPROCESSORS: {
 export default function SubprocessorsPage() {
   return (
     <div className="min-h-screen bg-cream-50">
-      <nav className="border-b border-cream-200 px-6 py-4 flex items-center justify-between bg-white">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center text-white font-serif text-sm">TF</div>
-          <span className="font-serif text-cream-900 font-semibold">{BRAND_NAME}</span>
-        </Link>
-        <Link href="/legal/hipaa" className="text-sm text-cream-600 hover:text-cream-900 transition-colors">← HIPAA</Link>
-      </nav>
+      <MarketingHeader />
 
       <main className="max-w-3xl mx-auto px-6 py-16">
         <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Legal</p>
         <h1 className="font-serif text-4xl text-cream-900 tracking-tight mb-4">Subprocessors</h1>
-        <p className="text-cream-500 text-sm mb-8">Last updated: July 4, 2026</p>
+        <p className="text-cream-600 text-sm mb-6">Last updated: {LEGAL_LAST_UPDATED}</p>
+        <div className="mb-8">
+          <LegalNotAdviceBanner />
+        </div>
 
         <div className="space-y-6 text-cream-700">
           <div className="rounded-xl bg-brand-50 border border-brand-100 p-5 flex gap-4">
@@ -88,6 +89,7 @@ export default function SubprocessorsPage() {
           </p>
         </div>
       </main>
+      <MarketingFooter />
     </div>
   );
 }

@@ -428,7 +428,7 @@ export default function ResellersPage() {
           >
             <Mail size={16} /> Talk to us about White-Label
           </a>
-          <p className="text-xs text-cream-400 mt-3">We'll respond within 1 business day.</p>
+          <p className="text-xs text-cream-600 mt-3">We aim to respond within 1 business day.</p>
         </div>
       </section>
 
@@ -440,7 +440,7 @@ export default function ResellersPage() {
             {[
               { step: '01', title: 'Apply', desc: 'Submit your application. Affiliates are approved instantly. Resellers and White-Label partners go through a quick onboarding call.' },
               { step: '02', title: 'Set up', desc: 'Get your partner portal, referral link, and wholesale access. White-Label partners get a staging environment to configure branding.' },
-              { step: '03', title: 'Sell', desc: 'Bring your first clients onboard. We handle the infrastructure, AI, and compliance. You handle the relationship.' },
+              { step: '03', title: 'Sell', desc: 'Bring your first clients onboard. We run the infrastructure and AI. You handle the customer relationship and your own compliance obligations.' },
               { step: '04', title: 'Earn', desc: 'Commissions and margins are tracked in real time. Monthly payouts, no surprises, no minimum withholding.' },
             ].map(({ step, title, desc }) => (
               <div key={step} className="text-center">
@@ -514,14 +514,17 @@ export default function ResellersPage() {
 
       {/* ── Footer ──────────────────────────────────────────────── */}
       <footer className="border-t border-cream-200 py-8">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-cream-400">
-          <span>© 2026 Telfin</span>
-          <div className="flex items-center gap-6">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-cream-700">
+          <span>© 2026 Telfin · 1335 Riviera Dr, Pasadena, CA 91107</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             <Link href="/" className="hover:text-cream-900 transition-colors">Home</Link>
             <Link href="/pricing" className="hover:text-cream-900 transition-colors">Pricing</Link>
+            <Link href="/privacy" className="hover:text-cream-900 underline underline-offset-2">Privacy</Link>
+            <Link href="/terms" className="hover:text-cream-900 underline underline-offset-2">Terms</Link>
+            <Link href="/cookies" className="hover:text-cream-900 underline underline-offset-2">Cookies</Link>
+            <Link href="/refunds" className="hover:text-cream-900 underline underline-offset-2">Refunds</Link>
             <Link href="/partners" className="hover:text-cream-900 transition-colors">Affiliate signup</Link>
-            <Link href="/partners/login" className="hover:text-cream-900 transition-colors">Partner login</Link>
-            <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="hover:text-cream-900 transition-colors">Contact</a>
+            <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="hover:text-cream-900 transition-colors">{BRAND_SUPPORT_EMAIL}</a>
           </div>
         </div>
       </footer>

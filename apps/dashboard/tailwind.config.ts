@@ -42,8 +42,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        serif: ['"Instrument Serif"', '"Source Serif Pro"', 'Georgia', 'serif'],
+        sans: ['var(--font-sans)', 'Inter', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-serif)', '"Instrument Serif"', 'Georgia', 'serif'],
       },
       animation: {
         'gradient-x': 'gradient-x 8s ease infinite',
