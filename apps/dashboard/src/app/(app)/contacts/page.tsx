@@ -161,12 +161,16 @@ export default function ContactsPage() {
                   <p className="text-base font-medium text-gray-700">
                     {vertical.id === 'dental'
                       ? 'Upload your patient list'
-                      : `Upload your ${vertical.contactNoun} list`}
+                      : vertical.id === 'real_estate'
+                        ? 'Upload your lead or client list'
+                        : `Upload your ${vertical.contactNoun} list`}
                   </p>
                   <p className="text-sm text-gray-400 mt-1 max-w-md mx-auto">
                     {vertical.id === 'dental'
                       ? 'CSV export from Dentrix or Open Dental works — first name, last name, and phone. Returning callers get greeted by name.'
-                      : `Import a CSV so the AI recognizes returning ${vertical.contactNounPlural}. Columns: first_name, last_name, phone, email (optional).`}
+                      : vertical.id === 'real_estate'
+                        ? 'CSV from Follow Up Boss, kvCORE, etc. works — first name, last name, and phone. Returning leads and clients get recognized.'
+                        : `Import a CSV so the AI recognizes returning ${vertical.contactNounPlural}. Columns: first_name, last_name, phone, email (optional).`}
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -174,7 +178,9 @@ export default function ContactsPage() {
                     label={
                       vertical.id === 'dental'
                         ? 'Upload patient CSV'
-                        : `Upload ${vertical.contactNoun} CSV`
+                        : vertical.id === 'real_estate'
+                          ? 'Upload lead or client CSV'
+                          : `Upload ${vertical.contactNoun} CSV`
                     }
                   />
                   <Link

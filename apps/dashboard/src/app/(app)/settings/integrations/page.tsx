@@ -48,6 +48,7 @@ const CRM_PROVIDERS: CrmProvider[] = [
   { id: 'filevine',       label: 'Filevine',       description: 'Personal-injury legal CRM — calls logged as Notes on matters', icon: '📁',  badge: null,      verticals: ['legal'] },
   { id: 'mycase',         label: 'MyCase',         description: 'Legal practice management — case and document sync',      icon: '📂',  badge: null,      verticals: ['legal'] },
   { id: 'follow_up_boss', label: 'Follow Up Boss', description: 'Real estate CRM — lead routing and follow-up sync',       icon: '🏠',  badge: null,      verticals: ['real_estate'] },
+  { id: 'kvcore',         label: 'kvCORE',         description: 'Real estate CRM — lead capture and nurture sync',        icon: '🏡',  badge: null,      verticals: ['real_estate'] },
   { id: 'servicetitan',   label: 'ServiceTitan',   description: 'Home services — job booking and dispatch sync',           icon: '🔧',  badge: null,      verticals: ['home_services'] },
   { id: 'jobber',         label: 'Jobber',         description: 'Home services — quoting, scheduling, invoicing',          icon: '🛠️',  badge: null,      verticals: ['home_services'] },
   { id: 'dentrix',        label: 'Dentrix',        description: 'Dental PMS — two-way appointment and patient record sync', icon: '🦷', badge: null,     verticals: ['dental'] },
@@ -199,6 +200,16 @@ export default function IntegrationsPage() {
               Patients
             </a>{' '}
             so the AI can greet returning callers.
+          </p>
+        )}
+        {vertical.id === 'real_estate' && (
+          <p className="text-sm text-cream-700 mb-3 rounded-lg bg-cream-50 border border-cream-200 px-3 py-2">
+            Follow Up Boss and kvCORE are on the waitlist — no fake Connect. Upload a lead or client CSV from those
+            systems on{' '}
+            <a href="/contacts#import" className="font-semibold text-brand-600 hover:underline">
+              Leads
+            </a>{' '}
+            so the AI can recognize returning callers.
           </p>
         )}
         <div className="space-y-4">

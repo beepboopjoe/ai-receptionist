@@ -1,6 +1,6 @@
 'use client';
 // Day-one “sync the practice” panel — calendar, contact list, call notes.
-// Appointment verticals (especially dental) see front-desk copy, not admin jargon.
+// Dental and real estate are first-class; other appointment verticals get native nouns.
 import Link from 'next/link';
 import { ArrowRight, CalendarDays, Mail, Upload } from 'lucide-react';
 import { useVertical } from '@/lib/useVertical';
@@ -31,6 +31,24 @@ function practiceCopy(verticalId: Vertical, contactPlural: string) {
       importCta: 'Upload patient list',
       notesTitle: 'Where should call notes go?',
       notesDesc: 'Pick the inbox that gets a summary after every call — like a sticky note for the front desk.',
+      notesCta: 'Set the inbox',
+    };
+  }
+  if (verticalId === 'real_estate') {
+    return {
+      eyebrow: 'Before the next inquiry',
+      title: 'Connect your brokerage',
+      subtitle:
+        'Three taps so you can book showings, recognize returning leads and clients, and send call notes to the inbox your team already checks.',
+      calendarTitle: 'Book showings on the real calendar',
+      calendarDesc:
+        'Connect Google Calendar or Microsoft 365 so showings and consultations land around real openings — not a guess.',
+      calendarCta: 'Connect calendar',
+      importTitle: 'Bring in your leads and clients',
+      importDesc: 'Upload your lead or client list (CSV from Follow Up Boss, kvCORE, etc.) — first name, last name, and phone.',
+      importCta: 'Upload lead list',
+      notesTitle: 'Where should showing inquiries go?',
+      notesDesc: 'Pick the inbox that gets showing inquiries and call summaries after every conversation.',
       notesCta: 'Set the inbox',
     };
   }

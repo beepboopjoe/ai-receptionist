@@ -93,42 +93,63 @@ export function buildGoLiveSteps(opts: {
   const { vertical } = opts;
   const contacts = vertical.contactNounPlural;
   const isDental = vertical.id === 'dental';
+  const isRealEstate = vertical.id === 'real_estate';
   const pmsHint =
     vertical.id === 'dental'
       ? 'CSV export from Dentrix or Open Dental works.'
       : vertical.id === 'legal'
         ? 'CSV export from Clio or your practice software works.'
-        : `CSV export from your CRM works.`;
+        : isRealEstate
+          ? 'CSV from Follow Up Boss, kvCORE, etc. works.'
+          : `CSV export from your CRM works.`;
 
   return [
     {
       id: 'calendar',
-      title: isDental ? 'Connect the practice calendar' : 'Connect a calendar',
+      title: isDental
+        ? 'Connect the practice calendar'
+        : isRealEstate
+          ? 'Connect your showing calendar'
+          : 'Connect a calendar',
       desc: isDental
         ? 'Share Google Calendar or Microsoft 365 so the front desk can book around real openings — hours alone can cover after-hours, but a live calendar is better.'
-        : 'Google Calendar or Microsoft 365 lets the AI book live. Office hours alone is enough to answer calls without live booking.',
+        : isRealEstate
+          ? 'Google Calendar or Microsoft 365 so the AI can book showings and consultations around real openings — hours alone can cover after-hours, but a live calendar is better.'
+          : 'Google Calendar or Microsoft 365 lets the AI book live. Office hours alone is enough to answer calls without live booking.',
       href: '/settings/integrations#calendar',
       cta: 'Connect calendar',
       done: opts.hasCalendar,
     },
     {
       id: 'contacts',
-      title: isDental ? 'Import your patient list' : `Import ${contacts}`,
+      title: isDental
+        ? 'Import your patient list'
+        : isRealEstate
+          ? 'Import your lead or client list'
+          : `Import ${contacts}`,
       desc: isDental
         ? `Upload a patient CSV so returning callers are greeted by name. ${pmsHint}`
-        : `Upload a CSV so the AI recognizes returning ${contacts}. ${pmsHint}`,
+        : isRealEstate
+          ? `Upload your lead or client list (CSV from Follow Up Boss, kvCORE, etc.) so returning callers are recognized.`
+          : `Upload a CSV so the AI recognizes returning ${contacts}. ${pmsHint}`,
       href: '/contacts#import',
-      cta: `Import ${contacts}`,
+      cta: isRealEstate ? 'Import leads' : `Import ${contacts}`,
       done: opts.hasContacts,
     },
     {
       id: 'call_notes',
-      title: isDental ? 'Where should call notes go?' : 'Where to send call notes',
+      title: isDental
+        ? 'Where should call notes go?'
+        : isRealEstate
+          ? 'Where should showing inquiries go?'
+          : 'Where to send call notes',
       desc: isDental
         ? 'Pick the inbox that gets a summary after every call — same place a front desk would leave a sticky note.'
-        : 'Set the email that receives a call summary after every conversation.',
+        : isRealEstate
+          ? 'Pick the inbox that gets showing inquiries and call summaries after every conversation.'
+          : 'Set the email that receives a call summary after every conversation.',
       href: '/settings/notifications#call-notes',
-      cta: 'Set call notes email',
+      cta: isRealEstate ? 'Set inquiry email' : 'Set call notes email',
       done: opts.hasCallNotes,
     },
     {

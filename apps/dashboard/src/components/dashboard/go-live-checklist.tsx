@@ -22,11 +22,16 @@ export function GoLiveChecklist() {
   return (
     <div className="rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 to-amber-50/40 p-6 space-y-5">
       <div>
-        <h2 className="font-serif text-xl text-cream-900 mb-1">Let&apos;s get your front desk answering</h2>
+        <h2 className="font-serif text-xl text-cream-900 mb-1">
+          {vertical.id === 'real_estate'
+            ? "Let's get your line answering"
+            : "Let's get your front desk answering"}
+        </h2>
         <p className="text-sm text-cream-700">
-          {goLive.completedCount} of {tracked.length} setup steps done. Start with the calendar,{' '}
-          {vertical.contactNounPlural}, and where call notes go — then finish phone and voice so callers can
-          reach your AI.
+          {goLive.completedCount} of {tracked.length} setup steps done.{' '}
+          {vertical.id === 'real_estate'
+            ? 'Start with the showing calendar, your lead or client list, and where inquiries go — then finish phone and voice so callers can reach your AI.'
+            : `Start with the calendar, ${vertical.contactNounPlural}, and where call notes go — then finish phone and voice so callers can reach your AI.`}
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

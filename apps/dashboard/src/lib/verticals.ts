@@ -106,7 +106,7 @@ export const VERTICAL_CONFIGS: Record<Vertical, VerticalConfig> = {
     useCaseIds: ['real_estate_receptionist', 'real_estate_lead_intake', 'real_estate_reminder', 'real_estate_lead_followup', 'real_estate_listing_inquiry'],
     useCaseLabels: ['Receptionist', 'Lead Intake', 'Showing Reminder', 'Lead Follow-Up', 'Listing Inquiry'],
     campaignTypes: ['New Listing Outreach', 'Buyer Lead Follow-Up', 'Seller Lead Follow-Up', 'Past Client Re-engagement'],
-    integrations: ['Follow Up Boss', 'Salesforce', 'HubSpot', 'Google Calendar'],
+    integrations: ['Follow Up Boss', 'kvCORE', 'Salesforce', 'HubSpot', 'Google Calendar'],
   },
 
   home_services: {
