@@ -17,7 +17,12 @@ export function telnyxStreamingStartPath(callControlId: string): string {
 
 export interface StreamingStartBody {
   stream_url: string;
-  stream_track: 'both_tracks';
+  /**
+   * Receive only the far-end (callee/caller) mic. `both_tracks` echoes our
+   * own Grok audio back as `outbound`, which server_vad treats as barge-in
+   * and cancels the greeting — the phone stays silent.
+   */
+  stream_track: 'inbound_track';
   stream_codec: 'PCMU';
   stream_bidirectional_mode: 'rtp';
   stream_bidirectional_codec: 'PCMU';
@@ -37,7 +42,7 @@ export function buildStreamingStartBody(
 ): StreamingStartBody {
   return {
     stream_url: streamUrl,
-    stream_track: 'both_tracks',
+    stream_track: 'inbound_track',
     stream_codec: 'PCMU',
     stream_bidirectional_mode: 'rtp',
     stream_bidirectional_codec: 'PCMU',
@@ -344,3 +349,165 @@ export function resolveFastifyWebsocket(connection: unknown): WebSocket {
 }
 
 export const GROK_GREETING_CREATE = { type: 'response.create' } as const;
+
+/** Current xAI name; `response.audio.delta` is the OpenAI-compat alias. */
+export const GROK_AUDIO_DELTA_TYPES = [
+  'response.output_audio.delta',
+  'response.audio.delta',
+] as const;
+
+export const GROK_TRANSCRIPT_DELTA_TYPES = [
+  'response.output_audio_transcript.delta',
+  'response.audio_transcript.delta',
+] as const;
+
+/** Wait this long after session.update if session.updated never arrives. */
+export const GROK_GREETING_FALLBACK_MS = 1500;
+
+export function isGrokAudioDeltaType(type: unknown): boolean {
+  return type === 'response.output_audio.delta' || type === 'response.audio.delta';
+}
+
+export function isGrokTranscriptDeltaType(type: unknown): boolean {
+  return (
+    type === 'response.output_audio_transcript.delta' ||
+    type === 'response.audio_transcript.delta'
+  );
+}
+
+/**
+ * xAI puts the chunk in `delta` (quick-start) or `audio` (event reference).
+ * Never return whitespace-only / empty — those would look like "audio sent".
+ */
+export function extractGrokAudioPayload(event: Record<string, unknown>): string | undefined {
+  for (const key of ['delta', 'audio'] as const) {
+    const value = event[key];
+    if (typeof value === 'string' && value.trim()) return value;
+  }
+  return undefined;
+}
+
+export function base64PayloadBytes(payload: string): number {
+  // Length of the decoded PCMU/RTP chunk — not the base64 string length.
+  try {
+    return Buffer.from(payload, 'base64').byteLength;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Telnyx `both_tracks` media frames include `track: "outbound"` (our own AI
+ * audio). Forwarding those to Grok makes server_vad barge-in and mute the
+ * greeting. Missing track = inbound (older payloads).
+ */
+export function isTelnyxInboundMediaTrack(track: unknown): boolean {
+  if (track == null || track === '') return true;
+  if (typeof track !== 'string') return true;
+  const normalized = track.toLowerCase();
+  if (normalized === 'outbound' || normalized === 'outbound_track') return false;
+  return normalized === 'inbound' || normalized === 'inbound_track' || normalized.includes('inbound');
+}
+
+export function extractTelnyxInboundAudioPayload(
+  msg: Record<string, unknown>,
+): { payload: string; track: string; bytes: number } | undefined {
+  if (msg['event'] !== 'media') return undefined;
+  const media = msg['media'] as Record<string, unknown> | undefined;
+  if (!media || typeof media !== 'object') return undefined;
+  if (!isTelnyxInboundMediaTrack(media['track'])) return undefined;
+  const payload = media['payload'];
+  if (typeof payload !== 'string' || !payload.trim()) return undefined;
+  const track = typeof media['track'] === 'string' && media['track'] ? media['track'] : 'inbound';
+  return { payload, track, bytes: base64PayloadBytes(payload) };
+}
+
+export function buildTelnyxOutboundMediaMessage(
+  payload: string,
+  streamSid?: string,
+): { event: 'media'; media: { payload: string }; streamSid?: string } {
+  return streamSid
+    ? { event: 'media', streamSid, media: { payload } }
+    : { event: 'media', media: { payload } };
+}
+
+export function summarizeEventCounts(counts: Record<string, number>): string {
+  const parts = Object.entries(counts)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([type, n]) => `${type}:${n}`);
+  return parts.length ? parts.join(',') : 'none';
+}
+
+export function formatFirstTelnyxInboundMediaLog(params: {
+  callSid: string;
+  track: string;
+  payloadBytes: number;
+}): string {
+  return `Telnyx first inbound media frame callSid=${params.callSid || 'unset'} track=${params.track || 'unset'} payloadBytes=${params.payloadBytes}`;
+}
+
+export function formatFirstGrokAudioEventLog(params: {
+  callSid: string;
+  eventType: string;
+  payloadBytes: number;
+  field: string;
+}): string {
+  return `Grok first audio delta received callSid=${params.callSid || 'unset'} eventType=${params.eventType || 'unknown'} field=${params.field || 'unset'} payloadBytes=${params.payloadBytes}`;
+}
+
+export function formatFirstGrokAudioToTelnyxLog(params: {
+  callSid: string;
+  eventType: string;
+  payloadBytes: number;
+}): string {
+  return `Grok first audio frame sent to Telnyx callSid=${params.callSid || 'unset'} eventType=${params.eventType || 'unknown'} payloadBytes=${params.payloadBytes}`;
+}
+
+export function formatGrokEmptyResponseLog(params: {
+  callSid: string;
+  audioDeltasReceived: number;
+  audioBytesToTelnyx: number;
+  eventCounts: string;
+}): string {
+  return `Grok empty-response warning callSid=${params.callSid || 'unset'} audioDeltasReceived=${params.audioDeltasReceived} audioBytesToTelnyx=${params.audioBytesToTelnyx} eventTypes=${params.eventCounts || 'none'}`;
+}
+
+export function formatGrokAudioDroppedLog(params: {
+  callSid: string;
+  reason: string;
+  payloadBytes: number;
+}): string {
+  return `Grok audio dropped callSid=${params.callSid || 'unset'} reason=${params.reason || 'unknown'} payloadBytes=${params.payloadBytes}`;
+}
+
+export function formatGrokSessionUpdateLog(params: { callSid: string; grokSessionId?: string }): string {
+  return `Grok session.update sent callSid=${params.callSid || 'unset'} grokSessionId=${params.grokSessionId || 'unset'} codec=audio/pcmu`;
+}
+
+export function formatGrokGreetingFallbackLog(params: { callSid: string }): string {
+  return `Grok greeting fallback (no session.updated) callSid=${params.callSid || 'unset'}`;
+}
+
+export function formatGrokNoAudioWatchdogLog(params: {
+  callSid: string;
+  audioDeltasReceived: number;
+  audioBytesToTelnyx: number;
+  eventCounts: string;
+}): string {
+  return `Grok no-audio watchdog callSid=${params.callSid || 'unset'} audioDeltasReceived=${params.audioDeltasReceived} audioBytesToTelnyx=${params.audioBytesToTelnyx} eventTypes=${params.eventCounts || 'none'}`;
+}
+
+export function formatGrokRelaySummaryLog(params: {
+  callSid: string;
+  inboundFrames: number;
+  inboundBytes: number;
+  audioDeltasReceived: number;
+  audioBytesToTelnyx: number;
+  eventCounts: string;
+}): string {
+  return `Grok↔Telnyx relay closed callSid=${params.callSid || 'unset'} inboundFrames=${params.inboundFrames} inboundBytes=${params.inboundBytes} audioDeltasReceived=${params.audioDeltasReceived} audioBytesToTelnyx=${params.audioBytesToTelnyx} eventTypes=${params.eventCounts || 'none'}`;
+}
+
+export function formatGrokUnexpectedBinaryLog(params: { callSid: string; bytes: number }): string {
+  return `Grok unexpected binary frame callSid=${params.callSid || 'unset'} bytes=${params.bytes}`;
+}

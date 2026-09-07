@@ -215,7 +215,7 @@ export async function answerCall(
 /**
  * Start a bidirectional media stream for an in-progress call.
  * Telnyx opens a WebSocket to streamUrl and begins streaming audio
- * (both_tracks = inbound caller audio + outbound AI audio in one stream).
+ * (inbound_track = far-end mic only; we send Grok audio via bidirectional RTP).
  */
 export async function updateCallClientState(
   callControlId: string,

@@ -78,46 +78,50 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
   }
 
   /**
-   * Build the session.update message for the xAI Realtime API.
+   * Build the session.update message for the xAI Speech-to-Speech API.
    *
-   * IMPORTANT — audio format spec:
-   *   xAI/OpenAI Realtime API uses flat fields `input_audio_format` /
-   *   `output_audio_format` at the session level (NOT nested objects).
-   *   For G.711 µ-law (PCMU / 8kHz from Telnyx): use 'g711_ulaw'.
+   * Current xAI docs (2026) use nested `audio.input/output.format`:
+   *   { type: "audio/pcmu" }  — G.711 µ-law, 8 kHz (Telnyx PCMU)
+   *   { type: "audio/pcm", rate } — linear PCM
+   * Default if omitted is audio/pcm @ 24 kHz, which Telnyx cannot play
+   * (it expects raw PCMU). Legacy flat `input_audio_format: g711_ulaw`
+   * is kept as an alias for older servers.
    *
-   * This is called once after the WebSocket 'open' event fires.
+   * Do NOT send OpenAI-only `input_audio_transcription.model: whisper-1` —
+   * xAI rejects unknown transcription models and then keeps the PCM default.
+   *
+   * Send this on WS open; wait for `session.updated` before response.create
+   * so the greeting is encoded as PCMU, not the pre-update default.
    */
   static buildSessionUpdate(params: CreateVoiceSessionParams & { sessionId: string }) {
     const voice = validateVoice(params.voice) ?? DEFAULT_VOICE;
-
-    // Map our internal AudioFormat enum to xAI format strings
-    const toXaiFormat = (fmt?: string): string => {
-      if (fmt === 'pcmu') return 'g711_ulaw';
-      if (fmt === 'pcma') return 'g711_alaw';
-      return 'pcm16'; // linear PCM default
-    };
+    const inputCodec = toXaiCodec(params.audioInputFormat);
+    const outputCodec = toXaiCodec(params.audioOutputFormat);
 
     return {
       type: 'session.update',
       session: {
         instructions: params.systemPrompt,
         voice,
-        // Flat format fields — required by xAI/OpenAI Realtime spec
-        input_audio_format: toXaiFormat(params.audioInputFormat),
-        output_audio_format: toXaiFormat(params.audioOutputFormat),
-        // Enable ASR so we get caller transcription events
-        input_audio_transcription: {
-          model: 'whisper-1',
+        audio: {
+          input: {
+            format: inputCodec,
+            transport: 'json' as const,
+          },
+          output: {
+            format: outputCodec,
+            transport: 'json' as const,
+          },
         },
-        // Server-side VAD — handles turn detection and barge-in
+        // Legacy OpenAI-compat aliases (ignored on current xAI, read by older)
+        input_audio_format: toLegacyXaiFormat(params.audioInputFormat),
+        output_audio_format: toLegacyXaiFormat(params.audioOutputFormat),
         turn_detection: {
           type: 'server_vad',
           threshold: 0.5,
           prefix_padding_ms: 300,
           silence_duration_ms: 500,
         },
-        tools: [],
-        tool_choice: 'none',
       },
     };
   }
@@ -147,6 +151,7 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
 
     switch (type) {
       // ── Agent speech transcript (streaming delta) ──────────────────────
+      case 'response.output_audio_transcript.delta':
       case 'response.audio_transcript.delta': {
         const delta = event['delta'] as string | undefined;
         if (delta) {
@@ -254,6 +259,25 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
 }
 
 // ---- Helpers ----
+
+export type XaiAudioFormat =
+  | { type: 'audio/pcmu' }
+  | { type: 'audio/pcma' }
+  | { type: 'audio/pcm'; rate: number };
+
+/** Current xAI Speech-to-Speech codec object. */
+export function toXaiCodec(fmt?: string): XaiAudioFormat {
+  if (fmt === 'pcmu') return { type: 'audio/pcmu' };
+  if (fmt === 'pcma') return { type: 'audio/pcma' };
+  return { type: 'audio/pcm', rate: 24000 };
+}
+
+/** Pre-2026 flat field still accepted by some Grok realtime servers. */
+export function toLegacyXaiFormat(fmt?: string): 'g711_ulaw' | 'g711_alaw' | 'pcm16' {
+  if (fmt === 'pcmu') return 'g711_ulaw';
+  if (fmt === 'pcma') return 'g711_alaw';
+  return 'pcm16';
+}
 
 function validateVoice(voice?: string): GrokVoice | null {
   if (!voice) return null;
