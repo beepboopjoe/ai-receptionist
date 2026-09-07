@@ -17,6 +17,8 @@ import { localhostAppUrlWarning } from './lib/public-url.js';
 import { closeDb, db } from './db/client.js';
 import { redis } from './db/redis.js';
 import { isTruthyEnv, maybeClearDemoCallMeCooldownsOnBoot } from './modules/public-api/public-demo.helpers.js';
+import { maybeEnsureDemoTenantOnBoot } from './modules/public-api/ensure-demo-tenant.js';
+import { createDrizzleDemoTenantStore } from './modules/public-api/ensure-demo-tenant.db.js';
 import { sql } from 'drizzle-orm';
 import { AppError } from './lib/errors.js';
 import { livenessBody, probe, probeRedis } from './lib/health.js';
@@ -288,6 +290,16 @@ async function main() {
   } catch (err) {
     app.log.error({ err }, 'Migration failed — process staying up for /health');
   }
+
+  await maybeEnsureDemoTenantOnBoot(
+    {
+      tenantId: config.DEMO_TENANT_ID,
+      ensureFlag: config.DEMO_ENSURE_TENANT,
+      nodeEnv: config.NODE_ENV,
+    },
+    createDrizzleDemoTenantStore(db),
+    app.log,
+  );
 
   if (config.NODE_ENV !== 'test') {
     startWebhookDrainWorker();

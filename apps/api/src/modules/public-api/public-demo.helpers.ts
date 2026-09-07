@@ -40,6 +40,16 @@ export function isJunkDemoNumber(e164: string): boolean {
   return false;
 }
 
+/** Postgres FK violation (e.g. calls.tenant_id → tenants.id). */
+export function isForeignKeyViolation(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    (err as { code?: string }).code === '23503'
+  );
+}
+
 /** True for ops/testing flags: `1` / `true` / `yes` (case-insensitive, trimmed). */
 export function isTruthyEnv(value: string | undefined | null): boolean {
   if (value == null) return false;

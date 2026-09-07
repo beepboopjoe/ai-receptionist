@@ -92,6 +92,7 @@ describe('resolveConfig', () => {
     const { config } = resolveConfig(validEnv);
     expect(config.DEMO_SKIP_COOLDOWN).toBe('');
     expect(config.DEMO_CLEAR_COOLDOWNS_ON_BOOT).toBe('');
+    expect(config.DEMO_ENSURE_TENANT).toBe('');
   });
 
   it('accepts demo cooldown ops flags as raw strings', () => {
@@ -99,9 +100,11 @@ describe('resolveConfig', () => {
       ...validEnv,
       DEMO_SKIP_COOLDOWN: '1',
       DEMO_CLEAR_COOLDOWNS_ON_BOOT: 'true',
+      DEMO_ENSURE_TENANT: '1',
     });
     expect(config.DEMO_SKIP_COOLDOWN).toBe('1');
     expect(config.DEMO_CLEAR_COOLDOWNS_ON_BOOT).toBe('true');
+    expect(config.DEMO_ENSURE_TENANT).toBe('1');
   });
 });
 

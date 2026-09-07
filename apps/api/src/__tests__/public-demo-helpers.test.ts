@@ -8,6 +8,7 @@ import {
   isJunkDemoNumber,
   US_CA_E164,
   isTruthyEnv,
+  isForeignKeyViolation,
   scanDelDemoCallMeKeys,
   maybeClearDemoCallMeCooldownsOnBoot,
   type DemoCallMeRedis,
@@ -57,6 +58,18 @@ describe('isJunkDemoNumber', () => {
     expect(isJunkDemoNumber('+14155551212')).toBe(true); // still 555
     expect(isJunkDemoNumber('+14153211212')).toBe(false);
     expect(isJunkDemoNumber('+16043211212')).toBe(false);
+  });
+});
+
+describe('isForeignKeyViolation', () => {
+  it('detects pg code 23503', () => {
+    expect(isForeignKeyViolation({ code: '23503' })).toBe(true);
+  });
+
+  it('rejects other inputs', () => {
+    expect(isForeignKeyViolation({ code: '23505' })).toBe(false);
+    expect(isForeignKeyViolation(null)).toBe(false);
+    expect(isForeignKeyViolation({})).toBe(false);
   });
 });
 

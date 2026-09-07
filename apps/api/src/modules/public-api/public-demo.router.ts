@@ -8,6 +8,8 @@
 //   • Global daily cap via DEMO_DAILY_CALL_LIMIT
 //   • DEMO_SKIP_COOLDOWN skips the per-number Redis check/set (ops/testing)
 //   • 503 when DEMO_TENANT_ID / DEMO_FROM_NUMBER are unset — no crash
+//   • 503 when DEMO_TENANT_ID is set but that tenants row is missing
+//     (e.g. after a DB restore) — never a raw calls_tenant_id_fkey error
 //
 // Uses the existing Telnyx dialDirect() path. Does not change inbound
 // media-stream or billing checkout.
@@ -16,12 +18,23 @@ import type { FastifyInstance } from 'fastify';
 import { config } from '../../config.js';
 import { looksLikeLocalhostUrl } from '../../lib/public-url.js';
 import { db } from '../../db/client.js';
-import { calls } from '../../db/schema.js';
+import { calls, tenants } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { ValidationError } from '../../lib/errors.js';
 import { cacheIncr, cacheSetNx, cacheDel } from '../../db/redis.js';
 import { auditLog } from '../../audit/audit-logger.js';
-import { normalizeUsCaPhone, isJunkDemoNumber, isTruthyEnv } from './public-demo.helpers.js';
+import {
+  normalizeUsCaPhone,
+  isJunkDemoNumber,
+  isTruthyEnv,
+  isForeignKeyViolation,
+} from './public-demo.helpers.js';
+
+const DEMO_UNAVAILABLE = {
+  error: 'demo_unavailable',
+  message:
+    "Live call-me isn't set up on this site yet. Hear a sample on the demo page instead.",
+} as const;
 
 function utcDayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -50,11 +63,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
       const demoTenantId = config.DEMO_TENANT_ID?.trim();
       const demoFromNumber = config.DEMO_FROM_NUMBER?.trim();
       if (!demoTenantId || !demoFromNumber) {
-        return reply.status(503).send({
-          error: 'demo_unavailable',
-          message:
-            "Live call-me isn't set up on this site yet. Hear a sample on the demo page instead.",
-        });
+        return reply.status(503).send(DEMO_UNAVAILABLE);
       }
 
       const body = (request.body ?? {}) as { phone?: string };
@@ -64,6 +73,16 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
       }
       if (isJunkDemoNumber(phone)) {
         throw new ValidationError('That number looks invalid. Try a real US or Canada mobile.');
+      }
+
+      const [demoTenant] = await db
+        .select({ id: tenants.id })
+        .from(tenants)
+        .where(eq(tenants.id, demoTenantId))
+        .limit(1);
+      if (!demoTenant) {
+        request.log.warn({ demoTenantId }, 'Public call-me DEMO_TENANT_ID is missing from tenants');
+        return reply.status(503).send(DEMO_UNAVAILABLE);
       }
 
       const skipCooldown = isTruthyEnv(config.DEMO_SKIP_COOLDOWN);
@@ -88,20 +107,31 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const [callRecord] = await db
-        .insert(calls)
-        .values({
-          tenantId: demoTenantId,
-          rcCallId: `pending-demo-${Date.now()}`,
-          direction: 'test',
-          fromNumber: phone,
-          toNumber: demoFromNumber,
-          status: 'active',
-          startedAt: new Date(),
-        })
-        .returning({ id: calls.id });
+      let callRecord: { id: string };
+      try {
+        const [inserted] = await db
+          .insert(calls)
+          .values({
+            tenantId: demoTenantId,
+            rcCallId: `pending-demo-${Date.now()}`,
+            direction: 'test',
+            fromNumber: phone,
+            toNumber: demoFromNumber,
+            status: 'active',
+            startedAt: new Date(),
+          })
+          .returning({ id: calls.id });
+        callRecord = inserted!;
+      } catch (err) {
+        if (isForeignKeyViolation(err)) {
+          request.log.warn({ err, demoTenantId }, 'Public call-me call insert FK — demo tenant missing');
+          if (!skipCooldown) await cacheDel(cooldownKey);
+          return reply.status(503).send(DEMO_UNAVAILABLE);
+        }
+        throw err;
+      }
 
-      const callId = callRecord!.id;
+      const callId = callRecord.id;
 
       const { dialDirect } = await import('../campaigns/telnyx-dialer.service.js');
       let callSid: string;
