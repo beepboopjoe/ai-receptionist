@@ -4,7 +4,8 @@
 // POST /api/v1/public/call-me
 //   • US/CA numbers only
 //   • Junk-number filter (555, repeating digits, sequential)
-//   • Fastify per-IP cap (3 / 24h) + Redis per-number cooldown (1 / hour)
+//   • Fastify per-IP cap (3 / 24h) + Redis per-number cooldown (1 / hour
+//     after a successful dial; failed dials release the reservation)
 //   • Global daily cap via DEMO_DAILY_CALL_LIMIT
 //   • 503 when DEMO_TENANT_ID / DEMO_FROM_NUMBER are unset — no crash
 //
@@ -18,9 +19,15 @@ import { db } from '../../db/client.js';
 import { calls } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { ValidationError } from '../../lib/errors.js';
-import { cacheIncr, cacheSetNx } from '../../db/redis.js';
+import { cacheIncr, cacheSetNx, cacheDel } from '../../db/redis.js';
 import { auditLog } from '../../audit/audit-logger.js';
-import { normalizeUsCaPhone, isJunkDemoNumber } from './public-demo.helpers.js';
+import {
+  normalizeUsCaPhone,
+  isJunkDemoNumber,
+  demoCallMeCooldownKey,
+  DEMO_CALL_ME_COOLDOWN_TTL_SECONDS,
+  shouldKeepCallMeCooldown,
+} from './public-demo.helpers.js';
 
 function utcDayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -65,8 +72,8 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         throw new ValidationError('That number looks invalid. Try a real US or Canada mobile.');
       }
 
-      const cooldownKey = `demo:call-me:num:${phone}`;
-      const claimed = await cacheSetNx(cooldownKey, '1', 60 * 60);
+      const cooldownKey = demoCallMeCooldownKey(phone);
+      const claimed = await cacheSetNx(cooldownKey, '1', DEMO_CALL_ME_COOLDOWN_TTL_SECONDS);
       if (claimed === false) {
         return reply.status(429).send({
           error: 'cooldown',
@@ -74,75 +81,87 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const dayKey = `demo:call-me:day:${utcDayKey()}`;
-      const daily = await cacheIncr(dayKey, 60 * 60 * 26);
-      if (daily !== null && daily > config.DEMO_DAILY_CALL_LIMIT) {
-        return reply.status(503).send({
-          error: 'demo_capped',
-          message: "We've hit today's demo-call limit. Hear a sample on the demo page, or try again tomorrow.",
-        });
-      }
-
-      const [callRecord] = await db
-        .insert(calls)
-        .values({
-          tenantId: demoTenantId,
-          rcCallId: `pending-demo-${Date.now()}`,
-          direction: 'test',
-          fromNumber: phone,
-          toNumber: demoFromNumber,
-          status: 'active',
-          startedAt: new Date(),
-        })
-        .returning({ id: calls.id });
-
-      const callId = callRecord!.id;
-
-      const { dialDirect } = await import('../campaigns/telnyx-dialer.service.js');
-      let callSid: string;
+      // SETNX first so two tabs cannot place two Telnyx calls. Release on any
+      // path that does not successfully dial — otherwise a 502 locks the
+      // number for an hour and the visitor cannot retry.
+      let keepCooldown = false;
       try {
-        const result = await dialDirect({
-          to: phone,
-          from: demoFromNumber,
-          callId,
-          tenantId: demoTenantId,
-          fromNumber: phone,
-          mode: 'demo',
-        });
-        callSid = result.callSid;
-      } catch (err) {
-        request.log.error({ err, callId, appUrl: config.APP_URL }, 'Public call-me Telnyx dial failed');
+        const dayKey = `demo:call-me:day:${utcDayKey()}`;
+        const daily = await cacheIncr(dayKey, 60 * 60 * 26);
+        if (daily !== null && daily > config.DEMO_DAILY_CALL_LIMIT) {
+          return reply.status(503).send({
+            error: 'demo_capped',
+            message: "We've hit today's demo-call limit. Hear a sample on the demo page, or try again tomorrow.",
+          });
+        }
+
+        const [callRecord] = await db
+          .insert(calls)
+          .values({
+            tenantId: demoTenantId,
+            rcCallId: `pending-demo-${Date.now()}`,
+            direction: 'test',
+            fromNumber: phone,
+            toNumber: demoFromNumber,
+            status: 'active',
+            startedAt: new Date(),
+          })
+          .returning({ id: calls.id });
+
+        const callId = callRecord!.id;
+
+        const { dialDirect } = await import('../campaigns/telnyx-dialer.service.js');
+        let callSid: string;
+        try {
+          const result = await dialDirect({
+            to: phone,
+            from: demoFromNumber,
+            callId,
+            tenantId: demoTenantId,
+            fromNumber: phone,
+            mode: 'demo',
+          });
+          callSid = result.callSid;
+        } catch (err) {
+          request.log.error({ err, callId, appUrl: config.APP_URL }, 'Public call-me Telnyx dial failed');
+          await db
+            .update(calls)
+            .set({ status: 'failed', outcome: 'dial_error', updatedAt: new Date() })
+            .where(eq(calls.id, callId));
+          const localhostOrigin = looksLikeLocalhostUrl(config.APP_URL);
+          return reply.status(502).send({
+            error: 'dial_failed',
+            message: localhostOrigin
+              ? "We couldn't place the call because this API's public URL is localhost — the phone network can't reach it. Set APP_URL or API_PUBLIC_URL to the public HTTPS origin."
+              : "We couldn't place the call right now. Hear a sample instead, or try again in a minute.",
+          });
+        }
+
+        keepCooldown = shouldKeepCallMeCooldown(true);
+
         await db
           .update(calls)
-          .set({ status: 'failed', outcome: 'dial_error', updatedAt: new Date() })
+          .set({ rcCallId: callSid, updatedAt: new Date() })
           .where(eq(calls.id, callId));
-        const localhostOrigin = looksLikeLocalhostUrl(config.APP_URL);
-        return reply.status(502).send({
-          error: 'dial_failed',
-          message: localhostOrigin
-            ? "We couldn't place the call because this API's public URL is localhost — the phone network can't reach it. Set APP_URL or API_PUBLIC_URL to the public HTTPS origin."
-            : "We couldn't place the call right now. Hear a sample instead, or try again in a minute.",
+
+        auditLog({
+          tenantId: demoTenantId,
+          actorType: 'api',
+          action: 'call.demo_call_placed',
+          entityType: 'call',
+          entityId: callId,
+          metadata: { toNumber: phone, fromNumber: demoFromNumber, callSid },
         });
+
+        return reply.send({
+          ok: true,
+          message: 'Calling you now — pick up to hear the receptionist.',
+        });
+      } finally {
+        if (!keepCooldown) {
+          await cacheDel(cooldownKey);
+        }
       }
-
-      await db
-        .update(calls)
-        .set({ rcCallId: callSid, updatedAt: new Date() })
-        .where(eq(calls.id, callId));
-
-      auditLog({
-        tenantId: demoTenantId,
-        actorType: 'api',
-        action: 'call.demo_call_placed',
-        entityType: 'call',
-        entityId: callId,
-        metadata: { toNumber: phone, fromNumber: demoFromNumber, callSid },
-      });
-
-      return reply.send({
-        ok: true,
-        message: 'Calling you now — pick up to hear the receptionist.',
-      });
     }
   );
 }

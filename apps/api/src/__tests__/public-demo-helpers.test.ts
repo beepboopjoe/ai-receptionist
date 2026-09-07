@@ -3,7 +3,17 @@
 // No Fastify / DB — route behavior is env-gated in production.
 // ============================================================
 import { describe, it, expect } from 'vitest';
-import { normalizeUsCaPhone, isJunkDemoNumber, US_CA_E164 } from '../modules/public-api/public-demo.helpers.js';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  normalizeUsCaPhone,
+  isJunkDemoNumber,
+  US_CA_E164,
+  demoCallMeCooldownKey,
+  DEMO_CALL_ME_COOLDOWN_TTL_SECONDS,
+  shouldKeepCallMeCooldown,
+} from '../modules/public-api/public-demo.helpers.js';
 
 describe('normalizeUsCaPhone', () => {
   it.each([
@@ -49,5 +59,24 @@ describe('isJunkDemoNumber', () => {
     expect(isJunkDemoNumber('+14155551212')).toBe(true); // still 555
     expect(isJunkDemoNumber('+14153211212')).toBe(false);
     expect(isJunkDemoNumber('+16043211212')).toBe(false);
+  });
+});
+
+describe('call-me per-number cooldown', () => {
+  it('keys by E.164 and lasts one hour on success only', () => {
+    expect(demoCallMeCooldownKey('+14153211212')).toBe('demo:call-me:num:+14153211212');
+    expect(DEMO_CALL_ME_COOLDOWN_TTL_SECONDS).toBe(60 * 60);
+    expect(shouldKeepCallMeCooldown(true)).toBe(true);
+    expect(shouldKeepCallMeCooldown(false)).toBe(false);
+  });
+
+  it('router deletes the reservation unless Telnyx accepted the call', () => {
+    const src = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../modules/public-api/public-demo.router.ts'),
+      'utf8'
+    );
+    expect(src).toMatch(/cacheSetNx\(cooldownKey/);
+    expect(src).toMatch(/keepCooldown = shouldKeepCallMeCooldown\(true\)/);
+    expect(src).toMatch(/if \(!keepCooldown\) \{\s*await cacheDel\(cooldownKey\);/s);
   });
 });

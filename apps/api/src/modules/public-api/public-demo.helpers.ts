@@ -39,3 +39,19 @@ export function isJunkDemoNumber(e164: string): boolean {
   if (national.startsWith('555')) return true;
   return false;
 }
+
+/** Successful call-me only — 1 hour. Failed dials must not consume this. */
+export const DEMO_CALL_ME_COOLDOWN_TTL_SECONDS = 60 * 60;
+
+export function demoCallMeCooldownKey(e164: string): string {
+  return `demo:call-me:num:${e164}`;
+}
+
+/**
+ * SETNX reserves the number before Telnyx dial so two tabs cannot place two
+ * calls. Keep the key only after Telnyx accepts; otherwise DELETE so a 502
+ * (or daily-cap 503) does not lock the visitor out for an hour.
+ */
+export function shouldKeepCallMeCooldown(dialSucceeded: boolean): boolean {
+  return dialSucceeded;
+}
