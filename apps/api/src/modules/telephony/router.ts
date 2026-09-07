@@ -12,6 +12,7 @@ import { integrations } from '../../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { encryptCredentials } from '../../lib/encryption.js';
 import { config } from '../../config.js';
+import { ringcentralWebhookUrl } from '../../lib/public-url.js';
 import { audit } from '../../audit/audit-logger.js';
 import type { WebSocket } from 'ws';
 
@@ -157,7 +158,7 @@ async function telephonyRoutes(
       });
 
     // Register webhook subscription
-    const webhookUrl = `${config.APP_URL}/api/v1/webhooks/ringcentral`;
+    const webhookUrl = ringcentralWebhookUrl(config.APP_URL);
     try {
       const sub = await registerWebhook(tokens.access_token, webhookUrl);
       await db

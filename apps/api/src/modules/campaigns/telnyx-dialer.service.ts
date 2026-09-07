@@ -6,6 +6,7 @@
 // All call actions are fire-and-forget REST POSTs.
 // ============================================================
 import { config } from '../../config.js';
+import { telnyxWebhookUrl } from '../../lib/public-url.js';
 import pino from 'pino';
 
 const logger = pino({ name: 'telnyx-dialer' });
@@ -83,7 +84,7 @@ export async function dialLead(params: DialLeadParams): Promise<DialResult> {
       total_analysis_time_millis: 30_000,
     },
     // All events for this call come to our single webhook endpoint
-    webhook_url: `${config.APP_URL}/api/v1/webhooks/telnyx`,
+    webhook_url: telnyxWebhookUrl(config.APP_URL),
     webhook_url_method: 'POST',
     client_state: clientState,
     // Ring for up to 30 s before no-answer
@@ -151,7 +152,7 @@ export async function dialDirect(params: DialDirectParams): Promise<DialResult> 
     from,
     // Intentionally no answering_machine_detection — the callee is the demo
     // visitor or the owner themselves, we know it's a human.
-    webhook_url: `${config.APP_URL}/api/v1/webhooks/telnyx`,
+    webhook_url: telnyxWebhookUrl(config.APP_URL),
     webhook_url_method: 'POST',
     client_state: clientState,
     timeout_secs: 30,

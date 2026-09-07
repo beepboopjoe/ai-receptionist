@@ -13,6 +13,7 @@
 // ============================================================
 import type { FastifyInstance } from 'fastify';
 import { config } from '../../config.js';
+import { looksLikeLocalhostUrl } from '../../lib/public-url.js';
 import { db } from '../../db/client.js';
 import { calls } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -110,14 +111,17 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         });
         callSid = result.callSid;
       } catch (err) {
-        request.log.error({ err, callId }, 'Public call-me Telnyx dial failed');
+        request.log.error({ err, callId, appUrl: config.APP_URL }, 'Public call-me Telnyx dial failed');
         await db
           .update(calls)
           .set({ status: 'failed', outcome: 'dial_error', updatedAt: new Date() })
           .where(eq(calls.id, callId));
+        const localhostOrigin = looksLikeLocalhostUrl(config.APP_URL);
         return reply.status(502).send({
           error: 'dial_failed',
-          message: "We couldn't place the call right now. Hear a sample instead, or try again in a minute.",
+          message: localhostOrigin
+            ? "We couldn't place the call because this API's public URL is localhost — the phone network can't reach it. Set APP_URL or API_PUBLIC_URL to the public HTTPS origin."
+            : "We couldn't place the call right now. Hear a sample instead, or try again in a minute.",
         });
       }
 

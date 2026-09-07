@@ -10,7 +10,8 @@
 //   GOOGLE_AUTH_CLIENT_ID     — OAuth client ID (separate from Calendar creds)
 //   GOOGLE_AUTH_CLIENT_SECRET — OAuth client secret
 //   DASHBOARD_URL             — frontend origin (e.g. http://localhost:3000)
-//   API_PUBLIC_URL            — API origin used as the redirect_uri host
+//   APP_URL / API_PUBLIC_URL  — API origin used as the redirect_uri host
+//                               (config.APP_URL already falls back to API_PUBLIC_URL)
 //
 // If credentials are absent, every endpoint responds 501 with setup
 // instructions so the dev server keeps working without Google creds.
@@ -18,6 +19,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { OAuth2Client } from 'google-auth-library';
 import { randomBytes } from 'node:crypto';
+import { config } from '../../config.js';
 
 const SCOPES = ['openid', 'email', 'profile'];
 
@@ -41,8 +43,8 @@ export const googleAuthPlugin: (opts: PluginOpts) => FastifyPluginAsync =
   async (app) => {
     const clientId = process.env['GOOGLE_AUTH_CLIENT_ID'] ?? '';
     const clientSecret = process.env['GOOGLE_AUTH_CLIENT_SECRET'] ?? '';
-    const apiUrl = process.env['API_PUBLIC_URL'] ?? 'http://localhost:3001';
-    const dashboardUrl = process.env['DASHBOARD_URL'] ?? 'http://localhost:3000';
+    const apiUrl = config.APP_URL;
+    const dashboardUrl = config.DASHBOARD_URL;
     const redirectUri = `${apiUrl}/api/v1/auth/google/callback`;
 
     const configured = clientId && clientSecret;
