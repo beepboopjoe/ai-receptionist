@@ -49,6 +49,18 @@ export function CookieConsentBanner() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!ready) return;
+    if (panel === 'hidden') {
+      document.body.style.removeProperty('padding-bottom');
+      return;
+    }
+    document.body.style.paddingBottom = panel === 'manage' ? '28rem' : '16rem';
+    return () => {
+      document.body.style.removeProperty('padding-bottom');
+    };
+  }, [ready, panel]);
+
   if (!ready || panel === 'hidden') return null;
 
   function finish(next: CookieConsentState) {
