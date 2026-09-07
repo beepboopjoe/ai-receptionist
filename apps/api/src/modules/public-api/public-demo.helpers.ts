@@ -39,3 +39,68 @@ export function isJunkDemoNumber(e164: string): boolean {
   if (national.startsWith('555')) return true;
   return false;
 }
+
+/** True for ops/testing flags: `1` / `true` / `yes` (case-insensitive, trimmed). */
+export function isTruthyEnv(value: string | undefined | null): boolean {
+  if (value == null) return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === '1' || normalized === 'true' || normalized === 'yes';
+}
+
+/** Redis key globs for the homepage call-me cooldown + daily cap. */
+export const DEMO_CALL_ME_KEY_PATTERNS = ['demo:call-me:num:*', 'demo:call-me:day:*'] as const;
+
+/** Minimal ioredis surface so boot-clear is unit-testable without a live Redis. */
+export interface DemoCallMeRedis {
+  status?: string;
+  connect?: () => Promise<unknown>;
+  scan: (cursor: string | number, ...args: Array<string | number>) => Promise<[string, string[]]>;
+  del: (...keys: string[]) => Promise<number>;
+}
+
+/**
+ * SCAN+DEL leftover call-me keys. Safe no-op when Redis is empty.
+ * Returns the number of keys actually deleted.
+ */
+export async function scanDelDemoCallMeKeys(redis: DemoCallMeRedis): Promise<number> {
+  let deleted = 0;
+  for (const pattern of DEMO_CALL_ME_KEY_PATTERNS) {
+    let cursor = '0';
+    do {
+      const [next, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 200);
+      cursor = String(next);
+      if (keys.length > 0) {
+        deleted += await redis.del(...keys);
+      }
+    } while (cursor !== '0');
+  }
+  return deleted;
+}
+
+export interface DemoCallMeBootLog {
+  info: (obj: unknown, msg?: string) => void;
+  warn: (obj: unknown, msg?: string) => void;
+}
+
+/**
+ * When `enabled`, connect if Redis is still lazy (`wait`) then SCAN+DEL
+ * call-me keys. Never throws — boot must continue if Redis is empty or down.
+ */
+export async function maybeClearDemoCallMeCooldownsOnBoot(
+  enabled: boolean,
+  redis: DemoCallMeRedis,
+  log?: DemoCallMeBootLog,
+): Promise<number> {
+  if (!enabled) return 0;
+  try {
+    if (redis.status === 'wait' && typeof redis.connect === 'function') {
+      await redis.connect();
+    }
+    const deleted = await scanDelDemoCallMeKeys(redis);
+    log?.info({ deleted }, 'DEMO_CLEAR_COOLDOWNS_ON_BOOT deleted demo call-me Redis keys');
+    return deleted;
+  } catch (err) {
+    log?.warn({ err }, 'DEMO_CLEAR_COOLDOWNS_ON_BOOT failed — continuing boot');
+    return 0;
+  }
+}

@@ -6,6 +6,7 @@
 //   • Junk-number filter (555, repeating digits, sequential)
 //   • Fastify per-IP cap (3 / 24h) + Redis per-number cooldown (1 / hour)
 //   • Global daily cap via DEMO_DAILY_CALL_LIMIT
+//   • DEMO_SKIP_COOLDOWN skips the per-number Redis check/set (ops/testing)
 //   • 503 when DEMO_TENANT_ID / DEMO_FROM_NUMBER are unset — no crash
 //
 // Uses the existing Telnyx dialDirect() path. Does not change inbound
@@ -18,9 +19,9 @@ import { db } from '../../db/client.js';
 import { calls } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { ValidationError } from '../../lib/errors.js';
-import { cacheIncr, cacheSetNx } from '../../db/redis.js';
+import { cacheIncr, cacheSetNx, cacheDel } from '../../db/redis.js';
 import { auditLog } from '../../audit/audit-logger.js';
-import { normalizeUsCaPhone, isJunkDemoNumber } from './public-demo.helpers.js';
+import { normalizeUsCaPhone, isJunkDemoNumber, isTruthyEnv } from './public-demo.helpers.js';
 
 function utcDayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -65,18 +66,22 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         throw new ValidationError('That number looks invalid. Try a real US or Canada mobile.');
       }
 
+      const skipCooldown = isTruthyEnv(config.DEMO_SKIP_COOLDOWN);
       const cooldownKey = `demo:call-me:num:${phone}`;
-      const claimed = await cacheSetNx(cooldownKey, '1', 60 * 60);
-      if (claimed === false) {
-        return reply.status(429).send({
-          error: 'cooldown',
-          message: 'This number already requested a demo call recently. Try again in an hour, or hear a sample instead.',
-        });
+      if (!skipCooldown) {
+        const claimed = await cacheSetNx(cooldownKey, '1', 60 * 60);
+        if (claimed === false) {
+          return reply.status(429).send({
+            error: 'cooldown',
+            message: 'This number already requested a demo call recently. Try again in an hour, or hear a sample instead.',
+          });
+        }
       }
 
       const dayKey = `demo:call-me:day:${utcDayKey()}`;
       const daily = await cacheIncr(dayKey, 60 * 60 * 26);
       if (daily !== null && daily > config.DEMO_DAILY_CALL_LIMIT) {
+        if (!skipCooldown) await cacheDel(cooldownKey);
         return reply.status(503).send({
           error: 'demo_capped',
           message: "We've hit today's demo-call limit. Hear a sample on the demo page, or try again tomorrow.",
@@ -116,6 +121,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
           .update(calls)
           .set({ status: 'failed', outcome: 'dial_error', updatedAt: new Date() })
           .where(eq(calls.id, callId));
+        if (!skipCooldown) await cacheDel(cooldownKey);
         const localhostOrigin = looksLikeLocalhostUrl(config.APP_URL);
         return reply.status(502).send({
           error: 'dial_failed',

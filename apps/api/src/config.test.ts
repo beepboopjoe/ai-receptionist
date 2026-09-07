@@ -87,6 +87,22 @@ describe('resolveConfig', () => {
     });
     expect(config.APP_URL).toBe('https://api.example.com');
   });
+
+  it('defaults demo cooldown ops flags to empty (off)', () => {
+    const { config } = resolveConfig(validEnv);
+    expect(config.DEMO_SKIP_COOLDOWN).toBe('');
+    expect(config.DEMO_CLEAR_COOLDOWNS_ON_BOOT).toBe('');
+  });
+
+  it('accepts demo cooldown ops flags as raw strings', () => {
+    const { config } = resolveConfig({
+      ...validEnv,
+      DEMO_SKIP_COOLDOWN: '1',
+      DEMO_CLEAR_COOLDOWNS_ON_BOOT: 'true',
+    });
+    expect(config.DEMO_SKIP_COOLDOWN).toBe('1');
+    expect(config.DEMO_CLEAR_COOLDOWNS_ON_BOOT).toBe('true');
+  });
 });
 
 describe('public API origin helpers', () => {

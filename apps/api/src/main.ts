@@ -16,6 +16,7 @@ import { config, configValid, configMissing } from './config.js';
 import { localhostAppUrlWarning } from './lib/public-url.js';
 import { closeDb, db } from './db/client.js';
 import { redis } from './db/redis.js';
+import { isTruthyEnv, maybeClearDemoCallMeCooldownsOnBoot } from './modules/public-api/public-demo.helpers.js';
 import { sql } from 'drizzle-orm';
 import { AppError } from './lib/errors.js';
 import { livenessBody, probe, probeRedis } from './lib/health.js';
@@ -266,6 +267,11 @@ async function main() {
     if (appUrlWarning) {
       app.log.warn(appUrlWarning);
     }
+    await maybeClearDemoCallMeCooldownsOnBoot(
+      isTruthyEnv(config.DEMO_CLEAR_COOLDOWNS_ON_BOOT),
+      redis,
+      app.log,
+    );
   } catch (err) {
     app.log.error(err);
     process.exit(1);
