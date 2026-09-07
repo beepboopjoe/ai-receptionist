@@ -132,6 +132,14 @@ const envSchema = z.object({
    * `demo:call-me:num:*` and `demo:call-me:day:*` keys on API boot.
    */
   DEMO_CLEAR_COOLDOWNS_ON_BOOT: z.string().default(''),
+  /**
+   * When `1`/`true`/`yes`, boot INSERTs a minimal "Telfin Demo" tenant
+   * (+ voice/office-hours settings) for DEMO_TENANT_ID if that UUID is
+   * missing. Also runs automatically in production whenever
+   * DEMO_TENANT_ID is a non-empty UUID (DB-restore safety). Never
+   * overwrites an existing tenant.
+   */
+  DEMO_ENSURE_TENANT: z.string().default(''),
 
   // Apify integration (Phase 12.7) — Lead Discovery via Google Maps Scraper.
   // Platform-managed: we hold one Apify account and charge tenants per lead.
