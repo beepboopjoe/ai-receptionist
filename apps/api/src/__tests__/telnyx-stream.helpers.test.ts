@@ -9,20 +9,29 @@ import { fileURLToPath } from 'node:url';
 import { EventEmitter } from 'node:events';
 import {
   TELNYX_STREAMING_START_ACTION,
+  TELNYX_CONCURRENT_STREAM_LIMIT_CODE,
   telnyxStreamingStartPath,
   buildStreamingStartBody,
   buildDialMediaStreamFields,
   shouldStartStreamOnAnswer,
+  streamAlreadyOwnedByDial,
+  firstNonEmpty,
+  resolveMediaStreamCallSid,
+  resolveMediaStreamParams,
   isAlreadyStreamingError,
   formatUnhandledTelnyxEventLog,
   formatTelnyxEventLog,
   formatStreamingStartLog,
   formatStreamingStartSuccessLog,
   formatStreamingStartFailureLog,
+  formatStreamingStartSkippedLog,
+  formatAlreadyStreamingTreatedAsSuccessLog,
   formatStreamingFailedEventLog,
+  formatStreamingStoppedEventLog,
   formatGrokConnectFailureLog,
   formatGrokGreetingLog,
   formatMediaStreamStartLog,
+  formatMediaStreamCallSidResolvedLog,
   formatMediaStreamHandlerFailureLog,
   resolveFastifyWebsocket,
   GROK_GREETING_CREATE,
@@ -61,7 +70,7 @@ describe('streaming_start action', () => {
 });
 
 describe('shouldStartStreamOnAnswer', () => {
-  it('starts immediately for dialDirect / inbound (isOutbound false or missing)', () => {
+  it('starts immediately for inbound (isOutbound false or missing)', () => {
     expect(shouldStartStreamOnAnswer({ isOutbound: false })).toBe(true);
     expect(shouldStartStreamOnAnswer({})).toBe(true);
   });
@@ -71,11 +80,102 @@ describe('shouldStartStreamOnAnswer', () => {
   });
 });
 
+describe('streamAlreadyOwnedByDial', () => {
+  it('is true only when dialDirect stamped streamAttachedAtDial', () => {
+    expect(streamAlreadyOwnedByDial({ streamAttachedAtDial: true })).toBe(true);
+    expect(streamAlreadyOwnedByDial({ streamAttachedAtDial: false })).toBe(false);
+    expect(streamAlreadyOwnedByDial({})).toBe(false);
+  });
+});
+
+describe('resolveMediaStreamCallSid', () => {
+  it('does not let empty-string client_state callSid win over start.call_control_id', () => {
+    // Production bug after PR #11: dialDirect encoded callSid:'' and `??` kept it.
+    const resolved = resolveMediaStreamCallSid({
+      stateCallSid: '',
+      startCallControlId: 'v2:real-ccid',
+    });
+    expect(resolved.callSid).toBe('v2:real-ccid');
+    expect(resolved.source).toBe('start.call_control_id');
+  });
+
+  it('prefers a real client_state callSid', () => {
+    const resolved = resolveMediaStreamCallSid({
+      stateCallSid: 'v2:from-state',
+      startCallControlId: 'v2:from-start',
+    });
+    expect(resolved.callSid).toBe('v2:from-state');
+    expect(resolved.source).toBe('client_state');
+  });
+
+  it('falls back to top-level event call_control_id', () => {
+    const resolved = resolveMediaStreamCallSid({
+      stateCallSid: '   ',
+      startCallControlId: undefined,
+      topLevelCallControlId: 'v2:top',
+    });
+    expect(resolved.callSid).toBe('v2:top');
+    expect(resolved.source).toBe('event.call_control_id');
+  });
+
+  it('reports missing when nothing is present', () => {
+    expect(resolveMediaStreamCallSid({})).toEqual({ callSid: '', source: 'missing' });
+  });
+});
+
+describe('resolveMediaStreamParams', () => {
+  it('recovers callSid from the Telnyx start event when client_state has callSid:""', () => {
+    const clientState = Buffer.from(JSON.stringify({
+      callId: 'call-1',
+      tenantId: 'tenant-1',
+      fromNumber: '+15551212',
+      callSid: '',
+      isOutbound: false,
+    })).toString('base64');
+
+    const params = resolveMediaStreamParams({
+      event: 'start',
+      start: {
+        call_control_id: 'v2:from-telnyx',
+        client_state: clientState,
+      },
+    });
+
+    expect(params.callSid).toBe('v2:from-telnyx');
+    expect(params.callSidSource).toBe('start.call_control_id');
+    expect(params.callId).toBe('call-1');
+    expect(params.tenantId).toBe('tenant-1');
+    expect(params.fromNumber).toBe('+15551212');
+    expect(params.missingFields).toEqual([]);
+  });
+});
+
+describe('firstNonEmpty', () => {
+  it('skips empty / whitespace / nullish', () => {
+    expect(firstNonEmpty('', '  ', undefined, null, 'v2:ok')).toBe('v2:ok');
+    expect(firstNonEmpty()).toBe('');
+  });
+});
+
 describe('isAlreadyStreamingError', () => {
   it('treats already-streaming 422s as idempotent', () => {
     expect(isAlreadyStreamingError(new Error('Carrier /calls/x/actions/streaming_start → 422: already streaming'))).toBe(true);
     expect(isAlreadyStreamingError('Streaming has already been started')).toBe(true);
     expect(isAlreadyStreamingError(new Error('404 not found'))).toBe(false);
+  });
+
+  it('treats Telnyx 90046 concurrent bidirectional RTP limit as success', () => {
+    expect(TELNYX_CONCURRENT_STREAM_LIMIT_CODE).toBe('90046');
+    const production = new Error(
+      'Carrier /calls/v2:x/actions/streaming_start → 422: {"errors":[{"code":"90046","title":"Limit of maximum concurrent bidirectional RTP streaming session reached","detail":"Limit of maximum concurrent bidirectional RTP streaming session reached (1)"}]}',
+    );
+    expect(isAlreadyStreamingError(production)).toBe(true);
+    expect(isAlreadyStreamingError({
+      message: 'Carrier /calls/x/actions/streaming_start → 422',
+      bodyClipped: 'Limit of maximum concurrent bidirectional RTP streaming session reached (1)',
+      httpStatus: 422,
+    })).toBe(true);
+    expect(isAlreadyStreamingError(new Error('422 code 90046'))).toBe(true);
   });
 });
 
@@ -100,6 +200,12 @@ describe('Railway-visible log messages', () => {
     expect(msg).toContain('eventType=call.answered');
     expect(msg).toContain('callControlId=v2:abc');
     expect(msg).toContain('isOutbound=false');
+    expect(formatTelnyxEventLog({
+      eventType: 'call.answered',
+      callControlId: 'v2:abc',
+      isOutbound: false,
+      streamAttachedAtDial: true,
+    })).toContain('streamAttachedAtDial=true');
   });
 
   it('puts streamUrl + err on streaming_start / Grok failure lines', () => {
@@ -151,6 +257,33 @@ describe('Railway-visible log messages', () => {
       callSid: 'v2:abc',
       err: new Error('boom'),
     })).toContain('err=boom');
+
+    const skipped = formatStreamingStartSkippedLog({
+      reason: 'stream_attached_at_dial',
+      callControlId: 'v2:abc',
+      streamUrl: 'wss://host/stream',
+    });
+    expect(skipped).toContain('Telnyx streaming_start skipped');
+    expect(skipped).toContain('reason=stream_attached_at_dial');
+    expect(skipped).toContain('callControlId=v2:abc');
+
+    const already = formatAlreadyStreamingTreatedAsSuccessLog({
+      callControlId: 'v2:abc',
+      streamUrl: 'wss://host/stream',
+      err: new Error('422 code 90046'),
+    });
+    expect(already).toContain('Telnyx streaming_start already-active treated as success');
+    expect(already).toContain('err=422 code 90046');
+
+    expect(formatStreamingStoppedEventLog({
+      callControlId: 'v2:abc',
+      streamUrl: 'wss://host/stream',
+    })).toContain('Telnyx streaming.stopped');
+
+    expect(formatMediaStreamCallSidResolvedLog({
+      callSid: 'v2:abc',
+      source: 'start.call_control_id',
+    })).toContain('source=start.call_control_id');
   });
 
   it('uses unset/unknown placeholders when values are missing', () => {
@@ -197,15 +330,32 @@ describe('production sources use the working Telnyx + Grok path', () => {
   it('webhook starts the stream on answered when isOutbound is not true', () => {
     const src = readFileSync(join(srcRoot, 'modules/telephony/telnyx-webhook.handler.ts'), 'utf8');
     expect(src).toContain('shouldStartStreamOnAnswer');
+    expect(src).toContain('streamAlreadyOwnedByDial');
+    expect(src).toContain('formatStreamingStartSkippedLog');
     expect(src).toContain('formatUnhandledTelnyxEventLog');
     expect(src).toContain('formatStreamingStartFailureLog');
     expect(src).toContain("case 'streaming.failed'");
+    expect(src).toContain("case 'streaming.stopped'");
+    expect(src).toContain("reason: 'stream_attached_at_dial'");
+  });
+
+  it('dialDirect owns the RTP slot and never encodes empty callSid', () => {
+    const src = readFileSync(join(srcRoot, 'modules/campaigns/telnyx-dialer.service.ts'), 'utf8');
+    expect(src).toContain('streamAttachedAtDial: true');
+    expect(src).toContain('streamOwner=dial');
+    expect(src).toContain('isAlreadyStreamingError');
+    expect(src).toContain('formatAlreadyStreamingTreatedAsSuccessLog');
+    expect(src).not.toMatch(/callSid:\s*['"]{2}/);
+    expect(src).not.toMatch(/callSid:\s*''/);
   });
 
   it('media WS handler uses the v10 socket and greets via response.create', () => {
     const router = readFileSync(join(srcRoot, 'modules/telephony/router.ts'), 'utf8');
     expect(router).toContain('resolveFastifyWebsocket');
+    expect(router).toContain('resolveMediaStreamParams');
+    expect(router).toContain('formatMediaStreamCallSidResolvedLog');
     expect(router).not.toMatch(/connection\.socket as unknown as WebSocket/);
+    expect(router).not.toMatch(/state\['callSid'\] \?\? start\?\.call_control_id/);
 
     const media = readFileSync(join(srcRoot, 'modules/telephony/media-stream.handler.ts'), 'utf8');
     expect(media).toContain('GROK_GREETING_CREATE');

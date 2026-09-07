@@ -16,10 +16,12 @@ import { ringcentralWebhookUrl } from '../../lib/public-url.js';
 import { audit } from '../../audit/audit-logger.js';
 import pino from 'pino';
 import {
+  formatMediaStreamCallSidResolvedLog,
   formatMediaStreamHandlerFailureLog,
   formatMediaStreamStartLog,
   formatMediaStreamWsConnectedLog,
   resolveFastifyWebsocket,
+  resolveMediaStreamParams,
 } from './telnyx-stream.helpers.js';
 
 const streamLogger = pino({ name: 'telnyx-stream-ws' });
@@ -69,52 +71,51 @@ async function telephonyRoutes(
 
       if (msg['event'] === 'start' && !started) {
         started = true;
-        const start = msg['start'] as {
-          call_control_id?: string;
-          stream_id?: string;
-          client_state?: string;
-        } | undefined;
+        const resolved = resolveMediaStreamParams({
+          call_control_id: typeof msg['call_control_id'] === 'string' ? msg['call_control_id'] : undefined,
+          start: msg['start'] as {
+            call_control_id?: string;
+            stream_id?: string;
+            client_state?: string;
+          } | undefined,
+        });
 
-        // Decode our params from client_state
-        let state: Record<string, string> = {};
-        if (start?.client_state) {
-          try {
-            state = JSON.parse(
-              Buffer.from(start.client_state, 'base64').toString()
-            ) as Record<string, string>;
-          } catch { /* malformed client_state — proceed with empty state */ }
-        }
-
-        const params = {
-          callId: state['callId'] ?? '',
-          tenantId: state['tenantId'] ?? '',
-          fromNumber: state['fromNumber'] ?? '',
-          callSid: state['callSid'] ?? start?.call_control_id ?? '',
-          campaignContactId: state['campaignContactId'],
-          campaignId: state['campaignId'],
-          // Phase 29b — Ask-your-AI plain-English task (single-task calls)
-          ...(state['adHocTask'] && { adHocTask: state['adHocTask'] }),
-          // No streamSid for Telnyx — it's a Twilio-only requirement
-        };
-
-        const missing = (['callId', 'tenantId', 'fromNumber', 'callSid'] as const)
-          .filter((k) => !params[k]);
         streamLogger.info(
-          { callId: params.callId, tenantId: params.tenantId, callSid: params.callSid },
+          {
+            callId: resolved.callId,
+            tenantId: resolved.tenantId,
+            callSid: resolved.callSid,
+            callSidSource: resolved.callSidSource,
+          },
           formatMediaStreamStartLog({
-            callId: params.callId,
-            tenantId: params.tenantId,
-            callSid: params.callSid,
-            missingFields: missing,
+            callId: resolved.callId,
+            tenantId: resolved.tenantId,
+            callSid: resolved.callSid,
+            missingFields: resolved.missingFields,
+          }),
+        );
+        streamLogger.info(
+          { callSid: resolved.callSid, source: resolved.callSidSource },
+          formatMediaStreamCallSidResolvedLog({
+            callSid: resolved.callSid,
+            source: resolved.callSidSource,
           }),
         );
 
-        void handleMediaStream(socket, params).catch((err) => {
+        void handleMediaStream(socket, {
+          callId: resolved.callId,
+          tenantId: resolved.tenantId,
+          fromNumber: resolved.fromNumber,
+          callSid: resolved.callSid,
+          campaignContactId: resolved.campaignContactId,
+          campaignId: resolved.campaignId,
+          ...(resolved.adHocTask && { adHocTask: resolved.adHocTask }),
+        }).catch((err) => {
           streamLogger.error(
-            { err, callSid: params.callSid, tenantId: params.tenantId },
+            { err, callSid: resolved.callSid, tenantId: resolved.tenantId },
             formatMediaStreamHandlerFailureLog({
-              callSid: params.callSid,
-              tenantId: params.tenantId,
+              callSid: resolved.callSid,
+              tenantId: resolved.tenantId,
               err,
             }),
           );
