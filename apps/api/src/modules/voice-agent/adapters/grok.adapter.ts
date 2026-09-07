@@ -123,6 +123,15 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
   }
 
   /**
+   * Kick the first agent turn so the callee hears a greeting without
+   * speaking first. Send after session.update (same order as the working
+   * Telnyx↔Grok devmode bridge).
+   */
+  static buildGreetingCreate() {
+    return { type: 'response.create' as const };
+  }
+
+  /**
    * Process an incoming Grok event and update session transcript.
    * Called by the audio relay for each message received from Grok.
    *

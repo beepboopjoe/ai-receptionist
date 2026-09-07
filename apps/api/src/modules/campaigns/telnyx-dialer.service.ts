@@ -6,8 +6,16 @@
 // All call actions are fire-and-forget REST POSTs.
 // ============================================================
 import { config } from '../../config.js';
-import { telnyxWebhookUrl } from '../../lib/public-url.js';
+import { telnyxWebhookUrl, telnyxMediaStreamUrl } from '../../lib/public-url.js';
 import { telnyxAuthorizationHeader, TelnyxHttpError } from '../../lib/telnyx-auth.js';
+import {
+  buildDialMediaStreamFields,
+  buildStreamingStartBody,
+  formatStreamingStartFailureLog,
+  formatStreamingStartSuccessLog,
+  isAlreadyStreamingError,
+  telnyxStreamingStartPath,
+} from '../telephony/telnyx-stream.helpers.js';
 import pino from 'pino';
 
 const logger = pino({ name: 'telnyx-dialer' });
@@ -153,6 +161,10 @@ export async function dialDirect(params: DialDirectParams): Promise<DialResult> 
 
   // Telnyx requires `from` to be a number owned by `connection_id`
   // (TELNYX_APP_ID). A DEMO_FROM_NUMBER on another Call Control app → 422.
+  // Attach the media stream on dial so Telnyx opens the WS at answer even
+  // if the call.answered webhook is delayed. call.answered still calls
+  // streaming_start; an already-streaming 422 is treated as success.
+  const streamUrl = telnyxMediaStreamUrl(config.APP_URL);
   const body: Record<string, unknown> = {
     connection_id: config.TELNYX_APP_ID,
     to,
@@ -163,12 +175,16 @@ export async function dialDirect(params: DialDirectParams): Promise<DialResult> 
     webhook_url_method: 'POST',
     client_state: clientState,
     timeout_secs: 30,
+    ...buildDialMediaStreamFields(streamUrl),
   };
 
   const result = (await post('/calls', body)) as { data: { call_control_id: string } };
   const callControlId = result.data.call_control_id;
 
-  logger.info({ callControlId, to, mode }, 'Direct outbound call initiated via Telnyx');
+  logger.info(
+    { callControlId, to, mode, streamUrl },
+    `Direct outbound call initiated via Telnyx callControlId=${callControlId} mode=${mode} streamUrl=${streamUrl}`,
+  );
   return { callSid: callControlId };
 }
 
@@ -195,25 +211,38 @@ export async function startMediaStream(
   streamUrl: string,
   clientState: string
 ): Promise<void> {
-  await post(`/calls/${callControlId}/actions/stream_start`, {
-    stream_url: streamUrl,
-    stream_track: 'both_tracks',
-    enable_dialogflow: false,
-    // Note: client_state is not a supported field on stream_start.
-    // The client_state from the original dialLead() / answerCall() is automatically
-    // echoed by Telnyx in the WS 'start' event — no need to re-send it here.
-  });
-  logger.info({ callControlId, streamUrl }, 'Media stream started');
+  const path = telnyxStreamingStartPath(callControlId);
+  const body = buildStreamingStartBody(streamUrl, clientState);
+  try {
+    await post(path, body);
+  } catch (err) {
+    if (isAlreadyStreamingError(err)) {
+      logger.info(
+        { callControlId, streamUrl },
+        `Media stream already started callControlId=${callControlId} streamUrl=${streamUrl}`,
+      );
+    } else {
+      logger.error(
+        { err, callControlId, streamUrl, path },
+        formatStreamingStartFailureLog({ callControlId, streamUrl, err }),
+      );
+      throw err;
+    }
+  }
+  logger.info(
+    { callControlId, streamUrl },
+    formatStreamingStartSuccessLog({ callControlId, streamUrl }),
+  );
 
-  // Separately update client_state with enriched params (including callId)
-  // via the 'client_state_update' action so the WS handler has full context.
+  // Enrich client_state (callSid) so the WS start event has full context.
+  // streaming_start also accepts client_state; this update is a backup.
   try {
     await post(`/calls/${callControlId}/actions/client_state_update`, {
       client_state: clientState,
     });
   } catch (err) {
     // Non-blocking — the WS handler will still function with the original client_state
-    logger.warn({ err, callControlId }, 'client_state_update failed (non-blocking)');
+    logger.warn({ err, callControlId }, `client_state_update failed (non-blocking) callControlId=${callControlId}`);
   }
 }
 

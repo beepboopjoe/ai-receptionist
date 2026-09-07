@@ -24,6 +24,11 @@ import type { AppointmentType, OfficeHours, Contact } from '@ai-receptionist/sha
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone.js';
 import utc from 'dayjs/plugin/utc.js';
+import {
+  formatGrokConnectFailureLog,
+  formatGrokGreetingLog,
+  GROK_GREETING_CREATE,
+} from './telnyx-stream.helpers.js';
 import pino from 'pino';
 
 dayjs.extend(utc);
@@ -218,13 +223,23 @@ export async function handleMediaStream(
 
   // 5. Create Grok Voice session (returns WS URL + auth headers)
   const voiceAdapter = createVoiceAdapter('grok');
-  const session = await voiceAdapter.createSession({
-    systemPrompt,
-    voice: settingsRow?.voiceName ?? 'eve',
-    audioInputFormat: 'pcmu',  // G.711 µ-law from Telnyx
-    audioOutputFormat: 'pcmu',
-    callMetadata: { callId, tenantId, fromNumber },
-  });
+  let session;
+  try {
+    session = await voiceAdapter.createSession({
+      systemPrompt,
+      voice: settingsRow?.voiceName ?? 'eve',
+      audioInputFormat: 'pcmu',  // G.711 µ-law from Telnyx
+      audioOutputFormat: 'pcmu',
+      callMetadata: { callId, tenantId, fromNumber },
+    });
+  } catch (err) {
+    logger.error(
+      { err, callSid, tenantId, callId },
+      formatGrokConnectFailureLog({ callSid, tenantId, err }),
+    );
+    try { providerSocket.close(1011, 'Grok session create failed'); } catch { /* ignore */ }
+    throw err;
+  }
 
   // 6. Open WebSocket to Grok Realtime API
   const { WebSocket: WS } = await import('ws');
@@ -234,7 +249,15 @@ export async function handleMediaStream(
 
   let grokSessionId = session.sessionId; // may be updated when session.created fires
 
-  // 7. Send session.update immediately after WS is open
+  grokSocket.on('error', (err) => {
+    logger.error(
+      { err, callSid, tenantId, callId },
+      formatGrokConnectFailureLog({ callSid, tenantId, err }),
+    );
+  });
+
+  // 7. Send session.update immediately after WS is open, then response.create
+  //    so Grok speaks the greeting without waiting for the callee to talk.
   grokSocket.on('open', () => {
     const sessionUpdate = GrokVoiceAdapter.buildSessionUpdate({
       sessionId: grokSessionId,
@@ -244,7 +267,11 @@ export async function handleMediaStream(
       audioOutputFormat: 'pcmu',
     });
     grokSocket.send(JSON.stringify(sessionUpdate));
-    logger.info({ callSid, grokSessionId }, 'Grok session.update sent');
+    grokSocket.send(JSON.stringify(GROK_GREETING_CREATE));
+    logger.info(
+      { callSid, grokSessionId, tenantId },
+      formatGrokGreetingLog({ callSid, grokSessionId }),
+    );
   });
 
   // 8. Relay audio: Telnyx → Grok
@@ -304,6 +331,15 @@ export async function handleMediaStream(
         text: result.flushedAgentText,
         timestamp: new Date().toISOString(),
       });
+    }
+
+    if (eventType === 'error') {
+      const grokErr = event['error'] as Record<string, unknown> | undefined;
+      const grokMsg = typeof grokErr?.['message'] === 'string' ? grokErr['message'] : JSON.stringify(event);
+      logger.error(
+        { event, callSid, tenantId },
+        `Grok session error callSid=${callSid} tenantId=${tenantId} err=${grokMsg}`,
+      );
     }
 
     // Stream audio back to the caller
