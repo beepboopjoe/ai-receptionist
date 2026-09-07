@@ -122,6 +122,16 @@ const envSchema = z.object({
   DEMO_FROM_NUMBER: z.string().default(''),
   /** Global ceiling on call-me requests per UTC day. Bounds cost worst-case. */
   DEMO_DAILY_CALL_LIMIT: z.coerce.number().int().min(0).default(200),
+  /**
+   * Ops/testing only. When `1`/`true`/`yes`, skip the per-number Redis
+   * cooldown check and do not SET the cooldown key (daily cap still applies).
+   */
+  DEMO_SKIP_COOLDOWN: z.string().default(''),
+  /**
+   * Ops/testing only. When `1`/`true`/`yes`, SCAN+DEL leftover
+   * `demo:call-me:num:*` and `demo:call-me:day:*` keys on API boot.
+   */
+  DEMO_CLEAR_COOLDOWNS_ON_BOOT: z.string().default(''),
 
   // Apify integration (Phase 12.7) — Lead Discovery via Google Maps Scraper.
   // Platform-managed: we hold one Apify account and charge tenants per lead.
