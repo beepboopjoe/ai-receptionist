@@ -23,13 +23,15 @@ function StashUrlParams({
     // Pricing-page plan/cycle — signals the user wants to buy immediately
     const plan = params.get('plan');
     const cycle = params.get('cycle');
-    if (plan && (plan === 'growth' || plan === 'scale' || plan === 'business')) {
+    if (plan && (plan === 'trial' || plan === 'growth' || plan === 'scale' || plan === 'business')) {
       const validCycle: BillingCycle = cycle === 'annual' ? 'annual' : 'monthly';
       onPricingParams(plan, validCycle);
-      try {
-        localStorage.setItem('pricing_plan', plan);
-        localStorage.setItem('pricing_cycle', validCycle);
-      } catch { /* ignore */ }
+      if (plan !== 'trial') {
+        try {
+          localStorage.setItem('pricing_plan', plan);
+          localStorage.setItem('pricing_cycle', validCycle);
+        } catch { /* ignore */ }
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
@@ -108,7 +110,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<SignupPlanKey>('growth');
+  const [selectedPlan, setSelectedPlan] = useState<SignupPlanKey>('trial');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   // Set when user arrives from the pricing page with ?plan=&cycle= — triggers
@@ -124,7 +126,8 @@ export default function SignupPage() {
       setSelectedPlan(key);
     }
     setPricingCycle(cycle);
-    setFromPricingPage(true);
+    // Paid pricing-page links go straight to Stripe after signup. Trial does not.
+    setFromPricingPage(key !== 'trial');
   }
 
   async function handleSubmit(e: React.FormEvent) {

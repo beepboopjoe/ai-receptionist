@@ -5,11 +5,17 @@ import { useState } from 'react';
 import { callsApi } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useGoLive, type GoLiveStep } from '@/lib/useGoLive';
+import { useVertical } from '@/lib/useVertical';
 
 export function GoLiveChecklist() {
   const goLive = useGoLive();
+  const vertical = useVertical();
   if (goLive.loading) return null;
-  if (goLive.ready) {
+
+  const tracked = goLive.steps.filter((s) => s.id !== 'test_call');
+  const allTrackedDone = tracked.every((s) => s.done);
+
+  if (allTrackedDone) {
     return <TestCallCard />;
   }
 
@@ -18,8 +24,9 @@ export function GoLiveChecklist() {
       <div>
         <h2 className="font-serif text-xl text-cream-900 mb-1">Let&apos;s get your front desk answering</h2>
         <p className="text-sm text-cream-700">
-          {goLive.completedCount} of {goLive.steps.filter((s) => s.id !== 'test_call').length} setup
-          steps done. Finish these so callers can reach your AI.
+          {goLive.completedCount} of {tracked.length} setup steps done. Start with the calendar,{' '}
+          {vertical.contactNounPlural}, and where call notes go — then finish phone and voice so callers can
+          reach your AI.
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

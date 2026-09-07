@@ -1,7 +1,7 @@
 'use client';
 import useSWR, { mutate } from 'swr';
 import { contactsApi } from '@/lib/api';
-import { Search, ChevronRight, Users, Trash2, Download as DownloadIcon, X } from 'lucide-react';
+import { Search, ChevronRight, Users, Trash2, Download as DownloadIcon, X, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
 import { useVertical } from '@/lib/useVertical';
@@ -11,6 +11,7 @@ import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 import { useToast } from '@/components/ui/toast';
 import { downloadCsv } from '@/lib/csv';
 import { SectionAgent } from '@/components/dashboard/section-agent';
+import { CsvImportButton } from '@/components/contacts/csv-import-button';
 
 export default function ContactsPage() {
   const vertical = useVertical();
@@ -85,16 +86,19 @@ export default function ContactsPage() {
     <div className="space-y-6">
       <SectionAgent section="contacts" />
 
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+      <div id="import" className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 scroll-mt-24">
         <div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">{heading}</h1>
           <p className="text-gray-500 mt-1">{(data as any)?.total ?? 0} total {vertical.contactNounPlural}</p>
         </div>
-        <DownloadCsvButton
-          rows={contacts}
-          columns={csvColumns}
-          filename={`${vertical.contactNounPlural}.csv`}
-        />
+        <div className="flex items-center gap-2">
+          <CsvImportButton />
+          <DownloadCsvButton
+            rows={contacts}
+            columns={csvColumns}
+            filename={`${vertical.contactNounPlural}.csv`}
+          />
+        </div>
       </div>
 
       {/* Search */}
@@ -144,12 +148,44 @@ export default function ContactsPage() {
           <ListRowSkeleton rows={6} />
         ) : contacts.length === 0 ? (
           <div className="p-6 space-y-4">
-            <EmptyState
-              icon={Users}
-              label={`No ${vertical.contactNounPlural} found`}
-              hint={search ? 'Try a different search term.' : `Import a CSV from your CRM, or add ${vertical.contactNounPlural} as they call in.`}
-              {...(search ? {} : { cta: { label: 'Go to Settings → Integrations', href: '/settings/integrations' } })}
-            />
+            {search ? (
+              <EmptyState
+                icon={Users}
+                label={`No ${vertical.contactNounPlural} found`}
+                hint="Try a different search term."
+              />
+            ) : (
+              <div className="text-center py-8 px-4 space-y-4">
+                <Users size={40} className="mx-auto text-gray-300" aria-hidden="true" />
+                <div>
+                  <p className="text-base font-medium text-gray-700">
+                    {vertical.id === 'dental'
+                      ? 'Upload your patient list'
+                      : `Upload your ${vertical.contactNoun} list`}
+                  </p>
+                  <p className="text-sm text-gray-400 mt-1 max-w-md mx-auto">
+                    {vertical.id === 'dental'
+                      ? 'CSV export from Dentrix or Open Dental works — first name, last name, and phone. Returning callers get greeted by name.'
+                      : `Import a CSV so the AI recognizes returning ${vertical.contactNounPlural}. Columns: first_name, last_name, phone, email (optional).`}
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <CsvImportButton
+                    label={
+                      vertical.id === 'dental'
+                        ? 'Upload patient CSV'
+                        : `Upload ${vertical.contactNoun} CSV`
+                    }
+                  />
+                  <Link
+                    href="/settings/integrations#calendar"
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700"
+                  >
+                    <CalendarDays size={14} /> Connect calendar
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <>

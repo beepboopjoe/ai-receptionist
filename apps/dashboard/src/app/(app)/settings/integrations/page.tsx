@@ -9,10 +9,10 @@ import { FilevineCredentialsModal } from '@/components/integrations/filevine-cre
 import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 const PROVIDERS = [
-  { id: 'google_calendar', label: 'Google Calendar', description: 'Appointment scheduling + slot lookup', icon: '📅' },
-  { id: 'microsoft_calendar', label: 'Microsoft 365', description: 'Outlook calendar + Teams sync', icon: '📆' },
-  { id: 'ringcentral', label: 'RingCentral', description: 'Enterprise phone integration', icon: '🔔' },
-  { id: 'resend', label: 'Resend', description: 'Email notifications + receipts', icon: '✉️' },
+  { id: 'google_calendar', label: 'Google Calendar', description: 'Appointment scheduling + slot lookup', icon: '📅', wired: true },
+  { id: 'microsoft_calendar', label: 'Microsoft 365', description: 'Outlook calendar + Teams sync', icon: '📆', wired: true },
+  { id: 'ringcentral', label: 'RingCentral', description: 'Enterprise phone integration', icon: '🔔', wired: true },
+  { id: 'resend', label: 'Resend', description: 'Email notifications + receipts — platform-managed, no tenant OAuth', icon: '✉️', wired: false },
 ];
 
 // Coming-soon AI + draft integrations. Shown as a separate group with a
@@ -98,7 +98,7 @@ export default function IntegrationsPage() {
       </div>
 
       {/* ── Calendar / Email / Phone providers ── */}
-      <div>
+      <div id="calendar" className="scroll-mt-24">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Calendar, Phone & Email</p>
         <div className="space-y-4">
           {PROVIDERS.map((provider) => {
@@ -115,26 +115,37 @@ export default function IntegrationsPage() {
                       <span className="badge badge-green flex items-center gap-1">
                         <CheckCircle size={11} /> Connected
                       </span>
-                    ) : (
+                    ) : provider.wired ? (
                       <span className="badge badge-gray">Not connected</span>
+                    ) : (
+                      <span className="badge badge-blue">Waitlist</span>
                     )}
                   </div>
                   <p className="text-sm text-gray-500 mt-0.5">{provider.description}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {isConnected ? (
-                    <button
-                      onClick={() => handleDisconnect(provider.id)}
-                      className="btn-danger text-sm"
-                    >
-                      <Trash2 size={14} /> Disconnect
-                    </button>
+                  {provider.wired ? (
+                    isConnected ? (
+                      <button
+                        onClick={() => handleDisconnect(provider.id)}
+                        className="btn-danger text-sm"
+                      >
+                        <Trash2 size={14} /> Disconnect
+                      </button>
+                    ) : (
+                      <a
+                        href={integrationsApi.connectUrl(provider.id)}
+                        className="btn-primary text-sm"
+                      >
+                        <ExternalLink size={14} /> Connect
+                      </a>
+                    )
                   ) : (
                     <a
-                      href={integrationsApi.connectUrl(provider.id)}
-                      className="btn-primary text-sm"
+                      href={`mailto:${BRAND_SUPPORT_EMAIL}?subject=Waitlist — ${provider.label}`}
+                      className="btn-secondary text-sm flex items-center gap-1.5"
                     >
-                      <ExternalLink size={14} /> Connect
+                      <Mail size={13} /> Join waitlist
                     </a>
                   )}
                 </div>
@@ -179,8 +190,17 @@ export default function IntegrationsPage() {
       <div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">CRM & {vertical.businessNoun.charAt(0).toUpperCase() + vertical.businessNoun.slice(1)} Management</p>
         <p className="text-sm text-gray-500 mb-3">
-          Connect your CRM or {vertical.businessNoun} management system for two-way {vertical.contactNoun} and {vertical.appointmentNoun} sync.
+          Connect a live CRM when it&apos;s wired. Unwired {vertical.businessNoun} systems are waitlist-only — use a CSV import for {vertical.contactNounPlural} today.
         </p>
+        {vertical.id === 'dental' && (
+          <p className="text-sm text-cream-700 mb-3 rounded-lg bg-cream-50 border border-cream-200 px-3 py-2">
+            Dentrix, Eaglesoft, and Open Dental are on the waitlist. Upload a patient CSV from those systems on{' '}
+            <a href="/contacts#import" className="font-semibold text-brand-600 hover:underline">
+              Patients
+            </a>{' '}
+            so the AI can greet returning callers.
+          </p>
+        )}
         <div className="space-y-4">
           {visibleCrmProviders.map((provider) => {
             const integration = connectedMap[provider.id];
@@ -205,8 +225,10 @@ export default function IntegrationsPage() {
                       <span className="badge badge-green flex items-center gap-1">
                         <CheckCircle size={11} /> Connected
                       </span>
+                    ) : isWired ? (
+                      <span className="badge badge-gray">Not connected</span>
                     ) : (
-                      <span className="badge badge-gray">{isHubSpot ? 'Not connected' : 'Custom setup'}</span>
+                      <span className="badge badge-blue">Waitlist</span>
                     )}
                     {provider.badge && !isConnected && (
                       <span className={`badge ${provider.badge === 'Popular' ? 'badge-green' : 'badge-blue'}`}>
@@ -274,10 +296,10 @@ export default function IntegrationsPage() {
                     ) : null
                   ) : (
                     <a
-                      href={`mailto:${BRAND_SUPPORT_EMAIL}?subject=Integration — ${provider.label}`}
-                      className="btn-primary text-sm flex items-center gap-1.5"
+                      href={`mailto:${BRAND_SUPPORT_EMAIL}?subject=Waitlist — ${provider.label}`}
+                      className="btn-secondary text-sm flex items-center gap-1.5"
                     >
-                      <Mail size={13} /> Request access
+                      <Mail size={13} /> Join waitlist
                     </a>
                   )}
                 </div>

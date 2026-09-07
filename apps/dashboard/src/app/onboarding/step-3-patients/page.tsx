@@ -1,7 +1,8 @@
 'use client';
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { onboardingApi, contactsApi } from '@/lib/api';
+import { onboardingApi } from '@/lib/api';
+import { importContactsCsvAndWait } from '@/lib/import-contacts-csv';
 import { Upload, ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { useVertical } from '@/lib/useVertical';
 
@@ -17,10 +18,8 @@ export default function Step3ContactsPage() {
     setUploading(true);
     setError('');
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await contactsApi.importCsv(formData);
-      setResult(res);
+      const res = await importContactsCsvAndWait(file);
+      setResult({ imported: res.imported, errors: res.skipped });
       await onboardingApi.completeStep(3);
     } catch (err: any) {
       setError(err.message ?? 'Upload failed');

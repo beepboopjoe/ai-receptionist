@@ -14,6 +14,7 @@ import { AskYourAiCard } from '@/components/dashboard/ask-your-ai-card';
 import { TopCampaignSuggestion } from '@/components/dashboard/top-campaign-suggestion';
 import { KnowledgeBaseCard } from '@/components/dashboard/knowledge-base-card';
 import { GoLiveChecklist } from '@/components/dashboard/go-live-checklist';
+import { ConnectPracticePanel } from '@/components/dashboard/connect-practice-panel';
 import { useGoLive } from '@/lib/useGoLive';
 import { formatMinutesLimit } from '@/lib/plan-display';
 
@@ -164,6 +165,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      <ConnectPracticePanel />
       <GoLiveChecklist />
 
       {/* ── Ask your AI (Phase 29b) — plain-English single-task calls ── */}

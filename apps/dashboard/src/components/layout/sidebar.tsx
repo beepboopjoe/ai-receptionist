@@ -75,13 +75,13 @@ const settingsNavEssentials = [
   { href: '/settings/knowledge-base', label: 'Teach Your AI', icon: null },
   { href: '/settings/phone-numbers', label: 'Phone Numbers', icon: null },
   { href: '/settings/office-hours', label: 'Office Hours', icon: null },
+  { href: '/settings/integrations', label: 'Calendar & Integrations', icon: null },
   { href: '/settings/notifications', label: 'Notifications', icon: null },
   { href: '/settings/team', label: 'Team', icon: null },
   { href: '/support', label: 'Help & Support', icon: 'lifebuoy' as const },
 ];
 
 const settingsNavAdvanced = [
-  { href: '/settings/integrations', label: 'Integrations', icon: null },
   { href: '/settings/email-templates', label: 'Email Templates', icon: null },
   { href: '/settings/webhooks', label: 'Webhooks', icon: null },
   { href: '/settings/api-keys', label: 'API Keys', icon: null },
@@ -382,7 +382,9 @@ export function Sidebar() {
           </div>
           {settingsNavEssentials.map((item) => renderSettingsLink(item))}
 
-          {/* Advanced — hidden until the go-live checklist is complete. */}
+          {/* Advanced — hidden until phone go-live is complete.
+              Calendar & Integrations stay in Essentials so incomplete tenants
+              can connect a calendar without hunting. Platform Admin stays gated. */}
           {showAdvancedNav && (
           <details
             className="group/adv"

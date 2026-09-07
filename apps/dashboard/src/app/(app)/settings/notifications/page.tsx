@@ -160,24 +160,23 @@ export default function NotificationsSettingsPage() {
           })}
         </div>
 
-        {/* Email recipient input — shown only when call-summary emails are on. */}
-        {prefs.emailOnEveryCall && (
-          <div className="pt-4 border-t border-gray-100">
-            <label className="block text-sm font-medium text-gray-900 mb-1.5">
-              Send call-summary emails to
-            </label>
-            <input
-              type="email"
-              value={callSummaryEmail}
-              onChange={(e) => setCallSummaryEmail(e.target.value)}
-              placeholder="alerts@yourbusiness.com"
-              className="form-input w-full"
-            />
-            <p className="text-xs text-gray-500 mt-1.5">
-              Leave blank to use the account owner's email. Tip: forward this to a shared inbox so your team gets notified.
-            </p>
-          </div>
-        )}
+        {/* Call-notes destination — always visible so go-live can deep-link here. */}
+        <div id="call-notes" className="pt-4 border-t border-gray-100 scroll-mt-24">
+          <label className="block text-sm font-medium text-gray-900 mb-1.5">
+            Where call notes should go
+          </label>
+          <input
+            type="email"
+            value={callSummaryEmail}
+            onChange={(e) => setCallSummaryEmail(e.target.value)}
+            placeholder="front-desk@yourpractice.com"
+            className="form-input w-full"
+          />
+          <p className="text-xs text-gray-500 mt-1.5">
+            Inbox for call summaries (caller, outcome, and recording link). Turn on &quot;Email me after every
+            call&quot; above, or just save an address — we&apos;ll use the account owner if this is blank.
+          </p>
+        </div>
 
         <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
           <p className="text-xs text-gray-500">

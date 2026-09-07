@@ -271,7 +271,16 @@ export const contactsApi = {
       method: 'POST',
       headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,
-    }).then((r) => r.json()),
+    }).then((r) => r.json() as Promise<{ jobId?: string; status?: string; imported?: number; errors?: number; message?: string }>),
+  getImport: (jobId: string) =>
+    apiFetch<{
+      jobId: string;
+      status: 'pending' | 'processing' | 'completed' | 'failed';
+      total: number;
+      imported: number;
+      skipped: number;
+      errors: Array<{ row: number; reason: string }>;
+    }>(`/contacts/import/${jobId}`),
   bulkDelete: (ids: string[]) =>
     apiFetch<{ deleted: number }>('/contacts/bulk-delete', {
       method: 'POST',
