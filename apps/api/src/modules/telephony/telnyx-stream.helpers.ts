@@ -57,14 +57,149 @@ export function buildDialMediaStreamFields(streamUrl: string): Omit<StreamingSta
   return fields;
 }
 
+/** Telnyx 422 when a second bidirectional RTP stream fights the first (account limit = 1). */
+export const TELNYX_CONCURRENT_STREAM_LIMIT_CODE = '90046';
+
 /** dialDirect / inbound encode isOutbound:false — start stream on answer, skip AMD. */
 export function shouldStartStreamOnAnswer(state: { isOutbound?: boolean }): boolean {
   return state.isOutbound !== true;
 }
 
+/**
+ * dialDirect attaches stream_url on POST /v2/calls. That call owns the single
+ * bidirectional RTP slot — call.answered / call.bridged must NOT streaming_start.
+ */
+export function streamAlreadyOwnedByDial(state: { streamAttachedAtDial?: boolean }): boolean {
+  return state.streamAttachedAtDial === true;
+}
+
+export function firstNonEmpty(...values: Array<string | undefined | null>): string {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
+}
+
+export type MediaStreamCallSidSource =
+  | 'client_state'
+  | 'start.call_control_id'
+  | 'event.call_control_id'
+  | 'missing';
+
+/**
+ * Resolve Telnyx call_control_id for the media-stream handler.
+ * Empty-string callSid in client_state (dialDirect used to encode `callSid:''`)
+ * must NOT win over start.call_control_id — `??` does not fall through `''`.
+ */
+export function resolveMediaStreamCallSid(params: {
+  stateCallSid?: string | null;
+  startCallControlId?: string | null;
+  topLevelCallControlId?: string | null;
+}): { callSid: string; source: MediaStreamCallSidSource } {
+  const stateCallSid = firstNonEmpty(params.stateCallSid);
+  if (stateCallSid) return { callSid: stateCallSid, source: 'client_state' };
+  const startId = firstNonEmpty(params.startCallControlId);
+  if (startId) return { callSid: startId, source: 'start.call_control_id' };
+  const topId = firstNonEmpty(params.topLevelCallControlId);
+  if (topId) return { callSid: topId, source: 'event.call_control_id' };
+  return { callSid: '', source: 'missing' };
+}
+
+export interface TelnyxMediaStartMessage {
+  event?: string;
+  call_control_id?: string;
+  start?: {
+    call_control_id?: string;
+    stream_id?: string;
+    client_state?: string;
+  };
+}
+
+export function decodeTelnyxClientState(encoded?: string): Record<string, unknown> {
+  if (!encoded) return {};
+  try {
+    return JSON.parse(Buffer.from(encoded, 'base64').toString()) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function asOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+export interface ResolvedMediaStreamParams {
+  callId: string;
+  tenantId: string;
+  fromNumber: string;
+  callSid: string;
+  callSidSource: MediaStreamCallSidSource;
+  campaignContactId?: string;
+  campaignId?: string;
+  adHocTask?: string;
+  missingFields: string[];
+}
+
+/** Decode a Telnyx WS `start` event into media-stream handler params. */
+export function resolveMediaStreamParams(msg: TelnyxMediaStartMessage): ResolvedMediaStreamParams {
+  const state = decodeTelnyxClientState(msg.start?.client_state);
+  const { callSid, source } = resolveMediaStreamCallSid({
+    stateCallSid: typeof state['callSid'] === 'string' ? state['callSid'] : undefined,
+    startCallControlId: msg.start?.call_control_id,
+    topLevelCallControlId: msg.call_control_id,
+  });
+
+  const callId = firstNonEmpty(typeof state['callId'] === 'string' ? state['callId'] : undefined);
+  const tenantId = firstNonEmpty(typeof state['tenantId'] === 'string' ? state['tenantId'] : undefined);
+  const fromNumber = firstNonEmpty(typeof state['fromNumber'] === 'string' ? state['fromNumber'] : undefined);
+
+  const missing = (['callId', 'tenantId', 'fromNumber', 'callSid'] as const)
+    .filter((key) => {
+      if (key === 'callId') return !callId;
+      if (key === 'tenantId') return !tenantId;
+      if (key === 'fromNumber') return !fromNumber;
+      return !callSid;
+    });
+
+  return {
+    callId,
+    tenantId,
+    fromNumber,
+    callSid,
+    callSidSource: source,
+    ...(asOptionalString(state['campaignContactId']) && {
+      campaignContactId: asOptionalString(state['campaignContactId']),
+    }),
+    ...(asOptionalString(state['campaignId']) && {
+      campaignId: asOptionalString(state['campaignId']),
+    }),
+    ...(asOptionalString(state['adHocTask']) && {
+      adHocTask: asOptionalString(state['adHocTask']),
+    }),
+    missingFields: [...missing],
+  };
+}
+
+/**
+ * 422s that mean "the dial-time (or prior) stream is already the owner".
+ * Includes Telnyx 90046 — concurrent bidirectional RTP limit (1).
+ */
 export function isAlreadyStreamingError(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err);
-  return /already\s+(been\s+)?stream/i.test(msg) || /streaming.*already/i.test(msg);
+  const parts: string[] = [];
+  if (err instanceof Error) parts.push(err.message);
+  else parts.push(String(err ?? ''));
+  if (err && typeof err === 'object') {
+    const rec = err as { bodyClipped?: unknown; httpStatus?: unknown };
+    if (typeof rec.bodyClipped === 'string') parts.push(rec.bodyClipped);
+    if (rec.httpStatus != null) parts.push(String(rec.httpStatus));
+  }
+  const text = parts.join(' ');
+  if (new RegExp(`\\b${TELNYX_CONCURRENT_STREAM_LIMIT_CODE}\\b`).test(text)) return true;
+  if (/already\s+(been\s+)?stream/i.test(text)) return true;
+  if (/streaming.*already/i.test(text)) return true;
+  if (/concurrent bidirectional RTP streaming/i.test(text)) return true;
+  if (/maximum concurrent.*stream/i.test(text)) return true;
+  return false;
 }
 
 export function errMessageOf(err: unknown): string {
@@ -80,8 +215,9 @@ export function formatTelnyxEventLog(params: {
   eventType: string;
   callControlId: string;
   isOutbound?: boolean;
+  streamAttachedAtDial?: boolean;
 }): string {
-  return `Telnyx event eventType=${params.eventType || 'unknown'} callControlId=${params.callControlId || 'unset'} isOutbound=${params.isOutbound === true}`;
+  return `Telnyx event eventType=${params.eventType || 'unknown'} callControlId=${params.callControlId || 'unset'} isOutbound=${params.isOutbound === true} streamAttachedAtDial=${params.streamAttachedAtDial === true}`;
 }
 
 export function formatStreamingStartLog(params: {
@@ -106,12 +242,42 @@ export function formatStreamingStartFailureLog(params: {
   return `Telnyx streaming_start failed callControlId=${params.callControlId || 'unset'} streamUrl=${params.streamUrl || 'unset'} err=${errMessageOf(params.err) || 'empty'}`;
 }
 
+export function formatStreamingStartSkippedLog(params: {
+  reason: string;
+  callControlId: string;
+  streamUrl?: string;
+}): string {
+  return `Telnyx streaming_start skipped reason=${params.reason || 'unknown'} callControlId=${params.callControlId || 'unset'} streamUrl=${params.streamUrl || 'unset'}`;
+}
+
+export function formatAlreadyStreamingTreatedAsSuccessLog(params: {
+  callControlId: string;
+  streamUrl: string;
+  err?: unknown;
+}): string {
+  return `Telnyx streaming_start already-active treated as success callControlId=${params.callControlId || 'unset'} streamUrl=${params.streamUrl || 'unset'} err=${errMessageOf(params.err) || 'empty'}`;
+}
+
+export function formatMediaStreamCallSidResolvedLog(params: {
+  callSid: string;
+  source: MediaStreamCallSidSource;
+}): string {
+  return `Telnyx media-stream callSid resolved callSid=${params.callSid || 'unset'} source=${params.source || 'missing'}`;
+}
+
 export function formatStreamingFailedEventLog(params: {
   callControlId: string;
   streamUrl?: string;
   failureReason?: string;
 }): string {
   return `Telnyx streaming.failed callControlId=${params.callControlId || 'unset'} streamUrl=${params.streamUrl || 'unset'} reason=${params.failureReason || 'empty'}`;
+}
+
+export function formatStreamingStoppedEventLog(params: {
+  callControlId: string;
+  streamUrl?: string;
+}): string {
+  return `Telnyx streaming.stopped callControlId=${params.callControlId || 'unset'} streamUrl=${params.streamUrl || 'unset'}`;
 }
 
 export function formatGrokConnectFailureLog(params: {

@@ -6,9 +6,10 @@
 //
 // Event routing:
 //   call.initiated   (inbound) → answer call
-//   call.answered    (inbound + dialDirect/demo, isOutbound≠true) → streaming_start
+//   call.answered    (inbound, isOutbound≠true, no dial-time stream) → streaming_start
+//                   (dialDirect: streamAttachedAtDial) → skip — dial owns RTP
 //                   (campaign outbound) → wait for AMD result
-//   call.bridged     (dialDirect/inbound only) → streaming_start fallback
+//   call.bridged     (inbound only) → streaming_start fallback; skip if dial owns RTP
 //   call.machine.detection.ended → if human: start stream + mark connected
 //                                  if machine: handle voicemail
 //   call.speak.ended             → hang up (voicemail message finished)
@@ -27,6 +28,7 @@ import {
   startMediaStream,
   hangupCall,
   dropVoicemail,
+  updateCallClientState,
 } from '../campaigns/telnyx-dialer.service.js';
 import { outboundDialerQueue } from '../../queue/queues.js';
 import { sendSms } from '../notifications/adapters/telnyx-sms.adapter.js';
@@ -37,9 +39,12 @@ import {
   formatStreamingFailedEventLog,
   formatStreamingStartFailureLog,
   formatStreamingStartLog,
+  formatStreamingStartSkippedLog,
+  formatStreamingStoppedEventLog,
   formatTelnyxEventLog,
   formatUnhandledTelnyxEventLog,
   shouldStartStreamOnAnswer,
+  streamAlreadyOwnedByDial,
 } from './telnyx-stream.helpers.js';
 import pino from 'pino';
 
@@ -105,6 +110,11 @@ interface TelnyxCallState {
   campaignContactId?: string;
   campaignId?: string;
   isOutbound?: boolean;
+  /**
+   * True when dialDirect attached stream_url on POST /v2/calls.
+   * That dial owns the single bidirectional RTP slot — do not streaming_start.
+   */
+  streamAttachedAtDial?: boolean;
 }
 
 function encodeState(state: TelnyxCallState): string {
@@ -169,8 +179,18 @@ async function dispatch(
   const state = decodeState(client_state);
 
   logger.info(
-    { eventType, callControlId: call_control_id, isOutbound: state.isOutbound },
-    formatTelnyxEventLog({ eventType, callControlId: call_control_id, isOutbound: state.isOutbound }),
+    {
+      eventType,
+      callControlId: call_control_id,
+      isOutbound: state.isOutbound,
+      streamAttachedAtDial: state.streamAttachedAtDial,
+    },
+    formatTelnyxEventLog({
+      eventType,
+      callControlId: call_control_id,
+      isOutbound: state.isOutbound,
+      streamAttachedAtDial: state.streamAttachedAtDial,
+    }),
   );
 
   switch (eventType) {
@@ -184,7 +204,7 @@ async function dispatch(
 
     case 'call.bridged':
       // Some outbound legs emit bridged instead of / in addition to answered.
-      // Only start media for dialDirect/inbound — campaign outbound still waits for AMD.
+      // Campaign outbound still waits for AMD. dialDirect already owns RTP.
       if (shouldStartStreamOnAnswer(state)) {
         await startStream(call_control_id, state);
       }
@@ -217,6 +237,16 @@ async function dispatch(
           callControlId: call_control_id,
           streamUrl: payload.stream_url,
           failureReason: payload.failure_reason ?? payload.hangup_cause,
+        }),
+      );
+      break;
+
+    case 'streaming.stopped':
+      logger.info(
+        { eventType, callControlId: call_control_id, streamUrl: payload.stream_url },
+        formatStreamingStoppedEventLog({
+          callControlId: call_control_id,
+          streamUrl: payload.stream_url,
         }),
       );
       break;
@@ -306,7 +336,8 @@ async function onCallAnswered(
     return;
   }
 
-  // Inbound + dialDirect/demo (isOutbound:false) — start stream immediately.
+  // Inbound — start stream immediately. dialDirect already attached the
+  // stream on POST /v2/calls; a second streaming_start hits Telnyx 90046.
   await startStream(callControlId, state);
 }
 
@@ -427,8 +458,22 @@ async function startStream(
   // Re-encode so WS handler gets the full params from the start event
   const clientState = encodeState({ ...state, callSid: callControlId });
 
+  if (streamAlreadyOwnedByDial(state)) {
+    logger.info(
+      { callControlId, streamUrl, callId: state.callId, tenantId: state.tenantId, streamOwner: 'dial' },
+      formatStreamingStartSkippedLog({
+        reason: 'stream_attached_at_dial',
+        callControlId,
+        streamUrl,
+      }),
+    );
+    // Still stamp callSid — the dial-time WS start may already have fired.
+    await updateCallClientState(callControlId, clientState);
+    return;
+  }
+
   logger.info(
-    { callControlId, streamUrl, callId: state.callId, tenantId: state.tenantId },
+    { callControlId, streamUrl, callId: state.callId, tenantId: state.tenantId, streamOwner: 'answer' },
     formatStreamingStartLog({ callControlId, streamUrl }),
   );
 

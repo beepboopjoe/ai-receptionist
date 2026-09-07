@@ -11,6 +11,7 @@ import { telnyxAuthorizationHeader, TelnyxHttpError } from '../../lib/telnyx-aut
 import {
   buildDialMediaStreamFields,
   buildStreamingStartBody,
+  formatAlreadyStreamingTreatedAsSuccessLog,
   formatStreamingStartFailureLog,
   formatStreamingStartSuccessLog,
   isAlreadyStreamingError,
@@ -140,30 +141,32 @@ export interface DialDirectParams {
  * immediately and behave like an inbound call — the AI greets the callee as
  * if they had called us.
  *
- * The trick: we encode `isOutbound: false` in client_state so the existing
- * Telnyx webhook handler routes call.answered → startStream straight away
- * (the same path as a regular inbound call).
+ * Stream ownership: THIS dial owns the single bidirectional RTP slot.
+ * We attach stream_url on POST /v2/calls (Telnyx opens the WS at answer).
+ * client_state.streamAttachedAtDial=true tells call.answered / call.bridged
+ * to skip a second streaming_start — Telnyx 90046 (concurrency=1) otherwise
+ * fights the dial-time stream and the callee hears silence.
+ *
+ * Do NOT encode an empty callSid — empty string blocks `??` fallback in the WS
+ * start handler. Omit callSid here; enrich it after Telnyx returns the id.
  */
 export async function dialDirect(params: DialDirectParams): Promise<DialResult> {
   const { to, from, callId, tenantId, fromNumber, mode, adHocTask } = params;
 
-  const clientState = Buffer.from(
-    JSON.stringify({
-      callId,
-      tenantId,
-      fromNumber, // the visitor / owner — the "caller" from the AI's POV
-      callSid: '', // filled in below once Telnyx returns the call_control_id
-      isOutbound: false, // skip AMD; treat call.answered as inbound-style
-      mode, // surfaces in dispatched events for analytics
-      ...(adHocTask && { adHocTask }), // Phase 29b — Ask-your-AI task text
-    })
-  ).toString('base64');
+  const state: Record<string, unknown> = {
+    callId,
+    tenantId,
+    fromNumber, // the visitor / owner — the "caller" from the AI's POV
+    isOutbound: false, // skip AMD; treat as inbound-style for greeting
+    streamAttachedAtDial: true, // dial owns RTP — do not streaming_start again
+    mode, // surfaces in dispatched events for analytics
+    ...(adHocTask && { adHocTask }), // Phase 29b — Ask-your-AI task text
+  };
+
+  const clientState = Buffer.from(JSON.stringify(state)).toString('base64');
 
   // Telnyx requires `from` to be a number owned by `connection_id`
   // (TELNYX_APP_ID). A DEMO_FROM_NUMBER on another Call Control app → 422.
-  // Attach the media stream on dial so Telnyx opens the WS at answer even
-  // if the call.answered webhook is delayed. call.answered still calls
-  // streaming_start; an already-streaming 422 is treated as success.
   const streamUrl = telnyxMediaStreamUrl(config.APP_URL);
   const body: Record<string, unknown> = {
     connection_id: config.TELNYX_APP_ID,
@@ -182,9 +185,17 @@ export async function dialDirect(params: DialDirectParams): Promise<DialResult> 
   const callControlId = result.data.call_control_id;
 
   logger.info(
-    { callControlId, to, mode, streamUrl },
-    `Direct outbound call initiated via Telnyx callControlId=${callControlId} mode=${mode} streamUrl=${streamUrl}`,
+    { callControlId, to, mode, streamUrl, streamOwner: 'dial' },
+    `Direct outbound call initiated via Telnyx callControlId=${callControlId} mode=${mode} streamUrl=${streamUrl} streamOwner=dial`,
   );
+
+  // Best-effort: stamp callSid now so later events / a late WS start have it.
+  // The WS handler still falls back to start.call_control_id if this races.
+  void updateCallClientState(
+    callControlId,
+    Buffer.from(JSON.stringify({ ...state, callSid: callControlId })).toString('base64'),
+  );
+
   return { callSid: callControlId };
 }
 
@@ -206,6 +217,23 @@ export async function answerCall(
  * Telnyx opens a WebSocket to streamUrl and begins streaming audio
  * (both_tracks = inbound caller audio + outbound AI audio in one stream).
  */
+export async function updateCallClientState(
+  callControlId: string,
+  clientState: string,
+): Promise<void> {
+  try {
+    await post(`/calls/${callControlId}/actions/client_state_update`, {
+      client_state: clientState,
+    });
+  } catch (err) {
+    // Non-blocking — the WS handler falls back to start.call_control_id
+    logger.warn(
+      { err, callControlId },
+      `client_state_update failed (non-blocking) callControlId=${callControlId}`,
+    );
+  }
+}
+
 export async function startMediaStream(
   callControlId: string,
   streamUrl: string,
@@ -215,11 +243,17 @@ export async function startMediaStream(
   const body = buildStreamingStartBody(streamUrl, clientState);
   try {
     await post(path, body);
+    logger.info(
+      { callControlId, streamUrl },
+      formatStreamingStartSuccessLog({ callControlId, streamUrl }),
+    );
   } catch (err) {
     if (isAlreadyStreamingError(err)) {
+      // Dial-time stream (or a prior start) already holds the RTP slot.
+      // 90046 / already-streaming 422s are success — do not throw Unhandled.
       logger.info(
         { callControlId, streamUrl },
-        `Media stream already started callControlId=${callControlId} streamUrl=${streamUrl}`,
+        formatAlreadyStreamingTreatedAsSuccessLog({ callControlId, streamUrl, err }),
       );
     } else {
       logger.error(
@@ -229,21 +263,9 @@ export async function startMediaStream(
       throw err;
     }
   }
-  logger.info(
-    { callControlId, streamUrl },
-    formatStreamingStartSuccessLog({ callControlId, streamUrl }),
-  );
 
-  // Enrich client_state (callSid) so the WS start event has full context.
-  // streaming_start also accepts client_state; this update is a backup.
-  try {
-    await post(`/calls/${callControlId}/actions/client_state_update`, {
-      client_state: clientState,
-    });
-  } catch (err) {
-    // Non-blocking — the WS handler will still function with the original client_state
-    logger.warn({ err, callControlId }, `client_state_update failed (non-blocking) callControlId=${callControlId}`);
-  }
+  // Enrich client_state (callSid) so a late WS start event has full context.
+  await updateCallClientState(callControlId, clientState);
 }
 
 /**
