@@ -16,7 +16,7 @@
 // ============================================================
 import type { FastifyInstance } from 'fastify';
 import { config } from '../../config.js';
-import { looksLikeLocalhostUrl } from '../../lib/public-url.js';
+import { looksLikeLocalhostUrl, toPublicOrigin } from '../../lib/public-url.js';
 import { db } from '../../db/client.js';
 import { calls, tenants } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -28,6 +28,9 @@ import {
   isJunkDemoNumber,
   isTruthyEnv,
   isForeignKeyViolation,
+  errMessageOf,
+  maskPhoneLast4,
+  publicCallMeDialFailureMessage,
 } from './public-demo.helpers.js';
 
 const DEMO_UNAVAILABLE = {
@@ -146,18 +149,28 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         });
         callSid = result.callSid;
       } catch (err) {
-        request.log.error({ err, callId, appUrl: config.APP_URL }, 'Public call-me Telnyx dial failed');
+        const errMessage = errMessageOf(err);
+        request.log.error(
+          {
+            err,
+            errMessage,
+            callId,
+            demoFromNumber: maskPhoneLast4(demoFromNumber),
+            appUrlOrigin: toPublicOrigin(config.APP_URL),
+            hasConnectionId: Boolean(config.TELNYX_APP_ID?.trim()),
+          },
+          'Public call-me Telnyx dial failed',
+        );
         await db
           .update(calls)
           .set({ status: 'failed', outcome: 'dial_error', updatedAt: new Date() })
           .where(eq(calls.id, callId));
         if (!skipCooldown) await cacheDel(cooldownKey);
-        const localhostOrigin = looksLikeLocalhostUrl(config.APP_URL);
         return reply.status(502).send({
           error: 'dial_failed',
-          message: localhostOrigin
-            ? "We couldn't place the call because this API's public URL is localhost — the phone network can't reach it. Set APP_URL or API_PUBLIC_URL to the public HTTPS origin."
-            : "We couldn't place the call right now. Hear a sample instead, or try again in a minute.",
+          message: publicCallMeDialFailureMessage(errMessage, {
+            localhostOrigin: looksLikeLocalhostUrl(config.APP_URL),
+          }),
         });
       }
 

@@ -11,6 +11,11 @@ import {
   isForeignKeyViolation,
   scanDelDemoCallMeKeys,
   maybeClearDemoCallMeCooldownsOnBoot,
+  errMessageOf,
+  maskPhoneLast4,
+  clipCarrierErrorBody,
+  publicCallMeDialFailureMessage,
+  CARRIER_ERROR_MAX_CHARS,
   type DemoCallMeRedis,
 } from '../modules/public-api/public-demo.helpers.js';
 
@@ -192,5 +197,91 @@ describe('maybeClearDemoCallMeCooldownsOnBoot', () => {
     await expect(maybeClearDemoCallMeCooldownsOnBoot(true, redis, log)).resolves.toBe(0);
     expect(log.warn).toHaveBeenCalledOnce();
     expect(log.info).not.toHaveBeenCalled();
+  });
+});
+
+describe('errMessageOf', () => {
+  it('reads Error.message at the top level', () => {
+    expect(errMessageOf(new Error('Carrier /calls → 422: invalid from'))).toBe(
+      'Carrier /calls → 422: invalid from',
+    );
+  });
+
+  it('stringifies non-Error values', () => {
+    expect(errMessageOf('plain')).toBe('plain');
+    expect(errMessageOf(42)).toBe('42');
+  });
+});
+
+describe('maskPhoneLast4', () => {
+  it('keeps only the last 4 digits', () => {
+    expect(maskPhoneLast4('+14153211212')).toBe('***1212');
+  });
+
+  it('does not leak a short or empty number as-is', () => {
+    expect(maskPhoneLast4('')).toBe('unset');
+    expect(maskPhoneLast4('   ')).toBe('unset');
+    expect(maskPhoneLast4('12')).toBe('***12');
+  });
+});
+
+describe('clipCarrierErrorBody', () => {
+  it('leaves short bodies alone', () => {
+    expect(clipCarrierErrorBody('{"errors":[]}')).toBe('{"errors":[]}');
+  });
+
+  it('caps at ~2k so Error.message stays Railway-safe', () => {
+    const huge = 'x'.repeat(CARRIER_ERROR_MAX_CHARS + 80);
+    const clipped = clipCarrierErrorBody(huge);
+    expect(clipped.length).toBe(CARRIER_ERROR_MAX_CHARS + 1);
+    expect(clipped.endsWith('…')).toBe(true);
+    expect(clipped.startsWith('x'.repeat(32))).toBe(true);
+  });
+});
+
+describe('publicCallMeDialFailureMessage', () => {
+  const generic =
+    "We couldn't place the call right now. Hear a sample instead, or try again in a minute.";
+
+  it('keeps the localhost-origin explanation', () => {
+    expect(
+      publicCallMeDialFailureMessage('Carrier /calls → 422: whatever', {
+        localhostOrigin: true,
+      }),
+    ).toMatch(/localhost/);
+  });
+
+  it('maps 401/403 to credentials without echoing the body', () => {
+    const msg = publicCallMeDialFailureMessage(
+      'Carrier /calls → 401: {"errors":[{"detail":"sk_live_SECRET"}]}',
+      { localhostOrigin: false },
+    );
+    expect(msg).toMatch(/credentials/);
+    expect(msg).not.toMatch(/sk_live|SECRET|401/);
+  });
+
+  it('maps connection / invalid-from to a from-number mismatch', () => {
+    const from = publicCallMeDialFailureMessage(
+      `Carrier /calls → 422: {"errors":[{"detail":"The 'from' number is not associated with the given connection"}]}`,
+      { localhostOrigin: false },
+    );
+    expect(from).toMatch(/demo number isn't assigned/);
+    expect(from).not.toMatch(/connection_id|\+1/);
+  });
+
+  it('maps a generic 422 to validation', () => {
+    expect(
+      publicCallMeDialFailureMessage('Carrier /calls → 422: Unprocessable Entity', {
+        localhostOrigin: false,
+      }),
+    ).toMatch(/validation/);
+  });
+
+  it('falls back to the short generic 502', () => {
+    expect(
+      publicCallMeDialFailureMessage('Carrier /calls → 500: boom', {
+        localhostOrigin: false,
+      }),
+    ).toBe(generic);
   });
 });
