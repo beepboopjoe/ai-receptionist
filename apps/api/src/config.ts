@@ -3,6 +3,7 @@
 // ============================================================
 import { z } from 'zod';
 import { resolveAppUrl } from './lib/public-url.js';
+import { inspectTelnyxApiKey } from './lib/telnyx-auth.js';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -203,16 +204,25 @@ const PLACEHOLDER_ENCRYPTION_KEY = '0'.repeat(64);
  * preview (or a half-configured prod deploy) used to kill the process
  * before listen(), so /health never bound and Railway reported 502.
  */
+function envWithSanitizedTelnyx(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  if (env['TELNYX_API_KEY'] == null) return env;
+  return {
+    ...env,
+    TELNYX_API_KEY: inspectTelnyxApiKey(env['TELNYX_API_KEY']).key,
+  };
+}
+
 export function resolveConfig(env: NodeJS.ProcessEnv): {
   config: z.infer<typeof envSchema>;
   valid: boolean;
   missing: string[];
 } {
+  const sanitizedEnv = envWithSanitizedTelnyx(env);
   const result = envSchema.safeParse({
-    ...env,
+    ...sanitizedEnv,
     // Resolve before zod defaults APP_URL to localhost, so an unset
     // APP_URL can still pick up Railway's API_PUBLIC_URL origin.
-    APP_URL: resolveAppUrl(env),
+    APP_URL: resolveAppUrl(sanitizedEnv),
   });
   if (result.success) {
     return { config: result.data, valid: true, missing: [] };
@@ -232,13 +242,13 @@ export function resolveConfig(env: NodeJS.ProcessEnv): {
   );
 
   const filled = envSchema.parse({
-    ...env,
-    APP_URL: resolveAppUrl(env),
-    DATABASE_URL: env['DATABASE_URL'] || 'postgres://127.0.0.1:5432/unconfigured',
-    JWT_SECRET: env['JWT_SECRET'] || PLACEHOLDER_SECRET,
-    JWT_REFRESH_SECRET: env['JWT_REFRESH_SECRET'] || PLACEHOLDER_SECRET,
-    ENCRYPTION_KEY: env['ENCRYPTION_KEY'] || PLACEHOLDER_ENCRYPTION_KEY,
-    XAI_API_KEY: env['XAI_API_KEY'] || 'unconfigured',
+    ...sanitizedEnv,
+    APP_URL: resolveAppUrl(sanitizedEnv),
+    DATABASE_URL: sanitizedEnv['DATABASE_URL'] || 'postgres://127.0.0.1:5432/unconfigured',
+    JWT_SECRET: sanitizedEnv['JWT_SECRET'] || PLACEHOLDER_SECRET,
+    JWT_REFRESH_SECRET: sanitizedEnv['JWT_REFRESH_SECRET'] || PLACEHOLDER_SECRET,
+    ENCRYPTION_KEY: sanitizedEnv['ENCRYPTION_KEY'] || PLACEHOLDER_ENCRYPTION_KEY,
+    XAI_API_KEY: sanitizedEnv['XAI_API_KEY'] || 'unconfigured',
   });
   return { config: filled, valid: false, missing };
 }

@@ -138,6 +138,48 @@ export function clipCarrierErrorBody(
   return `${text.slice(0, max)}…`;
 }
 
+export interface PublicCallMeDialFailureLog {
+  httpStatus: number | null;
+  bodyClipped: string;
+  apiKeyPresent: boolean;
+  apiKeyLen: number;
+  apiKeyPrefix: string;
+  strippedWhitespace: boolean;
+  strippedQuotes: boolean;
+  strippedBearerPrefix: boolean;
+  keySanitized: boolean;
+  connectionIdPresent: boolean;
+  fromMasked: string;
+}
+
+/**
+ * Railway's log ingest (MCP + dashboard filter) only keeps pino `msg`.
+ * Put every ops field in the message string AND return them as
+ * top-level structured fields so neither path is stripped.
+ */
+export function formatPublicCallMeDialFailureLog(
+  fields: PublicCallMeDialFailureLog,
+): { message: string; fields: PublicCallMeDialFailureLog } {
+  const httpStatus = fields.httpStatus ?? 'unset';
+  const body = fields.bodyClipped || 'empty';
+  const prefix = fields.apiKeyPrefix || 'none';
+  const message = [
+    'Public call-me Telnyx dial failed',
+    `httpStatus=${httpStatus}`,
+    `apiKeyPresent=${fields.apiKeyPresent}`,
+    `apiKeyLen=${fields.apiKeyLen}`,
+    `apiKeyPrefix=${prefix}`,
+    `keySanitized=${fields.keySanitized}`,
+    `strippedQuotes=${fields.strippedQuotes}`,
+    `strippedWhitespace=${fields.strippedWhitespace}`,
+    `strippedBearerPrefix=${fields.strippedBearerPrefix}`,
+    `connectionIdPresent=${fields.connectionIdPresent}`,
+    `fromMasked=${fields.fromMasked}`,
+    `body=${body}`,
+  ].join(' ');
+  return { message, fields };
+}
+
 const CALL_ME_DIAL_GENERIC =
   "We couldn't place the call right now. Hear a sample instead, or try again in a minute.";
 const CALL_ME_DIAL_LOCALHOST =
