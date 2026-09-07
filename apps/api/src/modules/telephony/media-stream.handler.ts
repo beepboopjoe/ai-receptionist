@@ -46,6 +46,11 @@ import {
   isGrokAudioDeltaType,
   summarizeEventCounts,
 } from './telnyx-stream.helpers.js';
+import {
+  clipXaiLogBody,
+  collectLimitedHttpBody,
+  xaiApiKeyLogFields,
+} from '../../lib/xai-auth.js';
 import pino from 'pino';
 
 dayjs.extend(utc);
@@ -252,7 +257,12 @@ export async function handleMediaStream(
   } catch (err) {
     logger.error(
       { err, callSid, tenantId, callId },
-      formatGrokConnectFailureLog({ callSid, tenantId, err }),
+      formatGrokConnectFailureLog({
+        callSid,
+        tenantId,
+        err,
+        ...grokConnectLogFields(),
+      }),
     );
     try { providerSocket.close(1011, 'Grok session create failed'); } catch { /* ignore */ }
     throw err;
@@ -265,12 +275,46 @@ export async function handleMediaStream(
   });
 
   let grokSessionId = session.sessionId; // may be updated when session.created fires
+  const connectLog = grokConnectLogFields(session);
+  let grokHandshakeLogged = false;
+  let grokHandshakeCapture = false;
+
+  const logGrokConnectFailure = (err: unknown, extras?: { httpStatus?: number | null; bodyClipped?: string }) => {
+    if (grokHandshakeLogged) return;
+    grokHandshakeLogged = true;
+    logger.error(
+      { err, callSid, tenantId, callId, httpStatus: extras?.httpStatus ?? null },
+      formatGrokConnectFailureLog({
+        callSid,
+        tenantId,
+        err,
+        httpStatus: extras?.httpStatus,
+        bodyClipped: extras?.bodyClipped,
+        ...connectLog,
+      }),
+    );
+  };
+
+  // ws only puts "Unexpected server response: 403" on `error`. The body
+  // (credits / ACL / model denial) lives on `unexpected-response`.
+  grokSocket.on('unexpected-response', (req, res) => {
+    grokHandshakeCapture = true;
+    void (async () => {
+      const rawBody = await collectLimitedHttpBody(res);
+      logGrokConnectFailure(
+        new Error(`Unexpected server response: ${res.statusCode ?? 'unknown'}`),
+        {
+          httpStatus: typeof res.statusCode === 'number' ? res.statusCode : null,
+          bodyClipped: clipXaiLogBody(rawBody || ''),
+        },
+      );
+    })();
+    try { req.destroy(); } catch { /* ignore */ }
+  });
 
   grokSocket.on('error', (err) => {
-    logger.error(
-      { err, callSid, tenantId, callId },
-      formatGrokConnectFailureLog({ callSid, tenantId, err }),
-    );
+    if (grokHandshakeCapture) return;
+    logGrokConnectFailure(err);
   });
 
   // Relay counters — Railway MCP only keeps pino `msg`, so every first-frame
@@ -666,6 +710,23 @@ export async function handleMediaStream(
 }
 
 // ---- Helpers ----
+
+/** Log-safe Grok handshake fields. Inspects raw env so paste sanitization flags survive config cleanup. */
+function grokConnectLogFields(session?: { webSocketUrl?: string; headers?: Record<string, string> }) {
+  const wsUrl = session?.webSocketUrl ?? '';
+  let model = 'unset';
+  try {
+    if (wsUrl) model = new URL(wsUrl).searchParams.get('model') || 'unset';
+  } catch {
+    model = 'unset';
+  }
+  return {
+    ...xaiApiKeyLogFields(process.env['XAI_API_KEY']),
+    authHeaderPresent: Boolean(session?.headers?.['Authorization']),
+    model,
+    wsUrl: wsUrl || 'unset',
+  };
+}
 
 function isOutsideHours(now: dayjs.Dayjs, open: string, close: string): boolean {
   const [openH = 9,  openM = 0]  = open.split(':').map(Number);

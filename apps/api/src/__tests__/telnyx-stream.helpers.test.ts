@@ -266,6 +266,33 @@ describe('Railway-visible log messages', () => {
     expect(grok).toContain('Grok realtime connect failed');
     expect(grok).toContain('err=XAI_API_KEY is required');
     expect(grok).toContain('tenantId=tenant-1');
+    expect(grok).toContain('httpStatus=unset');
+    expect(grok).toContain('apiKeyPresent=unknown');
+
+    const grok403 = formatGrokConnectFailureLog({
+      callSid: 'v2:abc',
+      tenantId: 'tenant-1',
+      err: new Error('Unexpected server response: 403'),
+      httpStatus: 403,
+      bodyClipped: 'permission denied for model grok-voice-think-fast-1.0 Bearer xai-supersecret',
+      apiKeyPresent: true,
+      apiKeyLen: 48,
+      apiKeyPrefix: 'xai-',
+      authHeaderPresent: true,
+      model: 'grok-voice-think-fast-1.0',
+      wsUrl: 'wss://api.x.ai/v1/realtime?model=grok-voice-think-fast-1.0',
+      keySanitized: false,
+      placeholder: false,
+    });
+    expect(grok403).toContain('httpStatus=403');
+    expect(grok403).toContain('apiKeyPresent=true');
+    expect(grok403).toContain('apiKeyLen=48');
+    expect(grok403).toContain('apiKeyPrefix=xai-');
+    expect(grok403).toContain('authHeader=true');
+    expect(grok403).toContain('model=grok-voice-think-fast-1.0');
+    expect(grok403).toContain('body=');
+    expect(grok403).not.toContain('xai-supersecret');
+    expect(grok403).toContain('Bearer [redacted]');
 
     expect(formatGrokGreetingLog({ callSid: 'v2:abc', grokSessionId: 'grok_1' })).toContain(
       'Grok session.update + greeting sent',
@@ -384,11 +411,16 @@ describe('production sources use the working Telnyx + Grok path', () => {
 
     const adapter = readFileSync(join(srcRoot, 'modules/voice-agent/adapters/grok.adapter.ts'), 'utf8');
     expect(adapter).toContain("type: 'audio/pcmu'");
+    expect(adapter).toContain('buildGrokRealtimeUrl');
+    expect(adapter).toContain('xaiAuthorizationHeader');
     expect(adapter).not.toMatch(/model:\s*'whisper-1'/);
 
     const media = readFileSync(join(srcRoot, 'modules/telephony/media-stream.handler.ts'), 'utf8');
     expect(media).toContain('GROK_GREETING_CREATE');
     expect(media).toContain('formatGrokConnectFailureLog');
+    expect(media).toContain("on('unexpected-response'");
+    expect(media).toContain('collectLimitedHttpBody');
+    expect(media).toContain('xaiApiKeyLogFields');
     expect(media).toContain('isGrokAudioDeltaType');
     expect(media).toContain('extractGrokAudioPayload');
     expect(media).toContain('extractTelnyxInboundAudioPayload');

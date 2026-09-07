@@ -22,6 +22,7 @@ import type { WebSocket as WsWebSocket } from 'ws';
 import { WebSocket as WsClient } from 'ws';
 import pino from 'pino';
 import { telnyxAuthorizationHeader } from '../../lib/telnyx-auth.js';
+import { buildGrokRealtimeUrl, inspectXaiApiKey, xaiAuthorizationHeader } from '../../lib/xai-auth.js';
 
 const logger = pino({ name: 'telnyx-devmode' });
 
@@ -165,8 +166,8 @@ async function dispatch(
 
 // ── WebSocket bridge: Telnyx ↔ xAI Grok ───────────────────────
 function bridgeMediaStream(telnyxSocket: WsWebSocket): void {
-  const xaiKey = process.env['XAI_API_KEY'];
-  if (!xaiKey) {
+  const xaiKey = inspectXaiApiKey(process.env['XAI_API_KEY']);
+  if (!xaiKey.apiKeyPresent) {
     logger.error('XAI_API_KEY missing — cannot connect to Grok');
     telnyxSocket.close();
     return;
@@ -177,8 +178,8 @@ function bridgeMediaStream(telnyxSocket: WsWebSocket): void {
   const queuedAudio: string[] = [];
 
   function connectGrok() {
-    grokSocket = new WsClient('wss://api.x.ai/v1/realtime?model=grok-voice-think-fast-1.0', {
-      headers: { Authorization: `Bearer ${xaiKey}` },
+    grokSocket = new WsClient(buildGrokRealtimeUrl(process.env['XAI_REALTIME_MODEL']), {
+      headers: { Authorization: xaiAuthorizationHeader(xaiKey.key) },
     });
 
     grokSocket.on('open', () => {

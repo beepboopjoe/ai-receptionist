@@ -1,13 +1,14 @@
 // ============================================================
 // Grok Voice Adapter — xAI Realtime Voice API
-// WebSocket: wss://api.x.ai/v1/realtime?model=grok-voice-think-fast-1.0
+// WebSocket: wss://api.x.ai/v1/realtime?model=<XAI_REALTIME_MODEL>
 // Protocol: compatible with OpenAI Realtime API spec
 //
 // Model history:
 //   - grok-voice-fast-1.0      : deprecated, scheduled for removal
 //   - grok-realtime-preview    : older preview, replaced by think-fast
-//   - grok-voice-think-fast-1.0: CURRENT — flagship voice model with
-//     better turn-taking and a more natural cadence than the preview.
+//   - grok-voice-think-fast-1.0: default pin (XAI_REALTIME_MODEL)
+//   - grok-voice-think-fast-2.0: current xAI flagship (set via env)
+//   - grok-voice-latest        : alias — tracks flagship, not pinned
 // ============================================================
 import { WebSocket } from 'ws';
 import type {
@@ -17,10 +18,12 @@ import type {
 } from '@ai-receptionist/shared';
 import type { TranscriptEntry } from '@ai-receptionist/shared';
 import { IntegrationError } from '../../../lib/errors.js';
-
-// xAI Realtime endpoint — model must be passed as a query param
-const GROK_REALTIME_BASE = 'wss://api.x.ai/v1/realtime';
-const GROK_MODEL = 'grok-voice-think-fast-1.0';
+import {
+  buildGrokRealtimeUrl,
+  inspectXaiApiKey,
+  resolveGrokRealtimeModel,
+  xaiAuthorizationHeader,
+} from '../../../lib/xai-auth.js';
 
 // Valid Grok voice names (lowercase per current xAI Voice Agent docs)
 //   eve — Default voice, engaging and enthusiastic
@@ -45,9 +48,16 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
   constructor(private credentials: Record<string, string>) {}
 
   private get apiKey(): string {
-    const key = this.credentials['xai_api_key'] ?? this.credentials['XAI_API_KEY'];
-    if (!key) throw new IntegrationError('grok_voice', 'XAI_API_KEY is required');
+    const raw = this.credentials['xai_api_key'] ?? this.credentials['XAI_API_KEY'];
+    const { key, apiKeyPresent } = inspectXaiApiKey(raw);
+    if (!apiKeyPresent) throw new IntegrationError('grok_voice', 'XAI_API_KEY is required');
     return key;
+  }
+
+  private get realtimeModel(): string {
+    return resolveGrokRealtimeModel(
+      this.credentials['xai_realtime_model'] ?? this.credentials['XAI_REALTIME_MODEL'],
+    );
   }
 
   /**
@@ -70,9 +80,9 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
       sessionId,
       provider: 'grok',
       // Model MUST be in the query string — xAI requires it
-      webSocketUrl: `${GROK_REALTIME_BASE}?model=${GROK_MODEL}`,
+      webSocketUrl: buildGrokRealtimeUrl(this.realtimeModel),
       headers: {
-        Authorization: `Bearer ${this.apiKey}`,
+        Authorization: xaiAuthorizationHeader(this.apiKey),
       },
     };
   }

@@ -4,6 +4,7 @@
 import { z } from 'zod';
 import { resolveAppUrl } from './lib/public-url.js';
 import { inspectTelnyxApiKey } from './lib/telnyx-auth.js';
+import { inspectXaiApiKey, DEFAULT_GROK_REALTIME_MODEL } from './lib/xai-auth.js';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -44,6 +45,12 @@ const envSchema = z.object({
 
   // xAI / Grok Voice (primary voice provider)
   XAI_API_KEY: z.string().min(1),
+  /**
+   * Grok Speech-to-Speech model query param on wss://api.x.ai/v1/realtime.
+   * Pin a version in prod. Override to grok-voice-think-fast-2.0 /
+   * grok-voice-latest if the key's model ACL denies 1.0.
+   */
+  XAI_REALTIME_MODEL: z.string().min(1).default(DEFAULT_GROK_REALTIME_MODEL),
 
   // ElevenLabs (optional fallback voice provider)
   ELEVENLABS_API_KEY: z.string().default(''),
@@ -204,12 +211,15 @@ const PLACEHOLDER_ENCRYPTION_KEY = '0'.repeat(64);
  * preview (or a half-configured prod deploy) used to kill the process
  * before listen(), so /health never bound and Railway reported 502.
  */
-function envWithSanitizedTelnyx(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  if (env['TELNYX_API_KEY'] == null) return env;
-  return {
-    ...env,
-    TELNYX_API_KEY: inspectTelnyxApiKey(env['TELNYX_API_KEY']).key,
-  };
+function envWithSanitizedSecrets(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  let next = env;
+  if (env['TELNYX_API_KEY'] != null) {
+    next = { ...next, TELNYX_API_KEY: inspectTelnyxApiKey(env['TELNYX_API_KEY']).key };
+  }
+  if (env['XAI_API_KEY'] != null) {
+    next = { ...next, XAI_API_KEY: inspectXaiApiKey(env['XAI_API_KEY']).key };
+  }
+  return next;
 }
 
 export function resolveConfig(env: NodeJS.ProcessEnv): {
@@ -217,7 +227,7 @@ export function resolveConfig(env: NodeJS.ProcessEnv): {
   valid: boolean;
   missing: string[];
 } {
-  const sanitizedEnv = envWithSanitizedTelnyx(env);
+  const sanitizedEnv = envWithSanitizedSecrets(env);
   const result = envSchema.safeParse({
     ...sanitizedEnv,
     // Resolve before zod defaults APP_URL to localhost, so an unset
