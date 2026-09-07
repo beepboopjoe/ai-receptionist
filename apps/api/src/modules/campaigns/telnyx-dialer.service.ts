@@ -7,6 +7,7 @@
 // ============================================================
 import { config } from '../../config.js';
 import { telnyxWebhookUrl } from '../../lib/public-url.js';
+import { clipCarrierErrorBody } from '../public-api/public-demo.helpers.js';
 import pino from 'pino';
 
 const logger = pino({ name: 'telnyx-dialer' });
@@ -43,7 +44,7 @@ async function post(path: string, body: object): Promise<unknown> {
   });
 
   if (!res.ok) {
-    const text = await res.text();
+    const text = clipCarrierErrorBody(await res.text());
     throw new Error(`Carrier ${path} → ${res.status}: ${text}`);
   }
 
@@ -146,6 +147,8 @@ export async function dialDirect(params: DialDirectParams): Promise<DialResult> 
     })
   ).toString('base64');
 
+  // Telnyx requires `from` to be a number owned by `connection_id`
+  // (TELNYX_APP_ID). A DEMO_FROM_NUMBER on another Call Control app → 422.
   const body: Record<string, unknown> = {
     connection_id: config.TELNYX_APP_ID,
     to,

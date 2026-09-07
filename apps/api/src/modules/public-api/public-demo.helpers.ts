@@ -114,3 +114,75 @@ export async function maybeClearDemoCallMeCooldownsOnBoot(
     return 0;
   }
 }
+
+/** Top-level string for logs — Railway often strips nested `err` fields. */
+export function errMessageOf(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+/** Log-safe last-4 of a phone. Empty → `unset`. Never the full number. */
+export function maskPhoneLast4(phone: string | undefined | null): string {
+  const trimmed = (phone ?? '').trim();
+  if (!trimmed) return 'unset';
+  return `***${trimmed.slice(-4)}`;
+}
+
+/** Cap carrier HTTP bodies so Error.message stays ~2k (Railway / pino). */
+export const CARRIER_ERROR_MAX_CHARS = 2000;
+
+export function clipCarrierErrorBody(
+  text: string,
+  max = CARRIER_ERROR_MAX_CHARS,
+): string {
+  if (text.length <= max) return text;
+  return `${text.slice(0, max)}…`;
+}
+
+const CALL_ME_DIAL_GENERIC =
+  "We couldn't place the call right now. Hear a sample instead, or try again in a minute.";
+const CALL_ME_DIAL_LOCALHOST =
+  "We couldn't place the call because this API's public URL is localhost — the phone network can't reach it. Set APP_URL or API_PUBLIC_URL to the public HTTPS origin.";
+const CALL_ME_DIAL_CREDENTIALS =
+  "We couldn't place the call — phone credentials look wrong. Hear a sample instead.";
+const CALL_ME_DIAL_FROM_CONNECTION =
+  "We couldn't place the call — the demo number isn't assigned to this phone connection. Hear a sample instead.";
+const CALL_ME_DIAL_VALIDATION =
+  "We couldn't place the call — the number or setup didn't pass validation. Hear a sample instead.";
+
+/**
+ * Short 502 copy from a carrier Error.message. Never echoes the Telnyx body
+ * (keys, connection ids, full numbers).
+ */
+export function publicCallMeDialFailureMessage(
+  errMessage: string,
+  opts: { localhostOrigin: boolean },
+): string {
+  if (opts.localhostOrigin) return CALL_ME_DIAL_LOCALHOST;
+
+  const msg = errMessage.toLowerCase();
+
+  if (/\b401\b/.test(msg) || /\b403\b/.test(msg)) {
+    return CALL_ME_DIAL_CREDENTIALS;
+  }
+
+  const mentionsFromMismatch =
+    msg.includes('invalid from') ||
+    msg.includes('from number') ||
+    msg.includes("'from'") ||
+    msg.includes('"from"') ||
+    (msg.includes('from') &&
+      (msg.includes('not associated') ||
+        msg.includes('not assigned') ||
+        msg.includes('not owned') ||
+        msg.includes('does not belong')));
+
+  if (msg.includes('connection') || mentionsFromMismatch) {
+    return CALL_ME_DIAL_FROM_CONNECTION;
+  }
+
+  if (/\b422\b/.test(msg)) {
+    return CALL_ME_DIAL_VALIDATION;
+  }
+
+  return CALL_ME_DIAL_GENERIC;
+}
