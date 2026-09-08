@@ -33,6 +33,7 @@ import {
   publicCallMeDialFailureMessage,
   formatPublicCallMeDialFailureLog,
 } from './public-demo.helpers.js';
+import { normalizeCallMeLanguage } from '../voice-agent/call-me-language.js';
 import { telnyxApiKeyLogFields, telnyxFailureFields } from '../../lib/telnyx-auth.js';
 
 const DEMO_UNAVAILABLE = {
@@ -60,6 +61,11 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
           required: ['phone'],
           properties: {
             phone: { type: 'string', minLength: 10, maxLength: 32 },
+            language: {
+              type: 'string',
+              description:
+                'Spoken language for the demo greeting: en, es, it, ar, fa, hy, ru. Defaults to en.',
+            },
           },
         },
       },
@@ -71,7 +77,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         return reply.status(503).send(DEMO_UNAVAILABLE);
       }
 
-      const body = (request.body ?? {}) as { phone?: string };
+      const body = (request.body ?? {}) as { phone?: string; language?: string };
       const phone = normalizeUsCaPhone(body.phone ?? '');
       if (!phone) {
         throw new ValidationError('Enter a valid US or Canada mobile number, like (415) 321-1212.');
@@ -79,6 +85,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
       if (isJunkDemoNumber(phone)) {
         throw new ValidationError('That number looks invalid. Try a real US or Canada mobile.');
       }
+      const language = normalizeCallMeLanguage(body.language);
 
       const [demoTenant] = await db
         .select({ id: tenants.id })
@@ -148,6 +155,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
           tenantId: demoTenantId,
           fromNumber: phone,
           mode: 'demo',
+          language,
         });
         callSid = result.callSid;
       } catch (err) {
@@ -204,7 +212,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         action: 'call.demo_call_placed',
         entityType: 'call',
         entityId: callId,
-        metadata: { toNumber: phone, fromNumber: demoFromNumber, callSid },
+        metadata: { toNumber: phone, fromNumber: demoFromNumber, callSid, language },
       });
 
       return reply.send({

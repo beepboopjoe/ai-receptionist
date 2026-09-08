@@ -46,6 +46,11 @@ export interface PromptContext {
    * and after-hours deflection must not appear.
    */
   isDemo?: boolean;
+  /**
+   * Call-me visitor language (en/es/it/ar/fa/hy/ru). Only honored when
+   * isDemo is true — paying-tenant inbound never reads this.
+   */
+  demoLanguage?: string;
 }
 
 /**
@@ -103,7 +108,7 @@ const DEFAULT_ESCALATION_VOCAB = VERTICAL_ESCALATION_VOCAB.dental;
  */
 export function buildSystemPrompt(ctx: PromptContext): string {
   if (ctx.isDemo) {
-    return buildCallMeDemoPrompt({ timezone: ctx.timezone });
+    return buildCallMeDemoPrompt({ timezone: ctx.timezone, language: ctx.demoLanguage });
   }
 
   const now = dayjs().tz(ctx.timezone);

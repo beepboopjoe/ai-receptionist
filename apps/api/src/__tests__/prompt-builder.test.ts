@@ -88,4 +88,14 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toMatch(/The office is currently closed/);
     expect(prompt).not.toMatch(/product demo/i);
   });
+
+  it('isDemo honors demoLanguage without affecting non-demo tenants', () => {
+    const demo = buildSystemPrompt({ ...BASE_CTX, isDemo: true, demoLanguage: 'es' });
+    expect(demo).toMatch(/Speak Spanish from the VERY FIRST word/);
+    expect(demo).toContain('Hola, soy Aria de Telfin');
+
+    const paying = buildSystemPrompt({ ...BASE_CTX, vertical: 'dental', demoLanguage: 'es' });
+    expect(paying).toMatch(/dental practice/i);
+    expect(paying).not.toMatch(/Speak Spanish from the VERY FIRST word/);
+  });
 });

@@ -81,6 +81,11 @@ export interface MediaStreamParams {
    */
   mode?: string;
   /**
+   * Homepage call-me spoken language (en/es/it/ar/fa/hy/ru). Only set on
+   * public demo dials — ignored for paying-tenant inbound.
+   */
+  language?: string;
+  /**
    * Telnyx does NOT require this. Set it only for legacy Twilio paths where
    * the streamSid must appear in every outbound audio message.
    */
@@ -98,7 +103,7 @@ export async function handleMediaStream(
   providerSocket: WebSocket,
   params: MediaStreamParams
 ): Promise<void> {
-  const { callId, tenantId, fromNumber, callSid, campaignContactId, campaignId, streamSid, adHocTask, mode } = params;
+  const { callId, tenantId, fromNumber, callSid, campaignContactId, campaignId, streamSid, adHocTask, mode, language } = params;
   const isOutbound = !!campaignContactId;
   const isDemo = isDemoCallMeTenant(tenantId, config.DEMO_TENANT_ID) || mode === 'demo';
 
@@ -233,6 +238,7 @@ export async function handleMediaStream(
       ...(kbChunks.length > 0 && { kbChunks }),
       ...(adHocTask && { adHocTask }), // Phase 29b — Ask-your-AI single-task call
       ...(isDemo && { isDemo: true }),
+      ...(isDemo && language && { demoLanguage: language }),
     });
   }
 

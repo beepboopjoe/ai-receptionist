@@ -25,4 +25,21 @@ describe('buildCallMeDemoPrompt', () => {
     expect(prompt).toMatch(/ONLY if they ask/i);
     expect(prompt).toMatch(/dental, legal \/ PI, real estate, insurance, home services/i);
   });
+
+  it('defaults to English and greets in Spanish when language=es', () => {
+    const en = buildCallMeDemoPrompt();
+    expect(en).toMatch(/chose English/);
+    expect(en).toContain("Hi, this is Aria with Telfin");
+
+    const es = buildCallMeDemoPrompt({ language: 'es' });
+    expect(es).toMatch(/Speak Spanish from the VERY FIRST word/);
+    expect(es).toContain('Hola, soy Aria de Telfin');
+    expect(es).not.toMatch(/chose English/);
+  });
+
+  it.each(['it', 'ar', 'fa', 'hy', 'ru'] as const)('includes a native greeting for %s', (lang) => {
+    const prompt = buildCallMeDemoPrompt({ language: lang });
+    expect(prompt).toMatch(/VERY FIRST word/);
+    expect(prompt.length).toBeGreaterThan(400);
+  });
 });
