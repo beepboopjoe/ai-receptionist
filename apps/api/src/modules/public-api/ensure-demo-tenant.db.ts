@@ -5,7 +5,13 @@
 import { eq } from 'drizzle-orm';
 import type { Db } from '../../db/client.js';
 import { tenants, tenantSettings } from '../../db/schema.js';
-import type { DemoSettingsRow, DemoTenantRow, DemoTenantStore } from './ensure-demo-tenant.js';
+import type {
+  DemoSettingsHealPatch,
+  DemoSettingsLookup,
+  DemoSettingsRow,
+  DemoTenantRow,
+  DemoTenantStore,
+} from './ensure-demo-tenant.js';
 
 export function createDrizzleDemoTenantStore(db: Db): DemoTenantStore {
   return {
@@ -29,9 +35,13 @@ export function createDrizzleDemoTenantStore(db: Db): DemoTenantStore {
         onboardingStep: row.onboardingStep,
       });
     },
-    async findSettingsByTenantId(tenantId: string) {
+    async findSettingsByTenantId(tenantId: string): Promise<DemoSettingsLookup | null> {
       const [row] = await db
-        .select({ tenantId: tenantSettings.tenantId })
+        .select({
+          tenantId: tenantSettings.tenantId,
+          officeHours: tenantSettings.officeHours,
+          businessContext: tenantSettings.businessContext,
+        })
         .from(tenantSettings)
         .where(eq(tenantSettings.tenantId, tenantId))
         .limit(1);
@@ -47,6 +57,15 @@ export function createDrizzleDemoTenantStore(db: Db): DemoTenantStore {
         afterHoursMode: row.afterHoursMode,
         businessContext: row.businessContext,
       });
+    },
+    async updateSettings(tenantId: string, patch: DemoSettingsHealPatch) {
+      await db
+        .update(tenantSettings)
+        .set({
+          officeHours: patch.officeHours,
+          businessContext: patch.businessContext,
+        })
+        .where(eq(tenantSettings.tenantId, tenantId));
     },
   };
 }

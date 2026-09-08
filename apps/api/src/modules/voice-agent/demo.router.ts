@@ -10,6 +10,7 @@ import { buildGrokRealtimeUrl, xaiAuthorizationHeader } from '../../lib/xai-auth
 
 // ── System prompts for all verticals — imported from central file ─────────────
 import { VERTICAL_PROMPTS } from './vertical-prompts.js';
+import { buildCallMeDemoPrompt } from './call-me-demo.prompt.js';
 
 // Simple in-memory rate limiter: max 3 concurrent demo connections
 let activeDemoConnections = 0;
@@ -50,7 +51,13 @@ export async function demoPlugin(app: FastifyInstance) {
     const useCase = query['useCase'] ?? 'dental_receptionist';
     const voice = (query['voice'] ?? 'eve').toLowerCase();
 
-    const systemPrompt = VERTICAL_PROMPTS[useCase] ?? VERTICAL_PROMPTS['dental_receptionist']!;
+    // Homepage call-me shares this product script when the browser demo
+    // requests it explicitly. Default vertical samples stay receptionist
+    // sketches (dental_receptionist, etc.) so /demo is unchanged.
+    const systemPrompt =
+      useCase === 'telfin_demo' || useCase === 'call_me' || useCase === 'product'
+        ? buildCallMeDemoPrompt()
+        : VERTICAL_PROMPTS[useCase] ?? VERTICAL_PROMPTS['dental_receptionist']!;
 
     // Session timeout
     const timeout = setTimeout(() => {

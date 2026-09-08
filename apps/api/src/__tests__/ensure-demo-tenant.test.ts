@@ -11,12 +11,18 @@ import {
   buildDemoSettingsRow,
   ensureDemoTenant,
   maybeEnsureDemoTenantOnBoot,
+  demoSettingsNeedHeal,
+  isDemoCallMeTenant,
   DEMO_TENANT_NAME,
   DEMO_TENANT_SLUG,
   DEMO_TENANT_VERTICAL,
+  DEMO_BUSINESS_CONTEXT,
+  DEMO_OFFICE_HOURS,
   type DemoTenantStore,
   type DemoTenantRow,
   type DemoSettingsRow,
+  type DemoSettingsLookup,
+  type DemoSettingsHealPatch,
 } from '../modules/public-api/ensure-demo-tenant.js';
 
 const DEMO_ID = 'a648f47a-a2b6-444d-96f8-e1e66785a6e5';
@@ -27,23 +33,38 @@ function uniqueErr(): Error & { code: string } {
 
 function createFakeStore(opts?: {
   tenantIds?: string[];
+  settings?: Array<DemoSettingsLookup>;
+  /** Convenience: settings exist for these IDs with already-correct 24/7 hours. */
   settingsIds?: string[];
   onInsertTenant?: (row: DemoTenantRow) => void;
 }): DemoTenantStore & {
   tenants: Set<string>;
-  settings: Set<string>;
+  settingsMap: Map<string, DemoSettingsLookup>;
   insertedTenants: DemoTenantRow[];
   insertedSettings: DemoSettingsRow[];
+  patchedSettings: Array<{ tenantId: string; patch: DemoSettingsHealPatch }>;
 } {
   const tenants = new Set(opts?.tenantIds ?? []);
-  const settings = new Set(opts?.settingsIds ?? []);
+  const settingsMap = new Map<string, DemoSettingsLookup>();
+  for (const id of opts?.settingsIds ?? []) {
+    settingsMap.set(id, {
+      tenantId: id,
+      officeHours: DEMO_OFFICE_HOURS,
+      businessContext: DEMO_BUSINESS_CONTEXT,
+    });
+  }
+  for (const row of opts?.settings ?? []) {
+    settingsMap.set(row.tenantId, row);
+  }
   const insertedTenants: DemoTenantRow[] = [];
   const insertedSettings: DemoSettingsRow[] = [];
+  const patchedSettings: Array<{ tenantId: string; patch: DemoSettingsHealPatch }> = [];
   return {
     tenants,
-    settings,
+    settingsMap,
     insertedTenants,
     insertedSettings,
+    patchedSettings,
     async findTenantById(id) {
       return tenants.has(id) ? { id } : null;
     },
@@ -54,12 +75,24 @@ function createFakeStore(opts?: {
       tenants.add(row.id);
     },
     async findSettingsByTenantId(tenantId) {
-      return settings.has(tenantId) ? { tenantId } : null;
+      return settingsMap.get(tenantId) ?? null;
     },
     async insertSettings(row) {
-      if (settings.has(row.tenantId)) throw uniqueErr();
+      if (settingsMap.has(row.tenantId)) throw uniqueErr();
       insertedSettings.push(row);
-      settings.add(row.tenantId);
+      settingsMap.set(row.tenantId, {
+        tenantId: row.tenantId,
+        officeHours: row.officeHours,
+        businessContext: row.businessContext,
+      });
+    },
+    async updateSettings(tenantId, patch) {
+      patchedSettings.push({ tenantId, patch });
+      settingsMap.set(tenantId, {
+        tenantId,
+        officeHours: patch.officeHours,
+        businessContext: patch.businessContext,
+      });
     },
   };
 }
@@ -112,7 +145,7 @@ describe('demoTenantSlug', () => {
 });
 
 describe('ensureDemoTenant', () => {
-  it('is a no-op insert when the tenant and settings already exist', async () => {
+  it('is a no-op insert when the tenant and settings already exist and are 24/7', async () => {
     const store = createFakeStore({ tenantIds: [DEMO_ID], settingsIds: [DEMO_ID] });
     await expect(ensureDemoTenant(store, DEMO_ID)).resolves.toEqual({
       tenant: 'exists',
@@ -120,6 +153,7 @@ describe('ensureDemoTenant', () => {
     });
     expect(store.insertedTenants).toEqual([]);
     expect(store.insertedSettings).toEqual([]);
+    expect(store.patchedSettings).toEqual([]);
   });
 
   it('inserts a minimal tenant + settings with the exact UUID when missing', async () => {
@@ -142,8 +176,14 @@ describe('ensureDemoTenant', () => {
     expect(store.insertedSettings[0]?.tenantId).toBe(DEMO_ID);
     expect(store.insertedSettings[0]?.voiceProvider).toBe('grok');
     expect(store.insertedSettings[0]?.voiceName).toBe('eve');
-    expect(store.insertedSettings[0]?.businessContext).toMatch(/Telfin Demo/);
+    expect(store.insertedSettings[0]?.businessContext).toMatch(/Telfin/);
+    expect(store.insertedSettings[0]?.businessContext).toMatch(/24\/7/);
     expect(store.insertedSettings[0]?.officeHours.mon).toEqual({ open: '00:00', close: '23:59' });
+    expect(store.insertedSettings[0]?.officeHours.sunday).toEqual({
+      open: true,
+      start: '00:00',
+      end: '23:59',
+    });
   });
 
   it('inserts settings only when the tenant row already exists', async () => {
@@ -200,13 +240,60 @@ describe('ensureDemoTenant', () => {
       name: DEMO_TENANT_NAME,
       slug: DEMO_TENANT_SLUG,
       plan: 'trial',
-      vertical: 'legal',
+      vertical: DEMO_TENANT_VERTICAL,
       timezone: 'America/New_York',
       isActive: true,
       onboardingStep: 5,
     });
+    expect(DEMO_TENANT_VERTICAL).toBe('generic');
     const settings = buildDemoSettingsRow(DEMO_ID);
-    expect(settings.appointmentTypes.map((t) => t.id)).toContain('initial_consult');
+    expect(settings.appointmentTypes.map((t) => t.id)).toContain('product_walkthrough');
+    expect(settings.businessContext.length).toBeLessThanOrEqual(4000);
+  });
+
+  it('heals stale 9–5 hours and a law-firm persona on an existing demo tenant', async () => {
+    const store = createFakeStore({
+      tenantIds: [DEMO_ID],
+      settings: [
+        {
+          tenantId: DEMO_ID,
+          officeHours: {
+            mon: { open: '08:00', close: '17:00' },
+            fri: { open: '08:00', close: '16:00' },
+          },
+          businessContext: 'Telfin Demo is a sample law firm used only for the live homepage receptionist demo.',
+        },
+      ],
+    });
+    await expect(ensureDemoTenant(store, DEMO_ID)).resolves.toEqual({
+      tenant: 'exists',
+      settings: 'healed',
+    });
+    expect(store.insertedSettings).toEqual([]);
+    expect(store.patchedSettings).toHaveLength(1);
+    expect(store.patchedSettings[0]?.patch.officeHours.sun).toEqual({ open: '00:00', close: '23:59' });
+    expect(store.patchedSettings[0]?.patch.businessContext).toBe(DEMO_BUSINESS_CONTEXT);
+  });
+});
+
+describe('isDemoCallMeTenant', () => {
+  it('matches only the configured demo UUID', () => {
+    expect(isDemoCallMeTenant(DEMO_ID, DEMO_ID)).toBe(true);
+    expect(isDemoCallMeTenant(` ${DEMO_ID} `, DEMO_ID)).toBe(true);
+    expect(isDemoCallMeTenant(DEMO_ID, '')).toBe(false);
+    expect(isDemoCallMeTenant('11111111-1111-1111-1111-111111111111', DEMO_ID)).toBe(false);
+  });
+});
+
+describe('demoSettingsNeedHeal', () => {
+  it('is false for the canonical 24/7 + product persona', () => {
+    expect(
+      demoSettingsNeedHeal({
+        tenantId: DEMO_ID,
+        officeHours: DEMO_OFFICE_HOURS,
+        businessContext: DEMO_BUSINESS_CONTEXT,
+      }),
+    ).toBe(false);
   });
 });
 

@@ -172,6 +172,28 @@ describe('resolveMediaStreamParams', () => {
     expect(params.tenantId).toBe('tenant-1');
     expect(params.fromNumber).toBe('+15551212');
     expect(params.missingFields).toEqual([]);
+    expect(params.mode).toBeUndefined();
+  });
+
+  it('forwards dialDirect mode=demo so media-stream can skip after-hours', () => {
+    const clientState = Buffer.from(JSON.stringify({
+      callId: 'call-demo',
+      tenantId: 'a648f47a-a2b6-444d-96f8-e1e66785a6e5',
+      fromNumber: '+14153211212',
+      mode: 'demo',
+      isOutbound: false,
+    })).toString('base64');
+
+    const params = resolveMediaStreamParams({
+      event: 'start',
+      start: {
+        call_control_id: 'v2:demo',
+        client_state: clientState,
+      },
+    });
+
+    expect(params.mode).toBe('demo');
+    expect(params.tenantId).toBe('a648f47a-a2b6-444d-96f8-e1e66785a6e5');
   });
 });
 
@@ -428,6 +450,8 @@ describe('production sources use the working Telnyx + Grok path', () => {
     expect(media).toContain('formatFirstTelnyxInboundMediaLog');
     expect(media).toContain('formatFirstGrokAudioToTelnyxLog');
     expect(media).toContain('formatGrokEmptyResponseLog');
+    expect(media).toContain('isDemoCallMeTenant');
+    expect(media).toContain('isAfterHoursCall');
     expect(media).not.toMatch(/eventType === 'response\.audio\.delta'/);
   });
 });
