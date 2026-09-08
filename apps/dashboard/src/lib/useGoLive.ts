@@ -7,8 +7,13 @@ import {
   integrationsApi,
   type PortRequestRow,
 } from './api';
+import {
+  ALL_GROK_VOICES,
+  DEFAULT_PUBLIC_GROK_VOICE,
+} from '@ai-receptionist/shared';
 
-export const GROK_VOICE_IDS = ['eve', 'ara', 'rex', 'sal', 'leo'] as const;
+/** Public + legacy — a saved Eve/Ara/etc. still counts as a picked Grok voice. */
+export const GROK_VOICE_IDS = ALL_GROK_VOICES;
 
 export type GoLiveStepId =
   | 'phone'
@@ -92,7 +97,7 @@ export function useGoLive(): GoLiveStatus {
   );
   const phoneReady = hasPhone || hasPendingPort;
 
-  const voiceName = String(settings?.voiceName ?? 'eve').toLowerCase();
+  const voiceName = String(settings?.voiceName ?? DEFAULT_PUBLIC_GROK_VOICE).toLowerCase();
   const hasGrokVoice = (GROK_VOICE_IDS as readonly string[]).includes(voiceName);
 
   const hasOpenHours = hasOpenOfficeHours(hoursPayload);
@@ -119,7 +124,7 @@ export function useGoLive(): GoLiveStatus {
     {
       id: 'voice',
       title: 'Pick a Grok voice',
-      desc: 'Choose Eve, Ara, Rex, Sal, or Leo — xAI Grok voices used on every live call.',
+      desc: 'Choose Aurora, Castor, Cosmo, or Zenith — xAI Grok voices used on every live call.',
       href: '/settings/voice-agent',
       cta: 'Choose a voice',
       done: hasGrokVoice,

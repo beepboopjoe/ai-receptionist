@@ -189,7 +189,7 @@ function bridgeMediaStream(telnyxSocket: WsWebSocket): void {
           type: 'session.update',
           session: {
             instructions: SYSTEM_PROMPT,
-            voice: 'eve',
+            voice: 'aurora',
             audio: {
               input: { format: { type: 'audio/pcmu' }, transport: 'json' },
               output: { format: { type: 'audio/pcmu' }, transport: 'json' },

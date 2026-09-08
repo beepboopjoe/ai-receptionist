@@ -143,9 +143,10 @@ const envSchema = z.object({
   /**
    * When `1`/`true`/`yes`, boot INSERTs a minimal "Telfin Demo" tenant
    * (+ voice/office-hours settings) for DEMO_TENANT_ID if that UUID is
-   * missing. Also runs automatically in production whenever
-   * DEMO_TENANT_ID is a non-empty UUID (DB-restore safety). Never
-   * overwrites an existing tenant.
+   * missing, and HEALS existing demo settings to 24/7 hours + the product
+   * demo persona. Also runs automatically in production whenever
+   * DEMO_TENANT_ID is a non-empty UUID (DB-restore safety). Does not
+   * rewrite tenant name/slug of an already-existing row.
    */
   DEMO_ENSURE_TENANT: z.string().default(''),
 

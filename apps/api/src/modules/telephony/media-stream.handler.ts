@@ -21,9 +21,13 @@ import { emitWebhook } from '../webhooks/webhook.service.js';
 import { pushActivity } from '../activity/activity.service.js';
 import { isPromoTrialCapped } from '../billing/usage.service.js';
 import type { AppointmentType, OfficeHours, Contact } from '@ai-receptionist/shared';
+import { resolveSessionGrokVoice } from '@ai-receptionist/shared';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone.js';
 import utc from 'dayjs/plugin/utc.js';
+import { config } from '../../config.js';
+import { isDemoCallMeTenant } from '../public-api/ensure-demo-tenant.js';
+import { isAfterHoursCall } from './office-hours.js';
 import {
   base64PayloadBytes,
   buildTelnyxOutboundMediaMessage,
@@ -72,6 +76,23 @@ export interface MediaStreamParams {
    *  section so the AI opens by stating its purpose and works the task. */
   adHocTask?: string;
   /**
+   * From dialDirect client_state. `demo` is the homepage call-me widget.
+   * Combined with DEMO_TENANT_ID so inbound calls to the demo number also
+   * get the product-demo prompt (inbound webhooks do not set mode).
+   */
+  mode?: string;
+  /**
+   * Homepage call-me spoken language (en/es/it/ar/fa/hy/ru). Only set on
+   * public demo dials — ignored for paying-tenant inbound.
+   */
+  language?: string;
+  /**
+   * Homepage call-me Grok voice (aurora/castor/cosmo/zenith). Only applied
+   * when this is a demo call; paying tenants keep tenant_settings.voice_name
+   * (including legacy IDs).
+   */
+  voice?: string;
+  /**
    * Telnyx does NOT require this. Set it only for legacy Twilio paths where
    * the streamSid must appear in every outbound audio message.
    */
@@ -89,8 +110,9 @@ export async function handleMediaStream(
   providerSocket: WebSocket,
   params: MediaStreamParams
 ): Promise<void> {
-  const { callId, tenantId, fromNumber, callSid, campaignContactId, campaignId, streamSid, adHocTask } = params;
+  const { callId, tenantId, fromNumber, callSid, campaignContactId, campaignId, streamSid, adHocTask, mode, language, voice } = params;
   const isOutbound = !!campaignContactId;
+  const isDemo = isDemoCallMeTenant(tenantId, config.DEMO_TENANT_ID) || mode === 'demo';
 
   // 0. PROMO-TRIAL CAP CHECK — refuse to open the AI media stream if the
   //    tenant was granted a hands-on promo trial and has consumed all
@@ -139,6 +161,11 @@ export async function handleMediaStream(
   const storeTranscripts = tenantRow?.storeTranscripts ?? true;
   const apptTypes    = (settingsRow?.appointmentTypes ?? []) as AppointmentType[];
   const officeHours  = (settingsRow?.officeHours ?? {}) as OfficeHours;
+  const sessionVoice = resolveSessionGrokVoice({
+    isDemo,
+    demoVoice: voice,
+    tenantVoice: settingsRow?.voiceName,
+  });
 
   // 3. Determine workflow + build system prompt
   let workflow: string;
@@ -180,18 +207,32 @@ export async function handleMediaStream(
     });
   } else {
     const now     = dayjs().tz(tz);
-    const dayName = now.format('ddd').toLowerCase() as keyof OfficeHours;
-    const todayHours = officeHours[dayName];
-    const isAfterHours = !todayHours || isOutsideHours(now, todayHours.open, todayHours.close);
-    workflow = isAfterHours ? 'after_hours' : contact ? 'existing_contact' : 'new_contact';
+    const dayName = now.format('ddd').toLowerCase();
+    const isAfterHours = isAfterHoursCall({
+      now,
+      officeHours,
+      dayKey: dayName,
+      isDemo,
+    });
+    workflow = isDemo
+      ? 'new_contact'
+      : isAfterHours
+        ? 'after_hours'
+        : contact
+          ? 'existing_contact'
+          : 'new_contact';
 
     // Phase 12.8 — pull top-K knowledge-base chunks for grounding. Synthetic
     // query because we have no caller utterance yet at call-start. Always
     // resolves to [] on any error (no OPENAI_API_KEY, no docs, embed failure)
-    // so the prompt stays well-formed regardless.
-    const { retrieveRelevantChunks } = await import('../knowledge-base/kb.service.js');
-    const kbQuery = `${practiceName} ${vertical} ${apptTypes[0]?.name ?? ''}`.trim();
-    const kbChunks = await retrieveRelevantChunks(tenantId, kbQuery, 4);
+    // so the prompt stays well-formed regardless. Skip for the public product
+    // demo so leftover dental/legal docs cannot override the sales script.
+    let kbChunks: string[] = [];
+    if (!isDemo) {
+      const { retrieveRelevantChunks } = await import('../knowledge-base/kb.service.js');
+      const kbQuery = `${practiceName} ${vertical} ${apptTypes[0]?.name ?? ''}`.trim();
+      kbChunks = await retrieveRelevantChunks(tenantId, kbQuery, 4);
+    }
 
     systemPrompt = buildSystemPrompt({
       practiceName,
@@ -200,12 +241,16 @@ export async function handleMediaStream(
       officeHours,
       appointmentTypes: apptTypes,
       providers: [],
-      caller: contact,
-      workflowHint: workflow === 'after_hours' ? 'after_hours' : (workflow as 'new_contact' | 'existing_contact'),
+      caller: isDemo ? null : contact,
+      workflowHint: workflow === 'after_hours'
+        ? 'after_hours'
+        : (workflow as 'new_contact' | 'existing_contact'),
       transferNumber: settingsRow?.transferNumber ?? null,
       businessContext: settingsRow?.businessContext ?? null,
       ...(kbChunks.length > 0 && { kbChunks }),
       ...(adHocTask && { adHocTask }), // Phase 29b — Ask-your-AI single-task call
+      ...(isDemo && { isDemo: true }),
+      ...(isDemo && language && { demoLanguage: language }),
     });
   }
 
@@ -249,7 +294,7 @@ export async function handleMediaStream(
   try {
     session = await voiceAdapter.createSession({
       systemPrompt,
-      voice: settingsRow?.voiceName ?? 'eve',
+      voice: sessionVoice,
       audioInputFormat: 'pcmu',  // G.711 µ-law from Telnyx
       audioOutputFormat: 'pcmu',
       callMetadata: { callId, tenantId, fromNumber },
@@ -370,7 +415,7 @@ export async function handleMediaStream(
     const sessionUpdate = GrokVoiceAdapter.buildSessionUpdate({
       sessionId: grokSessionId,
       systemPrompt,
-      voice: settingsRow?.voiceName ?? 'eve',
+      voice: sessionVoice,
       audioInputFormat: 'pcmu',
       audioOutputFormat: 'pcmu',
     });
@@ -726,15 +771,6 @@ function grokConnectLogFields(session?: { webSocketUrl?: string; headers?: Recor
     model,
     wsUrl: wsUrl || 'unset',
   };
-}
-
-function isOutsideHours(now: dayjs.Dayjs, open: string, close: string): boolean {
-  const [openH = 9,  openM = 0]  = open.split(':').map(Number);
-  const [closeH = 17, closeM = 0] = close.split(':').map(Number);
-  const openMins  = openH  * 60 + openM;
-  const closeMins = closeH * 60 + closeM;
-  const nowMins   = now.hour() * 60 + now.minute();
-  return nowMins < openMins || nowMins >= closeMins;
 }
 
 async function triggerPostCallWorkflow(params: {

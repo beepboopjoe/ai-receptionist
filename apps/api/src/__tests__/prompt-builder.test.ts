@@ -63,4 +63,39 @@ describe('buildSystemPrompt', () => {
     // dental vocab includes 'pain' and 'swelling' — the original defaults.
     expect(prompt.toLowerCase()).toContain('pain');
   });
+
+  it('isDemo uses the Telfin product script, not a fake office, and never says closed', () => {
+    const prompt = buildSystemPrompt({
+      ...BASE_CTX,
+      practiceName: 'Bright Smile Dental',
+      vertical: 'dental',
+      workflowHint: 'after_hours',
+      isDemo: true,
+    });
+    expect(prompt).toMatch(/Telfin/i);
+    expect(prompt).toMatch(/product demo/i);
+    expect(prompt).not.toMatch(/dental practice/i);
+    expect(prompt).not.toMatch(/The office is currently closed/i);
+    expect(prompt).toMatch(/Never say you are closed/i);
+    expect(prompt).toMatch(/\$199/);
+    expect(prompt).toMatch(/HubSpot/);
+    expect(prompt).toMatch(/Knowledge Base/);
+    expect(prompt).toMatch(/CONFIRM/);
+  });
+
+  it('non-demo after_hours still tells paying-tenant callers the office is closed', () => {
+    const prompt = buildSystemPrompt({ ...BASE_CTX, workflowHint: 'after_hours' });
+    expect(prompt).toMatch(/The office is currently closed/);
+    expect(prompt).not.toMatch(/product demo/i);
+  });
+
+  it('isDemo honors demoLanguage without affecting non-demo tenants', () => {
+    const demo = buildSystemPrompt({ ...BASE_CTX, isDemo: true, demoLanguage: 'es' });
+    expect(demo).toMatch(/Speak Spanish from the VERY FIRST word/);
+    expect(demo).toContain('Hola, soy Aria de Telfin');
+
+    const paying = buildSystemPrompt({ ...BASE_CTX, vertical: 'dental', demoLanguage: 'es' });
+    expect(paying).toMatch(/dental practice/i);
+    expect(paying).not.toMatch(/Speak Spanish from the VERY FIRST word/);
+  });
 });

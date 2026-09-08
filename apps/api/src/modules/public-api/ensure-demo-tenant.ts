@@ -4,11 +4,18 @@
 // After a DB restore the env UUID can point at a missing tenants row,
 // which makes POST /public/call-me blow up on calls_tenant_id_fkey.
 // This helper INSERTs a minimal inbound persona (tenant + settings)
-// with that exact UUID. Never overwrites an existing tenant.
+// with that exact UUID.
+//
+// Existing demo settings are HEALED (not left stale): office hours
+// stay 24/7 and business_context stays the product-demo persona so
+// production Railway DEMO_TENANT_ID does not need manual DB surgery
+// after a restore or an old 9–5 seed. Tenant identity (name/slug) is
+// not rewritten if the row already exists.
 //
 // Store is injected so tests don't load config/DB.
 // ============================================================
 import { isTruthyEnv, type DemoCallMeBootLog } from './public-demo.helpers.js';
+import { hasAlwaysOpenStreamHours } from '../telephony/office-hours.js';
 
 /** Accept any 8-4-4-4-12 hex UUID (Postgres uuid type). */
 export const DEMO_TENANT_UUID_RE =
@@ -36,9 +43,20 @@ export function shouldEnsureDemoTenant(opts: {
 
 export const DEMO_TENANT_NAME = 'Telfin Demo';
 export const DEMO_TENANT_SLUG = 'telfin-demo';
-export const DEMO_TENANT_VERTICAL = 'legal';
+/** Generic — this tenant is a product demo, not a fake law firm. */
+export const DEMO_TENANT_VERTICAL = 'generic';
 export const DEMO_TENANT_TIMEZONE = 'America/New_York';
 export const DEMO_TENANT_PLAN = 'trial';
+
+/** True when this call's tenant is the configured homepage demo tenant. */
+export function isDemoCallMeTenant(
+  tenantId: string | undefined | null,
+  demoTenantId: string | undefined | null,
+): boolean {
+  const id = tenantId?.trim() ?? '';
+  const demo = demoTenantId?.trim() ?? '';
+  return Boolean(id && demo && isValidDemoTenantUuid(demo) && id === demo);
+}
 
 export function demoTenantSlug(tenantId: string, attempt: 0 | 1): string {
   if (attempt === 0) return DEMO_TENANT_SLUG;
@@ -70,22 +88,29 @@ export const DEMO_OFFICE_HOURS = {
   sunday: WEEKDAY_DASHBOARD,
 };
 
-/** Mirrors DEFAULT_APPT_TYPES_BY_VERTICAL.legal from admin/router.ts. */
+/** Generic slots so a missed isDemo flag still isn't a law-firm intake form. */
 export const DEMO_APPOINTMENT_TYPES = [
-  { id: 'initial_consult', name: 'Initial Consultation', duration_min: 60, buffer_min: 15 },
-  { id: 'case_review', name: 'Case Review', duration_min: 60, buffer_min: 15 },
-  { id: 'document_signing', name: 'Document Signing', duration_min: 30, buffer_min: 10 },
-  { id: 'deposition_prep', name: 'Deposition Prep', duration_min: 90, buffer_min: 15 },
-  { id: 'follow_up', name: 'Client Follow-Up', duration_min: 30, buffer_min: 5 },
+  { id: 'product_walkthrough', name: 'Product Walkthrough', duration_min: 30, buffer_min: 5 },
+  { id: 'onboarding_call', name: 'Onboarding Call', duration_min: 45, buffer_min: 10 },
 ];
 
-export const DEMO_BUSINESS_CONTEXT = `Telfin Demo is a sample law firm used only for the live homepage receptionist demo.
-We handle general civil intake: initial consultations, case reviews, and follow-ups.
-We do not give legal advice on this demo line. Offer to book an Initial Consultation,
-take a callback number, and escalate anything urgent (arrest, court deadline, restraining order)
-as a message for an attorney. Hours are treated as open for this demo.`;
+/**
+ * Fallback facts injected via tenant_settings.business_context.
+ * The live call-me script lives in call-me-demo.prompt.ts (isDemo flag).
+ * Keep this under the settings 4000-char cap and product-oriented so a
+ * missed isDemo flag still does not role-play a fake dental/law office.
+ */
+export const DEMO_BUSINESS_CONTEXT = `This tenant is the public Telfin product demo (homepage "Hear it on your phone" / call-me), not a fake dental office or law firm.
 
-export const DEMO_VOICE_NAME = 'eve';
+You are Aria, Telfin's AI receptionist. Callers requested this one-time demo. Greet them as Telfin, make the opportunity feel real, and stay conversational — never a hard close or a robotic feature dump unless they ask what you can do.
+
+Always open 24/7. Never say you are closed or take an after-hours message.
+
+Cover, naturally: 24/7 inbound answering; appointment book/reschedule/cancel with Google and Outlook calendar sync; seven languages with auto-switch including Spanish; emergency/urgency escalation to staff; transcripts, recordings, and AI summaries in the dashboard; outbound follow-up campaigns (inactive contacts, unbooked leads, recall) plus voicemail drops; two-way SMS (missed-call text-back, 24h + 2h reminders, CONFIRM/CANCEL); CRM sync (HubSpot, Salesforce, Clio, Filevine, Zoho); Knowledge Base grounded in the business's own docs; local numbers via forwarding or a new provisioned number.
+
+Pricing only if they ask: Growth $199, Scale $399, Business $599 per month. Invite a free trial, a longer walkthrough, or a question about their vertical (dental, legal/PI, real estate, insurance, home services).`;
+
+export const DEMO_VOICE_NAME = 'aurora';
 export const DEMO_VOICE_PROVIDER = 'grok';
 export const DEMO_AFTER_HOURS_MODE = 'voicemail';
 
@@ -110,14 +135,33 @@ export interface DemoSettingsRow {
   businessContext: string;
 }
 
+export interface DemoSettingsLookup {
+  tenantId: string;
+  officeHours?: unknown;
+  businessContext?: string | null;
+}
+
+export interface DemoSettingsHealPatch {
+  officeHours: typeof DEMO_OFFICE_HOURS;
+  businessContext: string;
+}
+
 export interface DemoTenantStore {
   findTenantById(id: string): Promise<{ id: string } | null>;
   insertTenant(row: DemoTenantRow): Promise<void>;
-  findSettingsByTenantId(tenantId: string): Promise<{ tenantId: string } | null>;
+  findSettingsByTenantId(tenantId: string): Promise<DemoSettingsLookup | null>;
   insertSettings(row: DemoSettingsRow): Promise<void>;
+  updateSettings(tenantId: string, patch: DemoSettingsHealPatch): Promise<void>;
 }
 
-export type EnsureDemoTenantOutcome = 'exists' | 'inserted' | 'skipped' | 'failed';
+export type EnsureDemoTenantOutcome = 'exists' | 'inserted' | 'healed' | 'skipped' | 'failed';
+
+/** Stale 9–5 hours or a pre-product-demo business_context need a boot heal. */
+export function demoSettingsNeedHeal(row: DemoSettingsLookup): boolean {
+  if (!hasAlwaysOpenStreamHours(row.officeHours)) return true;
+  const ctx = (row.businessContext ?? '').trim();
+  return ctx !== DEMO_BUSINESS_CONTEXT.trim();
+}
 
 export interface EnsureDemoTenantResult {
   tenant: EnsureDemoTenantOutcome;
@@ -184,14 +228,28 @@ export async function ensureDemoTenant(
       settings = 'inserted';
     } catch (err) {
       if (isUniqueViolation(err)) {
-        settings = 'exists';
+        const raced = await store.findSettingsByTenantId(id);
+        settings = raced && demoSettingsNeedHeal(raced) ? await healDemoSettings(store, id) : 'exists';
       } else {
         throw err;
       }
     }
+  } else if (demoSettingsNeedHeal(existingSettings)) {
+    settings = await healDemoSettings(store, id);
   }
 
   return { tenant, settings };
+}
+
+async function healDemoSettings(
+  store: DemoTenantStore,
+  tenantId: string,
+): Promise<'healed' | 'exists'> {
+  await store.updateSettings(tenantId, {
+    officeHours: DEMO_OFFICE_HOURS,
+    businessContext: DEMO_BUSINESS_CONTEXT,
+  });
+  return 'healed';
 }
 
 async function insertTenantWithSlugFallback(
@@ -211,7 +269,8 @@ async function insertTenantWithSlugFallback(
 }
 
 /**
- * When gated on, insert the demo tenant/settings if missing.
+ * When gated on, insert the demo tenant/settings if missing and heal
+ * stale 9–5 hours / old personas to 24/7 product-demo settings.
  * Never throws — boot must continue if the DB is empty or down.
  */
 export async function maybeEnsureDemoTenantOnBoot(

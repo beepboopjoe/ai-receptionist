@@ -61,7 +61,7 @@ async function seed() {
       },
       afterHoursMode: 'voicemail',
       transferNumber: '+15550001234',
-      voiceName: 'eve',
+      voiceName: 'aurora',
       voiceProvider: 'grok',
       telephonyProvider: 'twilio',
       appointmentTypes: [

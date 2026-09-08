@@ -132,6 +132,18 @@ export interface DialDirectParams {
    * `# Your Task This Call` section.
    */
   adHocTask?: string;
+  /**
+   * Homepage call-me spoken language (en/es/it/ar/fa/hy/ru). Encoded in
+   * client_state so the media-stream prompt can greet in that language.
+   * Omit for test-call / ask-your-AI.
+   */
+  language?: string;
+  /**
+   * Homepage call-me Grok voice (randomized among the public four).
+   * Encoded in client_state; media-stream uses it only when mode is demo.
+   * Omit for test-call / ask-your-AI so the tenant's saved voice is used.
+   */
+  voice?: string;
 }
 
 /**
@@ -151,7 +163,7 @@ export interface DialDirectParams {
  * start handler. Omit callSid here; enrich it after Telnyx returns the id.
  */
 export async function dialDirect(params: DialDirectParams): Promise<DialResult> {
-  const { to, from, callId, tenantId, fromNumber, mode, adHocTask } = params;
+  const { to, from, callId, tenantId, fromNumber, mode, adHocTask, language, voice } = params;
 
   const state: Record<string, unknown> = {
     callId,
@@ -161,6 +173,8 @@ export async function dialDirect(params: DialDirectParams): Promise<DialResult> 
     streamAttachedAtDial: true, // dial owns RTP — do not streaming_start again
     mode, // surfaces in dispatched events for analytics
     ...(adHocTask && { adHocTask }), // Phase 29b — Ask-your-AI task text
+    ...(language && { language }),
+    ...(voice && { voice }),
   };
 
   const clientState = Buffer.from(JSON.stringify(state)).toString('base64');

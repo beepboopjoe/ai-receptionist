@@ -6,6 +6,7 @@ import type { Contact, AppointmentType, OfficeHours, Vertical } from '@ai-recept
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone.js';
 import utc from 'dayjs/plugin/utc.js';
+import { buildCallMeDemoPrompt } from './call-me-demo.prompt.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -39,6 +40,17 @@ export interface PromptContext {
    *  Rendered as `# Your Task This Call` and overrides the receptionist
    *  greeting behavior — the AI opens by stating who it is and why it's calling. */
   adHocTask?: string;
+  /**
+   * Homepage call-me / DEMO_TENANT_ID. When true, buildSystemPrompt uses the
+   * Telfin product-demo script instead of a vertical receptionist persona,
+   * and after-hours deflection must not appear.
+   */
+  isDemo?: boolean;
+  /**
+   * Call-me visitor language (en/es/it/ar/fa/hy/ru). Only honored when
+   * isDemo is true — paying-tenant inbound never reads this.
+   */
+  demoLanguage?: string;
 }
 
 /**
@@ -95,6 +107,10 @@ const DEFAULT_ESCALATION_VOCAB = VERTICAL_ESCALATION_VOCAB.dental;
  * the ElevenLabs session `overrides.agent.prompt.prompt` field.
  */
 export function buildSystemPrompt(ctx: PromptContext): string {
+  if (ctx.isDemo) {
+    return buildCallMeDemoPrompt({ timezone: ctx.timezone, language: ctx.demoLanguage });
+  }
+
   const now = dayjs().tz(ctx.timezone);
   const todayName = now.format('dddd').toLowerCase() as keyof OfficeHours;
   const todayHours = ctx.officeHours[todayName];

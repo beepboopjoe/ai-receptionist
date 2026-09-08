@@ -1,32 +1,34 @@
 'use client';
 // ============================================================
 // HomepageVoiceSamples — Voice showcase section on the landing
-// page. 5 voice cards (Eve / Ara / Rex / Sal / Leo), each with
-// a play button per supported language (EN / ES / IT / AR / FA /
-// HY / RU) so visitors can hear the full multilingual range.
+// page. Four public Grok voices (Aurora / Castor / Cosmo / Zenith),
+// each with a play button per supported language.
 //
 // Audio files: /audio/voices/{voice}_{lang}.mp3
 // Generate:    pnpm tsx scripts/generate-voice-language-samples.ts
 // Source of truth for the voice/language catalog: @/lib/voice-samples
 // ============================================================
 import { useState, useRef, useCallback } from 'react';
-import { LANG_CODES, LANGUAGES, type LangCode } from '@/lib/voice-samples';
+import {
+  LANG_CODES, LANGUAGES, VOICE_IDS, VOICES, VOICE_CARD_STYLES,
+  type LangCode, type VoiceId,
+} from '@/lib/voice-samples';
 
 interface Voice {
-  id: string;
+  id: VoiceId;
   name: string;
   personality: string;
-  color: string;         // Tailwind bg class for the avatar
-  textColor: string;     // Tailwind text class for the avatar letter
+  color: string;
+  textColor: string;
 }
 
-const VOICES: Voice[] = [
-  { id: 'eve', name: 'Eve',  personality: 'Warm & professional',    color: 'bg-rose-100',   textColor: 'text-rose-700'   },
-  { id: 'ara', name: 'Ara',  personality: 'Bright & energetic',     color: 'bg-amber-100',  textColor: 'text-amber-700'  },
-  { id: 'rex', name: 'Rex',  personality: 'Calm & authoritative',   color: 'bg-blue-100',   textColor: 'text-blue-700'   },
-  { id: 'sal', name: 'Sal',  personality: 'Friendly & approachable',color: 'bg-emerald-100',textColor: 'text-emerald-700'},
-  { id: 'leo', name: 'Leo',  personality: 'Sharp & efficient',      color: 'bg-purple-100', textColor: 'text-purple-700' },
-];
+const HOMEPAGE_VOICES: Voice[] = VOICE_IDS.map((id) => ({
+  id,
+  name: VOICES[id].label,
+  personality: VOICES[id].description,
+  color: VOICE_CARD_STYLES[id].color,
+  textColor: VOICE_CARD_STYLES[id].textColor,
+}));
 
 // ── Animated waveform bars (shows when either lang is playing) ─
 function Waveform({ active }: { active: boolean }) {
@@ -162,17 +164,17 @@ export function HomepageVoiceSamples() {
     <section className="py-20 px-6 bg-cream-50">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
-          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">5 distinct voices</p>
+          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">4 distinct voices</p>
           <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
             Pick the voice that fits your brand.
           </h2>
           <p className="text-cream-600 mt-3 max-w-xl mx-auto">
-            Natural Grok voices, seven languages. Tap a flag to hear it — this is what your callers hear.
+            Aurora, Castor, Cosmo, and Zenith — natural Grok voices, seven languages. Tap a flag to hear it.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {VOICES.map((v) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {HOMEPAGE_VOICES.map((v) => (
             <VoiceCard key={v.id} voice={v} />
           ))}
         </div>

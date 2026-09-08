@@ -172,6 +172,75 @@ describe('resolveMediaStreamParams', () => {
     expect(params.tenantId).toBe('tenant-1');
     expect(params.fromNumber).toBe('+15551212');
     expect(params.missingFields).toEqual([]);
+    expect(params.mode).toBeUndefined();
+  });
+
+  it('forwards dialDirect mode=demo so media-stream can skip after-hours', () => {
+    const clientState = Buffer.from(JSON.stringify({
+      callId: 'call-demo',
+      tenantId: 'a648f47a-a2b6-444d-96f8-e1e66785a6e5',
+      fromNumber: '+14153211212',
+      mode: 'demo',
+      isOutbound: false,
+    })).toString('base64');
+
+    const params = resolveMediaStreamParams({
+      event: 'start',
+      start: {
+        call_control_id: 'v2:demo',
+        client_state: clientState,
+      },
+    });
+
+    expect(params.mode).toBe('demo');
+    expect(params.tenantId).toBe('a648f47a-a2b6-444d-96f8-e1e66785a6e5');
+    expect(params.language).toBeUndefined();
+  });
+
+  it('forwards call-me language from client_state', () => {
+    const clientState = Buffer.from(JSON.stringify({
+      callId: 'call-demo',
+      tenantId: 'a648f47a-a2b6-444d-96f8-e1e66785a6e5',
+      fromNumber: '+14153211212',
+      mode: 'demo',
+      language: 'es',
+      isOutbound: false,
+    })).toString('base64');
+
+    const params = resolveMediaStreamParams({
+      event: 'start',
+      start: {
+        call_control_id: 'v2:demo-es',
+        client_state: clientState,
+      },
+    });
+
+    expect(params.mode).toBe('demo');
+    expect(params.language).toBe('es');
+  });
+
+  it('forwards call-me voice from client_state', () => {
+    const clientState = Buffer.from(JSON.stringify({
+      callId: 'call-demo',
+      tenantId: 'a648f47a-a2b6-444d-96f8-e1e66785a6e5',
+      fromNumber: '+14153211212',
+      mode: 'demo',
+      language: 'es',
+      voice: 'zenith',
+      isOutbound: false,
+    })).toString('base64');
+
+    const params = resolveMediaStreamParams({
+      event: 'start',
+      start: {
+        call_control_id: 'v2:demo-voice',
+        client_state: clientState,
+      },
+    });
+
+    expect(params.mode).toBe('demo');
+    expect(params.language).toBe('es');
+    expect(params.voice).toBe('zenith');
   });
 });
 
@@ -399,6 +468,8 @@ describe('production sources use the working Telnyx + Grok path', () => {
     expect(src).toContain('formatAlreadyStreamingTreatedAsSuccessLog');
     expect(src).not.toMatch(/callSid:\s*['"]{2}/);
     expect(src).not.toMatch(/callSid:\s*''/);
+    expect(src).toContain('...(language && { language })');
+    expect(src).toContain('...(voice && { voice })');
   });
 
   it('media WS handler uses the v10 socket and greets via response.create', () => {
@@ -406,6 +477,9 @@ describe('production sources use the working Telnyx + Grok path', () => {
     expect(router).toContain('resolveFastifyWebsocket');
     expect(router).toContain('resolveMediaStreamParams');
     expect(router).toContain('formatMediaStreamCallSidResolvedLog');
+    expect(router).toContain('resolved.mode');
+    expect(router).toContain('resolved.language');
+    expect(router).toContain('resolved.voice');
     expect(router).not.toMatch(/connection\.socket as unknown as WebSocket/);
     expect(router).not.toMatch(/state\['callSid'\] \?\? start\?\.call_control_id/);
 
@@ -428,6 +502,9 @@ describe('production sources use the working Telnyx + Grok path', () => {
     expect(media).toContain('formatFirstTelnyxInboundMediaLog');
     expect(media).toContain('formatFirstGrokAudioToTelnyxLog');
     expect(media).toContain('formatGrokEmptyResponseLog');
+    expect(media).toContain('isDemoCallMeTenant');
+    expect(media).toContain('isAfterHoursCall');
+    expect(media).toContain('demoLanguage');
     expect(media).not.toMatch(/eventType === 'response\.audio\.delta'/);
   });
 });
@@ -527,6 +604,26 @@ describe('Grok session.update uses audio/pcmu for Telnyx', () => {
     expect(update.session.input_audio_format).toBe('g711_ulaw');
     expect(update.session).not.toHaveProperty('input_audio_transcription');
     expect(JSON.stringify(update)).not.toContain('whisper-1');
+  });
+
+  it('accepts the public catalog and keeps unknown IDs off the wire', () => {
+    const publicUpdate = GrokVoiceAdapter.buildSessionUpdate({
+      sessionId: 'grok_2',
+      systemPrompt: 'You are Aria.',
+      voice: 'Aurora',
+      audioInputFormat: 'pcmu',
+      audioOutputFormat: 'pcmu',
+    });
+    expect(publicUpdate.session.voice).toBe('aurora');
+
+    const unknown = GrokVoiceAdapter.buildSessionUpdate({
+      sessionId: 'grok_3',
+      systemPrompt: 'You are Aria.',
+      voice: '21m00Tcm4TlvDq8ikWAM',
+      audioInputFormat: 'pcmu',
+      audioOutputFormat: 'pcmu',
+    });
+    expect(unknown.session.voice).toBe('aurora');
   });
 
   it('flushes agent transcript from the current xAI delta name', () => {

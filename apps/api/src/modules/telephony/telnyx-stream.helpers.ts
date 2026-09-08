@@ -147,6 +147,9 @@ export interface ResolvedMediaStreamParams {
   campaignContactId?: string;
   campaignId?: string;
   adHocTask?: string;
+  mode?: string;
+  language?: string;
+  voice?: string;
   missingFields: string[];
 }
 
@@ -185,6 +188,15 @@ export function resolveMediaStreamParams(msg: TelnyxMediaStartMessage): Resolved
     }),
     ...(asOptionalString(state['adHocTask']) && {
       adHocTask: asOptionalString(state['adHocTask']),
+    }),
+    ...(asOptionalString(state['mode']) && {
+      mode: asOptionalString(state['mode']),
+    }),
+    ...(asOptionalString(state['language']) && {
+      language: asOptionalString(state['language']),
+    }),
+    ...(asOptionalString(state['voice']) && {
+      voice: asOptionalString(state['voice']),
     }),
     missingFields: [...missing],
   };

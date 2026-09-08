@@ -120,6 +120,9 @@ async function telephonyRoutes(
           campaignContactId: resolved.campaignContactId,
           campaignId: resolved.campaignId,
           ...(resolved.adHocTask && { adHocTask: resolved.adHocTask }),
+          ...(resolved.mode && { mode: resolved.mode }),
+          ...(resolved.language && { language: resolved.language }),
+          ...(resolved.voice && { voice: resolved.voice }),
         }).catch((err) => {
           streamLogger.error(
             { err, callSid: resolved.callSid, tenantId: resolved.tenantId },

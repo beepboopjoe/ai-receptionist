@@ -323,7 +323,7 @@ export const tenantSettings = pgTable('tenant_settings', {
   transferNumber: text('transfer_number'),
   maxHoldSeconds: integer('max_hold_seconds').notNull().default(30),
   voiceAgentId: text('voice_agent_id'),
-  voiceName: text('voice_name').notNull().default('eve'),
+  voiceName: text('voice_name').notNull().default('aurora'),
   voiceProvider: text('voice_provider').notNull().default('grok'),
   telephonyProvider: text('telephony_provider').notNull().default('telnyx'),
   // ---- Custom voice clone (ElevenLabs IVC) ----

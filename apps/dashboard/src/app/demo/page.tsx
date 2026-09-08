@@ -167,8 +167,8 @@ export default function DemoPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
             {
-              title: 'Natural Grok voice',
-              desc: 'Conversational cadence, handles interruption. Callers hang up surprised — not annoyed.',
+              title: 'Natural Grok voices',
+              desc: 'Aurora, Castor, Cosmo, and Zenith — conversational cadence, handles interruption. Callers hang up surprised — not annoyed.',
             },
             {
               title: 'English + Spanish in one call',
