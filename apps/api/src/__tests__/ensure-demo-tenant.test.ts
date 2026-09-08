@@ -143,6 +143,7 @@ describe('ensureDemoTenant', () => {
     expect(store.insertedSettings[0]?.voiceProvider).toBe('grok');
     expect(store.insertedSettings[0]?.voiceName).toBe('eve');
     expect(store.insertedSettings[0]?.businessContext).toMatch(/Telfin Demo/);
+    expect(store.insertedSettings[0]?.businessContext).toMatch(/spoken name is Telfin/);
     expect(store.insertedSettings[0]?.officeHours.mon).toEqual({ open: '00:00', close: '23:59' });
   });
 

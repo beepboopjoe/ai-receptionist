@@ -8,7 +8,7 @@
 //   - H.264 + AAC (universal browser compat)
 //   - 30-90 seconds
 //   - Keep file size under 8 MB so the page-load impact stays light
-//   - Use the same Aria voice across all videos for brand consistency
+//   - Use the same voice across all videos for brand consistency
 // ============================================================
 import type { Vertical } from '@/lib/verticals';
 

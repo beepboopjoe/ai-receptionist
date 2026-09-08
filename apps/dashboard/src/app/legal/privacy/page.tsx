@@ -89,7 +89,7 @@ export default function PrivacyPage() {
       <h2>4. How we use information</h2>
       <ul>
         <li>Provide the AI receptionist (Grok / xAI voice over Telnyx telephony)</li>
-        <li>Place the demo call you request, then apply per-number and per-IP limits</li>
+        <li>Place the demo call you request, then apply a short anti-double-click cooldown, per-IP limits, and a daily cap</li>
         <li>Create accounts, bill subscriptions, and send transactional email</li>
         <li>Secure the service, prevent abuse, and comply with law</li>
         <li>Improve product reliability using aggregated or de-identified signals where feasible</li>
@@ -104,8 +104,9 @@ export default function PrivacyPage() {
       <p>
         Submitting a number on the homepage demo asks us to place an automated / AI voice call
         to that number. We collect the number, your IP (rate limiting), and a timestamp. We
-        store enough to enforce “one call per hour per number” and a daily cap. By submitting
-        with the required checkbox, you request that call and agree this policy applies.
+        store enough to stop accidental double-clicks (a few seconds) and enforce a daily cap.
+        A second deliberate submit of the same number is allowed. Checking the required box
+        and submitting requests that call and agrees this policy applies.
       </p>
       <p>
         Demo calls may be recorded or transcribed the same way product calls are, so we can

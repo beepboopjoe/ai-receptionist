@@ -131,8 +131,10 @@ const envSchema = z.object({
   /** Global ceiling on call-me requests per UTC day. Bounds cost worst-case. */
   DEMO_DAILY_CALL_LIMIT: z.coerce.number().int().min(0).default(200),
   /**
-   * Ops/testing only. When `1`/`true`/`yes`, skip the per-number Redis
-   * cooldown check and do not SET the cooldown key (daily cap still applies).
+   * Ops/testing only. When `1`/`true`/`yes`, skip the short per-number Redis
+   * anti-double-click cooldown and do not SET the cooldown key (daily cap
+   * still applies). Call QA must not spam the same number — one checklist
+   * dial unless Joey asks again. Do not leave on in production.
    */
   DEMO_SKIP_COOLDOWN: z.string().default(''),
   /**

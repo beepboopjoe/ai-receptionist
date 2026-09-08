@@ -39,6 +39,12 @@ export interface PromptContext {
    *  Rendered as `# Your Task This Call` and overrides the receptionist
    *  greeting behavior — the AI opens by stating who it is and why it's calling. */
   adHocTask?: string;
+  /**
+   * Optional spoken self-name. Set only for the public demo / call-me persona
+   * (Telfin). Omit for paying tenants so a custom agent name in business
+   * context is not overwritten by a hardcoded default.
+   */
+  agentName?: string;
 }
 
 /**
@@ -105,8 +111,17 @@ export function buildSystemPrompt(ctx: PromptContext): string {
   const sections: string[] = [];
 
   // ---- Identity ----
+  // agentName is demo/call-me only. Tenant prompts stay unnamed here so a
+  // custom name in businessContext (or no name) is preserved.
+  const named = ctx.agentName?.trim();
+  const roleLead = named
+    ? `You are ${named}, the AI receptionist for ${ctx.practiceName}, a ${terms.label}. When you introduce yourself, use the name ${named}.`
+    : `You are the AI receptionist for ${ctx.practiceName}, a ${terms.label}.`;
+  const roleOpen = named
+    ? `\nStart by saying you are ${named} from ${ctx.practiceName}.`
+    : '';
   sections.push(`# Role
-You are the AI receptionist for ${ctx.practiceName}, a ${terms.label}. You answer inbound phone calls on behalf of the ${terms.businessNoun}. You are warm, professional, and efficient. You speak clearly and at a measured pace.`);
+${roleLead} You answer inbound phone calls on behalf of the ${terms.businessNoun}. You are warm, professional, and efficient. You speak clearly and at a measured pace.${roleOpen}`);
 
   // ---- About this business (owner-supplied free-text) ----
   // Sits right after Role so the AI has tenant-specific facts (services,

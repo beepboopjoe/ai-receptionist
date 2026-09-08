@@ -4,9 +4,13 @@
 // POST /api/v1/public/call-me
 //   • US/CA numbers only
 //   • Junk-number filter (555, repeating digits, sequential)
-//   • Fastify per-IP cap (3 / 24h) + Redis per-number cooldown (1 / hour)
+//   • Fastify per-IP cap (3 / 24h) + short Redis anti-double-click cooldown
 //   • Global daily cap via DEMO_DAILY_CALL_LIMIT
-//   • DEMO_SKIP_COOLDOWN skips the per-number Redis check/set (ops/testing)
+//   • No 24h per-number lock — a second deliberate submit is allowed
+//   • No silent re-dial / retry-on-failure loop (one POST → one dial)
+//   • DEMO_SKIP_COOLDOWN skips the per-number Redis check/set (ops/testing
+//     only). Call QA must not spam the same number — one checklist dial
+//     unless Joey asks again.
 //   • 503 when DEMO_TENANT_ID / DEMO_FROM_NUMBER are unset — no crash
 //   • 503 when DEMO_TENANT_ID is set but that tenants row is missing
 //     (e.g. after a DB restore) — never a raw calls_tenant_id_fkey error
@@ -32,6 +36,7 @@ import {
   maskPhoneLast4,
   publicCallMeDialFailureMessage,
   formatPublicCallMeDialFailureLog,
+  DEMO_CALL_ME_NUM_COOLDOWN_SECONDS,
 } from './public-demo.helpers.js';
 import { telnyxApiKeyLogFields, telnyxFailureFields } from '../../lib/telnyx-auth.js';
 
@@ -93,11 +98,11 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
       const skipCooldown = isTruthyEnv(config.DEMO_SKIP_COOLDOWN);
       const cooldownKey = `demo:call-me:num:${phone}`;
       if (!skipCooldown) {
-        const claimed = await cacheSetNx(cooldownKey, '1', 60 * 60);
+        const claimed = await cacheSetNx(cooldownKey, '1', DEMO_CALL_ME_NUM_COOLDOWN_SECONDS);
         if (claimed === false) {
           return reply.status(429).send({
             error: 'cooldown',
-            message: 'This number already requested a demo call recently. Try again in an hour, or hear a sample instead.',
+            message: 'Hang on a few seconds — that click already requested a call. If you still want another one, submit again.',
           });
         }
       }

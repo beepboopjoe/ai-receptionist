@@ -3,6 +3,9 @@
 // No Fastify / DB — route behavior is env-gated in production.
 // ============================================================
 import { describe, it, expect, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   normalizeUsCaPhone,
   isJunkDemoNumber,
@@ -17,6 +20,9 @@ import {
   publicCallMeDialFailureMessage,
   formatPublicCallMeDialFailureLog,
   CARRIER_ERROR_MAX_CHARS,
+  DEMO_AGENT_NAME,
+  DEMO_CALL_ME_NUM_COOLDOWN_SECONDS,
+  resolveDemoAgentName,
   type DemoCallMeRedis,
 } from '../modules/public-api/public-demo.helpers.js';
 
@@ -76,6 +82,27 @@ describe('isForeignKeyViolation', () => {
     expect(isForeignKeyViolation({ code: '23505' })).toBe(false);
     expect(isForeignKeyViolation(null)).toBe(false);
     expect(isForeignKeyViolation({})).toBe(false);
+  });
+});
+
+describe('demo persona + call-me cooldown', () => {
+  it('names the public demo / call-me persona Telfin', () => {
+    expect(DEMO_AGENT_NAME).toBe('Telfin');
+  });
+
+  it('uses a short anti-double-click cooldown, not a 1h or 24h lock', () => {
+    expect(DEMO_CALL_ME_NUM_COOLDOWN_SECONDS).toBeGreaterThanOrEqual(3);
+    expect(DEMO_CALL_ME_NUM_COOLDOWN_SECONDS).toBeLessThanOrEqual(30);
+    expect(DEMO_CALL_ME_NUM_COOLDOWN_SECONDS).not.toBe(3600);
+    expect(DEMO_CALL_ME_NUM_COOLDOWN_SECONDS).not.toBe(86400);
+  });
+
+  it('resolves Telfin only for demo mode or the demo tenant', () => {
+    expect(resolveDemoAgentName({ mode: 'demo' })).toBe('Telfin');
+    expect(resolveDemoAgentName({ tenantId: 'abc', demoTenantId: 'abc' })).toBe('Telfin');
+    expect(resolveDemoAgentName({ tenantId: 'abc', demoTenantId: 'other' })).toBeUndefined();
+    expect(resolveDemoAgentName({ mode: 'self_test', tenantId: 'tenant-1' })).toBeUndefined();
+    expect(resolveDemoAgentName({})).toBeUndefined();
   });
 });
 
@@ -284,6 +311,24 @@ describe('publicCallMeDialFailureMessage', () => {
         localhostOrigin: false,
       }),
     ).toBe(generic);
+  });
+});
+
+describe('public-demo router source scan', () => {
+  it('uses the short cooldown constant and does not lock a number for an hour or a day', () => {
+    const srcRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+    const router = readFileSync(join(srcRoot, 'modules/public-api/public-demo.router.ts'), 'utf8');
+    expect(router).toContain('DEMO_CALL_ME_NUM_COOLDOWN_SECONDS');
+    expect(router).not.toMatch(/cacheSetNx\([^)]*60 \* 60/);
+    expect(router).not.toMatch(/Try again in an hour/);
+    expect(router).toMatch(/one checklist dial/);
+  });
+
+  it('demo websocket prompts introduce Telfin, not Aria', () => {
+    const srcRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+    const prompts = readFileSync(join(srcRoot, 'modules/voice-agent/vertical-prompts.ts'), 'utf8');
+    expect(prompts).toContain('You are Telfin, an AI receptionist');
+    expect(prompts).not.toMatch(/\bAria\b/);
   });
 });
 

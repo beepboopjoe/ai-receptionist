@@ -147,6 +147,8 @@ export interface ResolvedMediaStreamParams {
   campaignContactId?: string;
   campaignId?: string;
   adHocTask?: string;
+  /** dialDirect mode — 'demo' selects the public Telfin persona. */
+  mode?: string;
   missingFields: string[];
 }
 
@@ -185,6 +187,9 @@ export function resolveMediaStreamParams(msg: TelnyxMediaStartMessage): Resolved
     }),
     ...(asOptionalString(state['adHocTask']) && {
       adHocTask: asOptionalString(state['adHocTask']),
+    }),
+    ...(asOptionalString(state['mode']) && {
+      mode: asOptionalString(state['mode']),
     }),
     missingFields: [...missing],
   };

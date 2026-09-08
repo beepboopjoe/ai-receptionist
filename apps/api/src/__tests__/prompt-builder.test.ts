@@ -63,4 +63,17 @@ describe('buildSystemPrompt', () => {
     // dental vocab includes 'pain' and 'swelling' — the original defaults.
     expect(prompt.toLowerCase()).toContain('pain');
   });
+
+  it('names the demo persona when agentName is set', () => {
+    const prompt = buildSystemPrompt({ ...BASE_CTX, agentName: 'Telfin' });
+    expect(prompt).toContain('You are Telfin, the AI receptionist');
+    expect(prompt).toContain('use the name Telfin');
+  });
+
+  it('does not force Telfin or Aria on tenant prompts without agentName', () => {
+    const prompt = buildSystemPrompt({ ...BASE_CTX, practiceName: 'Smith Dental' });
+    expect(prompt).toContain('Smith Dental');
+    expect(prompt).not.toMatch(/\bTelfin\b/);
+    expect(prompt).not.toMatch(/\bAria\b/);
+  });
 });

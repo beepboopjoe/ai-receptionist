@@ -1,6 +1,6 @@
 # Live Telnyx Call Setup
 
-End state: someone calls **+1 (626) 517-0214** and the AI receptionist (Aria) picks up, powered by xAI Grok Realtime — all without Postgres or Redis.
+End state: someone calls **+1 (626) 517-0214** and the AI receptionist (Telfin) picks up, powered by xAI Grok Realtime — all without Postgres or Redis.
 
 ## What's already done
 
@@ -63,9 +63,9 @@ Dial **+1 (626) 517-0214**.
 
 You should hear:
 
-> "Thank you for calling Riverside Dental Group, this is Aria. How can I help you today?"
+> "Thank you for calling Riverside Dental Group, this is Telfin. How can I help you today?"
 
-Try saying "I'd like to book a cleaning" — Aria will respond conversationally.
+Try saying "I'd like to book a cleaning" — Telfin will respond conversationally.
 
 ## Verifying it's working
 

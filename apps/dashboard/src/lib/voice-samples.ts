@@ -50,7 +50,7 @@ export const LANG_CODES = Object.keys(LANGUAGES) as LangCode[];
 
 const LANG_SCRIPTS: Record<LangCode, VoiceSample['lines']> = {
   en: [
-    { role: 'ai',     text: "Hi there! Thank you for calling. This is Aria, your AI receptionist. I can help you schedule an appointment, get answers about our services, or connect you with our team. What can I do for you today?" },
+    { role: 'ai',     text: "Hi there! Thank you for calling. This is Telfin, your AI receptionist. I can help you schedule an appointment, get answers about our services, or connect you with our team. What can I do for you today?" },
     { role: 'caller', text: "I'd like to book an appointment for next week." },
     { role: 'ai',     text: "Of course! I have availability on Tuesday at 10 AM or Thursday at 2 PM. Which works better for you?" },
     { role: 'caller', text: "Tuesday at 10 is perfect." },
@@ -58,7 +58,7 @@ const LANG_SCRIPTS: Record<LangCode, VoiceSample['lines']> = {
   ],
 
   es: [
-    { role: 'ai',     text: "¡Hola! Gracias por llamar. Soy Aria, su recepcionista virtual. Puedo ayudarle a agendar una cita, responder sus preguntas, o conectarle con nuestro equipo. ¿En qué le puedo ayudar hoy?" },
+    { role: 'ai',     text: "¡Hola! Gracias por llamar. Soy Telfin, su recepcionista virtual. Puedo ayudarle a agendar una cita, responder sus preguntas, o conectarle con nuestro equipo. ¿En qué le puedo ayudar hoy?" },
     { role: 'caller', text: "Me gustaría agendar una cita para la próxima semana." },
     { role: 'ai',     text: "¡Con gusto! Tengo disponibilidad el martes a las diez de la mañana o el jueves a las dos de la tarde. ¿Cuál le funciona mejor?" },
     { role: 'caller', text: "El martes a las diez está perfecto." },
@@ -66,7 +66,7 @@ const LANG_SCRIPTS: Record<LangCode, VoiceSample['lines']> = {
   ],
 
   it: [
-    { role: 'ai',     text: "Salve! Grazie per aver chiamato. Sono Aria, la sua receptionist virtuale. Posso aiutarla a fissare un appuntamento, rispondere alle sue domande, o metterla in contatto con il nostro team. Come posso esserle utile?" },
+    { role: 'ai',     text: "Salve! Grazie per aver chiamato. Sono Telfin, la sua receptionist virtuale. Posso aiutarla a fissare un appuntamento, rispondere alle sue domande, o metterla in contatto con il nostro team. Come posso esserle utile?" },
     { role: 'caller', text: "Vorrei prenotare un appuntamento per la prossima settimana." },
     { role: 'ai',     text: "Certo! Ho disponibilità martedì alle dieci o giovedì alle due del pomeriggio. Quale preferisce?" },
     { role: 'caller', text: "Martedì alle dieci va benissimo." },
@@ -74,7 +74,7 @@ const LANG_SCRIPTS: Record<LangCode, VoiceSample['lines']> = {
   ],
 
   ar: [
-    { role: 'ai',     text: "مرحباً! شكراً لاتصالك بنا. أنا أريا، مساعدتك الافتراضية. يمكنني مساعدتك في تحديد موعد، الإجابة على استفساراتك، أو التواصل مع فريقنا. كيف يمكنني مساعدتك اليوم؟" },
+    { role: 'ai',     text: "مرحباً! شكراً لاتصالك بنا. أنا تيلفين، مساعدتك الافتراضية. يمكنني مساعدتك في تحديد موعد، الإجابة على استفساراتك، أو التواصل مع فريقنا. كيف يمكنني مساعدتك اليوم؟" },
     { role: 'caller', text: "أريد حجز موعد للأسبوع القادم." },
     { role: 'ai',     text: "بالطبع! لدي توفر يوم الثلاثاء الساعة العاشرة صباحاً أو الخميس الساعة الثانية مساءً. أيهما يناسبك؟" },
     { role: 'caller', text: "الثلاثاء الساعة العاشرة ممتاز." },
@@ -82,7 +82,7 @@ const LANG_SCRIPTS: Record<LangCode, VoiceSample['lines']> = {
   ],
 
   fa: [
-    { role: 'ai',     text: "سلام! ممنون از تماس شما. من آریا هستم، منشی مجازی شما. می‌توانم به شما در تعیین وقت، پاسخ به سوالاتتان، یا ارتباط با تیم ما کمک کنم. چطور می‌توانم امروز کمکتان کنم؟" },
+    { role: 'ai',     text: "سلام! ممنون از تماس شما. من تلفین هستم، منشی مجازی شما. می‌توانم به شما در تعیین وقت، پاسخ به سوالاتتان، یا ارتباط با تیم ما کمک کنم. چطور می‌توانم امروز کمکتان کنم؟" },
     { role: 'caller', text: "می‌خواهم برای هفته آینده وقت بگیرم." },
     { role: 'ai',     text: "البته! سه‌شنبه ساعت ده صبح یا پنج‌شنبه ساعت دو بعدازظهر در دسترس دارم. کدام برایتان بهتر است؟" },
     { role: 'caller', text: "سه‌شنبه ساعت ده عالیه." },
@@ -90,7 +90,7 @@ const LANG_SCRIPTS: Record<LangCode, VoiceSample['lines']> = {
   ],
 
   hy: [
-    { role: 'ai',     text: "Բարև ձեզ! Շնորհակալ ենք, որ զանգեցիք: Ես Արիան եմ, ձեր վիրտուալ ռեսեպցիոնիստը: Կարող եմ օգնել ժամանակ ամրագրելու, հարցերին պատասխանելու կամ թիմի հետ կապ հաստատելու հարցում: Ինչո՞վ կարող եմ օգնել:" },
+    { role: 'ai',     text: "Բարև ձեզ! Շնորհակալ ենք, որ զանգեցիք: Ես Թելֆինն եմ, ձեր վիրտուալ ռեսեպցիոնիստը: Կարող եմ օգնել ժամանակ ամրագրելու, հարցերին պատասխանելու կամ թիմի հետ կապ հաստատելու հարցում: Ինչո՞վ կարող եմ օգնել:" },
     { role: 'caller', text: "Ուզում եմ հաջորդ շաբաթ ժամ ամրագրել:" },
     { role: 'ai',     text: "Իհարկե: Ունեմ հնարավորություն երեքշաբթի ժամը տասին կամ հինգշաբթի ժամը երկուին: Ո՞րն է ավելի հարմար ձեզ համար:" },
     { role: 'caller', text: "Երեքշաբթի ժամը տասը կատարյալ է:" },
@@ -98,7 +98,7 @@ const LANG_SCRIPTS: Record<LangCode, VoiceSample['lines']> = {
   ],
 
   ru: [
-    { role: 'ai',     text: "Добрый день! Спасибо, что позвонили. Меня зовут Ария, ваш виртуальный администратор. Я могу помочь вам записаться на приём, ответить на вопросы или соединить вас с нашей командой. Чем я могу помочь вам сегодня?" },
+    { role: 'ai',     text: "Добрый день! Спасибо, что позвонили. Меня зовут Телфин, ваш виртуальный администратор. Я могу помочь вам записаться на приём, ответить на вопросы или соединить вас с нашей командой. Чем я могу помочь вам сегодня?" },
     { role: 'caller', text: "Я бы хотел записаться на следующей неделе." },
     { role: 'ai',     text: "Конечно! У меня есть свободное время во вторник в десять утра или в четверг в два часа дня. Что вам удобнее?" },
     { role: 'caller', text: "Вторник в десять — отлично." },

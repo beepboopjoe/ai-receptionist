@@ -15,7 +15,7 @@
 //   2. Expose port via localtunnel: lt --port 3001
 //   3. In Telnyx dashboard, set webhook URL to:
 //        https://<tunnel-host>/api/v1/webhooks/telnyx
-//   4. Call +1 626-517-0214 — AI answers as "Aria"
+//   4. Call +1 626-517-0214 — AI answers as "Telfin"
 // ============================================================
 import type { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
 import type { WebSocket as WsWebSocket } from 'ws';
@@ -27,11 +27,11 @@ import { buildGrokRealtimeUrl, inspectXaiApiKey, xaiAuthorizationHeader } from '
 const logger = pino({ name: 'telnyx-devmode' });
 
 const TELNYX_API = 'https://api.telnyx.com/v2';
-const SYSTEM_PROMPT = `You are Aria, an AI receptionist. Greet callers warmly and
+const SYSTEM_PROMPT = `You are Telfin, an AI receptionist. Greet callers warmly and
 help them book, reschedule, or cancel appointments. Answer questions about services
 offered. If a caller has an urgent situation, let them know you'll get someone on the
 line right away. Keep replies short and natural — this is a phone call. Start with:
-"Thank you for calling, this is Aria. How can I help you today?"`;
+"Thank you for calling, this is Telfin. How can I help you today?"`;
 
 interface TelnyxEventPayload {
   call_control_id: string;

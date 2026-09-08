@@ -57,8 +57,34 @@ export function isTruthyEnv(value: string | undefined | null): boolean {
   return normalized === '1' || normalized === 'true' || normalized === 'yes';
 }
 
+/** Public call-me / demo sales AI self-name. Voice IDs stay unchanged. */
+export const DEMO_AGENT_NAME = 'Telfin';
+
+/**
+ * Anti-double-click only. A fresh intentional call-me submit is allowed after
+ * this window. Do NOT use a 24h per-number lock — Joey's rule is: no silent
+ * re-dials, but a second deliberate Hear-it-on-your-phone submit is OK.
+ */
+export const DEMO_CALL_ME_NUM_COOLDOWN_SECONDS = 8;
+
 /** Redis key globs for the homepage call-me cooldown + daily cap. */
 export const DEMO_CALL_ME_KEY_PATTERNS = ['demo:call-me:num:*', 'demo:call-me:day:*'] as const;
+
+/**
+ * Demo/call-me persona only. Regular tenants (including those with a custom
+ * agent name in business context) must not be forced to "Telfin".
+ */
+export function resolveDemoAgentName(opts: {
+  mode?: string | null;
+  tenantId?: string | null;
+  demoTenantId?: string | null;
+}): string | undefined {
+  if (opts.mode === 'demo') return DEMO_AGENT_NAME;
+  const tenantId = opts.tenantId?.trim() ?? '';
+  const demoTenantId = opts.demoTenantId?.trim() ?? '';
+  if (tenantId && demoTenantId && tenantId === demoTenantId) return DEMO_AGENT_NAME;
+  return undefined;
+}
 
 /** Minimal ioredis surface so boot-clear is unit-testable without a live Redis. */
 export interface DemoCallMeRedis {

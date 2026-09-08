@@ -35,7 +35,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~45s',
     callType: 'inbound',
     lines: [
-      { role: 'ai',     text: "Hi, this is Aria calling from Riverside Dental. Am I speaking with Sarah Johnson?" },
+      { role: 'ai',     text: "Hi, this is Telfin calling from Riverside Dental. Am I speaking with Sarah Johnson?" },
       { role: 'caller', text: "Yes, this is Sarah." },
       { role: 'ai',     text: "Hi Sarah! I'm reaching out because you're due for your six-month cleaning — it's been about eight months since your last visit. We have a few openings this week. Would Tuesday at 2 PM work for you?" },
       { role: 'caller', text: "Actually, can we do Thursday morning?" },
@@ -55,7 +55,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~35s',
     callType: 'inbound',
     lines: [
-      { role: 'ai',     text: "Hola, habla Aria de la Clínica Dental Riverside. ¿Estoy hablando con Carlos Rodríguez?" },
+      { role: 'ai',     text: "Hola, habla Telfin de la Clínica Dental Riverside. ¿Estoy hablando con Carlos Rodríguez?" },
       { role: 'caller', text: "Sí, soy yo." },
       { role: 'ai',     text: "¡Hola Carlos! Le llamo porque tiene una cita de limpieza dental esta semana — el jueves a las tres de la tarde con el Doctor Chen. ¿Puede confirmar su asistencia?" },
       { role: 'caller', text: "Sí, ahí estaré. ¿Tengo que llevar algo?" },
@@ -75,7 +75,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~50s',
     callType: 'inbound',
     lines: [
-      { role: 'ai',     text: "Hi, this is Aria from Apex Insurance Group. I'm calling for James Miller — is this a good time?" },
+      { role: 'ai',     text: "Hi, this is Telfin from Apex Insurance Group. I'm calling for James Miller — is this a good time?" },
       { role: 'caller', text: "Yeah, go ahead." },
       { role: 'ai',     text: "Great! You requested a home and auto bundle quote earlier this week. I wanted to follow up and answer any questions, and see if you'd like to schedule a quick call with one of our licensed agents." },
       { role: 'caller', text: "Sure, I've been meaning to switch. What's the typical savings?" },
@@ -97,7 +97,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~55s',
     callType: 'inbound',
     lines: [
-      { role: 'ai',     text: "Thank you for calling Smith and Associates Law. This is Aria, the AI assistant. I can help you get started — is this regarding a new matter?" },
+      { role: 'ai',     text: "Thank you for calling Smith and Associates Law. This is Telfin, the AI assistant. I can help you get started — is this regarding a new matter?" },
       { role: 'caller', text: "Yes, I was just in a car accident and I need to talk to someone." },
       { role: 'ai',     text: "I'm sorry to hear that. Our attorneys handle personal injury cases, and I can schedule a free consultation for you. First, were you injured in the accident?" },
       { role: 'caller', text: "Yes, I hurt my back. The other driver ran a red light." },
@@ -119,7 +119,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~45s',
     callType: 'inbound',
     lines: [
-      { role: 'ai',     text: "Hi, this is Aria from Horizon Realty. I saw you inquired about the property on 42 Maple Street. Are you still interested in scheduling a showing?" },
+      { role: 'ai',     text: "Hi, this is Telfin from Horizon Realty. I saw you inquired about the property on 42 Maple Street. Are you still interested in scheduling a showing?" },
       { role: 'caller', text: "Yes! I've been looking at it online. Is it still available?" },
       { role: 'ai',     text: "Great news — it's still active! The listing is a 3-bed, 2-bath at $485,000. I can book a showing directly — are you flexible this weekend?" },
       { role: 'caller', text: "Saturday afternoon would be perfect." },
@@ -141,7 +141,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~40s',
     callType: 'inbound',
     lines: [
-      { role: 'ai',     text: "Thanks for calling ProFix Home Services! This is Aria. What can I help you with today?" },
+      { role: 'ai',     text: "Thanks for calling ProFix Home Services! This is Telfin. What can I help you with today?" },
       { role: 'caller', text: "My AC stopped working and it's 90 degrees in here. Can you send someone?" },
       { role: 'ai',     text: "Absolutely, I can get a technician out to you. Is this a residential property? And are you available today or would tomorrow morning work?" },
       { role: 'caller', text: "Today if possible — it's really hot." },
@@ -163,7 +163,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~40s',
     callType: 'inbound',
     lines: [
-      { role: 'ai',     text: "Thank you for calling! This is Aria, the AI assistant. How can I help you today?" },
+      { role: 'ai',     text: "Thank you for calling! This is Telfin, the AI assistant. How can I help you today?" },
       { role: 'caller', text: "Hi, I'd like to schedule an appointment." },
       { role: 'ai',     text: "I'd be happy to help with that! Do you have a preference for date and time?" },
       { role: 'caller', text: "Sometime next week, maybe Tuesday or Wednesday morning." },
@@ -185,7 +185,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~45s',
     callType: 'inbound',
     lines: [
-      { role: 'ai',     text: "Hola, habla Aria de Apex Insurance Group. ¿Estoy hablando con Elena García?" },
+      { role: 'ai',     text: "Hola, habla Telfin de Apex Insurance Group. ¿Estoy hablando con Elena García?" },
       { role: 'caller', text: "Sí, soy yo." },
       { role: 'ai',     text: "¡Hola Elena! Veo que solicitó una cotización para seguro de auto esta semana. Me gustaría agendar una llamada rápida con uno de nuestros agentes para darle los mejores precios. ¿Tiene disponibilidad mañana por la tarde?" },
       { role: 'caller', text: "Sí, en la tarde está bien." },
@@ -205,7 +205,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~50s',
     callType: 'inbound',
     lines: [
-      { role: 'ai',     text: "Gracias por llamar a Smith y Asociados. Soy Aria, la asistente de IA. ¿En qué le puedo ayudar hoy?" },
+      { role: 'ai',     text: "Gracias por llamar a Smith y Asociados. Soy Telfin, la asistente de IA. ¿En qué le puedo ayudar hoy?" },
       { role: 'caller', text: "Hola, tuve un accidente de auto y quisiera hablar con un abogado." },
       { role: 'ai',     text: "Lo siento mucho. Nuestros abogados se especializan en accidentes de tráfico y podemos agendar una consulta gratuita. ¿Resultó usted lesionado en el accidente?" },
       { role: 'caller', text: "Sí, me lastimé el cuello. El otro conductor se pasó la luz roja." },
@@ -227,7 +227,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~40s',
     callType: 'inbound',
     lines: [
-      { role: 'ai',     text: "¡Gracias por llamar a ProFix! Soy Aria. ¿En qué le puedo ayudar hoy?" },
+      { role: 'ai',     text: "¡Gracias por llamar a ProFix! Soy Telfin. ¿En qué le puedo ayudar hoy?" },
       { role: 'caller', text: "Mi aire acondicionado no está funcionando y hace mucho calor." },
       { role: 'ai',     text: "Entiendo, eso es urgente. Puedo enviarle un técnico hoy mismo. ¿Es una casa o apartamento? ¿Y está disponible esta tarde?" },
       { role: 'caller', text: "Es casa, y sí, puedo estar en la tarde." },
@@ -247,7 +247,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~40s',
     callType: 'inbound',
     lines: [
-      { role: 'ai',     text: "Hola, habla Aria de Horizon Realty. Vi que se interesó en la propiedad de la Calle Maple 42. ¿Sigue disponible para agendar una visita?" },
+      { role: 'ai',     text: "Hola, habla Telfin de Horizon Realty. Vi que se interesó en la propiedad de la Calle Maple 42. ¿Sigue disponible para agendar una visita?" },
       { role: 'caller', text: "Sí, quiero verla. ¿Todavía está disponible?" },
       { role: 'ai',     text: "¡Claro que sí! La propiedad sigue activa. Tengo disponibilidad este sábado por la tarde con la agente Kim. ¿Le funciona a las dos?" },
       { role: 'caller', text: "Sí, el sábado a las dos está perfecto." },
@@ -267,7 +267,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~45s',
     callType: 'outbound',
     lines: [
-      { role: 'ai',     text: "Hi Emma, this is Aria calling from [Your Business Name]. I noticed it's been a while since we last connected — we'd love to get you back in. Do you have any availability this week or next?" },
+      { role: 'ai',     text: "Hi Emma, this is Telfin calling from [Your Business Name]. I noticed it's been a while since we last connected — we'd love to get you back in. Do you have any availability this week or next?" },
       { role: 'caller', text: "Oh hi! Yeah, it has been a while. What days do you have open?" },
       { role: 'ai',     text: "We have Tuesday at 10 AM or Thursday at 2 PM available right now. Which works better for you?" },
       { role: 'caller', text: "Thursday at 2 works for me." },
@@ -287,7 +287,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~50s',
     callType: 'outbound',
     lines: [
-      { role: 'ai',     text: "Hi Michael, this is Aria from [Your Business Name]. You reached out last week about scheduling a consultation — I just wanted to follow up and see if you'd like to get that on the calendar." },
+      { role: 'ai',     text: "Hi Michael, this is Telfin from [Your Business Name]. You reached out last week about scheduling a consultation — I just wanted to follow up and see if you'd like to get that on the calendar." },
       { role: 'caller', text: "Yes actually — I've been meaning to call back." },
       { role: 'ai',     text: "Great timing! I have a few openings this week — Wednesday at 11 AM or Friday at 3 PM. Would either of those work for you?" },
       { role: 'caller', text: "Wednesday at 11 is perfect." },
@@ -307,7 +307,7 @@ export const SAMPLE_CALLS: SampleCall[] = [
     durationLabel: '~40s',
     callType: 'outbound',
     lines: [
-      { role: 'ai',     text: "Hi Sarah, this is Aria from [Your Business Name]. I'm calling because you're coming up on your scheduled follow-up and we want to make sure we get you in on time. Would Tuesday at 2 PM work, or is morning better for you?" },
+      { role: 'ai',     text: "Hi Sarah, this is Telfin from [Your Business Name]. I'm calling because you're coming up on your scheduled follow-up and we want to make sure we get you in on time. Would Tuesday at 2 PM work, or is morning better for you?" },
       { role: 'caller', text: "Morning is better. Do you have anything around 9?" },
       { role: 'ai',     text: "I have Tuesday at 9 AM available. Should I go ahead and book that for you?" },
       { role: 'caller', text: "Yes please." },

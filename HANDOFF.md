@@ -46,7 +46,7 @@ Activation pair: homepage call-me widget + dashboard test-call button. Both ride
 
 **Backend:**
 - `apps/api/src/modules/campaigns/telnyx-dialer.service.ts` — new `dialDirect()` helper for outbound calls without AMD or campaign context. Encodes `isOutbound: false` in client_state so the Telnyx webhook handler routes call.answered → startStream immediately.
-- `apps/api/src/modules/public-api/public-demo.router.ts` (new) — unauth `POST /api/v1/public/call-me` with US/CA-only regex, junk-number filter, per-IP rate limit (3/24h), global daily cap, per-number cooldown (1/hour), 503 fallback when demo unconfigured.
+- `apps/api/src/modules/public-api/public-demo.router.ts` (new) — unauth `POST /api/v1/public/call-me` with US/CA-only regex, junk-number filter, per-IP rate limit (3/24h), global daily cap, short per-number anti-double-click cooldown (intentional re-submit allowed; no 24h number lock), 503 fallback when demo unconfigured.
 - `apps/api/src/modules/admin/router.ts` — `POST /api/v1/calls/test-call` (requireRole staff). Marks calls with `direction: 'test'` so they skip billed-minute counters.
 - `apps/api/src/config.ts` — new env vars `DEMO_TENANT_ID`, `DEMO_FROM_NUMBER`, `DEMO_DAILY_CALL_LIMIT`.
 

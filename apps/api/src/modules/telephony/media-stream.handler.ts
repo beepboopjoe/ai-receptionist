@@ -20,6 +20,8 @@ import { saveCallState } from '../voice-agent/session-manager.js';
 import { emitWebhook } from '../webhooks/webhook.service.js';
 import { pushActivity } from '../activity/activity.service.js';
 import { isPromoTrialCapped } from '../billing/usage.service.js';
+import { config } from '../../config.js';
+import { resolveDemoAgentName } from '../public-api/public-demo.helpers.js';
 import type { AppointmentType, OfficeHours, Contact } from '@ai-receptionist/shared';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone.js';
@@ -71,6 +73,8 @@ export interface MediaStreamParams {
    *  When present, the prompt-builder renders a `# Your Task This Call`
    *  section so the AI opens by stating its purpose and works the task. */
   adHocTask?: string;
+  /** dialDirect mode — 'demo' uses the public Telfin persona. */
+  mode?: string;
   /**
    * Telnyx does NOT require this. Set it only for legacy Twilio paths where
    * the streamSid must appear in every outbound audio message.
@@ -89,7 +93,7 @@ export async function handleMediaStream(
   providerSocket: WebSocket,
   params: MediaStreamParams
 ): Promise<void> {
-  const { callId, tenantId, fromNumber, callSid, campaignContactId, campaignId, streamSid, adHocTask } = params;
+  const { callId, tenantId, fromNumber, callSid, campaignContactId, campaignId, streamSid, adHocTask, mode } = params;
   const isOutbound = !!campaignContactId;
 
   // 0. PROMO-TRIAL CAP CHECK — refuse to open the AI media stream if the
@@ -193,6 +197,11 @@ export async function handleMediaStream(
     const kbQuery = `${practiceName} ${vertical} ${apptTypes[0]?.name ?? ''}`.trim();
     const kbChunks = await retrieveRelevantChunks(tenantId, kbQuery, 4);
 
+    const demoAgentName = resolveDemoAgentName({
+      mode,
+      tenantId,
+      demoTenantId: config.DEMO_TENANT_ID,
+    });
     systemPrompt = buildSystemPrompt({
       practiceName,
       vertical,
@@ -206,6 +215,7 @@ export async function handleMediaStream(
       businessContext: settingsRow?.businessContext ?? null,
       ...(kbChunks.length > 0 && { kbChunks }),
       ...(adHocTask && { adHocTask }), // Phase 29b — Ask-your-AI single-task call
+      ...(demoAgentName && { agentName: demoAgentName }),
     });
   }
 

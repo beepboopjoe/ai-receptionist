@@ -9,6 +9,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Phone, PhoneCall, AlertCircle } from 'lucide-react';
+import { BRAND_AGENT_NAME } from '@/lib/brand';
 
 const API_URL = (process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/api/v1').replace(/\/$/, '');
 
@@ -33,7 +34,7 @@ function messageForStatus(status: number, fallback: string): string {
     return "Live call-me isn't set up on this site yet. Hear a sample instead — same Grok voice your callers hear.";
   }
   if (status === 429) {
-    return 'This number already requested a demo call recently. Hear a sample, or try again later.';
+    return 'Hang on a few seconds — that click already requested a call. If you still want another one, submit again.';
   }
   if (status === 400) return fallback || 'Enter a valid US or Canada mobile number.';
   if (status === 502) return fallback || "We couldn't place the call right now. Hear a sample, or try again in a minute.";
@@ -85,9 +86,10 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
     }
   }, [raw, status, consented]);
 
-  const reset = useCallback(() => {
+  const reset = useCallback((clearNumber = false) => {
     setStatus('idle');
     setError(null);
+    if (clearNumber) setRaw('');
   }, []);
 
   return (
@@ -112,15 +114,24 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
         <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
           <p className="text-sm font-semibold text-emerald-800">Calling you now</p>
           <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
-            Pick up to talk to the receptionist. If it doesn’t ring in 20 seconds, check spam / unknown callers.
+            Pick up to talk to {BRAND_AGENT_NAME}. If it doesn’t ring in 20 seconds, check spam / unknown callers.
           </p>
-          <button
-            type="button"
-            onClick={reset}
-            className="mt-3 text-xs font-semibold text-emerald-800 hover:underline"
-          >
-            Call a different number
-          </button>
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+            <button
+              type="button"
+              onClick={() => reset(false)}
+              className="text-xs font-semibold text-emerald-800 hover:underline"
+            >
+              Call again
+            </button>
+            <button
+              type="button"
+              onClick={() => reset(true)}
+              className="text-xs font-semibold text-emerald-800 hover:underline"
+            >
+              Call a different number
+            </button>
+          </div>
         </div>
       ) : (
         <>
@@ -196,7 +207,7 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
 
           {status === 'idle' && (
             <p className="mt-2 text-[11px] text-cream-400">
-              One call per hour per number. We’ll hang up if you don’t answer.
+              We’ll hang up if you don’t answer. You can request another call if you want to hear {BRAND_AGENT_NAME} again.
             </p>
           )}
         </>

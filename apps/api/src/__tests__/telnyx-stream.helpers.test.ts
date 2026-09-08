@@ -173,6 +173,28 @@ describe('resolveMediaStreamParams', () => {
     expect(params.fromNumber).toBe('+15551212');
     expect(params.missingFields).toEqual([]);
   });
+
+  it('forwards dialDirect mode so call-me can use the Telfin persona', () => {
+    const clientState = Buffer.from(JSON.stringify({
+      callId: 'call-demo',
+      tenantId: 'tenant-demo',
+      fromNumber: '+14153211212',
+      callSid: 'v2:demo',
+      isOutbound: false,
+      mode: 'demo',
+    })).toString('base64');
+
+    const params = resolveMediaStreamParams({
+      event: 'start',
+      start: {
+        call_control_id: 'v2:demo',
+        client_state: clientState,
+      },
+    });
+
+    expect(params.mode).toBe('demo');
+    expect(params.missingFields).toEqual([]);
+  });
 });
 
 describe('firstNonEmpty', () => {
@@ -429,6 +451,8 @@ describe('production sources use the working Telnyx + Grok path', () => {
     expect(media).toContain('formatFirstGrokAudioToTelnyxLog');
     expect(media).toContain('formatGrokEmptyResponseLog');
     expect(media).not.toMatch(/eventType === 'response\.audio\.delta'/);
+    expect(media).toContain('resolveDemoAgentName');
+    expect(router).toContain('resolved.mode');
   });
 });
 
