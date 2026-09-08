@@ -40,11 +40,10 @@ function iconForUseCase(useCaseId: string, verticalId: string): string {
 }
 
 const VOICES = [
-  { id: 'eve', label: 'Eve', description: 'Engaging & enthusiastic (default)' },
-  { id: 'ara', label: 'Ara', description: 'Balanced & conversational' },
-  { id: 'rex', label: 'Rex', description: 'Professional & articulate' },
-  { id: 'sal', label: 'Sal', description: 'Versatile & neutral' },
-  { id: 'leo', label: 'Leo', description: 'Decisive & commanding' },
+  { id: 'aurora', label: 'Aurora', description: 'Clear & warm (default)' },
+  { id: 'castor', label: 'Castor', description: 'Steady & professional' },
+  { id: 'cosmo', label: 'Cosmo', description: 'Bright & conversational' },
+  { id: 'zenith', label: 'Zenith', description: 'Confident closer' },
 ];
 
 // ── Compact mini audio row (for sidebar) ─────────────────────
@@ -188,7 +187,7 @@ export function EmbeddedVoiceDemo({ vertical: verticalProp = 'dental' }: { verti
   }));
 
   const [selectedUseCase, setSelectedUseCase] = useState(useCases[0]?.id ?? 'dental_receptionist');
-  const [selectedVoice, setSelectedVoice] = useState('eve');
+  const [selectedVoice, setSelectedVoice] = useState('aurora');
 
   // Sidebar voice samples — up to 3 inbound calls for this vertical (EN first, then ES)
   const verticalSamples = SAMPLE_CALLS

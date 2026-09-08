@@ -52,7 +52,7 @@ export async function demoPlugin(app: FastifyInstance) {
 
     const query = request.query as Record<string, string>;
     const useCase = query['useCase'] ?? 'dental_receptionist';
-    const voice = (query['voice'] ?? 'eve').toLowerCase();
+    const voice = (query['voice'] ?? 'aurora').toLowerCase();
 
     const systemPrompt = VERTICAL_PROMPTS[useCase] ?? VERTICAL_PROMPTS['dental_receptionist']!;
 

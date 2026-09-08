@@ -457,6 +457,10 @@ describe('production sources use the working Telnyx + Grok path', () => {
     expect(media).toContain('upsertDemoCallMeLead');
     expect(media).not.toMatch(/Math\.random\(\).*voice/);
     expect(router).toContain('resolved.mode');
+
+    const demoWs = readFileSync(join(srcRoot, 'modules/voice-agent/demo.router.ts'), 'utf8');
+    expect(demoWs).toContain("query['voice'] ?? 'aurora'");
+    expect(demoWs).not.toMatch(/Math\.random\(\)/);
   });
 });
 
