@@ -143,6 +143,19 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
 
       const callId = callRecord.id;
 
+      void import('./demo-closer.js').then(async ({ emptyDemoLeadDraft }) => {
+        const { upsertDemoCallMeLead } = await import('./demo-lead.service.js');
+        await upsertDemoCallMeLead({
+          tenantId: demoTenantId,
+          phoneE164: phone,
+          callId,
+          draft: emptyDemoLeadDraft(),
+          log: request.log,
+        });
+      }).catch((err) => {
+        request.log.warn({ err, callId }, 'Demo call-me stub lead persist failed');
+      });
+
       const { dialDirect } = await import('../campaigns/telnyx-dialer.service.js');
       let callSid: string;
       try {

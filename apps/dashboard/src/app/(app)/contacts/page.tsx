@@ -204,6 +204,9 @@ export default function ContactsPage() {
                         <span className={`badge ${c['contactType'] === 'new' ? 'badge-blue' : 'badge-gray'}`}>
                           {c['contactType'] === 'new' ? `New ${vertical.contactNoun}` : `Returning ${vertical.contactNoun}`}
                         </span>
+                        {c['source'] === 'demo_call_me' && (
+                          <span className="badge badge-yellow">Demo lead</span>
+                        )}
                         {vertical.id === 'dental' &&
                           c['recallDueDate'] &&
                           new Date(c['recallDueDate']) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) && (

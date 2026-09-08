@@ -9,6 +9,13 @@ describe('coerceVoiceSettings', () => {
     });
   });
 
+  it('accepts the public aurora catalog', () => {
+    expect(coerceVoiceSettings({ voiceName: 'Aurora' })).toEqual({
+      voiceName: 'aurora',
+      voiceProvider: 'grok',
+    });
+  });
+
   it('falls back to eve for unknown or ElevenLabs voice IDs', () => {
     expect(coerceVoiceSettings({ voiceName: '21m00Tcm4TlvDq8ikWAM', voiceProvider: 'elevenlabs' })).toEqual({
       voiceName: 'eve',

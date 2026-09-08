@@ -21,7 +21,8 @@ import { emitWebhook } from '../webhooks/webhook.service.js';
 import { pushActivity } from '../activity/activity.service.js';
 import { isPromoTrialCapped } from '../billing/usage.service.js';
 import { config } from '../../config.js';
-import { resolveDemoAgentName } from '../public-api/public-demo.helpers.js';
+import { resolveDemoAgentName, resolveDemoVoice } from '../public-api/public-demo.helpers.js';
+import { buildDemoCloserPrompt } from '../public-api/demo-closer.js';
 import type { AppointmentType, OfficeHours, Contact } from '@ai-receptionist/shared';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone.js';
@@ -95,6 +96,12 @@ export async function handleMediaStream(
 ): Promise<void> {
   const { callId, tenantId, fromNumber, callSid, campaignContactId, campaignId, streamSid, adHocTask, mode } = params;
   const isOutbound = !!campaignContactId;
+  const demoAgentName = resolveDemoAgentName({
+    mode,
+    tenantId,
+    demoTenantId: config.DEMO_TENANT_ID,
+  });
+  const isDemoCall = Boolean(demoAgentName);
 
   // 0. PROMO-TRIAL CAP CHECK — refuse to open the AI media stream if the
   //    tenant was granted a hands-on promo trial and has consumed all
@@ -189,34 +196,37 @@ export async function handleMediaStream(
     const isAfterHours = !todayHours || isOutsideHours(now, todayHours.open, todayHours.close);
     workflow = isAfterHours ? 'after_hours' : contact ? 'existing_contact' : 'new_contact';
 
-    // Phase 12.8 — pull top-K knowledge-base chunks for grounding. Synthetic
-    // query because we have no caller utterance yet at call-start. Always
-    // resolves to [] on any error (no OPENAI_API_KEY, no docs, embed failure)
-    // so the prompt stays well-formed regardless.
-    const { retrieveRelevantChunks } = await import('../knowledge-base/kb.service.js');
-    const kbQuery = `${practiceName} ${vertical} ${apptTypes[0]?.name ?? ''}`.trim();
-    const kbChunks = await retrieveRelevantChunks(tenantId, kbQuery, 4);
+    if (isDemoCall) {
+      workflow = 'demo_closer';
+      const signupBase = (config.DASHBOARD_URL || 'https://telfin.ai').replace(/\/$/, '');
+      systemPrompt = buildDemoCloserPrompt({
+        agentName: demoAgentName,
+        signupUrl: `${signupBase}/signup?plan=trial`,
+      });
+    } else {
+      // Phase 12.8 — pull top-K knowledge-base chunks for grounding. Synthetic
+      // query because we have no caller utterance yet at call-start. Always
+      // resolves to [] on any error (no OPENAI_API_KEY, no docs, embed failure)
+      // so the prompt stays well-formed regardless.
+      const { retrieveRelevantChunks } = await import('../knowledge-base/kb.service.js');
+      const kbQuery = `${practiceName} ${vertical} ${apptTypes[0]?.name ?? ''}`.trim();
+      const kbChunks = await retrieveRelevantChunks(tenantId, kbQuery, 4);
 
-    const demoAgentName = resolveDemoAgentName({
-      mode,
-      tenantId,
-      demoTenantId: config.DEMO_TENANT_ID,
-    });
-    systemPrompt = buildSystemPrompt({
-      practiceName,
-      vertical,
-      timezone: tz,
-      officeHours,
-      appointmentTypes: apptTypes,
-      providers: [],
-      caller: contact,
-      workflowHint: workflow === 'after_hours' ? 'after_hours' : (workflow as 'new_contact' | 'existing_contact'),
-      transferNumber: settingsRow?.transferNumber ?? null,
-      businessContext: settingsRow?.businessContext ?? null,
-      ...(kbChunks.length > 0 && { kbChunks }),
-      ...(adHocTask && { adHocTask }), // Phase 29b — Ask-your-AI single-task call
-      ...(demoAgentName && { agentName: demoAgentName }),
-    });
+      systemPrompt = buildSystemPrompt({
+        practiceName,
+        vertical,
+        timezone: tz,
+        officeHours,
+        appointmentTypes: apptTypes,
+        providers: [],
+        caller: contact,
+        workflowHint: workflow === 'after_hours' ? 'after_hours' : (workflow as 'new_contact' | 'existing_contact'),
+        transferNumber: settingsRow?.transferNumber ?? null,
+        businessContext: settingsRow?.businessContext ?? null,
+        ...(kbChunks.length > 0 && { kbChunks }),
+        ...(adHocTask && { adHocTask }), // Phase 29b — Ask-your-AI single-task call
+      });
+    }
   }
 
   // 4. Fire call.started immediately so the dashboard's live activity
@@ -254,12 +264,16 @@ export async function handleMediaStream(
   });
 
   // 5. Create Grok Voice session (returns WS URL + auth headers)
+  const sessionVoice = isDemoCall
+    ? resolveDemoVoice({ mode: mode ?? 'demo' })
+    : (settingsRow?.voiceName ?? 'eve');
+
   const voiceAdapter = createVoiceAdapter('grok');
   let session;
   try {
     session = await voiceAdapter.createSession({
       systemPrompt,
-      voice: settingsRow?.voiceName ?? 'eve',
+      voice: sessionVoice,
       audioInputFormat: 'pcmu',  // G.711 µ-law from Telnyx
       audioOutputFormat: 'pcmu',
       callMetadata: { callId, tenantId, fromNumber },
@@ -380,7 +394,7 @@ export async function handleMediaStream(
     const sessionUpdate = GrokVoiceAdapter.buildSessionUpdate({
       sessionId: grokSessionId,
       systemPrompt,
-      voice: settingsRow?.voiceName ?? 'eve',
+      voice: sessionVoice,
       audioInputFormat: 'pcmu',
       audioOutputFormat: 'pcmu',
     });
@@ -641,7 +655,24 @@ export async function handleMediaStream(
       logger.error({ err, callId }, 'Failed to persist call record after Grok close');
     }
 
-    // Track minute usage for billing — fire-and-forget (never blocks call
+    if (isDemoCall) {
+      try {
+        const { extractDemoLeadFromTranscript } = await import('../public-api/demo-closer.js');
+        const { upsertDemoCallMeLead } = await import('../public-api/demo-lead.service.js');
+        const draft = extractDemoLeadFromTranscript(transcript, summary);
+        await upsertDemoCallMeLead({
+          tenantId,
+          phoneE164: fromNumber,
+          callId,
+          draft,
+          log: logger,
+        });
+      } catch (err) {
+        logger.warn({ err, callId }, 'Demo call-me lead capture failed');
+      }
+    }
+
+    // Track minute usage for billing — fire-and-forget (never blocks call)
     // teardown). Fires for both inbound and outbound (pool or fixed-number)
     // calls; missed calls don't bill (no agent voice time), mirroring the
     // RingCentral handler's rule.

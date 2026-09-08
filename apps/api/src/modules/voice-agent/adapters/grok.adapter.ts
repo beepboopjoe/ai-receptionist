@@ -31,7 +31,10 @@ import {
 //   rex — Professional and articulate, ideal for business applications
 //   sal — Versatile voice suitable for various contexts
 //   leo — Decisive and commanding, suitable for instructional content
-const GROK_VOICES = ['eve', 'ara', 'rex', 'sal', 'leo'] as const;
+const GROK_VOICES = [
+  'eve', 'ara', 'rex', 'sal', 'leo',
+  'aurora', 'castor', 'cosmo', 'zenith',
+] as const;
 type GrokVoice = typeof GROK_VOICES[number];
 const DEFAULT_VOICE: GrokVoice = 'eve';
 
@@ -291,7 +294,7 @@ export function toLegacyXaiFormat(fmt?: string): 'g711_ulaw' | 'g711_alaw' | 'pc
 
 function validateVoice(voice?: string): GrokVoice | null {
   if (!voice) return null;
-  // xAI Voice Agent expects lowercase ('eve', 'ara', 'rex', 'sal', 'leo').
+  // xAI Voice Agent expects lowercase ('eve', 'aurora', …).
   // Old tenant settings may store capitalized values ('Ara', 'Eve') — coerce.
   const normalized = voice.toLowerCase();
   return GROK_VOICES.includes(normalized as GrokVoice) ? (normalized as GrokVoice) : null;

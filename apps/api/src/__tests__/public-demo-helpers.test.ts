@@ -23,6 +23,7 @@ import {
   DEMO_AGENT_NAME,
   DEMO_CALL_ME_NUM_COOLDOWN_SECONDS,
   resolveDemoAgentName,
+  resolveDemoVoice,
   type DemoCallMeRedis,
 } from '../modules/public-api/public-demo.helpers.js';
 
@@ -95,6 +96,10 @@ describe('demo persona + call-me cooldown', () => {
     expect(DEMO_CALL_ME_NUM_COOLDOWN_SECONDS).toBeLessThanOrEqual(30);
     expect(DEMO_CALL_ME_NUM_COOLDOWN_SECONDS).not.toBe(3600);
     expect(DEMO_CALL_ME_NUM_COOLDOWN_SECONDS).not.toBe(86400);
+  });
+
+  it('pins aurora as the demo call-me voice', () => {
+    expect(resolveDemoVoice({ mode: 'demo' })).toBe('aurora');
   });
 
   it('resolves Telfin only for demo mode or the demo tenant', () => {
@@ -322,6 +327,7 @@ describe('public-demo router source scan', () => {
     expect(router).not.toMatch(/cacheSetNx\([^)]*60 \* 60/);
     expect(router).not.toMatch(/Try again in an hour/);
     expect(router).toMatch(/one checklist dial/);
+    expect(router).toContain('upsertDemoCallMeLead');
   });
 
   it('demo websocket prompts introduce Telfin, not Aria', () => {

@@ -452,6 +452,10 @@ describe('production sources use the working Telnyx + Grok path', () => {
     expect(media).toContain('formatGrokEmptyResponseLog');
     expect(media).not.toMatch(/eventType === 'response\.audio\.delta'/);
     expect(media).toContain('resolveDemoAgentName');
+    expect(media).toContain('buildDemoCloserPrompt');
+    expect(media).toContain('resolveDemoVoice');
+    expect(media).toContain('upsertDemoCallMeLead');
+    expect(media).not.toMatch(/Math\.random\(\).*voice/);
     expect(router).toContain('resolved.mode');
   });
 });

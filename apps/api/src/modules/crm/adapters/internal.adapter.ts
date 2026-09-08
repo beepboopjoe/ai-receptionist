@@ -148,7 +148,7 @@ function mapContact(row: typeof contacts.$inferSelect): Contact {
     recallDueDate: row.recallDueDate,
     preferredProvider: row.preferredProvider,
     notes: row.notes,
-    source: row.source as 'manual' | 'csv_import' | 'call' | 'crm_sync',
+    source: row.source as Contact['source'],
     externalCrmId: row.externalCrmId,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),

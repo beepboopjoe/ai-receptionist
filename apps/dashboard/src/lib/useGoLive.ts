@@ -8,7 +8,10 @@ import {
   type PortRequestRow,
 } from './api';
 
-export const GROK_VOICE_IDS = ['eve', 'ara', 'rex', 'sal', 'leo'] as const;
+export const GROK_VOICE_IDS = [
+  'aurora', 'castor', 'cosmo', 'zenith',
+  'eve', 'ara', 'rex', 'sal', 'leo',
+] as const;
 
 export type GoLiveStepId =
   | 'phone'
@@ -119,7 +122,7 @@ export function useGoLive(): GoLiveStatus {
     {
       id: 'voice',
       title: 'Pick a Grok voice',
-      desc: 'Choose Eve, Ara, Rex, Sal, or Leo — xAI Grok voices used on every live call.',
+      desc: 'Choose Aurora, Castor, Cosmo, or Zenith — xAI Grok voices used on every live call.',
       href: '/settings/voice-agent',
       cta: 'Choose a voice',
       done: hasGrokVoice,

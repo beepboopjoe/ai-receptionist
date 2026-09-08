@@ -1,4 +1,7 @@
-const GROK_VOICE_IDS = ['eve', 'ara', 'rex', 'sal', 'leo'] as const;
+const GROK_VOICE_IDS = [
+  'eve', 'ara', 'rex', 'sal', 'leo',
+  'aurora', 'castor', 'cosmo', 'zenith',
+] as const;
 
 /** Live calls always use Grok. Coerce stale ElevenLabs rows on read/save. */
 export function coerceVoiceSettings(input: {

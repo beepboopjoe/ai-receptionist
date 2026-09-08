@@ -15,7 +15,11 @@ import {
 
 // xAI Grok voices — the only live-call voices. Eve is the recommended default.
 const GROK_VOICES = [
-  { id: 'eve', label: 'Eve', description: 'Engaging & enthusiastic', isDefault: true },
+  { id: 'aurora', label: 'Aurora', description: 'Clear & warm (default)', isDefault: true },
+  { id: 'castor', label: 'Castor', description: 'Steady & professional', isDefault: false },
+  { id: 'cosmo',  label: 'Cosmo',  description: 'Bright & conversational', isDefault: false },
+  { id: 'zenith', label: 'Zenith', description: 'Confident closer', isDefault: false },
+  { id: 'eve', label: 'Eve', description: 'Engaging & enthusiastic', isDefault: false },
   { id: 'ara', label: 'Ara', description: 'Balanced & conversational', isDefault: false },
   { id: 'rex', label: 'Rex', description: 'Professional & articulate', isDefault: false },
   { id: 'sal', label: 'Sal', description: 'Versatile & neutral',       isDefault: false },
@@ -118,7 +122,7 @@ export default function VoiceAgentPage() {
   const settings = (data as any)?.settings;
   const tenant = (data as any)?.tenant;
 
-  const [voiceName, setVoiceName] = useState('eve');
+  const [voiceName, setVoiceName] = useState('aurora');
   const [afterHoursMode, setAfterHoursMode] = useState('voicemail');
   const [transferNumber, setTransferNumber] = useState('');
   const [businessContext, setBusinessContext] = useState('');
@@ -158,7 +162,7 @@ export default function VoiceAgentPage() {
 
   useEffect(() => {
     if (settings) {
-      const raw = (settings.voiceName ?? 'eve').toLowerCase();
+      const raw = (settings.voiceName ?? 'aurora').toLowerCase();
       const known = GROK_VOICES.some((v) => v.id === raw);
       setVoiceName(known ? raw : 'eve');
       setAfterHoursMode(settings.afterHoursMode ?? 'voicemail');

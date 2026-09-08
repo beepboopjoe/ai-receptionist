@@ -60,6 +60,11 @@ export function isTruthyEnv(value: string | undefined | null): boolean {
 /** Public call-me / demo sales AI self-name. Voice IDs stay unchanged. */
 export const DEMO_AGENT_NAME = 'Telfin';
 
+/** Public Grok catalog for website/dashboard pickers. */
+export const DEMO_PUBLIC_VOICES = ['aurora', 'castor', 'cosmo', 'zenith'] as const;
+/** Call-me always uses aurora — never randomize among the public set. */
+export const DEMO_DEFAULT_VOICE = 'aurora';
+
 /**
  * Anti-double-click only. A fresh intentional call-me submit is allowed after
  * this window. Do NOT use a 24h per-number lock — Joey's rule is: no silent
@@ -84,6 +89,12 @@ export function resolveDemoAgentName(opts: {
   const demoTenantId = opts.demoTenantId?.trim() ?? '';
   if (tenantId && demoTenantId && tenantId === demoTenantId) return DEMO_AGENT_NAME;
   return undefined;
+}
+
+/** Pin aurora on demo/call-me. Tenant pickers may still choose castor/cosmo/zenith. */
+export function resolveDemoVoice(opts: { mode?: string | null }): typeof DEMO_DEFAULT_VOICE {
+  if (opts.mode === 'demo') return DEMO_DEFAULT_VOICE;
+  return DEMO_DEFAULT_VOICE;
 }
 
 /** Minimal ioredis surface so boot-clear is unit-testable without a live Redis. */

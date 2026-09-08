@@ -22,7 +22,11 @@ export async function demoPlugin(app: FastifyInstance) {
     return reply.send({
       useCases: Object.keys(VERTICAL_PROMPTS).map((id) => ({ id })),
       voices: [
-        { id: 'eve', label: 'Eve', description: 'Engaging & enthusiastic (default)' },
+        { id: 'aurora', label: 'Aurora', description: 'Clear & warm (demo default)' },
+        { id: 'castor', label: 'Castor', description: 'Steady & professional' },
+        { id: 'cosmo', label: 'Cosmo', description: 'Bright & conversational' },
+        { id: 'zenith', label: 'Zenith', description: 'Confident closer' },
+        { id: 'eve', label: 'Eve', description: 'Engaging & enthusiastic' },
         { id: 'ara', label: 'Ara', description: 'Balanced & conversational' },
         { id: 'rex', label: 'Rex', description: 'Professional & articulate' },
         { id: 'sal', label: 'Sal', description: 'Versatile & neutral' },
