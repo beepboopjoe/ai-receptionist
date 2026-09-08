@@ -70,7 +70,7 @@ const USE_CASES = [
 const QUALITY = [
   {
     title: 'Sounds like a real receptionist',
-    desc: "Natural Grok voice — conversational cadence, handles interruption. Most callers don't realize it's AI.",
+    desc: "Natural Grok voices — Aurora, Castor, Cosmo, or Zenith. Conversational cadence, handles interruption. Most callers don't realize it's AI.",
   },
   {
     title: 'No hold music',

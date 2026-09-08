@@ -12,15 +12,21 @@ import {
   applyPracticeAreaToContext,
   detectPracticeAreaFromContext,
 } from '@/lib/legal-presets';
+import {
+  DEFAULT_PUBLIC_GROK_VOICE,
+  PUBLIC_GROK_VOICES,
+  PUBLIC_GROK_VOICE_META,
+  grokVoiceLabel,
+  isLegacyGrokVoice,
+  isPublicGrokVoice,
+} from '@ai-receptionist/shared';
 
-// xAI Grok voices — the only live-call voices. Eve is the recommended default.
-const GROK_VOICES = [
-  { id: 'eve', label: 'Eve', description: 'Engaging & enthusiastic', isDefault: true },
-  { id: 'ara', label: 'Ara', description: 'Balanced & conversational', isDefault: false },
-  { id: 'rex', label: 'Rex', description: 'Professional & articulate', isDefault: false },
-  { id: 'sal', label: 'Sal', description: 'Versatile & neutral',       isDefault: false },
-  { id: 'leo', label: 'Leo', description: 'Decisive & commanding',     isDefault: false },
-];
+const GROK_VOICES = PUBLIC_GROK_VOICES.map((id) => ({
+  id,
+  label: PUBLIC_GROK_VOICE_META[id].label,
+  description: PUBLIC_GROK_VOICE_META[id].description,
+  isDefault: id === DEFAULT_PUBLIC_GROK_VOICE,
+}));
 
 // ---- Voice preview card ----
 function VoiceCard({
@@ -118,7 +124,7 @@ export default function VoiceAgentPage() {
   const settings = (data as any)?.settings;
   const tenant = (data as any)?.tenant;
 
-  const [voiceName, setVoiceName] = useState('eve');
+  const [voiceName, setVoiceName] = useState<string>(DEFAULT_PUBLIC_GROK_VOICE);
   const [afterHoursMode, setAfterHoursMode] = useState('voicemail');
   const [transferNumber, setTransferNumber] = useState('');
   const [businessContext, setBusinessContext] = useState('');
@@ -158,9 +164,10 @@ export default function VoiceAgentPage() {
 
   useEffect(() => {
     if (settings) {
-      const raw = (settings.voiceName ?? 'eve').toLowerCase();
-      const known = GROK_VOICES.some((v) => v.id === raw);
-      setVoiceName(known ? raw : 'eve');
+      const raw = (settings.voiceName ?? DEFAULT_PUBLIC_GROK_VOICE).toLowerCase();
+      setVoiceName(
+        isPublicGrokVoice(raw) || isLegacyGrokVoice(raw) ? raw : DEFAULT_PUBLIC_GROK_VOICE,
+      );
       setAfterHoursMode(settings.afterHoursMode ?? 'voicemail');
       setTransferNumber(settings.transferNumber ?? '');
       setBusinessContext(settings.businessContext ?? '');
@@ -232,8 +239,13 @@ export default function VoiceAgentPage() {
                 onSelect={() => setVoiceName(v.id)}
               />
             ))}
+            {isLegacyGrokVoice(voiceName) && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mt-2">
+                You&apos;re on {grokVoiceLabel(voiceName)} from a previous catalog. Pick Aurora, Castor, Cosmo, or Zenith to switch — we won&apos;t change it until you do.
+              </p>
+            )}
             <p className="text-xs text-gray-400 mt-1">
-              Live calls use Grok voices from xAI. Click ▶ to hear a short preview.
+              Live calls use Grok voices from xAI: Aurora, Castor, Cosmo, and Zenith. Click ▶ to hear a short preview.
             </p>
           </div>
         </div>

@@ -6,7 +6,7 @@
 // Generates one MP3 per (voice × language) combination:
 //   apps/dashboard/public/audio/voices/<voice>_<lang>.mp3
 //
-// 5 voices × 7 languages = 35 files.
+// 4 voices × 7 languages = 28 files.
 // Estimated cost at $4.20 / M characters: ~$0.06 total.
 //
 // Idempotent — skips files that already exist.
@@ -86,7 +86,7 @@ async function main(): Promise<void> {
   // Pre-compute total characters for cost estimate.
   let totalChars = 0;
   for (const lang of LANG_CODES) {
-    const sample = getVoiceSample('ara', lang); // All voices share the same script per lang.
+    const sample = getVoiceSample('aurora', lang); // All voices share the same script per lang.
     totalChars += aiOnlyText(sample.lines).length;
   }
   const totalCombinations = VOICE_IDS.length * LANG_CODES.length;

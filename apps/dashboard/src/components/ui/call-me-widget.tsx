@@ -31,7 +31,7 @@ function formatNational(digits: string): string {
 
 function messageForStatus(status: number, fallback: string): string {
   if (status === 503) {
-    return "Live call-me isn't set up on this site yet. Hear a sample instead — same Grok voice your callers hear.";
+    return "Live call-me isn't set up on this site yet. Hear a sample instead — same Grok voices your callers hear.";
   }
   if (status === 429) {
     return 'This number already requested a demo call recently. Hear a sample, or try again later.';
@@ -105,7 +105,7 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
         <div>
           <p className="text-sm font-semibold text-cream-900">Hear it on your phone</p>
           <p className="text-xs text-cream-500 leading-relaxed">
-            Pick a language, then we&apos;ll call you — US &amp; Canada mobiles. No sign-up.
+            Pick a language, then we&apos;ll call you in a Grok voice — US &amp; Canada mobiles. No sign-up.
           </p>
         </div>
       </div>

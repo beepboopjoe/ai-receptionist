@@ -818,11 +818,10 @@ function OfficeHoursView() {
 
 function VoiceAgentView() {
   const VOICES = [
-    { name: 'Ara', desc: 'Warm & professional', active: true  },
-    { name: 'Eve', desc: 'Clear & friendly',    active: false },
-    { name: 'Leo', desc: 'Confident & calm',    active: false },
-    { name: 'Rex', desc: 'Crisp & precise',     active: false },
-    { name: 'Sal', desc: 'Approachable & warm', active: false },
+    { name: 'Aurora', desc: 'Warm & luminous', active: true },
+    { name: 'Castor', desc: 'Clear & confident', active: false },
+    { name: 'Cosmo', desc: 'Bright & energetic', active: false },
+    { name: 'Zenith', desc: 'Calm & composed', active: false },
   ];
   return (
     <div className="space-y-4">
@@ -834,7 +833,7 @@ function VoiceAgentView() {
       {/* Voice picker */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Voice</p>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {VOICES.map(v => (
             <div key={v.name} className={`rounded-lg border p-3 text-center cursor-pointer transition-all ${
               v.active ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-200' : 'border-gray-200 bg-white hover:border-brand-300'

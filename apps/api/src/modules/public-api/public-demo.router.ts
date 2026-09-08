@@ -34,6 +34,7 @@ import {
   formatPublicCallMeDialFailureLog,
 } from './public-demo.helpers.js';
 import { normalizeCallMeLanguage } from '../voice-agent/call-me-language.js';
+import { pickRandomPublicGrokVoice } from '@ai-receptionist/shared';
 import { telnyxApiKeyLogFields, telnyxFailureFields } from '../../lib/telnyx-auth.js';
 
 const DEMO_UNAVAILABLE = {
@@ -55,7 +56,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         tags: ['Public demo'],
         summary: 'Request a live demo call',
         description:
-          'Places a short inbound-style demo call to a US/CA number. Returns 503 when the demo tenant is not configured.',
+          'Places a short inbound-style demo call to a US/CA number. Voice is randomized among Aurora, Castor, Cosmo, and Zenith — callers cannot pick a voice. Returns 503 when the demo tenant is not configured.',
         body: {
           type: 'object',
           required: ['phone'],
@@ -86,6 +87,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         throw new ValidationError('That number looks invalid. Try a real US or Canada mobile.');
       }
       const language = normalizeCallMeLanguage(body.language);
+      const voice = pickRandomPublicGrokVoice();
 
       const [demoTenant] = await db
         .select({ id: tenants.id })
@@ -156,6 +158,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
           fromNumber: phone,
           mode: 'demo',
           language,
+          voice,
         });
         callSid = result.callSid;
       } catch (err) {
@@ -212,7 +215,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         action: 'call.demo_call_placed',
         entityType: 'call',
         entityId: callId,
-        metadata: { toNumber: phone, fromNumber: demoFromNumber, callSid, language },
+        metadata: { toNumber: phone, fromNumber: demoFromNumber, callSid, language, voice },
       });
 
       return reply.send({

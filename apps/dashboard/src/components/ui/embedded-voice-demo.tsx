@@ -7,6 +7,11 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { getVertical, type Vertical } from '@/lib/verticals';
 import { SAMPLE_CALLS, type SampleCall } from '@/lib/sample-calls';
+import {
+  DEFAULT_PUBLIC_GROK_VOICE,
+  PUBLIC_GROK_VOICES,
+  PUBLIC_GROK_VOICE_META,
+} from '@ai-receptionist/shared';
 
 interface TranscriptEntry {
   role: 'ai' | 'user';
@@ -39,13 +44,14 @@ function iconForUseCase(useCaseId: string, verticalId: string): string {
   return USE_CASE_ICONS[suffix] ?? '🎯';
 }
 
-const VOICES = [
-  { id: 'eve', label: 'Eve', description: 'Engaging & enthusiastic (default)' },
-  { id: 'ara', label: 'Ara', description: 'Balanced & conversational' },
-  { id: 'rex', label: 'Rex', description: 'Professional & articulate' },
-  { id: 'sal', label: 'Sal', description: 'Versatile & neutral' },
-  { id: 'leo', label: 'Leo', description: 'Decisive & commanding' },
-];
+const VOICES = PUBLIC_GROK_VOICES.map((id) => ({
+  id,
+  label: PUBLIC_GROK_VOICE_META[id].label,
+  description:
+    id === DEFAULT_PUBLIC_GROK_VOICE
+      ? `${PUBLIC_GROK_VOICE_META[id].description} (default)`
+      : PUBLIC_GROK_VOICE_META[id].description,
+}));
 
 // ── Compact mini audio row (for sidebar) ─────────────────────
 function MiniSampleRow({ call }: { call: SampleCall }) {
@@ -188,7 +194,7 @@ export function EmbeddedVoiceDemo({ vertical: verticalProp = 'dental' }: { verti
   }));
 
   const [selectedUseCase, setSelectedUseCase] = useState(useCases[0]?.id ?? 'dental_receptionist');
-  const [selectedVoice, setSelectedVoice] = useState('eve');
+  const [selectedVoice, setSelectedVoice] = useState(DEFAULT_PUBLIC_GROK_VOICE);
 
   // Sidebar voice samples — up to 3 inbound calls for this vertical (EN first, then ES)
   const verticalSamples = SAMPLE_CALLS

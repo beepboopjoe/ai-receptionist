@@ -11,6 +11,12 @@ import { buildGrokRealtimeUrl, xaiAuthorizationHeader } from '../../lib/xai-auth
 // ── System prompts for all verticals — imported from central file ─────────────
 import { VERTICAL_PROMPTS } from './vertical-prompts.js';
 import { buildCallMeDemoPrompt } from './call-me-demo.prompt.js';
+import {
+  DEFAULT_PUBLIC_GROK_VOICE,
+  PUBLIC_GROK_VOICES,
+  PUBLIC_GROK_VOICE_META,
+  asGrokVoice,
+} from '@ai-receptionist/shared';
 
 // Simple in-memory rate limiter: max 3 concurrent demo connections
 let activeDemoConnections = 0;
@@ -22,13 +28,14 @@ export async function demoPlugin(app: FastifyInstance) {
   app.get('/demo/use-cases', async (_request, reply) => {
     return reply.send({
       useCases: Object.keys(VERTICAL_PROMPTS).map((id) => ({ id })),
-      voices: [
-        { id: 'eve', label: 'Eve', description: 'Engaging & enthusiastic (default)' },
-        { id: 'ara', label: 'Ara', description: 'Balanced & conversational' },
-        { id: 'rex', label: 'Rex', description: 'Professional & articulate' },
-        { id: 'sal', label: 'Sal', description: 'Versatile & neutral' },
-        { id: 'leo', label: 'Leo', description: 'Decisive & commanding' },
-      ],
+      voices: PUBLIC_GROK_VOICES.map((id) => ({
+        id,
+        label: PUBLIC_GROK_VOICE_META[id].label,
+        description:
+          id === DEFAULT_PUBLIC_GROK_VOICE
+            ? `${PUBLIC_GROK_VOICE_META[id].description} (default)`
+            : PUBLIC_GROK_VOICE_META[id].description,
+      })),
     });
   });
 
@@ -49,7 +56,7 @@ export async function demoPlugin(app: FastifyInstance) {
 
     const query = request.query as Record<string, string>;
     const useCase = query['useCase'] ?? 'dental_receptionist';
-    const voice = (query['voice'] ?? 'eve').toLowerCase();
+    const voice = asGrokVoice(query['voice']);
 
     // Homepage call-me shares this product script when the browser demo
     // requests it explicitly. Default vertical samples stay receptionist

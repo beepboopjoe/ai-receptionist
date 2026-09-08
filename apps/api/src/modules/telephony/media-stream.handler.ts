@@ -21,6 +21,7 @@ import { emitWebhook } from '../webhooks/webhook.service.js';
 import { pushActivity } from '../activity/activity.service.js';
 import { isPromoTrialCapped } from '../billing/usage.service.js';
 import type { AppointmentType, OfficeHours, Contact } from '@ai-receptionist/shared';
+import { resolveSessionGrokVoice } from '@ai-receptionist/shared';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone.js';
 import utc from 'dayjs/plugin/utc.js';
@@ -86,6 +87,12 @@ export interface MediaStreamParams {
    */
   language?: string;
   /**
+   * Homepage call-me Grok voice (aurora/castor/cosmo/zenith). Only applied
+   * when this is a demo call; paying tenants keep tenant_settings.voice_name
+   * (including legacy IDs).
+   */
+  voice?: string;
+  /**
    * Telnyx does NOT require this. Set it only for legacy Twilio paths where
    * the streamSid must appear in every outbound audio message.
    */
@@ -103,7 +110,7 @@ export async function handleMediaStream(
   providerSocket: WebSocket,
   params: MediaStreamParams
 ): Promise<void> {
-  const { callId, tenantId, fromNumber, callSid, campaignContactId, campaignId, streamSid, adHocTask, mode, language } = params;
+  const { callId, tenantId, fromNumber, callSid, campaignContactId, campaignId, streamSid, adHocTask, mode, language, voice } = params;
   const isOutbound = !!campaignContactId;
   const isDemo = isDemoCallMeTenant(tenantId, config.DEMO_TENANT_ID) || mode === 'demo';
 
@@ -154,6 +161,11 @@ export async function handleMediaStream(
   const storeTranscripts = tenantRow?.storeTranscripts ?? true;
   const apptTypes    = (settingsRow?.appointmentTypes ?? []) as AppointmentType[];
   const officeHours  = (settingsRow?.officeHours ?? {}) as OfficeHours;
+  const sessionVoice = resolveSessionGrokVoice({
+    isDemo,
+    demoVoice: voice,
+    tenantVoice: settingsRow?.voiceName,
+  });
 
   // 3. Determine workflow + build system prompt
   let workflow: string;
@@ -282,7 +294,7 @@ export async function handleMediaStream(
   try {
     session = await voiceAdapter.createSession({
       systemPrompt,
-      voice: settingsRow?.voiceName ?? 'eve',
+      voice: sessionVoice,
       audioInputFormat: 'pcmu',  // G.711 µ-law from Telnyx
       audioOutputFormat: 'pcmu',
       callMetadata: { callId, tenantId, fromNumber },
@@ -403,7 +415,7 @@ export async function handleMediaStream(
     const sessionUpdate = GrokVoiceAdapter.buildSessionUpdate({
       sessionId: grokSessionId,
       systemPrompt,
-      voice: settingsRow?.voiceName ?? 'eve',
+      voice: sessionVoice,
       audioInputFormat: 'pcmu',
       audioOutputFormat: 'pcmu',
     });

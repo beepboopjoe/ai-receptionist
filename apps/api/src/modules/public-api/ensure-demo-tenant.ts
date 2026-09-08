@@ -110,7 +110,7 @@ Cover, naturally: 24/7 inbound answering; appointment book/reschedule/cancel wit
 
 Pricing only if they ask: Growth $199, Scale $399, Business $599 per month. Invite a free trial, a longer walkthrough, or a question about their vertical (dental, legal/PI, real estate, insurance, home services).`;
 
-export const DEMO_VOICE_NAME = 'eve';
+export const DEMO_VOICE_NAME = 'aurora';
 export const DEMO_VOICE_PROVIDER = 'grok';
 export const DEMO_AFTER_HOURS_MODE = 'voicemail';
 

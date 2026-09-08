@@ -1,17 +1,24 @@
 // ============================================================
 // Voice × Language sample data.
 //
-// Single source of truth for the VoiceLanguageDemo component and
-// the generate-voice-language-samples.ts script.
+// Public catalog from @ai-receptionist/shared (aurora / castor /
+// cosmo / zenith). Legacy Grok IDs stay in the shared allowlist
+// but are not listed here — marketing + settings only offer the four.
 //
-// 5 voices × 7 languages = 35 audio files.
+// 4 voices × 7 languages = 28 audio files.
 // Audio lives at: public/audio/voices/<voice>_<lang>.mp3
 //
 // To regenerate MP3s:
 //   XAI_API_KEY=xai-... pnpm tsx scripts/generate-voice-language-samples.ts
 // ============================================================
+import {
+  DEFAULT_PUBLIC_GROK_VOICE,
+  PUBLIC_GROK_VOICES,
+  PUBLIC_GROK_VOICE_META,
+  type PublicGrokVoice,
+} from '@ai-receptionist/shared';
 
-export type VoiceId = 'ara' | 'eve' | 'leo' | 'rex' | 'sal';
+export type VoiceId = PublicGrokVoice;
 export type LangCode = 'en' | 'es' | 'it' | 'ar' | 'fa' | 'hy' | 'ru';
 
 export interface VoiceSample {
@@ -20,16 +27,16 @@ export interface VoiceSample {
   lines: Array<{ role: 'ai' | 'caller'; text: string }>;
 }
 
-// ── Voice metadata ────────────────────────────────────────────
-export const VOICES: Record<VoiceId, { label: string; description: string }> = {
-  ara: { label: 'Ara', description: 'Warm & professional' },
-  eve: { label: 'Eve', description: 'Clear & friendly' },
-  leo: { label: 'Leo', description: 'Confident & calm' },
-  rex: { label: 'Rex', description: 'Crisp & precise' },
-  sal: { label: 'Sal', description: 'Approachable & warm' },
-};
+export const VOICES = PUBLIC_GROK_VOICE_META;
+export const VOICE_IDS = PUBLIC_GROK_VOICES;
+export const DEFAULT_VOICE_ID = DEFAULT_PUBLIC_GROK_VOICE;
 
-export const VOICE_IDS = Object.keys(VOICES) as VoiceId[];
+export const VOICE_CARD_STYLES: Record<VoiceId, { color: string; textColor: string }> = {
+  aurora: { color: 'bg-rose-100', textColor: 'text-rose-700' },
+  castor: { color: 'bg-blue-100', textColor: 'text-blue-700' },
+  cosmo: { color: 'bg-amber-100', textColor: 'text-amber-700' },
+  zenith: { color: 'bg-violet-100', textColor: 'text-violet-700' },
+};
 
 // ── Language metadata ─────────────────────────────────────────
 export const LANGUAGES: Record<LangCode, { label: string; flag: string; xaiCode: string }> = {
@@ -44,7 +51,7 @@ export const LANGUAGES: Record<LangCode, { label: string; flag: string; xaiCode:
 
 export const LANG_CODES = Object.keys(LANGUAGES) as LangCode[];
 
-// ── Scripts — one per language, shared across all 5 voices ───
+// ── Scripts — one per language, shared across all public voices ───
 // Each voice uses the same text; voice_id changes the audio output.
 // AI lines total ≤ ~75 words (~25–30 s at 150 wpm).
 
@@ -106,7 +113,7 @@ const LANG_SCRIPTS: Record<LangCode, VoiceSample['lines']> = {
   ],
 };
 
-// ── Flat VOICE_SAMPLES array (5 voices × 7 languages = 35 entries) ──
+// ── Flat VOICE_SAMPLES array (4 voices × 7 languages = 28 entries) ──
 export const VOICE_SAMPLES: VoiceSample[] = VOICE_IDS.flatMap((voice) =>
   LANG_CODES.map((lang) => ({
     voice,
@@ -118,6 +125,5 @@ export const VOICE_SAMPLES: VoiceSample[] = VOICE_IDS.flatMap((voice) =>
 /** Look up a specific voice+language sample. */
 export function getVoiceSample(voice: VoiceId, lang: LangCode): VoiceSample {
   const sample = VOICE_SAMPLES.find((s) => s.voice === voice && s.lang === lang);
-  // All 35 combinations always exist in the array, so this is always defined.
   return sample!;
 }

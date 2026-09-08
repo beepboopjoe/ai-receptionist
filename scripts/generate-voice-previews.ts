@@ -25,12 +25,14 @@ const OUT_DIR = join(__dirname, '..', 'apps', 'dashboard', 'public', 'audio', 'v
 const TTS_URL = 'https://api.x.ai/v1/tts';
 
 const VOICES = [
-  { id: 'eve', text: "Hi! I'm Eve, your AI receptionist. I'll answer every call 24/7, book appointments, and make sure no caller ever goes to voicemail again." },
-  { id: 'ara', text: "Hello, this is Ara. I'm your AI receptionist — always available, always professional. Let me handle your calls while you focus on your patients." },
-  { id: 'rex', text: "Good afternoon. Rex here, your AI receptionist. I'll manage your inbound calls, schedule appointments, and escalate anything urgent to your team." },
-  { id: 'sal', text: "Hi there, this is Sal. As your AI receptionist I'm here around the clock — booking appointments, answering questions, and keeping your calendar full." },
-  { id: 'leo', text: "This is Leo, your AI receptionist. Every call answered, every appointment booked, every lead captured — I'll make sure nothing slips through." },
+  { id: 'aurora', text: "Hi! I'm Aurora, your AI receptionist. I'll answer every call 24/7, book appointments, and make sure no caller ever goes to voicemail again." },
+  { id: 'castor', text: "Hello, this is Castor. I'm your AI receptionist — always available, always professional. Let me handle your calls while you focus on your patients." },
+  { id: 'cosmo', text: "Hi there! Cosmo here, your AI receptionist. I'll manage your inbound calls, schedule appointments, and escalate anything urgent to your team." },
+  { id: 'zenith', text: "Good afternoon. This is Zenith, your AI receptionist. Every call answered, every appointment booked, every lead captured — I'll make sure nothing slips through." },
 ];
+
+// Prior catalog kept for later regeneration if we re-enable legacy IDs:
+// eve, ara, rex, sal, leo — see LEGACY_GROK_VOICES in packages/shared.
 
 const apiKey = process.env['XAI_API_KEY'];
 if (!apiKey) {

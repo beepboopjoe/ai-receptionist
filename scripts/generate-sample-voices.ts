@@ -23,7 +23,7 @@ import { SAMPLE_CALLS } from '../apps/dashboard/src/lib/sample-calls.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const OUT_DIR = join(__dirname, '..', 'apps', 'dashboard', 'public', 'audio', 'samples');
-const VOICE = 'eve'; // Default Grok voice — change here if you want a different default
+const VOICE = 'aurora';
 const TTS_URL = 'https://api.x.ai/v1/tts';
 
 interface TtsRequest {

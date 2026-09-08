@@ -15,8 +15,10 @@ import type {
   IVoiceAdapter,
   VoiceSession,
   CreateVoiceSessionParams,
+  GrokVoice,
 } from '@ai-receptionist/shared';
 import type { TranscriptEntry } from '@ai-receptionist/shared';
+import { DEFAULT_PUBLIC_GROK_VOICE, isGrokVoice } from '@ai-receptionist/shared';
 import { IntegrationError } from '../../../lib/errors.js';
 import {
   buildGrokRealtimeUrl,
@@ -25,15 +27,9 @@ import {
   xaiAuthorizationHeader,
 } from '../../../lib/xai-auth.js';
 
-// Valid Grok voice names (lowercase per current xAI Voice Agent docs)
-//   eve — Default voice, engaging and enthusiastic
-//   ara — Balanced and conversational
-//   rex — Professional and articulate, ideal for business applications
-//   sal — Versatile voice suitable for various contexts
-//   leo — Decisive and commanding, suitable for instructional content
-const GROK_VOICES = ['eve', 'ara', 'rex', 'sal', 'leo'] as const;
-type GrokVoice = typeof GROK_VOICES[number];
-const DEFAULT_VOICE: GrokVoice = 'eve';
+// Public catalog: aurora / castor / cosmo / zenith.
+// Legacy IDs (eve / ara / rex / sal / leo) remain valid for existing tenants.
+const DEFAULT_VOICE: GrokVoice = DEFAULT_PUBLIC_GROK_VOICE;
 
 // ---- Per-session in-memory stores ----
 // Keyed by sessionId. In V2 migrate to Redis for multi-instance safety.
@@ -291,8 +287,8 @@ export function toLegacyXaiFormat(fmt?: string): 'g711_ulaw' | 'g711_alaw' | 'pc
 
 function validateVoice(voice?: string): GrokVoice | null {
   if (!voice) return null;
-  // xAI Voice Agent expects lowercase ('eve', 'ara', 'rex', 'sal', 'leo').
-  // Old tenant settings may store capitalized values ('Ara', 'Eve') — coerce.
+  // xAI Voice Agent expects lowercase. Old tenant settings may store
+  // capitalized values ('Ara', 'Eve') or public names ('Aurora') — coerce.
   const normalized = voice.toLowerCase();
-  return GROK_VOICES.includes(normalized as GrokVoice) ? (normalized as GrokVoice) : null;
+  return isGrokVoice(normalized) ? normalized : null;
 }

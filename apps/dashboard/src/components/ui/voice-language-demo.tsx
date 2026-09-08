@@ -2,7 +2,7 @@
 // ============================================================
 // VoiceLanguageDemo — interactive voice × language sampler.
 //
-// Outer tabs: 5 AI voices (Ara, Eve, Leo, Rx, Sal)
+// Outer tabs: 4 public Grok voices (Aurora, Castor, Cosmo, Zenith)
 // Inner buttons: 7 languages (EN ES IT AR FA HY RU)
 //
 // Audio files served from /audio/voices/<voice>_<lang>.mp3
@@ -231,7 +231,7 @@ function VoicePlayer({ voice, lang }: { voice: VoiceId; lang: LangCode }) {
 
 // ── Public export ─────────────────────────────────────────────
 export function VoiceLanguageDemo() {
-  const [activeVoice, setActiveVoice] = useState<VoiceId>('ara');
+  const [activeVoice, setActiveVoice] = useState<VoiceId>('aurora');
   const [activeLang, setActiveLang] = useState<LangCode>('en');
 
   return (
@@ -245,7 +245,7 @@ export function VoiceLanguageDemo() {
           Every voice. Every language.
         </h2>
         <p className="text-cream-600 text-base max-w-xl mx-auto">
-          Choose a voice and language to hear your AI receptionist in action — fluent in 7 languages, across 5 distinct voices.
+          Choose a voice and language to hear your AI receptionist in action — fluent in 7 languages, across Aurora, Castor, Cosmo, and Zenith.
         </p>
       </div>
 
