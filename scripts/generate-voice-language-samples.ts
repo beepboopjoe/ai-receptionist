@@ -9,13 +9,12 @@
 // 4 voices × 7 languages = 28 files.
 // Estimated cost at $4.20 / M characters: ~$0.06 total.
 //
-// Idempotent — skips files that already exist.
-// Delete a file to force regeneration.
+// Idempotent — skips files that already exist unless --force / FORCE=1.
+// Each clip is a one-sentence intro: "Hi, I'm [Voice] from Telfin — …"
 // Failures for individual files are logged but do not abort the run.
 //
-// If XAI_API_KEY is unset, the committed aurora/castor/cosmo/zenith MP3s
-// are placeholders copied from the prior eve/ara/rex/sal catalog so the
-// marketing play buttons are not disabled. Run this script to replace them.
+// voice_id must match the spoken name (aurora says Aurora, never Castor).
+// Pass --force to overwrite existing files.
 // ============================================================
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -33,6 +32,8 @@ interface TtsRequest {
   language: string;
   output_format?: { type: 'mp3'; sample_rate?: number; bitrate_kbps?: number };
 }
+
+const FORCE = process.argv.includes('--force') || process.env['FORCE'] === '1';
 
 const apiKey = process.env['XAI_API_KEY'];
 if (!apiKey) {
@@ -52,12 +53,20 @@ function aiOnlyText(lines: Array<{ role: 'ai' | 'caller'; text: string }>): stri
     .join(' ... ');
 }
 
+/** Spoken line for this voice × language — must match the voice_id (never swap names). */
+function spokenText(voiceId: string, langCode: string): string {
+  const sample = getVoiceSample(
+    voiceId as Parameters<typeof getVoiceSample>[0],
+    langCode as Parameters<typeof getVoiceSample>[1],
+  );
+  return aiOnlyText(sample.lines);
+}
+
 async function generateOne(voiceId: string, langCode: string): Promise<{ skipped: boolean; chars: number }> {
   const outPath = join(OUT_DIR, `${voiceId}_${langCode}.mp3`);
-  if (existsSync(outPath)) return { skipped: true, chars: 0 };
+  if (existsSync(outPath) && !FORCE) return { skipped: true, chars: 0 };
 
-  const sample = getVoiceSample(voiceId as Parameters<typeof getVoiceSample>[0], langCode as Parameters<typeof getVoiceSample>[1]);
-  const text = aiOnlyText(sample.lines);
+  const text = spokenText(voiceId, langCode);
   const langMeta = LANGUAGES[langCode as keyof typeof LANGUAGES];
 
   const body: TtsRequest = {
@@ -87,14 +96,14 @@ async function generateOne(voiceId: string, langCode: string): Promise<{ skipped
 }
 
 async function main(): Promise<void> {
-  // Pre-compute total characters for cost estimate.
-  let totalChars = 0;
-  for (const lang of LANG_CODES) {
-    const sample = getVoiceSample('aurora', lang); // All voices share the same script per lang.
-    totalChars += aiOnlyText(sample.lines).length;
+  // Pre-compute total characters for cost estimate (each voice speaks its own name).
+  let charsAllCombinations = 0;
+  for (const voice of VOICE_IDS) {
+    for (const lang of LANG_CODES) {
+      charsAllCombinations += spokenText(voice, lang).length;
+    }
   }
   const totalCombinations = VOICE_IDS.length * LANG_CODES.length;
-  const charsAllCombinations = totalChars * VOICE_IDS.length;
   const estCostUsd = (charsAllCombinations / 1_000_000) * 4.2;
 
   console.log(`📊 ${totalCombinations} combinations (${VOICE_IDS.length} voices × ${LANG_CODES.length} languages)`);

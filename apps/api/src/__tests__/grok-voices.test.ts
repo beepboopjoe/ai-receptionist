@@ -15,6 +15,7 @@ import {
 } from '@ai-receptionist/shared';
 
 const srcRoot = join(fileURLToPath(new URL('.', import.meta.url)), '../modules');
+const repoRoot = join(fileURLToPath(new URL('.', import.meta.url)), '../../../..');
 
 describe('Grok voice catalog', () => {
   it('offers only aurora, castor, cosmo, zenith publicly', () => {
@@ -71,5 +72,41 @@ describe('call-me pins Aurora for every public dial', () => {
     expect(src).toContain('resolveSessionGrokVoice');
     expect(src).toContain('demoVoice: voice');
     expect(src).toContain('tenantVoice: settingsRow?.voiceName');
+  });
+});
+
+describe('marketing samples speak the matching voice name', () => {
+  it('preview TTS script uses voice_id + "Hi, I\'m [Name]" for each public voice', () => {
+    const preview = readFileSync(join(repoRoot, 'scripts/generate-voice-previews.ts'), 'utf8');
+    for (const id of PUBLIC_GROK_VOICES) {
+      const name = PUBLIC_GROK_VOICE_META[id].label;
+      expect(preview).toContain(`id: '${id}'`);
+      expect(preview).toContain(`Hi, I'm ${name} from Telfin`);
+    }
+  });
+
+  it('dashboard sample lines interpolate the display name per voice', () => {
+    const src = readFileSync(
+      join(repoRoot, 'apps/dashboard/src/lib/voice-samples.ts'),
+      'utf8',
+    );
+    expect(src).toContain('function voiceIntroLine');
+    expect(src).toContain("Hi, I'm ${name} from Telfin — your AI phone receptionist.");
+    expect(src).toContain('VOICE_IDS.flatMap');
+  });
+
+  it('public preview MP3s are not leftover copies of eve/ara/rex/sal', () => {
+    const dir = join(repoRoot, 'apps/dashboard/public/audio/voices');
+    const pairs: Array<[string, string]> = [
+      ['aurora-preview.mp3', 'eve-preview.mp3'],
+      ['castor-preview.mp3', 'ara-preview.mp3'],
+      ['cosmo-preview.mp3', 'rex-preview.mp3'],
+      ['zenith-preview.mp3', 'sal-preview.mp3'],
+    ];
+    for (const [pub, legacy] of pairs) {
+      const a = readFileSync(join(dir, pub));
+      const b = readFileSync(join(dir, legacy));
+      expect(Buffer.compare(a, b), `${pub} must not be a byte-copy of ${legacy}`).not.toBe(0);
+    }
   });
 });

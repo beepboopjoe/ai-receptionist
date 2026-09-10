@@ -51,74 +51,33 @@ export const LANGUAGES: Record<LangCode, { label: string; flag: string; xaiCode:
 
 export const LANG_CODES = Object.keys(LANGUAGES) as LangCode[];
 
-// ── Scripts — one per language, shared across all public voices ───
-// Each voice uses the same text; voice_id changes the audio output.
-// AI lines total ≤ ~75 words (~25–30 s at 150 wpm).
-
-const LANG_SCRIPTS: Record<LangCode, VoiceSample['lines']> = {
-  en: [
-    { role: 'ai',     text: "Hi there! Thank you for calling. This is Telfin, your AI receptionist. I can help you schedule an appointment, get answers about our services, or connect you with our team. What can I do for you today?" },
-    { role: 'caller', text: "I'd like to book an appointment for next week." },
-    { role: 'ai',     text: "Of course! I have availability on Tuesday at 10 AM or Thursday at 2 PM. Which works better for you?" },
-    { role: 'caller', text: "Tuesday at 10 is perfect." },
-    { role: 'ai',     text: "You're all set! Tuesday at 10 AM is confirmed. You'll receive a text confirmation shortly. Is there anything else I can help with?" },
-  ],
-
-  es: [
-    { role: 'ai',     text: "¡Hola! Gracias por llamar. Soy Telfin, su recepcionista virtual. Puedo ayudarle a agendar una cita, responder sus preguntas, o conectarle con nuestro equipo. ¿En qué le puedo ayudar hoy?" },
-    { role: 'caller', text: "Me gustaría agendar una cita para la próxima semana." },
-    { role: 'ai',     text: "¡Con gusto! Tengo disponibilidad el martes a las diez de la mañana o el jueves a las dos de la tarde. ¿Cuál le funciona mejor?" },
-    { role: 'caller', text: "El martes a las diez está perfecto." },
-    { role: 'ai',     text: "¡Listo! Cita confirmada para el martes a las diez. Recibirá un mensaje de confirmación. ¿Hay algo más en que le pueda ayudar?" },
-  ],
-
-  it: [
-    { role: 'ai',     text: "Salve! Grazie per aver chiamato. Sono Telfin, la sua receptionist virtuale. Posso aiutarla a fissare un appuntamento, rispondere alle sue domande, o metterla in contatto con il nostro team. Come posso esserle utile?" },
-    { role: 'caller', text: "Vorrei prenotare un appuntamento per la prossima settimana." },
-    { role: 'ai',     text: "Certo! Ho disponibilità martedì alle dieci o giovedì alle due del pomeriggio. Quale preferisce?" },
-    { role: 'caller', text: "Martedì alle dieci va benissimo." },
-    { role: 'ai',     text: "Perfetto! Appuntamento confermato per martedì alle dieci. Riceverà una conferma via SMS. Posso aiutarla con altro?" },
-  ],
-
-  ar: [
-    { role: 'ai',     text: "مرحباً! شكراً لاتصالك بنا. أنا تلفين، مساعدتك الافتراضية. يمكنني مساعدتك في تحديد موعد، الإجابة على استفساراتك، أو التواصل مع فريقنا. كيف يمكنني مساعدتك اليوم؟" },
-    { role: 'caller', text: "أريد حجز موعد للأسبوع القادم." },
-    { role: 'ai',     text: "بالطبع! لدي توفر يوم الثلاثاء الساعة العاشرة صباحاً أو الخميس الساعة الثانية مساءً. أيهما يناسبك؟" },
-    { role: 'caller', text: "الثلاثاء الساعة العاشرة ممتاز." },
-    { role: 'ai',     text: "رائع! تم تأكيد موعدك يوم الثلاثاء الساعة العاشرة. ستتلقى رسالة تأكيد قريباً. هل هناك شيء آخر أستطيع مساعدتك به؟" },
-  ],
-
-  fa: [
-    { role: 'ai',     text: "سلام! ممنون از تماس شما. من تلفین هستم، منشی مجازی شما. می‌توانم به شما در تعیین وقت، پاسخ به سوالاتتان، یا ارتباط با تیم ما کمک کنم. چطور می‌توانم امروز کمکتان کنم؟" },
-    { role: 'caller', text: "می‌خواهم برای هفته آینده وقت بگیرم." },
-    { role: 'ai',     text: "البته! سه‌شنبه ساعت ده صبح یا پنج‌شنبه ساعت دو بعدازظهر در دسترس دارم. کدام برایتان بهتر است؟" },
-    { role: 'caller', text: "سه‌شنبه ساعت ده عالیه." },
-    { role: 'ai',     text: "عالی! وقت شما سه‌شنبه ساعت ده تأیید شد. به زودی پیام تأیید دریافت خواهید کرد. آیا کمک دیگری می‌توانم بکنم؟" },
-  ],
-
-  hy: [
-    { role: 'ai',     text: "Բարև ձեզ! Շնորհակալ ենք, որ զանգեցիք: Ես Թելֆինն եմ, ձեր վիրտուալ ռեսեպցիոնիստը: Կարող եմ օգնել ժամանակ ամրագրելու, հարցերին պատասխանելու կամ թիմի հետ կապ հաստատելու հարցում: Ինչո՞վ կարող եմ օգնել:" },
-    { role: 'caller', text: "Ուզում եմ հաջորդ շաբաթ ժամ ամրագրել:" },
-    { role: 'ai',     text: "Իհարկե: Ունեմ հնարավորություն երեքշաբթի ժամը տասին կամ հինգշաբթի ժամը երկուին: Ո՞րն է ավելի հարմար ձեզ համար:" },
-    { role: 'caller', text: "Երեքշաբթի ժամը տասը կատարյալ է:" },
-    { role: 'ai',     text: "Հիանալի: Ձեր ժամը հաստատված է երեքշաբթի ժամը տասին: Շուտով կստանաք հաստատման հաղորդագրություն: Կարո՞ղ եմ էլ ինչ-ինչ կերպ օգնել:" },
-  ],
-
-  ru: [
-    { role: 'ai',     text: "Добрый день! Спасибо, что позвонили. Меня зовут Telfin, ваш виртуальный администратор. Я могу помочь вам записаться на приём, ответить на вопросы или соединить вас с нашей командой. Чем я могу помочь вам сегодня?" },
-    { role: 'caller', text: "Я бы хотел записаться на следующей неделе." },
-    { role: 'ai',     text: "Конечно! У меня есть свободное время во вторник в десять утра или в четверг в два часа дня. Что вам удобнее?" },
-    { role: 'caller', text: "Вторник в десять — отлично." },
-    { role: 'ai',     text: "Замечательно! Приём во вторник в десять утра подтверждён. Вы получите SMS-подтверждение в ближайшее время. Могу ли я ещё чем-то помочь?" },
-  ],
-};
+/** One-sentence “who we are” intro — marketing samples, not a feature pitch. */
+export function voiceIntroLine(voice: VoiceId, lang: LangCode): string {
+  const name = VOICES[voice].label;
+  switch (lang) {
+    case 'en':
+      return `Hi, I'm ${name} from Telfin — your AI phone receptionist.`;
+    case 'es':
+      return `Hola, soy ${name} de Telfin — su recepcionista de IA.`;
+    case 'it':
+      return `Ciao, sono ${name} di Telfin — la sua receptionist AI.`;
+    case 'ar':
+      return `مرحباً، أنا ${name} من تلفين — موظفة الاستقبال بالذكاء الاصطناعي.`;
+    case 'fa':
+      return `سلام، من ${name} از تلفین هستم — منشی تلفنی هوش مصنوعی شما.`;
+    case 'hy':
+      return `Բարև, ես ${name} եմ Թելֆինից — ձեր արհեստական բանականության հեռախոսային ռեսեպցիոնիստը։`;
+    case 'ru':
+      return `Привет, я ${name} из Telfin — ваш ИИ-ресепшн на телефоне.`;
+  }
+}
 
 // ── Flat VOICE_SAMPLES array (4 voices × 7 languages = 28 entries) ──
 export const VOICE_SAMPLES: VoiceSample[] = VOICE_IDS.flatMap((voice) =>
   LANG_CODES.map((lang) => ({
     voice,
     lang,
-    lines: LANG_SCRIPTS[lang],
+    lines: [{ role: 'ai' as const, text: voiceIntroLine(voice, lang) }],
   }))
 );
 

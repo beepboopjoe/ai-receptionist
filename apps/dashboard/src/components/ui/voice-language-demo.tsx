@@ -136,7 +136,7 @@ function VoicePlayer({ voice, lang }: { voice: VoiceId; lang: LangCode }) {
               <p className="text-sm font-bold text-cream-900">{voiceMeta.label}</p>
               <span className="text-lg">{langMeta.flag}</span>
               <span className="text-xs text-cream-500">{langMeta.label}</span>
-              <span className="text-[10px] bg-cream-100 text-cream-500 px-2 py-0.5 rounded-full">~25s</span>
+              <span className="text-[10px] bg-cream-100 text-cream-500 px-2 py-0.5 rounded-full">~3s</span>
             </div>
             <p className="text-xs text-cream-500 mt-0.5">{voiceMeta.description}</p>
           </div>
@@ -245,7 +245,7 @@ export function VoiceLanguageDemo() {
           Every voice. Every language.
         </h2>
         <p className="text-cream-600 text-base max-w-xl mx-auto">
-          Choose a voice and language to hear your AI receptionist in action — fluent in 7 languages, across Aurora, Castor, Cosmo, and Zenith.
+          Choose a voice and language to hear a one-line intro — Aurora, Castor, Cosmo, and Zenith, each saying their own name.
         </p>
       </div>
 
