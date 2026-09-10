@@ -25,13 +25,13 @@ export default function DemoPage() {
       <MarketingHeader />
 
       {/* ── Hero ──────────────────────────────────────────── */}
-      <section className="mesh-gradient-light pt-24 pb-16 px-6">
+      <section className="mesh-gradient-light pt-20 sm:pt-24 pb-16 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold px-4 py-2 rounded-full mb-7">
             <Sparkles size={13} />
             See it before you sign up
           </div>
-          <h1 className="font-serif text-5xl md:text-7xl text-cream-900 tracking-tight leading-[1.05]">
+          <h1 className="font-serif text-[2.15rem] leading-[1.1] sm:text-5xl md:text-7xl text-cream-900 tracking-tight sm:leading-[1.05] break-words">
             Hear the voices. Try a live call.
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">

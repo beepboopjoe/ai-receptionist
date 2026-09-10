@@ -74,7 +74,7 @@ export function CookieConsentBanner() {
       role="dialog"
       aria-modal="false"
       aria-labelledby="cookie-consent-title"
-      className="fixed bottom-0 inset-x-0 z-[80] p-4 sm:p-6 pointer-events-none"
+      className="cookie-consent-root fixed bottom-0 inset-x-0 z-[80] p-4 sm:p-6 pointer-events-none"
     >
       <div className="pointer-events-auto mx-auto max-w-3xl rounded-2xl border border-cream-200 bg-white shadow-xl p-5 sm:p-6">
         <p id="cookie-consent-title" className="font-serif text-lg text-cream-900">

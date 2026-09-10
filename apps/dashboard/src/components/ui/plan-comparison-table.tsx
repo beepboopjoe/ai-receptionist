@@ -176,7 +176,7 @@ export function PlanComparisonTable() {
   return (
     <div className="max-w-7xl mx-auto">
       {/* ── Desktop / tablet table ───────────────────────── */}
-      <div className="hidden md:block overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-sm">
+      <div className="hidden md:block overflow-x-auto rounded-2xl border border-cream-200 bg-white shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-cream-50 border-b border-cream-200">
@@ -265,9 +265,11 @@ export function PlanComparisonTable() {
                   <p className="text-[10px] font-bold uppercase tracking-wider text-brand-600 mb-2">{section.title}</p>
                   <ul className="space-y-1.5">
                     {section.rows.map((row) => (
-                      <li key={`${p.key}-${section.title}-${row.label}`} className="flex items-center justify-between gap-3 text-sm">
-                        <span className="text-cream-700">{row.label}</span>
-                        <CellRender value={row.cells[planIdx]!} popular={p.popular ?? false} />
+                      <li key={`${p.key}-${section.title}-${row.label}`} className="flex items-start justify-between gap-3 text-sm">
+                        <span className="text-cream-700 min-w-0 leading-snug">{row.label}</span>
+                        <span className="shrink-0">
+                          <CellRender value={row.cells[planIdx]!} popular={p.popular ?? false} />
+                        </span>
                       </li>
                     ))}
                   </ul>

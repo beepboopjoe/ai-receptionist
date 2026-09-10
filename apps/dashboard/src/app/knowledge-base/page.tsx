@@ -90,12 +90,12 @@ export default function KnowledgeBaseLandingPage() {
       <MarketingHeader />
 
       {/* ═══ HERO ═══ */}
-      <section className="mesh-gradient-light pt-24 pb-20 px-6">
+      <section className="mesh-gradient-light pt-20 sm:pt-24 pb-20 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto text-center">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold uppercase tracking-wider mb-6">
             <BookOpen size={12} /> Knowledge Base
           </span>
-          <h1 className="font-serif text-5xl md:text-7xl text-cream-900 tracking-tight mb-6 leading-tight">
+          <h1 className="font-serif text-[2.15rem] leading-[1.1] sm:text-5xl md:text-7xl text-cream-900 tracking-tight mb-6 sm:leading-tight break-words">
             Teach your AI<br />
             <span className="gradient-text">your business.</span>
           </h1>

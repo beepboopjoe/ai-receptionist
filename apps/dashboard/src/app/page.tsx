@@ -105,14 +105,14 @@ export default function LandingPage() {
 
       <MarketingHeader />
 
-      <section className="mesh-gradient-light pt-24 pb-16 px-6">
+      <section className="mesh-gradient-light pt-20 sm:pt-24 pb-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto text-center">
 
           <div className="inline-flex items-center gap-2 bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold px-4 py-2 rounded-full mb-7">
             Built for phone-heavy businesses
           </div>
 
-          <h1 className="font-serif text-5xl md:text-7xl text-cream-900 tracking-tight leading-[1.05]">
+          <h1 className="font-serif text-[2.15rem] leading-[1.1] sm:text-5xl md:text-7xl text-cream-900 tracking-tight sm:leading-[1.05] break-words">
             Your AI phone<br />
             <span className="gradient-text">receptionist.</span>
           </h1>
