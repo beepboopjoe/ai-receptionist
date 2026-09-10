@@ -8,6 +8,7 @@
 //   • Global daily cap via DEMO_DAILY_CALL_LIMIT
 //   • DEMO_SKIP_COOLDOWN skips the per-number Redis check/set (ops/testing)
 //   • Voice is pinned to aurora (callers cannot pick a voice)
+//   • Spoken language is detected on pickup (English fallback); no UI picker
 //   • Every valid phone submit is stubbed into demo_leads (platform admin)
 //   • 503 when DEMO_TENANT_ID / DEMO_FROM_NUMBER are unset — no crash
 //   • 503 when DEMO_TENANT_ID is set but that tenants row is missing
@@ -69,7 +70,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
             language: {
               type: 'string',
               description:
-                'Spoken language for the demo greeting: en, es, it, ar, fa, hy, ru. Defaults to en.',
+                'Optional leftover field. Live call-me ignores this and detects language from speech (English fallback). Accepted values: auto, en, es, it, ar, fa, hy, ru.',
             },
           },
         },
@@ -84,6 +85,8 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
       if (isJunkDemoNumber(phone)) {
         throw new ValidationError('That number looks invalid. Try a real US or Canada mobile.');
       }
+      // Live widget does not send a language. Persist English as the lead
+      // fallback; the call prompt auto-detects from speech on pickup.
       const language = normalizeCallMeLanguage(body.language);
       const voice = DEMO_DEFAULT_VOICE;
 
@@ -166,7 +169,6 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
           tenantId: demoTenantId,
           fromNumber: phone,
           mode: 'demo',
-          language,
           voice,
         });
         callSid = result.callSid;
@@ -224,7 +226,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         action: 'call.demo_call_placed',
         entityType: 'call',
         entityId: callId,
-        metadata: { toNumber: phone, fromNumber: demoFromNumber, callSid, language, voice },
+        metadata: { toNumber: phone, fromNumber: demoFromNumber, callSid, language: 'auto', voice },
       });
 
       return reply.send({

@@ -40,16 +40,22 @@ describe('buildCallMeDemoPrompt', () => {
     }
   });
 
-  it('defaults to English closer open and greets in Spanish when language=es', () => {
+  it('defaults to on-call language detection with an English fallback open', () => {
     const en = buildCallMeDemoPrompt();
-    expect(en).toMatch(/chose English/);
+    expect(en).toMatch(/Detect the caller's language from their speech/);
+    expect(en).toMatch(/Open in English as the safe fallback/);
+    expect(en).not.toMatch(/chose English/);
+    expect(en).not.toMatch(/call-me form BEFORE we dialed/);
     expect(en).toContain('assistant from Telfin');
     expect(en).toContain('sound really realistic');
+
+    const auto = buildCallMeDemoPrompt({ language: 'auto' });
+    expect(auto).toMatch(/Detect the caller's language from their speech/);
 
     const es = buildCallMeDemoPrompt({ language: 'es' });
     expect(es).toMatch(/Speak Spanish from the VERY FIRST word/);
     expect(es).toContain('asistente de Telfin');
-    expect(es).not.toMatch(/chose English/);
+    expect(es).not.toMatch(/Detect the caller's language from their speech/);
   });
 
   it.each(['it', 'ar', 'fa', 'hy', 'ru'] as const)('includes a native greeting for %s', (lang) => {

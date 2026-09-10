@@ -1,17 +1,14 @@
 // ============================================================
 // /demo — Public marketing demo page. Cream theme to match
-// /inbound and /outbound. Shows scripted audio samples across
-// all 6 verticals in EN + ES, plus a DashboardTeaser.
+// /inbound and /outbound. Four named Grok voices + live call-me.
+// Industry sample-call clips are intentionally not shown here.
 // ============================================================
 'use client';
-import { useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Phone, Sparkles, ShieldCheck } from 'lucide-react';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
-import type { Vertical } from '@/lib/verticals';
-import { SampleCallPlayer } from '@/components/ui/sample-call-player';
 import { VoiceLanguageDemo } from '@/components/ui/voice-language-demo';
 import { BRAND_STACK_LINE } from '@/lib/brand';
 import { CallMeWidget } from '@/components/ui/call-me-widget';
@@ -22,22 +19,7 @@ const DashboardTeaser = dynamic(
   { ssr: false }
 );
 
-// Vertical pills order — keep "all" first for default-shown state.
-const VERTICAL_FILTERS: { key: 'all' | Vertical; label: string; emoji: string }[] = [
-  { key: 'all', label: 'All scenarios', emoji: '🎬' },
-  { key: 'dental', label: 'Dental', emoji: '🦷' },
-  { key: 'insurance', label: 'Insurance', emoji: '📋' },
-  { key: 'legal', label: 'Legal', emoji: '⚖️' },
-  { key: 'real_estate', label: 'Real Estate', emoji: '🏠' },
-  { key: 'home_services', label: 'Home Services', emoji: '🏘️' },
-  { key: 'generic', label: 'Other', emoji: '🎯' },
-];
-
 export default function DemoPage() {
-  const [filter, setFilter] = useState<'all' | Vertical>('all');
-  const verticalFilter = filter === 'all' ? undefined : filter;
-  const [sampleLang, setSampleLang] = useState<'en' | 'es'>('en');
-
   return (
     <div className="min-h-screen bg-cream-50 text-cream-900">
       <MarketingHeader />
@@ -50,11 +32,12 @@ export default function DemoPage() {
             See it before you sign up
           </div>
           <h1 className="font-serif text-5xl md:text-7xl text-cream-900 tracking-tight leading-[1.05]">
-            Listen to sample calls
+            Hear the voices. Try a live call.
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
-            Scripted scenarios across six industries — in English and Spanish. Press play
-            to hear the voice, or enter your number and we&apos;ll call you. No sign-up required.
+            Aurora, Castor, Cosmo, and Zenith — the same Grok voices your callers hear.
+            Enter your number and we&apos;ll call you. Language is detected automatically
+            when you pick up. No sign-up required.
           </p>
           <p className="text-xs font-semibold text-cream-500 mt-4 tracking-wide">
             {BRAND_STACK_LINE}
@@ -79,73 +62,9 @@ export default function DemoPage() {
         </div>
       </section>
 
-      {/* ── Voices & Sample Calls (unified) ──────────────────── */}
+      {/* ── Named voices ──────────────────────────────────── */}
       <section className="py-16 bg-cream-50 border-t border-cream-200">
-        {/* Voice × Language demo */}
-        <VoiceLanguageDemo />
-
-        {/* Sample calls by industry */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 mt-14">
-          <div className="border-t border-cream-200 pt-12">
-            <div className="text-center mb-8">
-              <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-2">
-                Sample calls by industry
-              </p>
-              <h3 className="font-serif text-2xl md:text-3xl text-cream-900 tracking-tight">
-                Listen to sample calls by industry.
-              </h3>
-              <p className="text-cream-600 mt-2 text-sm max-w-lg mx-auto">
-                Real scripts. Same voice your customers hear. Press play — no account required.
-              </p>
-            </div>
-
-            {/* Vertical filter pills */}
-            <div className="flex items-center gap-2 flex-wrap justify-center mb-6">
-              {VERTICAL_FILTERS.map((v) => {
-                const active = filter === v.key;
-                return (
-                  <button
-                    key={v.key}
-                    onClick={() => setFilter(v.key)}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-1.5 ${
-                      active
-                        ? 'bg-brand-600 text-white shadow-sm'
-                        : 'bg-white border border-cream-200 text-cream-700 hover:bg-cream-100'
-                    }`}
-                  >
-                    <span>{v.emoji}</span> {v.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* EN / ES language toggle */}
-            <div className="flex items-center justify-center gap-2 mb-8">
-              {([
-                { lang: 'en', flag: '🇺🇸', label: 'English' },
-                { lang: 'es', flag: '🇪🇸', label: 'Español' },
-              ] as const).map(({ lang, flag, label }) => (
-                <button
-                  key={lang}
-                  onClick={() => setSampleLang(lang)}
-                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 ${
-                    sampleLang === lang
-                      ? 'bg-brand-600 text-white shadow-sm'
-                      : 'bg-white border border-cream-200 text-cream-700 hover:bg-cream-100'
-                  }`}
-                >
-                  {flag} {label}
-                </button>
-              ))}
-            </div>
-
-            <SampleCallPlayer
-              singleLang={sampleLang}
-              {...(verticalFilter ? { vertical: verticalFilter } : {})}
-              callType="inbound"
-            />
-          </div>
-        </div>
+        <VoiceLanguageDemo hideLanguageSelector />
       </section>
 
       {/* ── Interactive dashboard preview ──────────────────── */}

@@ -133,8 +133,8 @@ export interface DialDirectParams {
    */
   adHocTask?: string;
   /**
-   * Homepage call-me spoken language (en/es/it/ar/fa/hy/ru). Encoded in
-   * client_state so the media-stream prompt can greet in that language.
+   * Optional leftover call-me language. Live public call-me omits this so
+   * the prompt detects language from speech (English fallback).
    * Omit for test-call / ask-your-AI.
    */
   language?: string;
