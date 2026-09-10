@@ -4,8 +4,8 @@
 //
 // Lets owners + admins:
 //   - See the numbers their tenant owns
-//   - Buy a new local or toll-free number via Telnyx (charges the
-//     monthly cost to the tenant's Stripe customer)
+//   - Buy a new local or toll-free number via Telnyx (included plan
+//     slots are free; extras are a recurring Stripe add-on)
 //   - Release a number (deletes from Telnyx + soft-deletes locally)
 // ============================================================
 import { useState } from 'react';
@@ -26,6 +26,10 @@ function formatNumber(e164: string): string {
 
 function dollars(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
+}
+
+function dollarsShort(cents: number): string {
+  return cents % 100 === 0 ? `$${cents / 100}` : dollars(cents);
 }
 
 function ProvisionBadge({ status }: { status: 'provisioning' | 'active' | 'failed' }) {
@@ -69,8 +73,22 @@ export default function PhoneNumbersPage() {
   const localCents = pricing?.localCents ?? 500;
   const tollFreeCents = pricing?.tollFreeCents ?? 1000;
   const isPromoPricing = pricing?.isPromoPricing ?? false;
+  const includedPhoneNumbers = pricing?.includedPhoneNumbers;
+  const usedCount = pricing?.usedCount ?? owned.length;
+  const planName = pricing?.planName ?? 'your plan';
+  const extrasLabel = `${dollarsShort(localCents)}/${dollarsShort(tollFreeCents)}/mo`;
+  const allotmentLabel = !pricing
+    ? 'Checking your plan allotment…'
+    : includedPhoneNumbers! < 0
+      ? `Unlimited included on ${planName} · extras ${extrasLabel}`
+      : `${usedCount} of ${includedPhoneNumbers} included on ${planName} · extras ${extrasLabel}`;
+  // Optimistic: don't confirm a charge until we know the slot is extra.
+  const nextIsIncluded =
+    !pricing || includedPhoneNumbers! < 0 || usedCount < includedPhoneNumbers!;
   const costFor = (t: 'local' | 'toll_free') =>
     t === 'toll_free' ? tollFreeCents : localCents;
+  const buyLabelFor = (t: 'local' | 'toll_free') =>
+    nextIsIncluded ? 'Add (included)' : `Buy ${dollars(costFor(t))}/mo`;
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [areaCode, setAreaCode] = useState('');
@@ -177,18 +195,24 @@ export default function PhoneNumbersPage() {
   }
 
   async function handlePurchase(number: AvailableNumber) {
-    if (!confirm(`Buy ${formatNumber(number.phoneE164)} for ${dollars(costFor(number.numberType))}/mo?`)) return;
+    const confirmMsg = nextIsIncluded
+      ? `Add ${formatNumber(number.phoneE164)}? Included on ${planName} — no extra charge.`
+      : `Buy ${formatNumber(number.phoneE164)} for ${dollars(costFor(number.numberType))}/mo? Extra beyond your ${planName} allotment.`;
+    if (!confirm(confirmMsg)) return;
     setPurchasingE164(number.phoneE164);
     try {
       const res = await phoneNumbersApi.purchase(number.phoneE164, number.numberType);
       toast.success(
-        res.charged
-          ? `Purchased ${formatNumber(number.phoneE164)} — added to your next invoice`
-          : `Purchased ${formatNumber(number.phoneE164)} (Stripe not configured — billed manually)`
+        res.included
+          ? `Purchased ${formatNumber(number.phoneE164)} — included on your plan`
+          : res.charged
+            ? `Purchased ${formatNumber(number.phoneE164)} — added as a recurring extra`
+            : `Purchased ${formatNumber(number.phoneE164)} (billing not attached — we'll add it to your subscription shortly)`
       );
       setSearchOpen(false);
       setResults([]);
       await mutate('phone-numbers');
+      await mutate('phone-numbers-pricing');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Purchase failed');
     } finally {
@@ -203,6 +227,7 @@ export default function PhoneNumbersPage() {
       await phoneNumbersApi.release(n.id);
       toast.success(`Released ${formatNumber(n.phoneE164)}`);
       await mutate('phone-numbers');
+      await mutate('phone-numbers-pricing');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Release failed');
     } finally {
@@ -222,6 +247,7 @@ export default function PhoneNumbersPage() {
         toast.error(result.reason ?? 'Telnyx order failed — tap Retry');
       }
       await mutate('phone-numbers');
+      await mutate('phone-numbers-pricing');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Auto-provision failed');
     } finally {
@@ -239,6 +265,7 @@ export default function PhoneNumbersPage() {
         toast.error(result.reason ?? 'Retry failed');
       }
       await mutate('phone-numbers');
+      await mutate('phone-numbers-pricing');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Retry failed');
     } finally {
@@ -266,7 +293,7 @@ export default function PhoneNumbersPage() {
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Your numbers</h1>
           <p className="text-gray-500 mt-1 text-sm">
             Inbound DIDs your AI answers on, plus the auto-managed outbound pool for campaigns.
-            Growth includes 2 numbers, Scale 5, Business 10. Extra locals are {dollars(localCents)}/mo.
+            {allotmentLabel}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -292,6 +319,17 @@ export default function PhoneNumbersPage() {
             <Zap size={14} /> {autoProvisioning ? 'Provisioning…' : 'Get my number'}
           </button>
         </div>
+      </div>
+
+      {/* ── Plan allotment (included slots first) ─────────────── */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <p className="text-sm font-semibold text-gray-900">{allotmentLabel}</p>
+        <p className="text-xs text-gray-500 mt-0.5">
+          {nextIsIncluded
+            ? `Your next number is included on ${planName} — no extra charge.`
+            : `Your next number is an extra (${dollars(localCents)} local / ${dollars(tollFreeCents)} toll-free per month).`}
+          {' '}Outbound campaign numbers are auto-managed and do not use these slots.
+        </p>
       </div>
 
       {/* ── Promo-trial at-cost pricing banner ─────────────────── */}
@@ -393,8 +431,8 @@ export default function PhoneNumbersPage() {
 
             <div className="sm:col-span-2 lg:col-span-3 bg-white rounded-xl border border-brand-100 p-4 flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-gray-900">Extra numbers are {dollars(localCents)}/mo (local) or {dollars(tollFreeCents)}/mo (toll-free)</p>
-                <p className="text-xs text-gray-500 mt-0.5">Charged to your Stripe subscription — cancel any time from this page.</p>
+                <p className="text-sm font-semibold text-gray-900">{allotmentLabel}</p>
+                <p className="text-xs text-gray-500 mt-0.5">Included slots are free. Extras are added as a recurring line on your subscription — cancel any time from this page.</p>
               </div>
               <button
                 onClick={() => { setWhyOpen(false); setSearchOpen(true); }}
@@ -591,7 +629,7 @@ export default function PhoneNumbersPage() {
             <div className="p-5 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h2 className="font-serif text-xl text-cream-900">Buy a phone number</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Local = {dollars(localCents)}/mo · Toll-free = {dollars(tollFreeCents)}/mo</p>
+                <p className="text-xs text-gray-500 mt-0.5">{allotmentLabel}</p>
               </div>
               <button onClick={() => setSearchOpen(false)} className="p-1.5 rounded hover:bg-gray-100">
                 <X size={18} />
@@ -647,7 +685,7 @@ export default function PhoneNumbersPage() {
                         disabled={purchasingE164 === r.phoneE164}
                         className="btn-primary text-sm disabled:opacity-60"
                       >
-                        {purchasingE164 === r.phoneE164 ? 'Purchasing…' : `Buy ${dollars(costFor(r.numberType))}/mo`}
+                        {purchasingE164 === r.phoneE164 ? 'Purchasing…' : buyLabelFor(r.numberType)}
                       </button>
                     </li>
                   ))}

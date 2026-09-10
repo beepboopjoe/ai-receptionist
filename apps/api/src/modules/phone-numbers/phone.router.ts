@@ -28,8 +28,8 @@ export async function phoneNumbersPlugin(app: FastifyInstance): Promise<void> {
   });
 
   // ── Pricing ────────────────────────────────────────────────
-  // Returns the active monthly rates for this tenant. Promo-trial
-  // tenants get the wholesale Telnyx rate; everyone else gets retail.
+  // Extra-slot rates + plan allotment. Promo-trial tenants get
+  // wholesale Telnyx rates; included slots are always $0.
   app.get('/phone-numbers/pricing', { onRequest: [app.requireRole('staff')] }, async (request, reply) => {
     const pricing = await getNumberPricingForTenant(request.user!.tenantId);
     return reply.send(pricing);

@@ -4,10 +4,10 @@
 // Pool numbers are platform-managed rows in tenant_phone_numbers
 // (purpose='outbound_pool', pool_auto_managed=true). They are
 // bought from Telnyx directly — deliberately NOT via
-// purchaseTenantNumber(), which is the only code path that
-// creates per-number Stripe invoice items. Pool numbers carry no
-// per-number fee; outbound minutes bill through the existing
-// minute_usage overage pipeline instead.
+// purchaseTenantNumber(), which is the customer add-on path
+// (included allotment / extra Stripe subscription items). Pool
+// numbers carry no per-number fee; outbound minutes bill through
+// the existing minute_usage overage pipeline instead.
 //
 // Rotation is least-recently-dialed, selected per call by the
 // outbound dial job, so no single number concentrates enough
@@ -57,9 +57,10 @@ function activePoolWhere(tenantId: string) {
  * outbound caller IDs look local to the business; falls back to any
  * available local number.
  *
- * NO Stripe invoice item is created — pool numbers are free to the
- * tenant. monthlyCostCents records the wholesale rate purely for
- * internal cost visibility.
+ * NO Stripe add-on is created — pool numbers are free to the
+ * tenant and do not consume the plan's includedPhoneNumbers
+ * allotment. monthlyCostCents records the wholesale rate purely
+ * for internal cost visibility.
  */
 async function provisionPoolNumber(tenantId: string): Promise<PoolNumber> {
   // Prefer the tenant's inbound area code (US E.164: +1NXX...).
