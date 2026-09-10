@@ -71,6 +71,9 @@ export interface OwnedNumber {
   monthlyCostCents: number;
   purchasedAt: string;
   region: string | null;
+  purpose: string;
+  provisionStatus: 'provisioning' | 'active' | 'failed';
+  provisionError: string | null;
 }
 
 export async function listTenantNumbers(tenantId: string): Promise<OwnedNumber[]> {
@@ -96,6 +99,9 @@ export async function listTenantNumbers(tenantId: string): Promise<OwnedNumber[]
     monthlyCostCents: r.monthlyCostCents,
     purchasedAt: r.purchasedAt.toISOString(),
     region: r.region,
+    purpose: r.purpose,
+    provisionStatus: (r.provisionStatus as 'provisioning' | 'active' | 'failed') ?? 'active',
+    provisionError: r.provisionError,
   }));
 }
 
@@ -130,8 +136,11 @@ export async function purchaseTenantNumber(params: {
   const isPromo = Boolean(tenantPricing?.promoTrial);
   const monthlyCostCents = resolveMonthlyCostCents(numberType, isPromo);
 
-  // 1. Buy from Telnyx
-  const order = await telnyxPurchase(params.phoneE164);
+  // 1. Buy from Telnyx — attach to the Call Control app so inbound rings us.
+  const order = await telnyxPurchase(params.phoneE164, {
+    ...(config.TELNYX_APP_ID ? { connectionId: config.TELNYX_APP_ID } : {}),
+    tags: [`tenant:${params.tenantId}`, 'purpose:inbound'],
+  });
 
   // 2. Determine if this should be primary (first number a tenant buys = primary)
   const existing = await db
@@ -152,6 +161,8 @@ export async function purchaseTenantNumber(params: {
       numberType,
       monthlyCostCents,
       isPrimary: isFirstNumber,
+      purpose: 'inbound',
+      provisionStatus: 'active',
     })
     .returning();
   if (!row) throw new Error('Phone-number insert returned no row');
@@ -200,6 +211,9 @@ export async function purchaseTenantNumber(params: {
       monthlyCostCents: row.monthlyCostCents,
       purchasedAt: row.purchasedAt.toISOString(),
       region: row.region,
+      purpose: row.purpose,
+      provisionStatus: 'active',
+      provisionError: null,
     },
     charged,
   };
@@ -221,12 +235,11 @@ export async function releaseTenantNumber(params: {
     );
   }
   if (row.releasedAt) throw new ValidationError('Number already released');
-  if (!row.telnyxPhoneId) {
+  if (row.telnyxPhoneId) {
+    await telnyxRelease(row.telnyxPhoneId);
+  } else if (row.provisionStatus !== 'failed' && row.phoneE164 !== 'pending') {
     throw new IntegrationError('carrier', `Number ${row.phoneE164} has no carrier phone id — release manually`);
   }
-
-  // 1. Telnyx delete
-  await telnyxRelease(row.telnyxPhoneId);
 
   // 2. Soft-delete locally. Stripe stops billing automatically because
   //    invoice items are one-shots; the next month's invoice won't have

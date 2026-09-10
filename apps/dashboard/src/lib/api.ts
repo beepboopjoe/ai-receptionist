@@ -114,10 +114,26 @@ export const callsApi = {
   escalate: (id: string, reason: string) =>
     apiFetch(`/calls/${id}/escalate`, { method: 'POST', body: JSON.stringify({ reason }) }),
   takeover: (id: string) =>
-    apiFetch<{ ok: boolean; toNumber?: string; error?: string; message?: string }>(
+    apiFetch<{ ok: boolean; toNumber?: string; method?: string; error?: string; message?: string }>(
       `/calls/${id}/takeover`,
       { method: 'POST' }
     ),
+  join: (id: string) =>
+    apiFetch<{ ok: boolean; toNumber?: string; method?: string; error?: string; message?: string }>(
+      `/calls/${id}/join`,
+      { method: 'POST' }
+    ),
+  /** Authenticated recording blob URL for <audio>. Caller must revokeObjectURL. */
+  recordingObjectUrl: async (id: string): Promise<string | null> => {
+    const token = typeof window === 'undefined' ? null : localStorage.getItem('auth_token');
+    const res = await fetch(`${API_URL}/calls/${id}/recording`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new ApiError(res.status, 'Could not load recording');
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  },
   testCall: () =>
     apiFetch<{
       ok: boolean;
@@ -608,6 +624,9 @@ export interface OwnedNumber {
   monthlyCostCents: number;
   purchasedAt: string;
   region: string | null;
+  purpose?: string;
+  provisionStatus?: 'provisioning' | 'active' | 'failed';
+  provisionError?: string | null;
 }
 export interface AvailableNumber {
   phoneE164: string;
@@ -676,6 +695,22 @@ export const phoneNumbersApi = {
     apiFetch<{ data: PortRequestRow[] }>('/phone-numbers/port-requests'),
   cancelPortRequest: (id: string) =>
     apiFetch<void>(`/phone-numbers/port-requests/${id}`, { method: 'DELETE' }),
+
+  autoProvision: (areaCode?: string) =>
+    apiFetch<{
+      status: 'provisioning' | 'active' | 'failed' | 'skipped';
+      reason?: string;
+      number?: OwnedNumber & { provisionStatus: string; provisionError: string | null };
+    }>('/phone-numbers/auto-provision', {
+      method: 'POST',
+      body: JSON.stringify(areaCode ? { areaCode } : {}),
+    }),
+  retry: (id: string) =>
+    apiFetch<{
+      status: 'provisioning' | 'active' | 'failed' | 'skipped';
+      reason?: string;
+      number?: OwnedNumber;
+    }>(`/phone-numbers/${id}/retry`, { method: 'POST' }),
 };
 
 // ---- Outbound number pool (auto-managed, read-only) ----
@@ -686,9 +721,12 @@ export interface PoolNumber {
   purchasedAt: string;
   lastDialedAt: string | null;
   totalDials: number;
+  provisionStatus?: 'provisioning' | 'active' | 'failed';
+  provisionError?: string | null;
 }
 export const outboundPoolApi = {
   list: () => apiFetch<{ data: PoolNumber[] }>('/outbound-pool/numbers'),
+  retry: () => apiFetch<{ data: PoolNumber[] }>('/outbound-pool/retry', { method: 'POST' }),
 };
 
 // ---- Campaigns ----

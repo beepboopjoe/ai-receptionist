@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton as UiSkeleton } from '@/components/ui/skeleton';
 
 function formatNumber(e164: string): string {
+  if (!e164 || e164 === 'pending') return 'Number pending';
   // +14155551234 → +1 (415) 555-1234
   const m = /^\+(\d{1,3})(\d{3})(\d{3})(\d{4})$/.exec(e164);
   if (!m) return e164;
@@ -25,6 +26,28 @@ function formatNumber(e164: string): string {
 
 function dollars(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
+}
+
+function ProvisionBadge({ status }: { status: 'provisioning' | 'active' | 'failed' }) {
+  if (status === 'failed') {
+    return (
+      <span className="inline-flex items-center text-xs font-medium text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded-full">
+        Failed
+      </span>
+    );
+  }
+  if (status === 'provisioning') {
+    return (
+      <span className="inline-flex items-center text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">
+        Provisioning
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded-full">
+      Active
+    </span>
+  );
 }
 
 export default function PhoneNumbersPage() {
@@ -56,6 +79,9 @@ export default function PhoneNumbersPage() {
   const [results, setResults] = useState<AvailableNumber[]>([]);
   const [purchasingE164, setPurchasingE164] = useState<string | null>(null);
   const [releasingId, setReleasingId] = useState<string | null>(null);
+  const [autoProvisioning, setAutoProvisioning] = useState(false);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [retryingPool, setRetryingPool] = useState(false);
 
   // Port-in flow
   const { data: portsData } = useSWR('phone-port-requests', () => phoneNumbersApi.listPortRequests());
@@ -184,14 +210,63 @@ export default function PhoneNumbersPage() {
     }
   }
 
+  async function handleAutoProvision() {
+    setAutoProvisioning(true);
+    try {
+      const result = await phoneNumbersApi.autoProvision();
+      if (result.status === 'active' && result.number) {
+        toast.success(`Your number is ready: ${formatNumber(result.number.phoneE164)}`);
+      } else if (result.status === 'skipped') {
+        toast.info('Your current plan uses the shared trial number. Subscribe to get a dedicated DID.');
+      } else {
+        toast.error(result.reason ?? 'Telnyx order failed — tap Retry');
+      }
+      await mutate('phone-numbers');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Auto-provision failed');
+    } finally {
+      setAutoProvisioning(false);
+    }
+  }
+
+  async function handleRetry(n: OwnedNumber) {
+    setRetryingId(n.id);
+    try {
+      const result = await phoneNumbersApi.retry(n.id);
+      if (result.status === 'active' && result.number) {
+        toast.success(`Number ready: ${formatNumber(result.number.phoneE164)}`);
+      } else {
+        toast.error(result.reason ?? 'Retry failed');
+      }
+      await mutate('phone-numbers');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Retry failed');
+    } finally {
+      setRetryingId(null);
+    }
+  }
+
+  async function handleRetryPool() {
+    setRetryingPool(true);
+    try {
+      await outboundPoolApi.retry();
+      toast.success('Outbound pool refreshed');
+      await mutate('outbound-pool-numbers');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Pool retry failed');
+    } finally {
+      setRetryingPool(false);
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Phone numbers</h1>
+          <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Your numbers</h1>
           <p className="text-gray-500 mt-1 text-sm">
-            Numbers your AI receptionist answers on. Each plan includes 1 local number;
-            extras are {dollars(localCents)}/mo (local) or {dollars(tollFreeCents)}/mo (toll-free).
+            Inbound DIDs your AI answers on, plus the auto-managed outbound pool for campaigns.
+            Growth includes 2 numbers, Scale 5, Business 10. Extra locals are {dollars(localCents)}/mo.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -207,6 +282,14 @@ export default function PhoneNumbersPage() {
             className="btn-primary inline-flex items-center gap-2 text-sm"
           >
             <Phone size={14} /> Buy a number
+          </button>
+          <button
+            onClick={handleAutoProvision}
+            disabled={autoProvisioning}
+            className="btn-secondary inline-flex items-center gap-2 text-sm disabled:opacity-60"
+            title="Order a US inbound DID via Telnyx and assign it to this tenant"
+          >
+            <Zap size={14} /> {autoProvisioning ? 'Provisioning…' : 'Get my number'}
           </button>
         </div>
       </div>
@@ -382,8 +465,8 @@ export default function PhoneNumbersPage() {
         <EmptyState
           icon={Phone}
           label="No numbers yet"
-          hint="Buy your first local or toll-free number to start taking calls."
-          cta={{ label: 'Buy a number', onClick: () => setSearchOpen(true) }}
+          hint="We’ll auto-assign a US inbound DID when you go live on a paid plan. You can also provision one now."
+          cta={{ label: autoProvisioning ? 'Provisioning…' : 'Get my number', onClick: handleAutoProvision }}
         />
       ) : (
         <div className="card divide-y divide-gray-100">
@@ -397,15 +480,29 @@ export default function PhoneNumbersPage() {
                   <p className="font-semibold text-gray-900 truncate">{formatNumber(n.phoneE164)}</p>
                   <p className="text-xs text-gray-500">
                     {n.numberType === 'toll_free' ? 'Toll-free' : 'Local'}
-                    {n.region ? ` · ${n.region}` : ''} · {dollars(n.monthlyCostCents)}/mo
+                    {n.region ? ` · ${n.region}` : ''}
+                    {n.monthlyCostCents > 0 ? ` · ${dollars(n.monthlyCostCents)}/mo` : ' · Included'}
                   </p>
+                  {n.provisionStatus === 'failed' && n.provisionError && (
+                    <p className="text-xs text-red-600 mt-0.5 truncate">{n.provisionError}</p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                {n.isPrimary && (
+                <ProvisionBadge status={n.provisionStatus ?? 'active'} />
+                {n.isPrimary && n.provisionStatus !== 'failed' && (
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-700 bg-brand-50 border border-brand-100 px-2 py-1 rounded-full">
                     <Star size={11} /> Primary
                   </span>
+                )}
+                {n.provisionStatus === 'failed' && (
+                  <button
+                    onClick={() => handleRetry(n)}
+                    disabled={retryingId === n.id}
+                    className="text-xs font-semibold text-brand-700 hover:text-brand-900 px-2 py-1 rounded-lg hover:bg-brand-50 disabled:opacity-50"
+                  >
+                    {retryingId === n.id ? 'Retrying…' : 'Retry'}
+                  </button>
                 )}
                 <button
                   onClick={() => handleRelease(n)}
@@ -424,14 +521,24 @@ export default function PhoneNumbersPage() {
       {/* ── Outbound campaign number pool (auto-managed, read-only) ── */}
       <div className="card overflow-hidden">
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <Shield size={14} className="text-brand-600 shrink-0" />
-            <h2 className="text-sm font-semibold text-gray-900">Outbound campaign numbers</h2>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Shield size={14} className="text-brand-600 shrink-0" />
+              <h2 className="text-sm font-semibold text-gray-900">Outbound campaign numbers</h2>
+            </div>
+            <button
+              type="button"
+              onClick={handleRetryPool}
+              disabled={retryingPool}
+              className="text-xs font-semibold text-brand-700 hover:text-brand-900 disabled:opacity-50"
+            >
+              {retryingPool ? 'Retrying…' : 'Retry pool'}
+            </button>
           </div>
           <p className="text-xs text-gray-500 mt-0.5">
             Automatically provisioned and rotated by the platform so your campaigns never
-            get spam-flagged. Billed through your per-minute usage — no separate monthly fee,
-            and nothing to manage.
+            get spam-flagged. Sized from your plan&apos;s concurrent outbound limit, then grown
+            with dial volume. Billed through per-minute usage — no separate monthly fee.
           </p>
         </div>
         {poolLoading ? (
@@ -460,11 +567,17 @@ export default function PhoneNumbersPage() {
                         ? ` · Last used ${new Date(n.lastDialedAt).toLocaleDateString()}`
                         : ' · Not used yet'}
                     </p>
+                    {n.provisionStatus === 'failed' && n.provisionError && (
+                      <p className="text-xs text-red-600 mt-0.5 truncate">{n.provisionError}</p>
+                    )}
                   </div>
                 </div>
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 px-2 py-1 rounded-full shrink-0">
-                  <Zap size={11} /> Auto-managed
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <ProvisionBadge status={n.provisionStatus ?? 'active'} />
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 px-2 py-1 rounded-full">
+                    <Zap size={11} /> Auto-managed
+                  </span>
+                </div>
               </div>
             ))}
           </div>

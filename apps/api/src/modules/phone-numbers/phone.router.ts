@@ -11,6 +11,7 @@ import {
   releaseTenantNumber,
   getNumberPricingForTenant,
 } from './phone.service.js';
+import { ensureInboundDid, retryInboundDid } from './auto-provision.service.js';
 import {
   createPortRequest,
   listTenantPortRequests,
@@ -87,6 +88,33 @@ export async function phoneNumbersPlugin(app: FastifyInstance): Promise<void> {
         numberId: request.params.id,
       });
       return reply.code(204).send();
+    }
+  );
+
+  // ── Auto-provision inbound DID (go-live / retry) ──────────
+  app.post(
+    '/phone-numbers/auto-provision',
+    { onRequest: [app.requireRole('admin')] },
+    async (request, reply) => {
+      const body = (request.body ?? {}) as { areaCode?: string };
+      if (body.areaCode && !/^\d{3}$/.test(body.areaCode)) {
+        throw new ValidationError('areaCode must be 3 digits (e.g. "415")');
+      }
+      const result = await ensureInboundDid(request.authUser.tenantId, {
+        areaCode: body.areaCode,
+      });
+      const status = result.status === 'failed' ? 502 : 200;
+      return reply.code(status).send(result);
+    }
+  );
+
+  app.post<{ Params: { id: string } }>(
+    '/phone-numbers/:id/retry',
+    { onRequest: [app.requireRole('admin')] },
+    async (request, reply) => {
+      const result = await retryInboundDid(request.authUser.tenantId, request.params.id);
+      const status = result.status === 'failed' ? 502 : 200;
+      return reply.code(status).send(result);
     }
   );
 

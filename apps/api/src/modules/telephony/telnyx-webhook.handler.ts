@@ -21,18 +21,24 @@
 // ============================================================
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../../db/client.js';
-import { calls, tenants, campaignContacts, outboundCampaigns, contacts, smsMessages, tenantPhoneNumbers, notifications } from '../../db/schema.js';
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { calls, tenants, campaignContacts, outboundCampaigns, contacts, smsMessages, notifications } from '../../db/schema.js';
+import { and, eq, sql } from 'drizzle-orm';
 import {
   answerCall,
   startMediaStream,
   hangupCall,
   dropVoicemail,
   updateCallClientState,
+  startCallRecording,
+  stopMediaStream,
+  joinCallToConference,
 } from '../campaigns/telnyx-dialer.service.js';
 import { outboundDialerQueue } from '../../queue/queues.js';
 import { sendSms } from '../notifications/adapters/telnyx-sms.adapter.js';
 import { getTenantFromNumber } from '../sms/tenant-from-number.js';
+import { lookupTenantByDid } from '../phone-numbers/inbound-did.js';
+import { extractTelnyxRecordingMp3Url, persistRecordingUrl } from './recording.js';
+import { pushActivity } from '../activity/activity.service.js';
 import { config } from '../../config.js';
 import { telnyxMediaStreamUrl } from '../../lib/public-url.js';
 import {
@@ -115,6 +121,11 @@ interface TelnyxCallState {
    * That dial owns the single bidirectional RTP slot — do not streaming_start.
    */
   streamAttachedAtDial?: boolean;
+  /** 'supervisor_join' = staff leg dialed from the live-call Join button. */
+  kind?: 'supervisor_join';
+  originalCallId?: string;
+  originalCallControlId?: string;
+  conferenceName?: string;
 }
 
 function encodeState(state: TelnyxCallState): string {
@@ -199,6 +210,10 @@ async function dispatch(
       break;
 
     case 'call.answered':
+      if (state.kind === 'supervisor_join') {
+        await onSupervisorJoinAnswered(call_control_id, state);
+        break;
+      }
       await onCallAnswered(call_control_id, state, payload);
       break;
 
@@ -251,6 +266,11 @@ async function dispatch(
       );
       break;
 
+    case 'call.recording.saved':
+    case 'call.recording.transcription.saved':
+      await onRecordingSaved(call_control_id, state, payload);
+      break;
+
     default:
       logger.info({ eventType, callControlId: call_control_id }, `Telnyx event type not handled eventType=${eventType}`);
   }
@@ -271,15 +291,21 @@ async function onCallInitiated(
   const fromNumber = payload.from ?? '';
   const toNumber = payload.to ?? '';
 
-  // Resolve tenant from the Telnyx number
-  // TODO: query integrations table WHERE provider='telnyx' AND metadata->>'phone_number' = toNumber
+  const resolved = await lookupTenantByDid(toNumber);
+  if (!resolved) {
+    logger.warn({ toNumber }, 'No tenant found for inbound DID — hanging up');
+    try { await hangupCall(callControlId); } catch { /* ignore */ }
+    return;
+  }
+
   const [tenant] = await db
     .select({ id: tenants.id, timezone: tenants.timezone })
     .from(tenants)
+    .where(eq(tenants.id, resolved.tenantId))
     .limit(1);
 
   if (!tenant) {
-    logger.warn({ toNumber }, 'No tenant found for inbound call — hanging up');
+    logger.warn({ toNumber, tenantId: resolved.tenantId }, 'Tenant row missing for inbound DID — hanging up');
     try { await hangupCall(callControlId); } catch { /* ignore */ }
     return;
   }
@@ -410,12 +436,22 @@ async function onCallHangup(
   state: TelnyxCallState,
   payload: TelnyxEventPayload
 ): Promise<void> {
+  if (state.kind === 'supervisor_join') {
+    logger.info({ callControlId }, 'Supervisor join leg hung up');
+    return;
+  }
+
   if (state.callId) {
-    // Only update if still active — the stream handler may have already set 'completed'
+    // Don't clobber a live takeover/join — the stream handler persists
+    // transcript after this webhook and should keep status=transferred.
+    await db
+      .update(calls)
+      .set({ endedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(calls.id, state.callId), sql`${calls.status} NOT IN ('transferred', 'completed', 'missed')`));
     await db
       .update(calls)
       .set({ status: 'completed', endedAt: new Date(), updatedAt: new Date() })
-      .where(eq(calls.id, state.callId));
+      .where(and(eq(calls.id, state.callId), sql`${calls.status} IN ('active', 'connected')`));
   }
 
   // If the outbound lead is still in 'dialing' state (call dropped before AMD fired),
@@ -469,6 +505,7 @@ async function startStream(
     );
     // Still stamp callSid — the dial-time WS start may already have fired.
     await updateCallClientState(callControlId, clientState);
+    void startCallRecording(callControlId);
     return;
   }
 
@@ -486,6 +523,83 @@ async function startStream(
     );
     throw err;
   }
+
+  void startCallRecording(callControlId);
+}
+
+async function onRecordingSaved(
+  callControlId: string,
+  state: TelnyxCallState,
+  payload: TelnyxEventPayload
+): Promise<void> {
+  const url = extractTelnyxRecordingMp3Url(payload);
+  if (!url) {
+    logger.warn({ callControlId }, 'call.recording.saved without an MP3 URL');
+    return;
+  }
+  const ok = await persistRecordingUrl({
+    url,
+    callId: state.callId,
+    callControlId,
+  });
+  logger.info({ callControlId, callId: state.callId, persisted: ok }, 'Call recording URL saved');
+}
+
+/**
+ * Staff answered the Join-call dial. Drop the AI stream, conference the
+ * original caller with the staff leg. Same activity event as takeover so
+ * the live drawer closes.
+ */
+async function onSupervisorJoinAnswered(
+  staffCallControlId: string,
+  state: TelnyxCallState
+): Promise<void> {
+  const originalId = state.originalCallControlId;
+  const conferenceName = state.conferenceName;
+  if (!originalId || !conferenceName) {
+    logger.warn({ staffCallControlId, state }, 'supervisor join answered without conference context');
+    return;
+  }
+
+  try {
+    await stopMediaStream(originalId);
+  } catch (err) {
+    logger.warn({ err, originalId }, 'streaming_stop before join failed (continuing)');
+  }
+
+  try {
+    await joinCallToConference(originalId, conferenceName, {
+      startConferenceOnEnter: true,
+      endConferenceOnExit: false,
+    });
+    await joinCallToConference(staffCallControlId, conferenceName, {
+      startConferenceOnEnter: true,
+      endConferenceOnExit: true,
+    });
+  } catch (err) {
+    logger.error({ err, originalId, staffCallControlId }, 'conference join failed');
+    return;
+  }
+
+  if (state.originalCallId) {
+    await db
+      .update(calls)
+      .set({ status: 'transferred', outcome: 'escalated', updatedAt: new Date() })
+      .where(eq(calls.id, state.originalCallId));
+  }
+
+  if (state.tenantId && state.originalCallId) {
+    pushActivity(state.tenantId, 'call_taken_over', {
+      callId: state.originalCallId,
+      conferenceName,
+      method: 'join',
+    });
+  }
+
+  logger.info(
+    { originalId, staffCallControlId, conferenceName },
+    'Supervisor joined live call via conference'
+  );
 }
 
 async function handleMachineDetected(
@@ -626,16 +740,8 @@ async function onMessageReceived(event: TelnyxMessageEventData): Promise<void> {
   }
 
   // Resolve tenant from the destination (tenant's Telnyx number)
-  const [tpn] = await db
-    .select({ tenantId: tenantPhoneNumbers.tenantId })
-    .from(tenantPhoneNumbers)
-    .where(and(eq(tenantPhoneNumbers.phoneE164, toPhone), isNull(tenantPhoneNumbers.releasedAt)))
-    .limit(1);
-
-  // Fall back to the first tenant (dev / single-tenant deployments)
-  const tenantId: string = tpn?.tenantId ?? (
-    await db.select({ id: tenants.id }).from(tenants).limit(1).then((rows) => rows[0]?.id ?? '')
-  );
+  const resolved = await lookupTenantByDid(toPhone);
+  const tenantId = resolved?.tenantId ?? '';
 
   if (!tenantId) {
     logger.warn({ toPhone }, 'No tenant found for inbound SMS — discarding');

@@ -107,8 +107,44 @@ const ok = crypto.timingSafeEqual(
 
 ## Project status
 
-Production-ready feature surface. Loose ends being tracked in `~/.claude/plans/witty-knitting-ritchie.md`. Active areas:
+Production-ready feature surface. Loose ends being tracked in `HANDOFF.md`.
 
-- Real CRM integration depth (HubSpot/Clio/Follow Up Boss are listed but not wired)
-- DB column rename `patients` → `contacts` (deferred — UI surface uses vertical-aware copy via `useVertical()`)
-- Test coverage (intentionally minimal during fast-iteration phase)
+## Beta operations — numbers, recordings, live join
+
+These paths are the beta foundation for scale calling. Nothing here changes public list prices.
+
+### How a new tenant gets a number
+
+1. Trial stays on the shared platform number (plan `includedPhoneNumbers = 0`).
+2. On **Go live** (`POST /api/v1/onboarding/activate`) or the first **paid** Stripe subscription, the API calls `ensureInboundDid()` (`apps/api/src/modules/phone-numbers/auto-provision.service.ts`).
+3. That searches Telnyx (`GET /v2/available_phone_numbers`) and orders a US local DID onto `TELNYX_APP_ID` (`POST /v2/number_orders`), then stores it on `tenant_phone_numbers` (`purpose='inbound'`).
+4. Inbound voice is routed by DID via `lookupTenantByDid()` in `apps/api/src/modules/telephony/telnyx-webhook.handler.ts` — not “first tenant in the database”.
+5. Dashboard: **Settings → Phone numbers** (`/settings/phone-numbers`) — “Your numbers” with provisioning / active / failed + **Retry**. **Get my number** hits `POST /api/v1/phone-numbers/auto-provision`. Failed orders: `POST /api/v1/phone-numbers/:id/retry`.
+
+Outbound pool (already on `purpose='outbound_pool'`) is sized from `concurrentOutbound` in `packages/shared/src/types/billing.types.ts` (Growth 3, Scale 8, Business 25 capped at 15). It still auto-grows on dial volume. Retry: `POST /api/v1/outbound-pool/retry`.
+
+### How recordings appear
+
+1. After the media stream starts, the API fires Telnyx `record_start` (`startCallRecording` in `apps/api/src/modules/campaigns/telnyx-dialer.service.ts`).
+2. Telnyx posts `call.recording.saved` to `POST /webhooks/telnyx`. The handler writes `calls.recording_url`.
+3. Grok transcripts are still persisted on media-stream close (`media-stream.handler.ts`). Empty transcripts mark the call `missed` unless it was transferred.
+4. Dashboard **Call log** shows Play / Transcript badges. **Call detail** has an authenticated player (`GET /api/v1/calls/:id/recording`) and a transcript empty state. Only the owning tenant (JWT) can play; platform admins can use `GET /api/v1/platform/tenants/:tenantId/calls/:callId/recording`.
+
+### How Join / Take over works
+
+- **Join call** (`POST /api/v1/calls/:id/join`) dials the Staff Transfer Number into a Telnyx conference with the live caller (`initiateLiveJoin` in `apps/api/src/modules/telephony/transfer.ts`). When staff answers, the webhook stops the AI stream and conferences both legs.
+- **Take over** (`POST /api/v1/calls/:id/takeover`) is the existing warm transfer (`actions/transfer`) — the AI drops immediately.
+- Follow-up (not in this slice): Telnyx barge / whisper / silent browser listen.
+
+### Env vars (Telnyx)
+
+| Var | Required for |
+|-----|----------------|
+| `TELNYX_API_KEY` | Number search/order, call control, recordings |
+| `TELNYX_APP_ID` | Attach purchased DIDs + outbound pool to Call Control |
+| `TELNYX_PUBLIC_KEY` | Webhook signature verification |
+| `TELNYX_FROM_NUMBER` | Fallback platform caller ID (demo / trial) |
+| `TELNYX_MESSAGING_PROFILE_ID` | SMS |
+| `TELNYX_WHOLESALE_LOCAL_CENTS` / `TELNYX_WHOLESALE_TOLLFREE_CENTS` | Promo-trial number cost (defaults $1 / $2) |
+
+Do not set `DEMO_SKIP_COOLDOWN`. Homepage call-me / demo are unchanged.

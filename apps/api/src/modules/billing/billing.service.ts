@@ -197,6 +197,17 @@ export async function syncSubscription(subscription: Stripe.Subscription): Promi
       updatedAt: new Date(),
     })
     .where(eq(tenants.id, tenantId));
+
+  // Paid plans get a dedicated inbound DID + outbound pool (idempotent).
+  // Failures leave a retryable row — never block the Stripe webhook.
+  if (subscription.status === 'active' || subscription.status === 'trialing') {
+    void import('../phone-numbers/auto-provision.service.js')
+      .then(({ ensureInboundDid }) => ensureInboundDid(tenantId))
+      .catch((err) => console.error('[billing] inbound DID auto-provision failed', err));
+    void import('../outbound-pool/pool.service.js')
+      .then(({ ensureOutboundPool }) => ensureOutboundPool(tenantId))
+      .catch((err) => console.error('[billing] outbound pool auto-provision failed', err));
+  }
 }
 
 function inferPlanKeyFromPriceId(priceId: string | null): PlanKey | null {

@@ -3,6 +3,7 @@ import {
   outboundCampaigns,
   campaignContacts,
   contacts,
+  tenants,
   type OutboundCampaign,
   type CampaignContact,
 } from '../../db/schema.js';
@@ -42,6 +43,15 @@ export async function createCampaign(input: CreateCampaignInput): Promise<Outbou
     await ensureOutboundPool(input.tenantId);
   }
 
+  const [tenant] = await db
+    .select({ plan: tenants.plan })
+    .from(tenants)
+    .where(eq(tenants.id, input.tenantId))
+    .limit(1);
+
+  const { capConcurrentOutbound } = await import('../outbound-pool/pool-size.js');
+  const maxConcurrentCalls = capConcurrentOutbound(input.maxConcurrentCalls, tenant?.plan);
+
   const [campaign] = await db
     .insert(outboundCampaigns)
     .values({
@@ -52,7 +62,7 @@ export async function createCampaign(input: CreateCampaignInput): Promise<Outbou
       dialWindowEnd: input.dialWindowEnd ?? '17:00',
       maxRetries: input.maxRetries ?? 3,
       retryDelayMinutes: input.retryDelayMinutes ?? 60,
-      maxConcurrentCalls: input.maxConcurrentCalls ?? 3,
+      maxConcurrentCalls,
       voicemailMessage: input.voicemailMessage ?? null,
       status: 'draft',
     })

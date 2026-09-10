@@ -82,7 +82,7 @@ export default function CallsPage() {
                 : `${activeCalls.length} calls in progress`}
             </p>
             <p className="text-xs text-brand-700/80">
-              Watch the transcript stream in real time or take over the conversation.
+              Watch the transcript stream in real time, join the call, or take over.
             </p>
           </div>
           <button
@@ -180,6 +180,18 @@ export default function CallsPage() {
                   {call.durationSeconds && (
                     <p className="text-xs text-gray-400">{Math.round(call.durationSeconds / 60)}m</p>
                   )}
+                  <div className="flex items-center justify-end gap-1.5 mt-1">
+                    {call.recordingUrl && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-700 bg-brand-50 border border-brand-100 px-1.5 py-0.5 rounded">
+                        Play
+                      </span>
+                    )}
+                    {Array.isArray(call.transcript) && call.transcript.length > 0 && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-600 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded">
+                        Transcript
+                      </span>
+                    )}
+                  </div>
                   {call.satisfactionScore != null && (
                     <p className="text-xs text-amber-500 mt-0.5" title={`Caller rated ${call.satisfactionScore}/5`}>
                       {'★'.repeat(call.satisfactionScore)}{'☆'.repeat(5 - call.satisfactionScore)}

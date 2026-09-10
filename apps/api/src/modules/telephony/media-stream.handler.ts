@@ -658,21 +658,39 @@ export async function handleMediaStream(
     const isMissed = !transcript || transcript.length === 0;
 
     try {
+      const [existing] = await db
+        .select({ status: calls.status, recordingUrl: calls.recordingUrl })
+        .from(calls)
+        .where(eq(calls.id, callId))
+        .limit(1);
+      const keepTransferred = existing?.status === 'transferred';
+      const nextStatus = keepTransferred ? 'transferred' : isMissed ? 'missed' : 'completed';
+
       await db
         .update(calls)
         .set({
-          status: 'completed',
+          status: nextStatus,
           endedAt: new Date(),
           durationSeconds,
           summary,
-          // Honor the tenant's PHI-minimization setting: when transcript
-          // storage is off, keep the summary but drop the verbatim transcript.
           transcript: storeTranscripts
             ? (transcript as unknown as Record<string, unknown>[])
             : null,
           updatedAt: new Date(),
         })
         .where(eq(calls.id, callId));
+
+      if (!existing?.recordingUrl && callSid) {
+        void import('./adapters/telnyx.adapter.js')
+          .then(({ TelnyxAdapter }) => new TelnyxAdapter().getCallRecording(callSid))
+          .then((url) => {
+            if (!url) return;
+            return import('./recording.js').then(({ persistRecordingUrl }) =>
+              persistRecordingUrl({ url, callId, callControlId: callSid })
+            );
+          })
+          .catch((err) => logger.warn({ err, callId }, 'backup recording fetch failed'));
+      }
     } catch (err) {
       logger.error({ err, callId }, 'Failed to persist call record after Grok close');
     }
