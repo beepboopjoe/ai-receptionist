@@ -1,14 +1,16 @@
 'use client';
 // ============================================================
 // HomepageVoiceSamples — four public Grok voices, one-sentence intros.
-// Audio: /audio/voices/{voice}-preview.mp3
-// Generate: pnpm tsx scripts/generate-voice-previews.ts
+// Audio: /audio/voices/{voice}_{lang}.mp3
+// Generate: pnpm tsx scripts/generate-voice-language-samples.ts
 // ============================================================
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  VOICE_IDS, VOICES, VOICE_CARD_STYLES, voiceIntroLine,
-  type VoiceId,
+  VOICE_IDS, VOICES, VOICE_CARD_STYLES, voiceIntroLine, voiceSampleSrc, isRtlLang,
+  type VoiceId, type LangCode,
 } from '@/lib/voice-samples';
+import { useSampleLanguage } from '@/lib/use-sample-language';
+import { SampleLanguageChips } from '@/components/ui/sample-language-chips';
 
 interface Voice {
   id: VoiceId;
@@ -43,22 +45,48 @@ function Waveform({ active }: { active: boolean }) {
   );
 }
 
-function VoiceCard({ voice }: { voice: Voice }) {
-  const [playing, setPlaying] = useState(false);
+function VoiceCard({
+  voice,
+  lang,
+  playing,
+  onPlayingChange,
+}: {
+  voice: Voice;
+  lang: LangCode;
+  playing: boolean;
+  onPlayingChange: (playing: boolean) => void;
+}) {
   const [missing, setMissing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const intro = voiceIntroLine(voice.id, 'en');
+  const intro = voiceIntroLine(voice.id, lang);
+  const rtl = isRtlLang(lang);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+    setMissing(false);
+  }, [lang]);
+
+  useEffect(() => {
+    if (!playing) audioRef.current?.pause();
+  }, [playing]);
 
   const toggle = useCallback(() => {
     const audio = audioRef.current;
     if (!audio || missing) return;
     if (playing) {
       audio.pause();
-      setPlaying(false);
+      onPlayingChange(false);
     } else {
-      audio.play().then(() => setPlaying(true), () => setMissing(true));
+      audio.play().then(
+        () => onPlayingChange(true),
+        () => setMissing(true),
+      );
     }
-  }, [playing, missing]);
+  }, [playing, missing, onPlayingChange]);
 
   const aria = missing
     ? `${voice.name} sample not available yet`
@@ -79,13 +107,19 @@ function VoiceCard({ voice }: { voice: Voice }) {
 
       <h3 className="font-semibold text-cream-900 text-sm">{voice.name}</h3>
       <p className="text-xs text-cream-500 mb-3">{voice.personality}</p>
-      <p className="text-xs text-cream-600 leading-relaxed mb-4">{intro}</p>
+      <p
+        className="text-xs text-cream-600 leading-relaxed mb-4"
+        lang={lang}
+        dir={rtl ? 'rtl' : 'ltr'}
+      >
+        {intro}
+      </p>
 
       <audio
         ref={audioRef}
-        src={`/audio/voices/${voice.id}-preview.mp3`}
+        src={voiceSampleSrc(voice.id, lang)}
         preload="none"
-        onEnded={() => setPlaying(false)}
+        onEnded={() => onPlayingChange(false)}
         onError={() => setMissing(true)}
       />
       <button
@@ -118,10 +152,17 @@ function VoiceCard({ voice }: { voice: Voice }) {
 }
 
 export function HomepageVoiceSamples() {
+  const [lang, setLang] = useSampleLanguage();
+  const [playingId, setPlayingId] = useState<VoiceId | null>(null);
+
+  useEffect(() => {
+    setPlayingId(null);
+  }, [lang]);
+
   return (
     <section className="py-20 px-6 bg-cream-50">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">4 distinct voices</p>
           <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
             Pick the voice that fits your brand.
@@ -131,14 +172,22 @@ export function HomepageVoiceSamples() {
           </p>
         </div>
 
+        <SampleLanguageChips value={lang} onChange={setLang} className="mb-8" />
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {HOMEPAGE_VOICES.map((v) => (
-            <VoiceCard key={v.id} voice={v} />
+            <VoiceCard
+              key={v.id}
+              voice={v}
+              lang={lang}
+              playing={playingId === v.id}
+              onPlayingChange={(next) => setPlayingId(next ? v.id : null)}
+            />
           ))}
         </div>
 
         <p className="text-center text-xs text-cream-400 mt-6">
-          English · Spanish · Italian · Arabic · Farsi · Armenian · Russian — on every plan, switch voices any time in settings
+          One-line intros in seven languages. Live calls detect language automatically — switch voices any time in settings.
         </p>
       </div>
     </section>

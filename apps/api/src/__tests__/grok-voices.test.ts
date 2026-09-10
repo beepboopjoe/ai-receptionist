@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -108,5 +108,65 @@ describe('marketing samples speak the matching voice name', () => {
       const b = readFileSync(join(dir, legacy));
       expect(Buffer.compare(a, b), `${pub} must not be a byte-copy of ${legacy}`).not.toBe(0);
     }
+  });
+});
+
+describe('marketing voice sample languages', () => {
+  const langs = ['en', 'es', 'it', 'ar', 'fa', 'hy', 'ru'] as const;
+  const voicesDir = join(repoRoot, 'apps/dashboard/public/audio/voices');
+  const samples = readFileSync(join(repoRoot, 'apps/dashboard/src/lib/voice-samples.ts'), 'utf8');
+  const homepage = readFileSync(
+    join(repoRoot, 'apps/dashboard/src/components/ui/homepage-voice-samples.tsx'),
+    'utf8',
+  );
+  const demoUi = readFileSync(
+    join(repoRoot, 'apps/dashboard/src/components/ui/voice-language-demo.tsx'),
+    'utf8',
+  );
+  const demoPage = readFileSync(join(repoRoot, 'apps/dashboard/src/app/demo/page.tsx'), 'utf8');
+  const callMe = readFileSync(
+    join(repoRoot, 'apps/dashboard/src/components/ui/call-me-widget.tsx'),
+    'utf8',
+  );
+  const chips = readFileSync(
+    join(repoRoot, 'apps/dashboard/src/components/ui/sample-language-chips.tsx'),
+    'utf8',
+  );
+
+  it('ships a one-liner MP3 for every public voice × language', () => {
+    for (const voice of PUBLIC_GROK_VOICES) {
+      for (const lang of langs) {
+        const file = join(voicesDir, `${voice}_${lang}.mp3`);
+        expect(existsSync(file), file).toBe(true);
+        expect(statSync(file).size, file).toBeGreaterThan(8_000);
+      }
+    }
+  });
+
+  it('persists sample language in localStorage and treats only ar/fa as RTL', () => {
+    expect(samples).toContain("SAMPLE_LANG_STORAGE_KEY = 'telfin-voice-sample-lang'");
+    expect(samples).toContain('function persistSampleLang');
+    expect(samples).toContain('function voiceSampleSrc');
+    expect(samples).toMatch(/return lang === 'ar' \|\| lang === 'fa'/);
+    const rtlFn = samples.slice(
+      samples.indexOf('export function isRtlLang'),
+      samples.indexOf('export function voiceSampleSrc'),
+    );
+    expect(rtlFn).not.toContain("'hy'");
+  });
+
+  it('homepage and demo voice cards share language chips; call-me does not', () => {
+    expect(homepage).toContain('SampleLanguageChips');
+    expect(homepage).toContain('voiceSampleSrc');
+    expect(homepage).not.toMatch(/\$\{voice\.id\}-preview\.mp3/);
+    expect(demoUi).toContain('SampleLanguageChips');
+    expect(demoUi).toContain('useSampleLanguage');
+    expect(demoUi).not.toContain('hideLanguageSelector');
+    expect(demoPage).not.toContain('hideLanguageSelector');
+    expect(chips).toContain('Sample language');
+    expect(chips).toContain('toUpperCase');
+    expect(callMe).not.toContain('SampleLanguageChips');
+    expect(callMe).not.toContain('useSampleLanguage');
+    expect(callMe).toMatch(/Language is\s+detected when you pick up/);
   });
 });

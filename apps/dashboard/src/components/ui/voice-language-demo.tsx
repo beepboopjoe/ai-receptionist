@@ -11,9 +11,11 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import {
-  VOICES, LANGUAGES, VOICE_IDS, LANG_CODES, getVoiceSample,
+  VOICES, LANGUAGES, VOICE_IDS, getVoiceSample, voiceSampleSrc, isRtlLang,
   type VoiceId, type LangCode,
 } from '@/lib/voice-samples';
+import { useSampleLanguage } from '@/lib/use-sample-language';
+import { SampleLanguageChips } from '@/components/ui/sample-language-chips';
 
 // ── Timing constants (same as SampleCallPlayer) ───────────────
 /** Approximate seconds per AI character at ~150 wpm. */
@@ -44,7 +46,7 @@ function VoicePlayer({ voice, lang }: { voice: VoiceId; lang: LangCode }) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const lineEndTimes = useMemo(() => computeLineEndTimes(sample.lines), [sample]);
-  const audioSrc = `/audio/voices/${voice}_${lang}.mp3`;
+  const audioSrc = voiceSampleSrc(voice, lang);
   const langMeta = LANGUAGES[lang];
   const voiceMeta = VOICES[voice];
 
@@ -110,8 +112,8 @@ function VoicePlayer({ voice, lang }: { voice: VoiceId; lang: LangCode }) {
 
   useEffect(() => () => { audioRef.current?.pause(); }, []);
 
-  // RTL languages
-  const isRtl = lang === 'ar' || lang === 'fa' || lang === 'hy';
+  // RTL languages — Arabic and Farsi. Armenian is LTR.
+  const isRtl = isRtlLang(lang);
 
   return (
     <div className="bg-white rounded-2xl border border-cream-200 overflow-hidden shadow-sm">
@@ -177,7 +179,7 @@ function VoicePlayer({ voice, lang }: { voice: VoiceId; lang: LangCode }) {
             ▶ Press Play to hear {voiceMeta.label} speaking {langMeta.label}
           </p>
         ) : (
-          <div className="space-y-2.5" dir={isRtl ? 'rtl' : 'ltr'}>
+          <div className="space-y-2.5" dir={isRtl ? 'rtl' : 'ltr'} lang={lang}>
             {sample.lines.slice(0, visibleLines).map((line, i) => (
               <div
                 key={i}
@@ -230,14 +232,9 @@ function VoicePlayer({ voice, lang }: { voice: VoiceId; lang: LangCode }) {
 }
 
 // ── Public export ─────────────────────────────────────────────
-export function VoiceLanguageDemo({
-  hideLanguageSelector = false,
-}: {
-  /** Public /demo hides the language picker; inbound/outbound keep it. */
-  hideLanguageSelector?: boolean;
-} = {}) {
+export function VoiceLanguageDemo() {
   const [activeVoice, setActiveVoice] = useState<VoiceId>('aurora');
-  const [activeLang, setActiveLang] = useState<LangCode>('en');
+  const [activeLang, setActiveLang] = useSampleLanguage();
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6">
@@ -247,12 +244,10 @@ export function VoiceLanguageDemo({
           🌐 Multilingual AI
         </div>
         <h2 className="text-3xl md:text-4xl font-black text-cream-900 tracking-tight mb-3">
-          {hideLanguageSelector ? 'Every voice.' : 'Every voice. Every language.'}
+          Every voice. Every language.
         </h2>
         <p className="text-cream-600 text-base max-w-xl mx-auto">
-          {hideLanguageSelector
-            ? 'Choose a voice to hear a one-line intro — Aurora, Castor, Cosmo, and Zenith, each saying their own name. Live calls detect language automatically.'
-            : 'Choose a voice and language to hear a one-line intro — Aurora, Castor, Cosmo, and Zenith, each saying their own name.'}
+          Choose a voice and a sample language to hear a one-line intro — Aurora, Castor, Cosmo, and Zenith, each saying their own name. Live calls still detect language automatically.
         </p>
       </div>
 
@@ -282,31 +277,7 @@ export function VoiceLanguageDemo({
         </div>
       </div>
 
-      {/* Language selector — hidden on /demo; inbound/outbound keep it */}
-      {!hideLanguageSelector && (
-        <div className="mb-8">
-          <p className="text-xs font-semibold text-cream-500 uppercase tracking-widest mb-3 text-center">Choose a language</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {LANG_CODES.map((l) => {
-              const meta = LANGUAGES[l];
-              return (
-                <button
-                  key={l}
-                  onClick={() => setActiveLang(l)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm font-medium transition-all ${
-                    activeLang === l
-                      ? 'bg-cream-900 border-cream-900 text-white'
-                      : 'bg-white border-cream-200 text-cream-700 hover:border-cream-400 hover:text-cream-900'
-                  }`}
-                >
-                  <span className="text-base leading-none">{meta.flag}</span>
-                  <span>{meta.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <SampleLanguageChips value={activeLang} onChange={setActiveLang} className="mb-8" />
 
       {/* Player */}
       <VoicePlayer key={`${activeVoice}_${activeLang}`} voice={activeVoice} lang={activeLang} />

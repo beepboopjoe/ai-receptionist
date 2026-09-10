@@ -64,7 +64,7 @@ export default function DemoPage() {
 
       {/* ── Named voices ──────────────────────────────────── */}
       <section className="py-16 bg-cream-50 border-t border-cream-200">
-        <VoiceLanguageDemo hideLanguageSelector />
+        <VoiceLanguageDemo />
       </section>
 
       {/* ── Interactive dashboard preview ──────────────────── */}
