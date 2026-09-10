@@ -15,7 +15,7 @@ Until credentials are added, the `/auth/google` endpoint returns `501 Not Config
    - `https://api.aireceptionist.ai/api/v1/auth/google/callback` (prod, when applicable)
 6. Click **Create** and copy the **Client ID** and **Client secret**
 
-> **Note:** these credentials are separate from the Google Calendar OAuth client (`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`). Keeping them split lets the two flows scope independently.
+> **Note:** these credentials are separate from the Google Calendar OAuth client (`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`). Calendar setup: `docs/GOOGLE_CALENDAR_SETUP.md`. Keeping them split lets the two flows scope independently. If Calendar vars are unset, the API falls back to these sign-in credentials — you still must add the Calendar redirect URI on the client.
 
 ## 2. Add the credentials to `apps/api/.env`
 

@@ -149,6 +149,17 @@ Outbound pool (already on `purpose='outbound_pool'`) is sized from `concurrentOu
 
 Do not set `DEMO_SKIP_COOLDOWN`. Homepage call-me / demo are unchanged.
 
+### Env vars (Google Calendar)
+
+Booking against a tenant's Google Calendar is optional. Without these, Connect shows **Not configured** (503 from the API). Setup: `docs/GOOGLE_CALENDAR_SETUP.md`.
+
+| Var | Required for |
+|-----|----------------|
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Calendar OAuth (falls back to `GOOGLE_AUTH_*` if empty) |
+| `GOOGLE_REDIRECT_URI` | Must match Google Cloud Console. Production default: `${APP_URL}/api/v1/integrations/google-calendar/callback` |
+| `DASHBOARD_URL` | Post-OAuth redirect to `/settings/integrations` |
+
+
 ### Marketing product chatbot
 
 Floating **Ask Telfin** widget on public marketing pages (`MarketingHeader` — homepage, pricing, `/demo`, inbound/outbound, verticals; not the logged-in app).
@@ -162,5 +173,3 @@ Floating **Ask Telfin** widget on public marketing pages (`MarketingHeader` — 
 | Admin list | `/platform` → Marketing leads (same `demo_leads` table as call-me) |
 
 Env: uses existing `XAI_API_KEY`. Optional `XAI_CHAT_MODEL` (default `grok-4.3`). Fastify per-IP caps plus Redis hourly caps. Does not place calls. Lead capture requires name + email and/or US/CA phone, with explicit email and (if phone) SMS/call consent checkboxes.
-
-Google Calendar OAuth for live booking is **not** in this slice — tenants can still go live on office hours alone; calendar connect remains the existing integrations page.

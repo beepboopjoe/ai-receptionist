@@ -13,22 +13,47 @@ import type {
   ListSlotsParams,
 } from './base.adapter.js';
 import { IntegrationError } from '../../../lib/errors.js';
+import {
+  createGoogleOAuth2Client,
+  getGoogleCalendarOAuthConfig,
+} from '../google-calendar-oauth.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+export interface GoogleCalendarAdapterOpts {
+  /** Persist rotated access/refresh tokens (fire-and-forget). */
+  onTokens?: (tokens: {
+    access_token: string;
+    refresh_token: string;
+    expires_at: string;
+  }) => void;
+}
 
 export class GoogleCalendarAdapter implements ICalendarAdapter {
   readonly provider = 'google' as const;
   private calendar: calendar_v3.Calendar;
 
-  constructor(private credentials: Record<string, string>) {
-    const auth = new google.auth.OAuth2(
-      credentials['google_client_id'],
-      credentials['google_client_secret']
-    );
-    auth.setCredentials({
+  constructor(
+    private credentials: Record<string, string>,
+    opts: GoogleCalendarAdapterOpts = {}
+  ) {
+    // Client ID/secret come from env (GOOGLE_CLIENT_* or GOOGLE_AUTH_* fallback),
+    // never from the per-tenant row — tenants only store access/refresh tokens.
+    const auth = createGoogleOAuth2Client(getGoogleCalendarOAuthConfig(), {
       access_token: credentials['access_token'],
       refresh_token: credentials['refresh_token'],
+      expires_at: credentials['expires_at'],
+    });
+    auth.on('tokens', (tokens) => {
+      const access = tokens.access_token ?? credentials['access_token'];
+      const refresh = tokens.refresh_token ?? credentials['refresh_token'] ?? '';
+      if (!access) return;
+      opts.onTokens?.({
+        access_token: access,
+        refresh_token: refresh,
+        expires_at: String(tokens.expiry_date ?? Date.now() + 3600 * 1000),
+      });
     });
     this.calendar = google.calendar({ version: 'v3', auth });
   }

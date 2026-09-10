@@ -1,24 +1,31 @@
 'use client';
 import useSWR, { mutate } from 'swr';
-import { integrationsApi } from '@/lib/api';
+import { ApiError, integrationsApi } from '@/lib/api';
 import { CheckCircle, ExternalLink, Trash2, Mail, RefreshCw, KeyRound } from 'lucide-react';
 import { useVertical } from '@/lib/useVertical';
 import type { Vertical } from '@/lib/verticals';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FilevineCredentialsModal } from '@/components/integrations/filevine-credentials-modal';
 import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
+import { useToast } from '@/components/ui/toast';
 
-// Beta: only list providers whose Connect URL exists on the API.
-// Google Calendar has a booking adapter but no OAuth routes — Connect 404s
-// in production. Hours alone is enough to go live (see useGoLive).
-const CALENDAR_COMING_SOON = [
-  {
-    id: 'google_calendar',
-    label: 'Google Calendar',
-    description: 'Live booking is not connectable yet. Set office hours to go live without a calendar.',
-    icon: '📅',
-  },
-];
+function googleOAuthErrorMessage(code: string): string {
+  switch (code) {
+    case 'access_denied':
+      return 'Google access was denied. You can try connecting again.';
+    case 'missing_code':
+      return 'Google did not return an authorization code. Try Connect again.';
+    case 'invalid_state':
+    case 'invalid_nonce':
+      return 'That Google sign-in expired. Click Connect and try again.';
+    case 'token_exchange_failed':
+      return 'Could not finish Google authorization. Check GOOGLE_CLIENT_ID / redirect URI, then retry.';
+    case 'persist_failed':
+      return 'Authorized with Google, but we could not save the connection. Try again or contact support.';
+    default:
+      return `Google Calendar connect failed (${code}).`;
+  }
+}
 
 interface CrmProvider {
   id: string;
@@ -50,16 +57,37 @@ const CRM_PROVIDERS: CrmProvider[] = [
 
 export default function IntegrationsPage() {
   const vertical = useVertical();
+  const toast = useToast();
   const { data } = useSWR('integrations', () => integrationsApi.list());
+  const { data: googleStatus, error: googleStatusError } = useSWR(
+    'integrations/google-calendar/status',
+    () => integrationsApi.googleCalendarStatus()
+  );
   const connected = ((data as any)?.data ?? []) as {
     provider: string;
     status: string;
     lastSyncedAt?: string;
     errorMessage?: string | null;
+    metadata?: { account_email?: string; calendar_id?: string };
   }[];
   const connectedMap = Object.fromEntries(connected.map((i) => [i.provider, i]));
   const [syncing, setSyncing] = useState(false);
+  const [connectingGoogle, setConnectingGoogle] = useState(false);
+  const [googleConnectError, setGoogleConnectError] = useState<string | null>(null);
   const [filevineModalOpen, setFilevineModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const ok = params.get('google_connected');
+    const err = params.get('google_error');
+    if (!ok && !err) return;
+    if (ok) toast.success('Google Calendar connected');
+    if (err) toast.error(googleOAuthErrorMessage(err));
+    window.history.replaceState({}, '', window.location.pathname);
+    void mutate('integrations');
+    void mutate('integrations/google-calendar/status');
+  }, [toast]);
 
   // Beta: only CRMs with a real connect path (OAuth or Filevine PAT).
   const WIRED_CRM_IDS = new Set(['hubspot', 'salesforce', 'clio', 'filevine', 'zoho']);
@@ -71,8 +99,31 @@ export default function IntegrationsPage() {
 
   async function handleDisconnect(provider: string) {
     if (!confirm(`Disconnect ${provider}?`)) return;
-    await integrationsApi.disconnect(provider);
+    if (provider === 'google_calendar') {
+      await integrationsApi.disconnectGoogleCalendar();
+    } else {
+      await integrationsApi.disconnect(provider);
+    }
     await mutate('integrations');
+    await mutate('integrations/google-calendar/status');
+    toast.success('Disconnected');
+  }
+
+  async function handleConnectGoogle() {
+    setConnectingGoogle(true);
+    setGoogleConnectError(null);
+    try {
+      const { url } = await integrationsApi.connectGoogleCalendar('/settings/integrations');
+      window.location.href = url;
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : 'Could not start Google Calendar connect. Try again.';
+      setGoogleConnectError(message);
+      toast.error(message);
+      setConnectingGoogle(false);
+    }
   }
 
   async function handleHubSpotSync() {
@@ -89,44 +140,34 @@ export default function IntegrationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Integrations</h1>
-        <p className="text-gray-500 mt-1">Connect the tools that are live in beta — HubSpot and a few CRMs</p>
+        <p className="text-gray-500 mt-1">Connect Google Calendar to book appointments for real, plus the CRMs that are live in beta.</p>
       </div>
 
-      {/* ── Calendar — honest about the missing OAuth routes ── */}
+      {/* ── Calendar ── */}
       <div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Calendar</p>
         <div className="space-y-4">
-          {CALENDAR_COMING_SOON.map((provider) => {
-            const integration = connectedMap[provider.id];
-            const isConnected = integration?.status === 'connected';
-
-            return (
-              <div key={provider.id} className="card p-5 flex items-center gap-5">
-                <div className="text-3xl">{provider.icon}</div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-gray-900">{provider.label}</p>
-                    {isConnected ? (
-                      <span className="badge badge-green flex items-center gap-1">
-                        <CheckCircle size={11} /> Connected
-                      </span>
-                    ) : (
-                      <span className="badge badge-gray">Coming soon</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-500 mt-0.5">{provider.description}</p>
-                </div>
-                {isConnected ? (
-                  <button
-                    onClick={() => handleDisconnect(provider.id)}
-                    className="btn-danger text-sm shrink-0"
-                  >
-                    <Trash2 size={14} /> Disconnect
-                  </button>
-                ) : null}
+          <GoogleCalendarCard
+            connecting={connectingGoogle}
+            connectError={googleConnectError}
+            onConnect={handleConnectGoogle}
+            onDisconnect={() => handleDisconnect('google_calendar')}
+            {...(connectedMap['google_calendar'] && { integration: connectedMap['google_calendar'] })}
+            {...(googleStatus && { status: googleStatus })}
+            {...(googleStatusError && { statusError: googleStatusError })}
+          />
+          <div className="card p-5 flex items-center gap-5">
+            <div className="text-3xl">📆</div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-gray-900">Microsoft 365 / Outlook</p>
+                <span className="badge badge-gray">Coming soon</span>
               </div>
-            );
-          })}
+              <p className="text-sm text-gray-500 mt-0.5">
+                Outlook calendar OAuth is not available yet. Google Calendar or office hours is enough to go live.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -247,6 +288,117 @@ export default function IntegrationsPage() {
         onClose={() => setFilevineModalOpen(false)}
         onSuccess={() => mutate('integrations')}
       />
+    </div>
+  );
+}
+
+function GoogleCalendarCard({
+  integration,
+  status,
+  statusError,
+  connecting,
+  connectError,
+  onConnect,
+  onDisconnect,
+}: {
+  integration?: {
+    status: string;
+    errorMessage?: string | null;
+    metadata?: { account_email?: string; calendar_id?: string };
+  };
+  status?: {
+    configured: boolean;
+    connected: boolean;
+    accountEmail: string | null;
+    calendarId: string | null;
+    errorMessage: string | null;
+  };
+  statusError?: unknown;
+  connecting: boolean;
+  connectError: string | null;
+  onConnect: () => void;
+  onDisconnect: () => void;
+}) {
+  const isConnected = status?.connected || integration?.status === 'connected';
+  const accountEmail =
+    status?.accountEmail ?? integration?.metadata?.account_email ?? null;
+  const errorMessage = status?.errorMessage ?? integration?.errorMessage ?? null;
+  const configured = status?.configured;
+  const statusFailed = Boolean(statusError);
+
+  return (
+    <div className="card p-5 flex items-start gap-5">
+      <div className="text-3xl">📅</div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-semibold text-gray-900">Google Calendar</p>
+          {isConnected ? (
+            <span className="badge badge-green flex items-center gap-1">
+              <CheckCircle size={11} /> Connected
+            </span>
+          ) : configured === false ? (
+            <span className="badge badge-gray">Not configured</span>
+          ) : (
+            <span className="badge badge-gray">Not connected</span>
+          )}
+        </div>
+        <p className="text-sm text-gray-500 mt-0.5">
+          {isConnected
+            ? 'The AI can check availability and book appointments on this calendar.'
+            : 'Connect so the AI can offer live slots and write events when a caller books.'}
+        </p>
+        {isConnected && accountEmail && (
+          <p className="text-xs text-gray-400 mt-1">Signed in as {accountEmail}</p>
+        )}
+        {errorMessage && (
+          <p className="text-xs text-red-600 mt-1 bg-red-50 border border-red-100 rounded px-2 py-1">
+            {isConnected ? 'Last calendar error: ' : 'Connection error: '}
+            {errorMessage}
+          </p>
+        )}
+        {!isConnected && configured === false && (
+          <p className="text-sm text-amber-800 mt-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+            Google Calendar OAuth is not set on this server yet. Add{' '}
+            <code className="text-xs">GOOGLE_CLIENT_ID</code> /{' '}
+            <code className="text-xs">GOOGLE_CLIENT_SECRET</code> on Railway and the
+            redirect URI in Google Cloud Console (see{' '}
+            <code className="text-xs">docs/GOOGLE_CALENDAR_SETUP.md</code>). Office hours
+            still let you go live without booking.
+          </p>
+        )}
+        {connectError && (
+          <p className="text-sm text-red-700 mt-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            {connectError}
+          </p>
+        )}
+        {statusFailed && !connectError && configured === undefined && (
+          <p className="text-sm text-red-700 mt-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            Could not load calendar status. Refresh the page, or try Connect — you&apos;ll
+            see a clear error if Google isn&apos;t set up yet.
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {isConnected ? (
+          <button onClick={onDisconnect} className="btn-danger text-sm">
+            <Trash2 size={14} /> Disconnect
+          </button>
+        ) : configured === false ? (
+          <button type="button" disabled className="btn-secondary text-sm opacity-60 cursor-not-allowed">
+            Connect unavailable
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onConnect}
+            disabled={connecting}
+            className="btn-primary text-sm flex items-center gap-1.5"
+          >
+            <ExternalLink size={13} />
+            {connecting ? 'Redirecting to Google…' : 'Connect Google'}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
