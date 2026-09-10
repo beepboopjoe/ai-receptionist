@@ -89,7 +89,7 @@ describe('escalations schema-drift migration', () => {
 describe('tenant_settings updated_at schema-drift migration', () => {
   it('adds updated_at so DEMO_ENSURE_TENANT heal UPDATE cannot 500', () => {
     const sql = readFileSync(
-      join(srcRoot, 'db/migrations/0039_tenant_settings_updated_at.sql'),
+      join(srcRoot, 'db/migrations/0040_tenant_settings_updated_at.sql'),
       'utf8'
     );
     expect(sql).toMatch(/ALTER TABLE tenant_settings/i);

@@ -1,5 +1,7 @@
 -- ============================================================
--- Heal schema drift on tenant_settings.updated_at.
+-- Migration 0040: Heal schema drift on tenant_settings.updated_at.
+-- Numbered 0040 because 0039_number_provision_status.sql landed on
+-- main with #22. Do not reuse 0039.
 --
 -- 0001_initial.sql created tenant_settings WITHOUT updated_at, then
 -- attached trigger tenant_settings_updated_at that runs
