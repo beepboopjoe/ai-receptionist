@@ -53,7 +53,7 @@ describe('buildCallMeDemoPrompt', () => {
     expect(auto).toMatch(/Detect the caller's language from their speech/);
 
     const es = buildCallMeDemoPrompt({ language: 'es' });
-    expect(es).toMatch(/Speak Spanish from the VERY FIRST word/);
+    expect(es).toMatch(/Speak Spanish \(es\) from the VERY FIRST word/);
     expect(es).toContain('asistente de Telfin');
     expect(es).not.toMatch(/Detect the caller's language from their speech/);
   });
