@@ -290,7 +290,7 @@ export function RoiSection() {
               {[
                 'Flat monthly cost — no taxes, benefits, or payroll',
                 'Available 24/7 — nights, weekends, holidays, automatically',
-                'Handles unlimited simultaneous calls at once',
+                'Busy periods covered — usage billed in AI minutes',
                 'Never calls in sick, never quits, never has a bad day',
                 'Books appointments and captures leads after hours',
                 'Setup in under 10 minutes — no hiring process',

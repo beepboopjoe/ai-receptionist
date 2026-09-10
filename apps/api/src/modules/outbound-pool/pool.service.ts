@@ -132,7 +132,8 @@ async function provisionPoolNumber(tenantId: string): Promise<PoolNumber> {
 
 /**
  * Idempotent — tops the tenant's pool up to the plan's concurrentOutbound
- * (see targetPoolSizeForPlan). Called from campaign creation and go-live.
+ * ops ceiling (see targetPoolSizeForPlan; hard-capped at POOL_MAX_SIZE).
+ * Called from campaign creation and go-live. Not a marketed seat.
  */
 export async function ensureOutboundPool(tenantId: string): Promise<PoolNumber[]> {
   const [tenant] = await db

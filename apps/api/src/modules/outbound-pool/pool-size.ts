@@ -1,8 +1,9 @@
 // ============================================================
 // Plan-aware outbound pool sizing. No new SKUs — Growth/Scale/
-// Business concurrentOutbound from billing.types.ts is the signal.
+// Business concurrentOutbound from billing.types.ts is a soft
+// ops ceiling (pool + campaign caps), not a marketed seat.
 // Volume-based scaling (pool.constants.ts) can still grow up to
-// POOL_MAX_SIZE after the floor is met.
+// POOL_MAX_SIZE (15) after the floor is met.
 // ============================================================
 import { getPlan } from '@ai-receptionist/shared';
 import { POOL_INITIAL_SIZE, POOL_MAX_SIZE } from './pool.constants.js';
@@ -10,7 +11,8 @@ import { POOL_INITIAL_SIZE, POOL_MAX_SIZE } from './pool.constants.js';
 /**
  * How many rotating outbound DIDs this plan should start with.
  * Trial / inbound-only → 0. Enterprise unlimited → POOL_MAX_SIZE.
- * Growth 3, Scale 8, Business 25 (capped at POOL_MAX_SIZE).
+ * Growth 3, Scale 8, Business 25 (capped at POOL_MAX_SIZE = 15).
+ * concurrentOutbound is an ops ceiling, not a sold concurrent seat.
  */
 export function targetPoolSizeForPlan(planKey: string | null | undefined): number {
   const plan = getPlan(planKey ?? '');

@@ -121,7 +121,7 @@ These paths are the beta foundation for scale calling. Nothing here changes publ
 4. Inbound voice is routed by DID via `lookupTenantByDid()` in `apps/api/src/modules/telephony/telnyx-webhook.handler.ts` — not “first tenant in the database”.
 5. Dashboard: **Settings → Phone numbers** (`/settings/phone-numbers`) — “Your numbers” with provisioning / active / failed + **Retry**. **Get my number** hits `POST /api/v1/phone-numbers/auto-provision`. Failed orders: `POST /api/v1/phone-numbers/:id/retry`.
 
-Outbound pool (already on `purpose='outbound_pool'`) is sized from `concurrentOutbound` in `packages/shared/src/types/billing.types.ts` (Growth 3, Scale 8, Business 25 capped at 15). It still auto-grows on dial volume. Retry: `POST /api/v1/outbound-pool/retry`.
+Outbound pool (already on `purpose='outbound_pool'`) is sized from the soft `concurrentOutbound` ops ceiling in `packages/shared/src/types/billing.types.ts` (Growth 3, Scale 8, Business 25 capped at 15). That field is not a marketed seat — customer-facing packaging is minutes + included numbers. The pool still auto-grows on dial volume. Retry: `POST /api/v1/outbound-pool/retry`.
 
 ### How recordings appear
 
