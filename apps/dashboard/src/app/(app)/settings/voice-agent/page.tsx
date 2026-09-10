@@ -251,7 +251,7 @@ export default function VoiceAgentPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">After-Hours Mode</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">After-Hours Mode (AI script)</label>
           <select
             value={afterHoursMode}
             onChange={(e) => setAfterHoursMode(e.target.value)}
@@ -261,6 +261,10 @@ export default function VoiceAgentPage() {
             <option value="transfer">Transfer — forward to another number</option>
             <option value="callback_promise">Callback Promise — AI promises to call back</option>
           </select>
+          <p className="text-xs text-gray-400 mt-1">
+            What the AI says after it answers. To ring staff vs AI on the DID, use Inbound routing
+            on Phone Numbers.
+          </p>
         </div>
 
         <div>
@@ -357,7 +361,9 @@ export default function VoiceAgentPage() {
             </button>
           </div>
           <p className="text-xs text-gray-400 mt-1">
-            Phone number to transfer escalations and after-hours calls to. Click <strong>Test it now</strong> to have your AI call you — best way to hear how it sounds.
+            E.164 staff / business-line dest for escalations, Join call, test call, and inbound
+            routing (after-hours / overflow). Click <strong>Test it now</strong> to hear your AI.
+            Ringing vs AI is set on <a href="/settings/phone-numbers" className="underline">Phone Numbers</a>.
           </p>
         </div>
 

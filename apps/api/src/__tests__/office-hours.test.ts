@@ -77,6 +77,20 @@ describe('isAfterHoursCall', () => {
     ).toBe(false);
   });
 
+  it('treats a configured holiday as after hours even during weekday hours', () => {
+    const christmas = dayjs.tz('2026-12-25 10:00', TZ);
+    expect(
+      isAfterHoursCall({
+        now: christmas,
+        officeHours: {
+          fri: { open: '09:00', close: '17:00' },
+          holidays: ['2026-12-25'],
+        },
+        dayKey: 'fri',
+      }),
+    ).toBe(true);
+  });
+
   it('fires for a paying tenant with weekday-only 9–5 hours on Sunday', () => {
     const sundayNight = dayjs.tz('2026-09-06 22:15', TZ);
     expect(

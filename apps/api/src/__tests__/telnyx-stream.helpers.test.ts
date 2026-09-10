@@ -103,6 +103,13 @@ describe('shouldStartStreamOnAnswer', () => {
   it('waits for AMD on campaign outbound', () => {
     expect(shouldStartStreamOnAnswer({ isOutbound: true })).toBe(false);
   });
+
+  it('does not start Grok while staff is ringing (forward / overflow)', () => {
+    expect(shouldStartStreamOnAnswer({ isOutbound: false, awaitingStaff: true })).toBe(false);
+    expect(shouldStartStreamOnAnswer({ routing: 'forward' })).toBe(false);
+    expect(shouldStartStreamOnAnswer({ routing: 'overflow' })).toBe(false);
+    expect(shouldStartStreamOnAnswer({ isOutbound: false, routing: 'ai' })).toBe(true);
+  });
 });
 
 describe('streamAlreadyOwnedByDial', () => {

@@ -327,6 +327,23 @@ export async function joinCallToConference(
   });
 }
 
+/**
+ * Transfer an answered inbound call to a staff / business-line number.
+ * Used by after_hours_ai (during hours) and as a fallback path.
+ */
+export async function transferInboundCall(
+  callControlId: string,
+  to: string,
+  opts?: { from?: string; timeoutSecs?: number; clientState?: string }
+): Promise<void> {
+  const body: Record<string, unknown> = { to };
+  if (opts?.from) body.from = opts.from;
+  if (opts?.timeoutSecs != null) body.timeout_secs = opts.timeoutSecs;
+  if (opts?.clientState) body.client_state = opts.clientState;
+  await post(`/calls/${callControlId}/actions/transfer`, body);
+  logger.info({ callControlId, to, timeoutSecs: opts?.timeoutSecs }, 'Inbound call transferred to staff');
+}
+
 export async function dialStaffJoin(params: {
   to: string;
   from: string;
@@ -359,6 +376,47 @@ export async function dialStaffJoin(params: {
   logger.info(
     { callControlId, to: params.to, originalCallId: params.originalCallId },
     'Supervisor join dial initiated'
+  );
+  return { callControlId };
+}
+
+/**
+ * Dial staff for overflow_ai. Same conference join as supervisor, but
+ * call.hangup on this leg starts the AI on the original inbound if staff
+ * never answered.
+ */
+export async function dialOverflowStaff(params: {
+  to: string;
+  from: string;
+  originalCallId: string;
+  originalCallControlId: string;
+  conferenceName: string;
+  tenantId: string;
+}): Promise<{ callControlId: string }> {
+  const state = {
+    kind: 'overflow_staff',
+    isOutbound: true,
+    originalCallId: params.originalCallId,
+    originalCallControlId: params.originalCallControlId,
+    conferenceName: params.conferenceName,
+    tenantId: params.tenantId,
+    callId: params.originalCallId,
+  };
+  const clientState = Buffer.from(JSON.stringify(state)).toString('base64');
+  const body = {
+    connection_id: config.TELNYX_APP_ID,
+    to: params.to,
+    from: params.from,
+    webhook_url: telnyxWebhookUrl(config.APP_URL),
+    webhook_url_method: 'POST',
+    client_state: clientState,
+    timeout_secs: 25,
+  };
+  const result = (await post('/calls', body)) as { data: { call_control_id: string } };
+  const callControlId = result.data.call_control_id;
+  logger.info(
+    { callControlId, to: params.to, originalCallId: params.originalCallId },
+    'Overflow staff dial initiated'
   );
   return { callControlId };
 }

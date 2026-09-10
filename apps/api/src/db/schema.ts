@@ -327,6 +327,8 @@ export const tenantSettings = pgTable('tenant_settings', {
     .unique(),
   officeHours: jsonb('office_hours').notNull().default({}),
   afterHoursMode: text('after_hours_mode').notNull().default('voicemail'),
+  /** 'ai_always' | 'after_hours_ai' | 'overflow_ai' — Telnyx inbound routing. */
+  inboundRoutingMode: text('inbound_routing_mode').notNull().default('ai_always'),
   transferNumber: text('transfer_number'),
   maxHoldSeconds: integer('max_hold_seconds').notNull().default(30),
   voiceAgentId: text('voice_agent_id'),
@@ -1122,3 +1124,29 @@ export const demoLeads = pgTable(
 
 export type DemoLead = typeof demoLeads.$inferSelect;
 export type NewDemoLead = typeof demoLeads.$inferInsert;
+
+// ---- Per-tenant usage / COGS ledger (internal; Stripe remains the invoice) ----
+export const tenantUsageEvents = pgTable(
+  'tenant_usage_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    callId: uuid('call_id').references(() => calls.id, { onDelete: 'set null' }),
+    eventType: text('event_type').notNull(),
+    quantity: numeric('quantity', { precision: 12, scale: 4 }).notNull().default('0'),
+    estimatedCents: numeric('estimated_cents', { precision: 12, scale: 4 }).notNull().default('0'),
+    direction: text('direction'),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
+    metadata: jsonb('metadata').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tenantOccurredIdx: index('tenant_usage_events_tenant_occurred_idx').on(t.tenantId, t.occurredAt),
+    typeIdx: index('tenant_usage_events_type_idx').on(t.tenantId, t.eventType, t.occurredAt),
+  })
+);
+
+export type TenantUsageEvent = typeof tenantUsageEvents.$inferSelect;
+export type NewTenantUsageEvent = typeof tenantUsageEvents.$inferInsert;

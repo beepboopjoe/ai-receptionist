@@ -1,6 +1,6 @@
 // Shared go-live / billing labels for the platform clients list.
 // Mirrors apps/dashboard/src/lib/useGoLive.ts hard prerequisites
-// (phone or pending port, Grok voice, open hours, transfer number).
+// (active inbound DID — port is later/optional, Grok voice, open hours, transfer number).
 import {
   ALL_GROK_VOICES,
   getPlan,
@@ -39,7 +39,8 @@ export function computeGoLiveBlockers(input: {
   transferNumber: unknown;
 }): GoLiveBlocker[] {
   const blockers: GoLiveBlocker[] = [];
-  if (!input.hasInboundPhone && !input.hasPendingPort) blockers.push('phone');
+  // Port-in is later / optional — only an active inbound DID clears this.
+  if (!input.hasInboundPhone) blockers.push('phone');
   if (!hasGrokVoice(input.voiceName)) blockers.push('voice');
   if (!hasOpenOfficeHours(input.officeHours)) blockers.push('hours');
   if (!String(input.transferNumber ?? '').trim()) blockers.push('transfer');

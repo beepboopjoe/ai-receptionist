@@ -70,9 +70,19 @@ export function buildDialMediaStreamFields(streamUrl: string): Omit<StreamingSta
 /** Telnyx 422 when a second bidirectional RTP stream fights the first (account limit = 1). */
 export const TELNYX_CONCURRENT_STREAM_LIMIT_CODE = '90046';
 
-/** dialDirect / inbound encode isOutbound:false — start stream on answer, skip AMD. */
-export function shouldStartStreamOnAnswer(state: { isOutbound?: boolean }): boolean {
-  return state.isOutbound !== true;
+/**
+ * dialDirect / inbound encode isOutbound:false — start stream on answer, skip AMD.
+ * Forward / overflow hold the inbound leg for staff first — do not attach Grok.
+ */
+export function shouldStartStreamOnAnswer(state: {
+  isOutbound?: boolean;
+  awaitingStaff?: boolean;
+  routing?: string;
+}): boolean {
+  if (state.isOutbound === true) return false;
+  if (state.awaitingStaff === true) return false;
+  if (state.routing === 'forward' || state.routing === 'overflow') return false;
+  return true;
 }
 
 /**

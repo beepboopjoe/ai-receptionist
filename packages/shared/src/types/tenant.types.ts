@@ -9,6 +9,9 @@ export type TenantPlan = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise
 
 export type AfterHoursMode = 'voicemail' | 'callback' | 'transfer';
 
+/** How inbound Telnyx DIDs are answered before the AI greets. */
+export type InboundRoutingMode = 'ai_always' | 'after_hours_ai' | 'overflow_ai';
+
 export type IntegrationProvider =
   | 'ringcentral'
   | 'google_calendar'
@@ -35,6 +38,8 @@ export interface TenantSettings {
   tenantId: string;
   officeHours: OfficeHours;
   afterHoursMode: AfterHoursMode;
+  /** Telephony routing for the inbound DID. Distinct from afterHoursMode (AI script). */
+  inboundRoutingMode: InboundRoutingMode;
   transferNumber: string | null;
   maxHoldSeconds: number;
   voiceAgentId: string | null;

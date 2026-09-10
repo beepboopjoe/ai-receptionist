@@ -392,6 +392,60 @@ export default function BillingPage() {
             </div>
           </div>
 
+          {usage?.ledger && (
+            <div className="card p-6 space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">This period · estimated COGS</h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Internal ledger from persisted events. Stripe remains your invoice. Telnyx and
+                  Grok cents are config estimates, not live carrier quotes.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <p className="text-xs text-gray-500">AI minutes</p>
+                  <p className="text-lg font-semibold text-gray-900">{usage.ledger.aiMinutes.toFixed(1)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Numbers (monthly)</p>
+                  <p className="text-lg font-semibold text-gray-900">${(usage.ledger.numberMonthlyCents / 100).toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Est. Telnyx</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    ${((usage.ledger.telnyxInboundCents + usage.ledger.telnyxOutboundCents + usage.ledger.telnyxSmsCents) / 100).toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Est. Grok</p>
+                  <p className="text-lg font-semibold text-gray-900">${(usage.ledger.grokEstimateCents / 100).toFixed(2)}</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+                <p className="text-gray-900">
+                  Estimated COGS{' '}
+                  <span className="font-semibold">${(usage.ledger.estimatedCogsCents / 100).toFixed(2)}</span>
+                </p>
+                <p className="text-gray-500">
+                  vs plan ${((usage.ledger.planPriceCents) / 100).toFixed(0)}/mo
+                  {usage.ledger.planPriceCents > 0 && (
+                    <>
+                      {' '}
+                      ·{' '}
+                      {Math.max(
+                        0,
+                        Math.round(
+                          (1 - usage.ledger.estimatedCogsCents / usage.ledger.planPriceCents) * 100
+                        )
+                      )}
+                      % est. gross
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* ── Plan comparison ── */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">Compare Plans</h2>

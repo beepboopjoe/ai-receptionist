@@ -150,7 +150,7 @@ async function onCallEnded(params: {
   const now = new Date();
 
   const [existing] = await db
-    .select({ id: calls.id, startedAt: calls.startedAt, tenantId: calls.tenantId })
+    .select({ id: calls.id, startedAt: calls.startedAt, tenantId: calls.tenantId, direction: calls.direction })
     .from(calls)
     .where(eq(calls.rcCallId, rcCallId))
     .limit(1);
@@ -188,6 +188,17 @@ async function onCallEnded(params: {
     void import('../billing/usage.service.js').then(({ incrementMinuteUsage }) =>
       incrementMinuteUsage(existing.tenantId, minutes).catch((err) => {
         console.error('[telephony] incrementMinuteUsage failed:', err);
+      })
+    );
+    void import('../billing/usage-ledger.service.js').then(({ recordCallUsage }) =>
+      recordCallUsage({
+        tenantId: existing.tenantId,
+        callId: existing.id,
+        minutes,
+        direction: existing.direction === 'outbound' ? 'outbound' : 'inbound',
+        callDirection: existing.direction,
+      }).catch((err) => {
+        console.error('[telephony] recordCallUsage failed:', err);
       })
     );
   }

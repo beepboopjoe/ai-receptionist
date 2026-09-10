@@ -115,7 +115,8 @@ export default function Step5ActivatePage() {
         <Zap size={36} className="mx-auto mb-3 opacity-90" />
         <p className="text-xl font-bold mb-1">Ready to go live?</p>
         <p className="text-brand-200 text-sm mb-5">
-          Your AI receptionist will start answering calls immediately after activation.
+          We assign a Telfin inbound DID on paid go-live. Forward your existing business line
+          to it (always-forward). Porting is optional later — not a day-one blocker.
         </p>
         <button
           onClick={handleActivate}
