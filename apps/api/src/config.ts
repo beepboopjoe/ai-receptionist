@@ -108,6 +108,11 @@ const envSchema = z.object({
   // Add-on: Voice Clone ($49/mo flat). Set this to the Stripe price_id after
   // creating the product in your Stripe dashboard.
   STRIPE_PRICE_VOICE_CLONE_MONTHLY:  z.string().default(''),
+  // Recurring extras beyond plan.includedPhoneNumbers. Optional — when
+  // unset we create an ad-hoc monthly Price at purchase time. Follow-up:
+  // create catalog products in Stripe livemode and set these.
+  STRIPE_PRICE_EXTRA_LOCAL_NUMBER: z.string().default(''),
+  STRIPE_PRICE_TOLL_FREE_NUMBER: z.string().default(''),
 
   // HubSpot CRM integration (optional — only required when a tenant connects HubSpot)
   HUBSPOT_CLIENT_ID: z.string().default(''),

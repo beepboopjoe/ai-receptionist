@@ -689,7 +689,7 @@ export const phoneNumbersApi = {
       body: JSON.stringify(params),
     }),
   purchase: (phoneE164: string, numberType: 'local' | 'toll_free' = 'local') =>
-    apiFetch<{ number: OwnedNumber; charged: boolean }>('/phone-numbers/purchase', {
+    apiFetch<{ number: OwnedNumber; charged: boolean; included: boolean }>('/phone-numbers/purchase', {
       method: 'POST',
       body: JSON.stringify({ phoneE164, numberType }),
     }),
@@ -697,14 +697,20 @@ export const phoneNumbersApi = {
     apiFetch<void>(`/phone-numbers/${id}`, { method: 'DELETE' }),
 
   /**
-   * Returns the active per-month price (in cents) for local + toll-free numbers
-   * for the signed-in tenant. Promo-trial tenants get wholesale Telnyx rates;
-   * everyone else gets the retail $5 / $10.
+   * Extra-slot monthly rates + plan allotment for the signed-in tenant.
+   * Promo-trial tenants get wholesale Telnyx rates; everyone else $5 / $10.
+   * Included slots are $0 — see includedPhoneNumbers / usedCount.
    */
   pricing: () =>
-    apiFetch<{ localCents: number; tollFreeCents: number; isPromoPricing: boolean }>(
-      '/phone-numbers/pricing'
-    ),
+    apiFetch<{
+      localCents: number;
+      tollFreeCents: number;
+      isPromoPricing: boolean;
+      includedPhoneNumbers: number;
+      usedCount: number;
+      planKey: string;
+      planName: string;
+    }>('/phone-numbers/pricing'),
 
   // Number porting (LOA submission + tracking)
   port: (input: PortRequestInput) =>

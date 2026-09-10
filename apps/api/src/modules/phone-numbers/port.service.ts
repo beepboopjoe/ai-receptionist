@@ -11,9 +11,16 @@
 // + webhook handler to flip status automatically.
 // ============================================================
 import { db } from '../../db/client.js';
-import { phonePortRequests, tenantPhoneNumbers } from '../../db/schema.js';
+import { phonePortRequests, tenantPhoneNumbers, tenants } from '../../db/schema.js';
 import { and, asc, eq } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '../../lib/errors.js';
+import { getPlan } from '@ai-receptionist/shared';
+import { config } from '../../config.js';
+import {
+  attachRecurringPhoneAddon,
+  countActiveOwnedNumbers,
+  resolveOwnedNumberMonthlyCostCents,
+} from './phone.service.js';
 
 export interface PortRequestInput {
   phoneE164: string;
@@ -160,17 +167,63 @@ export async function markPortCompleted(params: {
     .limit(1);
   if (!port) throw new NotFoundError('PortRequest', params.portRequestId);
 
-  await db.insert(tenantPhoneNumbers).values({
-    tenantId: port.tenantId,
-    phoneE164: port.phoneE164,
-    telnyxPhoneId: params.telnyxPhoneId,
-    country: 'US',
+  const [tenant] = await db
+    .select({
+      promoTrial: tenants.promoTrial,
+      plan: tenants.plan,
+      stripeCustomerId: tenants.stripeCustomerId,
+      stripeSubscriptionId: tenants.stripeSubscriptionId,
+    })
+    .from(tenants)
+    .where(eq(tenants.id, port.tenantId))
+    .limit(1);
+  const isPromo = Boolean(tenant?.promoTrial);
+  const plan = getPlan(tenant?.plan ?? '') ?? getPlan('trial')!;
+  const usedCount = await countActiveOwnedNumbers(port.tenantId);
+  const monthlyCostCents = resolveOwnedNumberMonthlyCostCents({
+    includedPhoneNumbers: plan.includedPhoneNumbers,
+    activeOwnedCount: usedCount,
     numberType: 'local',
-    monthlyCostCents: 500,
-    isPrimary: false,
-    isPorted: true,
-    portRequestId: port.id,
+    promoTrial: isPromo,
+    wholesale: {
+      localCents: config.TELNYX_WHOLESALE_LOCAL_CENTS,
+      tollFreeCents: config.TELNYX_WHOLESALE_TOLLFREE_CENTS,
+    },
   });
+
+  const [row] = await db
+    .insert(tenantPhoneNumbers)
+    .values({
+      tenantId: port.tenantId,
+      phoneE164: port.phoneE164,
+      telnyxPhoneId: params.telnyxPhoneId,
+      country: 'US',
+      numberType: 'local',
+      monthlyCostCents,
+      isPrimary: usedCount === 0,
+      isPorted: true,
+      portRequestId: port.id,
+    })
+    .returning();
+
+  if (row && monthlyCostCents > 0) {
+    const attached = await attachRecurringPhoneAddon({
+      tenantId: port.tenantId,
+      phoneNumberId: row.id,
+      phoneE164: port.phoneE164,
+      numberType: 'local',
+      monthlyCostCents,
+      isPromo,
+      stripeCustomerId: tenant?.stripeCustomerId ?? null,
+      stripeSubscriptionId: tenant?.stripeSubscriptionId ?? null,
+    });
+    if (attached.subscriptionItemId) {
+      await db
+        .update(tenantPhoneNumbers)
+        .set({ stripeSubscriptionItemId: attached.subscriptionItemId, updatedAt: new Date() })
+        .where(eq(tenantPhoneNumbers.id, row.id));
+    }
+  }
 
   await db
     .update(phonePortRequests)
