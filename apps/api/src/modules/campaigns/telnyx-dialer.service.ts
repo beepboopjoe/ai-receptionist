@@ -291,6 +291,79 @@ export async function hangupCall(callControlId: string): Promise<void> {
 }
 
 /**
+ * Start an MP3 recording on an in-progress Call Control leg.
+ * Failures are logged and ignored — never fail the live call.
+ */
+export async function startCallRecording(callControlId: string): Promise<void> {
+  try {
+    await post(`/calls/${callControlId}/actions/record_start`, {
+      format: 'mp3',
+      channels: 'single',
+    });
+    logger.info({ callControlId }, 'Call recording started');
+  } catch (err) {
+    logger.warn({ err, callControlId }, 'record_start failed (non-blocking)');
+  }
+}
+
+export async function stopMediaStream(callControlId: string): Promise<void> {
+  try {
+    await post(`/calls/${callControlId}/actions/streaming_stop`, {});
+  } catch (err) {
+    logger.warn({ err, callControlId }, 'streaming_stop failed (non-blocking)');
+  }
+}
+
+export async function joinCallToConference(
+  callControlId: string,
+  conferenceName: string,
+  opts?: { startConferenceOnEnter?: boolean; endConferenceOnExit?: boolean }
+): Promise<void> {
+  await post(`/calls/${callControlId}/actions/join`, {
+    conference_name: conferenceName,
+    start_conference_on_enter: opts?.startConferenceOnEnter ?? true,
+    end_conference_on_exit: opts?.endConferenceOnExit ?? false,
+    beep_enabled: 'never',
+  });
+}
+
+export async function dialStaffJoin(params: {
+  to: string;
+  from: string;
+  originalCallId: string;
+  originalCallControlId: string;
+  conferenceName: string;
+  tenantId: string;
+}): Promise<{ callControlId: string }> {
+  const state = {
+    kind: 'supervisor_join',
+    isOutbound: true,
+    originalCallId: params.originalCallId,
+    originalCallControlId: params.originalCallControlId,
+    conferenceName: params.conferenceName,
+    tenantId: params.tenantId,
+    callId: params.originalCallId,
+  };
+  const clientState = Buffer.from(JSON.stringify(state)).toString('base64');
+  const body = {
+    connection_id: config.TELNYX_APP_ID,
+    to: params.to,
+    from: params.from,
+    webhook_url: telnyxWebhookUrl(config.APP_URL),
+    webhook_url_method: 'POST',
+    client_state: clientState,
+    timeout_secs: 30,
+  };
+  const result = (await post('/calls', body)) as { data: { call_control_id: string } };
+  const callControlId = result.data.call_control_id;
+  logger.info(
+    { callControlId, to: params.to, originalCallId: params.originalCallId },
+    'Supervisor join dial initiated'
+  );
+  return { callControlId };
+}
+
+/**
  * Drop a TTS voicemail message into an in-progress call.
  *
  * The call.speak.ended webhook event is handled in telnyx-webhook.handler.ts

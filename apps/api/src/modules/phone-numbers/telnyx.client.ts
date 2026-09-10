@@ -123,13 +123,26 @@ interface OrderResponse {
 /**
  * Order a single phone number. Returns Telnyx's order id + the
  * resulting phone number id (we store the latter for releases).
+ *
+ * Always pass connectionId (TELNYX_APP_ID) so inbound/outbound
+ * voice lands on the Call Control application. Orders without a
+ * connection depend on the Telnyx account default and silently
+ * fail to ring the AI.
  */
-export async function purchaseNumber(phoneE164: string): Promise<{
+export async function purchaseNumber(
+  phoneE164: string,
+  opts?: { connectionId?: string; tags?: string[] }
+): Promise<{
   orderId: string;
   telnyxPhoneId: string;
   status: string;
 }> {
-  const body = { phone_numbers: [{ phone_number: phoneE164 }] };
+  const body: Record<string, unknown> = {
+    phone_numbers: [{ phone_number: phoneE164 }],
+  };
+  if (opts?.connectionId) body.connection_id = opts.connectionId;
+  if (opts?.tags?.length) body.tags = opts.tags;
+
   const res = await tx<OrderResponse>('/number_orders', {
     method: 'POST',
     body: JSON.stringify(body),
@@ -139,11 +152,30 @@ export async function purchaseNumber(phoneE164: string): Promise<{
   if (!purchased) {
     throw new IntegrationError('telnyx', `Order ${order.id} returned no phone numbers`);
   }
+
+  // Best-effort: some order responses return a number-order phone id
+  // rather than the /v2/phone_numbers resource id. PATCH is a no-op
+  // when already assigned; ignore failures so purchase still succeeds.
+  if (opts?.connectionId && purchased.id) {
+    await assignNumberToConnection(purchased.id, opts.connectionId).catch(() => undefined);
+  }
+
   return {
     orderId: order.id,
     telnyxPhoneId: purchased.id,
     status: order.status,
   };
+}
+
+/** Point an owned DID at our Call Control application. */
+export async function assignNumberToConnection(
+  telnyxPhoneId: string,
+  connectionId: string
+): Promise<void> {
+  await tx(`/phone_numbers/${telnyxPhoneId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ connection_id: connectionId }),
+  });
 }
 
 /**

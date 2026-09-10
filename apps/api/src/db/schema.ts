@@ -210,6 +210,13 @@ export const tenantPhoneNumbers = pgTable(
     purpose: text('purpose').notNull().default('inbound'),
     /** Guard bit: tenant-facing list/release endpoints must skip these rows. */
     poolAutoManaged: boolean('pool_auto_managed').notNull().default(false),
+    /**
+     * Telnyx order lifecycle for auto-provisioned (and retried) numbers.
+     * 'provisioning' | 'active' | 'failed'. Legacy purchased rows are 'active'.
+     */
+    provisionStatus: text('provision_status').notNull().default('active'),
+    provisionError: text('provision_error'),
+    telnyxOrderId: text('telnyx_order_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

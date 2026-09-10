@@ -33,7 +33,6 @@ import {
   getTenantInfo,
   updateTenantProfile,
 } from './settings.service.js';
-import { createTelephonyAdapter } from '../telephony/adapters/telephony.factory.js';
 import { AuthError, NotFoundError, ValidationError } from '../../lib/errors.js';
 import { auditLog } from '../../audit/audit-logger.js';
 import type { JwtPayload } from './auth.middleware.js';
@@ -663,16 +662,17 @@ export async function adminPlugin(app: FastifyInstance) {
 
       if (!call) throw new NotFoundError('Call not found');
 
-      // The call must still be live. Once the Grok WS closes, the row's
-      // status flips to 'completed' or 'missed' and the Telnyx call leg
-      // is gone — nothing to bridge.
-      // Live statuses set by the telephony layer: 'active' on initial insert,
-      // 'connected' after pickup. Anything else (completed/missed/failed) means
-      // the call leg is gone.
       if (call.status !== 'active' && call.status !== 'connected') {
         return reply.status(409).send({
           error: 'call_not_live',
           message: 'This call has already ended.',
+        });
+      }
+
+      if (!call.rcCallId) {
+        return reply.status(409).send({
+          error: 'call_not_live',
+          message: 'This call has no live telephony session.',
         });
       }
 
@@ -699,7 +699,93 @@ export async function adminPlugin(app: FastifyInstance) {
         });
       }
 
-      return reply.send({ ok: true, toNumber: result.toNumber });
+      return reply.send({ ok: true, toNumber: result.toNumber, method: result.method ?? 'transfer' });
+    }
+  );
+
+  // Join — dial the staff transfer number into a Telnyx conference with
+  // the live caller. The AI stream stops when staff answers.
+  app.post(
+    '/calls/:id/join',
+    { onRequest: [app.requireRole("staff")] },
+    async (request, reply) => {
+      const { tenantId, id: actorId } = request.authUser;
+      const { id } = request.params as { id: string };
+
+      const [call] = await db
+        .select({ id: calls.id, rcCallId: calls.rcCallId, status: calls.status })
+        .from(calls)
+        .where(and(eq(calls.id, id), eq(calls.tenantId, tenantId)))
+        .limit(1);
+
+      if (!call) throw new NotFoundError('Call not found');
+      if (call.status !== 'active' && call.status !== 'connected') {
+        return reply.status(409).send({
+          error: 'call_not_live',
+          message: 'This call has already ended.',
+        });
+      }
+      if (!call.rcCallId) {
+        return reply.status(409).send({
+          error: 'call_not_live',
+          message: 'This call has no live telephony session.',
+        });
+      }
+
+      const { initiateLiveJoin } = await import('../telephony/transfer.js');
+      const result = await initiateLiveJoin({
+        tenantId,
+        callId: call.id,
+        rcCallId: call.rcCallId,
+        provider: 'telnyx',
+        actorId,
+      });
+
+      if (!result.success) {
+        const status =
+          result.error === 'no_transfer_number_configured' || result.error === 'no_from_number'
+            ? 400
+            : 502;
+        return reply.status(status).send({
+          error: result.error,
+          message:
+            result.error === 'no_transfer_number_configured'
+              ? 'Set a Staff Transfer Number in Voice Agent settings before joining a call.'
+              : result.error === 'no_from_number'
+                ? 'Provision an inbound number first so we can dial your phone.'
+                : 'Could not join the call. Please try again.',
+        });
+      }
+
+      return reply.send({ ok: true, toNumber: result.toNumber, method: 'join' });
+    }
+  );
+
+  // Authenticated recording proxy — never expose the Telnyx URL to the browser.
+  app.get(
+    '/calls/:id/recording',
+    { onRequest: [app.requireRole("staff")] },
+    async (request, reply) => {
+      const { tenantId } = request.authUser;
+      const { id } = request.params as { id: string };
+      const [call] = await db
+        .select({ recordingUrl: calls.recordingUrl })
+        .from(calls)
+        .where(and(eq(calls.id, id), eq(calls.tenantId, tenantId)))
+        .limit(1);
+      if (!call) throw new NotFoundError('Call not found');
+      if (!call.recordingUrl) {
+        return reply.status(404).send({ error: 'recording_unavailable', message: 'No recording for this call.' });
+      }
+      const { fetchRecordingBytes } = await import('../telephony/recording.js');
+      const audio = await fetchRecordingBytes(call.recordingUrl);
+      if (!audio) {
+        return reply.status(502).send({ error: 'recording_fetch_failed', message: 'Could not fetch the recording.' });
+      }
+      return reply
+        .header('Content-Type', audio.contentType)
+        .header('Cache-Control', 'private, max-age=120')
+        .send(audio.body);
     }
   );
 
@@ -1577,6 +1663,15 @@ export async function adminPlugin(app: FastifyInstance) {
       // Activate tenant
       await activateTenant(tenantId);
 
+      const { ensureInboundDid } = await import('../phone-numbers/auto-provision.service.js');
+      const inbound = await ensureInboundDid(tenantId);
+      if (inbound.status === 'active' || inbound.status === 'skipped') {
+        const { ensureOutboundPool } = await import('../outbound-pool/pool.service.js');
+        void ensureOutboundPool(tenantId).catch((err) => {
+          request.log.error({ err, tenantId }, 'outbound pool provision on activate failed');
+        });
+      }
+
       auditLog({
         tenantId,
         actorType: 'admin_user',
@@ -1584,10 +1679,13 @@ export async function adminPlugin(app: FastifyInstance) {
         action: 'tenant.activated',
         entityType: 'tenant',
         entityId: tenantId,
-        metadata: {},
+        metadata: { inboundStatus: inbound.status, inboundNumber: inbound.number?.phoneE164 },
       });
 
-      return reply.send({ activated: true });
+      return reply.send({
+        activated: true,
+        inbound,
+      });
     }
   );
 
@@ -1599,15 +1697,16 @@ export async function adminPlugin(app: FastifyInstance) {
       const { tenantId, id: actorId } = request.authUser;
       const { areaCode } = request.body as { areaCode?: string };
 
-      const adapter = createTelephonyAdapter('telnyx', tenantId);
-      const provisioned = await adapter.provisionNumber(tenantId, areaCode);
+      const { ensureInboundDid } = await import('../phone-numbers/auto-provision.service.js');
+      const inbound = await ensureInboundDid(tenantId, { areaCode, forceRetry: true });
 
-      // Save to tenant_settings
-      await updateSettings(tenantId, {
-        telephonyProvider: 'telnyx',
-        provisionedNumber: provisioned.phoneNumber,
-        provisionedNumberSid: provisioned.sid,
-      });
+      if (inbound.status === 'failed' || !inbound.number || inbound.number.phoneE164 === 'pending') {
+        return reply.status(502).send({
+          error: 'provision_failed',
+          message: inbound.reason ?? 'Telnyx number order failed',
+          inbound,
+        });
+      }
 
       auditLog({
         tenantId,
@@ -1616,10 +1715,14 @@ export async function adminPlugin(app: FastifyInstance) {
         action: 'telephony.number_provisioned',
         entityType: 'tenant',
         entityId: tenantId,
-        metadata: { phoneNumber: provisioned.phoneNumber, provider: 'telnyx' },
+        metadata: { phoneNumber: inbound.number.phoneE164, provider: 'telnyx' },
       });
 
-      return reply.status(201).send(provisioned);
+      return reply.status(201).send({
+        phoneNumber: inbound.number.phoneE164,
+        sid: inbound.number.id,
+        provider: 'telnyx',
+      });
     }
   );
 

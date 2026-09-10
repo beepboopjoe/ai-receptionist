@@ -185,7 +185,7 @@ These were deliberately punted from earlier sessions OR are post-deploy setup ta
    - Create a new metered price in Stripe ($0.99 per unit, name "Leads Discovered")
    - Set `STRIPE_PRICE_LEADS_DISCOVERED=price_xxx` on Railway
    - Update existing customers' subscriptions to add the line item, OR wire it into subscription-create flow for new signups
-4. **Run new migrations** before redeploying — both `0027_campaign_goals.sql` and `0028_lead_discovery.sql` need to apply.
+4. **Run new migrations** before redeploying — apply through `0039_number_provision_status.sql` (inbound DID provision_status + retry). `TELNYX_API_KEY` + `TELNYX_APP_ID` required for auto-order, recordings, and live join.
 
 ### Carryovers from before this session (still pending — see CLAUDE.md)
 
@@ -210,7 +210,7 @@ Listed in priority order based on the current state of the funnel:
 7. **Recurring goal-driven campaigns** — "run this recall campaign every Monday" via the agent-scanner-worker pattern.
 8. **AI Receptionist mobile PWA + push notifications** — for when AI escalates or books.
 9. **Health-check banner in dashboard** — surfaces "your forwarding broke 2 hours ago" / "calendar disconnected".
-10. **Whisper-mode live monitoring** — listen silently without taking over. Heavier (needs audio relay to browser); defer until take-over usage proves demand.
+10. **Whisper-mode live monitoring** — listen silently without taking over. Heavier (needs audio relay to browser). Join-on-phone (Telnyx conference) and Take over (warm transfer) shipped; barge/whisper still deferred.
 
 ---
 

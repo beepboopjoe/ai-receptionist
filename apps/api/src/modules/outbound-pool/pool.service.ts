@@ -14,7 +14,7 @@
 // daily volume to get carrier spam-flagged.
 // ============================================================
 import { db } from '../../db/client.js';
-import { tenantPhoneNumbers, outboundPoolNumberStats } from '../../db/schema.js';
+import { tenantPhoneNumbers, outboundPoolNumberStats, tenants } from '../../db/schema.js';
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   searchAvailableNumbers as telnyxSearch,
@@ -23,13 +23,13 @@ import {
 import { config } from '../../config.js';
 import { IntegrationError } from '../../lib/errors.js';
 import {
-  POOL_INITIAL_SIZE,
   POOL_GROWTH_INCREMENT,
   POOL_MAX_SIZE,
   POOL_GROWTH_DIALS_PER_NUMBER_PER_DAY,
   POOL_GROWTH_MIN_TOTAL_DIALS_PER_DAY,
   POOL_SCALING_SWEEPS_PER_DAY,
 } from './pool.constants.js';
+import { targetPoolSizeForPlan } from './pool-size.js';
 
 export interface PoolNumber {
   id: string;
@@ -38,6 +38,8 @@ export interface PoolNumber {
   purchasedAt: string;
   lastDialedAt: string | null;
   totalDials: number;
+  provisionStatus: 'provisioning' | 'active' | 'failed';
+  provisionError: string | null;
 }
 
 /** Active (non-released) pool rows for a tenant. */
@@ -87,7 +89,10 @@ async function provisionPoolNumber(tenantId: string): Promise<PoolNumber> {
     throw new IntegrationError('telnyx', 'No local numbers available for pool provisioning');
   }
 
-  const order = await telnyxPurchase(pick.phoneE164);
+  const order = await telnyxPurchase(pick.phoneE164, {
+    ...(config.TELNYX_APP_ID ? { connectionId: config.TELNYX_APP_ID } : {}),
+    tags: [`tenant:${tenantId}`, 'purpose:outbound_pool'],
+  });
 
   const [row] = await db
     .insert(tenantPhoneNumbers)
@@ -103,6 +108,7 @@ async function provisionPoolNumber(tenantId: string): Promise<PoolNumber> {
       isPrimary: false,
       purpose: 'outbound_pool',
       poolAutoManaged: true,
+      provisionStatus: 'active',
     })
     .returning();
   if (!row) throw new Error('Pool number insert returned no row');
@@ -119,24 +125,39 @@ async function provisionPoolNumber(tenantId: string): Promise<PoolNumber> {
     purchasedAt: row.purchasedAt.toISOString(),
     lastDialedAt: null,
     totalDials: 0,
+    provisionStatus: 'active',
+    provisionError: null,
   };
 }
 
 /**
- * Idempotent — tops the tenant's pool up to POOL_INITIAL_SIZE.
- * Called (awaited) from campaign creation so a Telnyx failure
- * surfaces as a create error rather than a campaign with no
- * dialable numbers. Returns the current active pool.
+ * Idempotent — tops the tenant's pool up to the plan's concurrentOutbound
+ * (see targetPoolSizeForPlan). Called from campaign creation and go-live.
  */
 export async function ensureOutboundPool(tenantId: string): Promise<PoolNumber[]> {
-  for (let guard = 0; guard < POOL_INITIAL_SIZE; guard++) {
+  const [tenant] = await db
+    .select({ plan: tenants.plan })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1);
+  const target = targetPoolSizeForPlan(tenant?.plan);
+  if (target === 0) return listOutboundPoolNumbers(tenantId);
+
+  for (let guard = 0; guard < target; guard++) {
     const rows = await db
       .select({ value: sql<number>`COUNT(*)` })
       .from(tenantPhoneNumbers)
-      .where(activePoolWhere(tenantId));
+      .where(
+        and(activePoolWhere(tenantId), eq(tenantPhoneNumbers.provisionStatus, 'active'))
+      );
     const count = Number(rows[0]?.value ?? 0);
-    if (count >= POOL_INITIAL_SIZE) break;
-    await provisionPoolNumber(tenantId);
+    if (count >= target) break;
+    try {
+      await provisionPoolNumber(tenantId);
+    } catch (err) {
+      console.error('[outbound-pool] Provision failed:', err);
+      break;
+    }
   }
   return listOutboundPoolNumbers(tenantId);
 }
@@ -153,7 +174,9 @@ export async function selectPoolNumberForDial(tenantId: string): Promise<string>
   const active = await db
     .select({ id: tenantPhoneNumbers.id, phoneE164: tenantPhoneNumbers.phoneE164 })
     .from(tenantPhoneNumbers)
-    .where(activePoolWhere(tenantId));
+    .where(
+      and(activePoolWhere(tenantId), eq(tenantPhoneNumbers.provisionStatus, 'active'))
+    );
 
   if (active.length === 0) {
     // Defensive — pool should exist from campaign creation.
@@ -297,6 +320,8 @@ export async function listOutboundPoolNumbers(tenantId: string): Promise<PoolNum
       purchasedAt: tenantPhoneNumbers.purchasedAt,
       lastDialedAt: outboundPoolNumberStats.lastDialedAt,
       totalDials: outboundPoolNumberStats.totalDials,
+      provisionStatus: tenantPhoneNumbers.provisionStatus,
+      provisionError: tenantPhoneNumbers.provisionError,
     })
     .from(tenantPhoneNumbers)
     .leftJoin(
@@ -313,5 +338,31 @@ export async function listOutboundPoolNumbers(tenantId: string): Promise<PoolNum
     purchasedAt: r.purchasedAt.toISOString(),
     lastDialedAt: r.lastDialedAt ? r.lastDialedAt.toISOString() : null,
     totalDials: r.totalDials ?? 0,
+    provisionStatus: (r.provisionStatus as PoolNumber['provisionStatus']) ?? 'active',
+    provisionError: r.provisionError,
   }));
+}
+
+/** Re-run Telnyx orders for failed pool rows, then top the pool back up. */
+export async function retryOutboundPool(tenantId: string): Promise<PoolNumber[]> {
+  const failed = await db
+    .select({ id: tenantPhoneNumbers.id })
+    .from(tenantPhoneNumbers)
+    .where(
+      and(
+        eq(tenantPhoneNumbers.tenantId, tenantId),
+        eq(tenantPhoneNumbers.purpose, 'outbound_pool'),
+        isNull(tenantPhoneNumbers.releasedAt),
+        eq(tenantPhoneNumbers.provisionStatus, 'failed')
+      )
+    );
+
+  for (const row of failed) {
+    await db
+      .update(tenantPhoneNumbers)
+      .set({ releasedAt: new Date(), updatedAt: new Date() })
+      .where(eq(tenantPhoneNumbers.id, row.id));
+  }
+
+  return ensureOutboundPool(tenantId);
 }

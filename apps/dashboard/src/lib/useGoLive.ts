@@ -85,13 +85,18 @@ export function useGoLive(): GoLiveStatus {
     settingsLoading || phonesLoading || portsLoading || hoursLoading || integrationsLoading;
 
   const settings = (settingsPayload as { settings?: Record<string, unknown> } | undefined)?.settings;
-  const numbers = (phonesPayload as { data?: unknown[] } | undefined)?.data ?? [];
+  const numbers = (phonesPayload as { data?: Array<{ phoneE164?: string; provisionStatus?: string }> } | undefined)?.data ?? [];
   const ports = ((portsPayload as { data?: PortRequestRow[] } | undefined)?.data ??
     []) as PortRequestRow[];
   const integrations = ((integrationsPayload as { data?: Array<{ provider: string; status: string }> } | undefined)
     ?.data ?? []) as Array<{ provider: string; status: string }>;
 
-  const hasPhone = numbers.length > 0;
+  const hasPhone = numbers.some(
+    (n) =>
+      typeof n.phoneE164 === 'string' &&
+      n.phoneE164.startsWith('+') &&
+      (n.provisionStatus ?? 'active') === 'active'
+  );
   const hasPendingPort = ports.some((p) =>
     ['pending', 'submitted', 'in_progress'].includes(p.status)
   );
@@ -116,7 +121,7 @@ export function useGoLive(): GoLiveStatus {
       title: 'Get a phone number',
       desc: hasPendingPort
         ? 'A port request is in progress — your existing number is on the way.'
-        : 'Buy a local number or start a port so callers can reach your AI.',
+        : 'We’ll auto-assign a US inbound DID on go-live, or buy/port one here.',
       href: '/settings/phone-numbers',
       cta: hasPendingPort ? 'View port status' : 'Get a number',
       done: phoneReady,

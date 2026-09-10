@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
+import { CallRecordingPlayer } from '@/components/dashboard/call-recording-player';
 
 export default function CallDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -104,8 +105,10 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
         </div>
       )}
 
+      <CallRecordingPlayer callId={params.id} hasRecording={Boolean(c.recordingUrl)} />
+
       {/* Transcript */}
-      {c.transcript && Array.isArray(c.transcript) && c.transcript.length > 0 && (
+      {c.transcript && Array.isArray(c.transcript) && c.transcript.length > 0 ? (
         <div className="card p-6">
           <h2 className="font-semibold text-gray-900 mb-4">Transcript</h2>
           <div className="space-y-3">
@@ -134,6 +137,12 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             ))}
           </div>
         </div>
+      ) : (
+        <EmptyState
+          icon={XCircle}
+          label="No transcript"
+          hint="Transcripts are saved when the AI conversation completes. Short or failed calls may not have one."
+        />
       )}
     </div>
   );

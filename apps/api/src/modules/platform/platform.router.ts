@@ -256,7 +256,8 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
               and(
                 inArray(tenantPhoneNumbers.tenantId, tenantIds),
                 isNull(tenantPhoneNumbers.releasedAt),
-                eq(tenantPhoneNumbers.purpose, 'inbound')
+                eq(tenantPhoneNumbers.purpose, 'inbound'),
+                sql`${tenantPhoneNumbers.phoneE164} LIKE '+%'`
               )
             ),
           db
@@ -608,6 +609,33 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
         stripeError,
         snapshot,
       });
+    }
+  );
+
+  // Platform-admin recording proxy — same bytes as tenant GET /calls/:id/recording.
+  app.get<{ Params: { tenantId: string; callId: string } }>(
+    '/platform/tenants/:tenantId/calls/:callId/recording',
+    { onRequest: [requirePlatformAdmin] },
+    async (request, reply) => {
+      const { tenantId, callId } = request.params;
+      const [call] = await db
+        .select({ recordingUrl: calls.recordingUrl })
+        .from(calls)
+        .where(and(eq(calls.id, callId), eq(calls.tenantId, tenantId)))
+        .limit(1);
+      if (!call) throw new NotFoundError('Call not found');
+      if (!call.recordingUrl) {
+        return reply.status(404).send({ error: 'recording_unavailable' });
+      }
+      const { fetchRecordingBytes } = await import('../telephony/recording.js');
+      const audio = await fetchRecordingBytes(call.recordingUrl);
+      if (!audio) {
+        return reply.status(502).send({ error: 'recording_fetch_failed' });
+      }
+      return reply
+        .header('Content-Type', audio.contentType)
+        .header('Cache-Control', 'private, max-age=120')
+        .send(audio.body);
     }
   );
 }

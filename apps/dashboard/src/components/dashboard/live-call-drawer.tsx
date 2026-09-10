@@ -33,7 +33,9 @@ export function LiveCallDrawer({
 }: LiveCallDrawerProps) {
   const toast = useToast();
   const [takingOver, setTakingOver] = useState(false);
+  const [joining, setJoining] = useState(false);
   const [confirmingTakeover, setConfirmingTakeover] = useState(false);
+  const [confirmingJoin, setConfirmingJoin] = useState(false);
   const [needsTransferNumber, setNeedsTransferNumber] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -65,6 +67,31 @@ export function LiveCallDrawer({
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [call?.startedAt]);
+
+  async function handleJoin() {
+    if (!call) return;
+    setJoining(true);
+    try {
+      const result = await callsApi.join(call.callId);
+      if (result.ok) {
+        toast.success(`Joining — ringing ${result.toNumber}…`);
+        setConfirmingJoin(false);
+      } else if (result.error === 'no_transfer_number_configured') {
+        setNeedsTransferNumber(true);
+      } else {
+        toast.error(result.message ?? 'Could not join the call');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Join failed';
+      if (message.toLowerCase().includes('transfer number')) {
+        setNeedsTransferNumber(true);
+      } else {
+        toast.error(message);
+      }
+    } finally {
+      setJoining(false);
+    }
+  }
 
   async function handleTakeover() {
     if (!call) return;
@@ -231,11 +258,46 @@ export function LiveCallDrawer({
                 </p>
               </div>
             </div>
+          ) : confirmingJoin ? (
+            <div className="space-y-2">
+              <p className="text-xs text-gray-600">
+                Your phone will ring. When you answer you&apos;ll be conferenced with the
+                caller and the AI will step aside.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmingJoin(false)}
+                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  disabled={joining}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleJoin}
+                  disabled={joining}
+                  className="flex-1 px-3 py-2 rounded-lg bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+                >
+                  {joining ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      Ringing…
+                    </>
+                  ) : (
+                    <>
+                      <PhoneCall size={14} />
+                      Yes, join
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           ) : confirmingTakeover ? (
             <div className="space-y-2">
               <p className="text-xs text-gray-600">
-                Your phone will ring and you&apos;ll be bridged to the caller. The AI will
-                step aside.
+                Warm transfer: your phone rings and the caller is connected to you. The AI
+                drops immediately.
               </p>
               <div className="flex gap-2">
                 <button
@@ -267,15 +329,26 @@ export function LiveCallDrawer({
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmingTakeover(true)}
-              disabled={!call}
-              className="w-full px-4 py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-            >
-              <Phone size={15} />
-              Take over this call
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmingJoin(true)}
+                disabled={!call}
+                className="px-4 py-2.5 rounded-lg bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                <PhoneCall size={15} />
+                Join call
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingTakeover(true)}
+                disabled={!call}
+                className="px-4 py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                <Phone size={15} />
+                Take over
+              </button>
+            </div>
           )}
         </div>
       </aside>

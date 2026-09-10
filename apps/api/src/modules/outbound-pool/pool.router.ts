@@ -8,7 +8,7 @@
 // the prefix → routes 404.
 // ============================================================
 import type { FastifyInstance } from 'fastify';
-import { listOutboundPoolNumbers } from './pool.service.js';
+import { listOutboundPoolNumbers, retryOutboundPool } from './pool.service.js';
 
 export async function outboundPoolPlugin(app: FastifyInstance): Promise<void> {
   app.get(
@@ -17,6 +17,16 @@ export async function outboundPoolPlugin(app: FastifyInstance): Promise<void> {
     async (request) => {
       const { tenantId } = request.authUser;
       const data = await listOutboundPoolNumbers(tenantId);
+      return { data };
+    }
+  );
+
+  app.post(
+    '/outbound-pool/retry',
+    { onRequest: [app.requireRole('admin')] },
+    async (request) => {
+      const { tenantId } = request.authUser;
+      const data = await retryOutboundPool(tenantId);
       return { data };
     }
   );
