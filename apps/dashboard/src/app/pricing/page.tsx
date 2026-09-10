@@ -161,7 +161,7 @@ export default function PricingPage() {
           </h2>
           <p className="text-cream-600 mt-3 max-w-2xl mx-auto">
             SMS, transcripts, outbound campaigns, and 7 languages are on every paid plan.
-            The difference between Growth, Scale, and Business is included minutes, phone numbers, and concurrent-call capacity.
+            The difference between Growth, Scale, and Business is included AI minutes and included phone numbers. Busy-period volume is billed in minutes — not concurrent seats.
           </p>
         </div>
         <PlanComparisonTable />

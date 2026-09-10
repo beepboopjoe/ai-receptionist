@@ -12,6 +12,7 @@ import {
   PENDING_PHONE_E164,
 } from '../modules/phone-numbers/inbound-did.js';
 import { extractTelnyxRecordingMp3Url } from '../modules/telephony/recording.js';
+import { getPlan, PLANS } from '@ai-receptionist/shared';
 import {
   capConcurrentOutbound,
   planIncludesInboundDid,
@@ -32,6 +33,41 @@ describe('normalizeUsDid', () => {
     expect(isProvisionedE164(PENDING_PHONE_E164)).toBe(false);
     expect(isProvisionedE164('+15551234567')).toBe(true);
     expect(isProvisionedE164('')).toBe(false);
+  });
+});
+
+describe('plan catalog sells minutes + numbers, not concurrent seats', () => {
+  it('keeps trial at 1 inbound / 0 outbound and enterprise unlimited', () => {
+    expect(getPlan('trial')!.concurrentInbound).toBe(1);
+    expect(getPlan('trial')!.concurrentOutbound).toBe(0);
+    expect(getPlan('enterprise')!.concurrentInbound).toBe(-1);
+    expect(getPlan('enterprise')!.concurrentOutbound).toBe(-1);
+  });
+
+  it('uses a high inbound safety ceiling on paid plans (not marketed seats)', () => {
+    expect(getPlan('growth')!.concurrentInbound).toBeGreaterThanOrEqual(25);
+    expect(getPlan('scale')!.concurrentInbound).toBeGreaterThanOrEqual(50);
+    expect(getPlan('business')!.concurrentInbound).toBeGreaterThanOrEqual(50);
+  });
+
+  it('does not market concurrent seats on feature bullets', () => {
+    for (const plan of PLANS) {
+      for (const feature of plan.features) {
+        expect(feature.toLowerCase()).not.toMatch(/at the same time|simultaneous calls|concurrent/);
+      }
+    }
+  });
+
+  it('does not change list prices, minute packs, or included numbers', () => {
+    expect(getPlan('growth')!.monthlyPrice).toBe(199);
+    expect(getPlan('scale')!.monthlyPrice).toBe(399);
+    expect(getPlan('business')!.monthlyPrice).toBe(599);
+    expect(getPlan('growth')!.monthlyMinutes).toBe(380);
+    expect(getPlan('scale')!.monthlyMinutes).toBe(780);
+    expect(getPlan('business')!.monthlyMinutes).toBe(1100);
+    expect(getPlan('growth')!.includedPhoneNumbers).toBe(2);
+    expect(getPlan('scale')!.includedPhoneNumbers).toBe(5);
+    expect(getPlan('business')!.includedPhoneNumbers).toBe(10);
   });
 });
 

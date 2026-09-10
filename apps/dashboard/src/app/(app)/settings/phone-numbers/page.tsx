@@ -328,7 +328,7 @@ export default function PhoneNumbersPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-900">Why get more than one number?</p>
-              <p className="text-xs text-gray-500 mt-0.5">More numbers = more capacity, better protection, smarter routing</p>
+              <p className="text-xs text-gray-500 mt-0.5">More numbers = local presence, SMS, and callbacks — not extra seats</p>
             </div>
           </div>
           {whyOpen
@@ -342,9 +342,9 @@ export default function PhoneNumbersPage() {
             {[
               {
                 icon: Layers,
-                title: 'Handle more calls at once',
-                body: 'Each number processes one live call at a time. Two numbers = two simultaneous calls. For busy practices, a second number can be the difference between a booked appointment and a lost patient.',
-                highlight: 'Each plan defaults to 1 concurrent call per number',
+                title: 'Cover busy periods without extra seats',
+                body: 'Your plan is AI minutes and included numbers — not concurrent seats. Extra local numbers give you local presence, SMS, and callbacks. Busy-period volume is billed in AI minutes.',
+                highlight: 'Usage billed in AI minutes',
               },
               {
                 icon: Shield,
@@ -537,8 +537,8 @@ export default function PhoneNumbersPage() {
           </div>
           <p className="text-xs text-gray-500 mt-0.5">
             Automatically provisioned and rotated by the platform so your campaigns never
-            get spam-flagged. Sized from your plan&apos;s concurrent outbound limit, then grown
-            with dial volume. Billed through per-minute usage — no separate monthly fee.
+            get spam-flagged. Sized automatically, then grown with dial volume (pool max 15).
+            Billed through per-minute usage — no separate monthly fee.
           </p>
         </div>
         {poolLoading ? (

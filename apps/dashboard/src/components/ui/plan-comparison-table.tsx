@@ -2,7 +2,9 @@
 // ============================================================
 // PlanComparisonTable — feature matrix on /pricing.
 // Rows grouped by section in ascending-unlock order; cells are
-// either ✓, —, or specific values (minutes, numbers, concurrency).
+// either ✓, —, or specific values (minutes, numbers, overage).
+// Customer-facing packaging is minutes + included numbers — not
+// concurrent seats. concurrentInbound/Outbound stay runtime-only.
 // Responsive: <md collapses to per-plan stacked cards.
 //
 // Phase 23 (2026-05-30): Starter removed, Business added.
@@ -41,8 +43,8 @@ const SECTIONS: {
       { label: 'AI voice minutes / month',                cells: ['10 total', '380', '780', '1,100', 'Unlimited'] },
       { label: '🌐 7 languages (EN ES IT AR FA HY RU)',   cells: [true, true, true, true, true] },
       { label: '24/7 inbound answering',                  cells: [true, true, true, true, true] },
-      { label: 'Concurrent inbound calls',                cells: ['1', '5', '15', '50', 'Unlimited'] },
-      { label: 'Concurrent outbound calls',               cells: ['—', '3', '8', '25', 'Unlimited'] },
+      { label: 'Busy periods covered (billed in AI minutes)', cells: [true, true, true, true, true] },
+      { label: 'Extra minutes (overage)',                 cells: ['—', '$0.35/min', '$0.29/min', '$0.25/min', 'Custom'] },
       { label: 'Call transcripts + summaries',            cells: [true, true, true, true, true] },
       { label: 'Calendar sync (Google / Outlook)',        cells: [true, true, true, true, true] },
     ],

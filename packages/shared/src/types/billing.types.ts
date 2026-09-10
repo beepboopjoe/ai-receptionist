@@ -32,6 +32,12 @@
 //   existed at Phase 23 cutover):
 //     Growth:  ($199 - $54.50)  / $199 ≈ 72.6%   (750 min)
 //     Scale:   ($399 - $110.00) / $399 ≈ 72.4%   (1500 min)
+//
+// CUSTOMER-FACING vs RUNTIME:
+//   Sold: included AI minutes + included phone numbers (and overage
+//   minutes). Do not market concurrentInbound/concurrentOutbound as
+//   seats or plan features. Those fields are soft platform safety
+//   ceilings for ops (inbound) and outbound pool/campaign caps.
 // ============================================================
 
 export type PlanKey = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise';
@@ -59,12 +65,18 @@ export interface Plan {
   /** Whether outbound campaigns are unlocked at this tier. */
   outbound: boolean;
   /**
-   * Maximum concurrent inbound calls handled at any moment.
-   * -1 = unlimited (Enterprise). Marketing surface in Phase 23;
-   * runtime enforcement deferred to Phase 24.
+   * Soft inbound safety ceiling for ops / platform protection — NOT a
+   * sold seat and never customer-facing. Customer-facing packaging is
+   * included AI minutes + included phone numbers; busy-period volume is
+   * billed in minutes. -1 = unlimited (Enterprise). Trial stays 1.
+   * Paid plans use a high ceiling so normal use feels unlimited-until-minutes.
    */
   concurrentInbound: number;
-  /** Maximum concurrent outbound calls dialed at any moment. -1 = unlimited. */
+  /**
+   * Soft outbound safety ceiling for pool sizing and campaign caps —
+   * NOT a marketed concurrent-seat limit. Outbound pool hard-caps at 15
+   * numbers regardless. -1 = unlimited (Enterprise). Trial stays 0.
+   */
   concurrentOutbound: number;
   /** Marketing badge — only one plan should be marked popular. */
   popular?: boolean;
@@ -106,14 +118,14 @@ export const PLANS: readonly Plan[] = [
     overagePerMin: 0.35,
     includedPhoneNumbers: 2,
     outbound: true,
-    concurrentInbound: 5,
+    concurrentInbound: 50,
     concurrentOutbound: 3,
     popular: true,
     features: [
       '🌐 Speaks 7 languages, switches automatically',
       '380 AI call minutes every month',
       '2 local phone numbers included',
-      'Handles 5 calls at the same time',
+      'Busy periods covered — usage billed in AI minutes',
       'Calls your customer lists for you',
       'Leaves voicemails when nobody answers',
       'Books appointments into your calendar',
@@ -134,13 +146,13 @@ export const PLANS: readonly Plan[] = [
     overagePerMin: 0.29,
     includedPhoneNumbers: 5,
     outbound: true,
-    concurrentInbound: 15,
+    concurrentInbound: 50,
     concurrentOutbound: 8,
     features: [
       '🌐 Speaks 7 languages, switches automatically',
       '780 AI call minutes every month',
       '5 local phone numbers included',
-      'Handles 15 calls at the same time',
+      'Busy periods covered — usage billed in AI minutes',
       'Everything in Growth',
       'Works across multiple locations',
       'Smarter follow-up call campaigns',
@@ -167,7 +179,7 @@ export const PLANS: readonly Plan[] = [
       '🌐 Speaks 7 languages, switches automatically',
       '1,100 AI call minutes every month',
       '10 local phone numbers included',
-      'Handles 50 calls at the same time',
+      'Busy periods covered — usage billed in AI minutes',
       'Everything in Scale',
       'A dedicated person who knows your account',
       'Priority phone + email support',
@@ -180,7 +192,7 @@ export const PLANS: readonly Plan[] = [
     name: 'Enterprise',
     badge: 'Custom + BAA option',
     tagline: 'High-volume AI receptionist with custom integrations.',
-    description: 'White-label dashboard, high concurrent-call capacity, dedicated onboarding, and a Business Associate Agreement when you need one. Any uptime terms are only those in a signed enterprise order form — not an advertised SLA.',
+    description: 'White-label dashboard, custom minute packs and number pools, dedicated onboarding, and a Business Associate Agreement when you need one. Any uptime terms are only those in a signed enterprise order form — not an advertised SLA.',
     monthlyPrice: 0, // shown as "Custom" in UI
     annualMonthlyPrice: 0,
     monthlyMinutes: -1,
@@ -193,7 +205,7 @@ export const PLANS: readonly Plan[] = [
       '🌐 Speaks 7 languages, switches automatically',
       'Business Associate Agreement available on request',
       'Your branding on the dashboard',
-      'No limit on simultaneous calls',
+      'Custom AI minutes and number pool — billed on usage',
       'Custom connections to your systems',
       'Written service terms only if agreed in an order form',
       'Dedicated onboarding + account team',
