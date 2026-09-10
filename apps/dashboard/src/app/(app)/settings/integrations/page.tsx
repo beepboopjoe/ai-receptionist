@@ -1,31 +1,23 @@
 'use client';
 import useSWR, { mutate } from 'swr';
 import { integrationsApi } from '@/lib/api';
-import { CheckCircle, ExternalLink, Trash2, Phone, Mail, RefreshCw, KeyRound } from 'lucide-react';
+import { CheckCircle, ExternalLink, Trash2, Mail, RefreshCw, KeyRound } from 'lucide-react';
 import { useVertical } from '@/lib/useVertical';
 import type { Vertical } from '@/lib/verticals';
 import { useState } from 'react';
 import { FilevineCredentialsModal } from '@/components/integrations/filevine-credentials-modal';
 import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
-const PROVIDERS = [
-  { id: 'google_calendar', label: 'Google Calendar', description: 'Appointment scheduling + slot lookup', icon: '📅' },
-  { id: 'microsoft_calendar', label: 'Microsoft 365', description: 'Outlook calendar + Teams sync', icon: '📆' },
-  { id: 'ringcentral', label: 'RingCentral', description: 'Enterprise phone integration', icon: '🔔' },
-  { id: 'resend', label: 'Resend', description: 'Email notifications + receipts', icon: '✉️' },
-];
-
-// Coming-soon AI + draft integrations. Shown as a separate group with a
-// "Join waitlist" CTA — they aren't OAuth-connectable yet, just teased.
-const AI_DRAFT_INTEGRATIONS = [
-  { id: 'openai',           label: 'OpenAI · ChatGPT',     description: 'Draft email replies, SMS responses, and call summaries',  icon: '🤖' },
-  { id: 'anthropic',        label: 'Anthropic · Claude',    description: 'Draft messages with safety review + approval queue',     icon: '🧠' },
-  { id: 'draft_approval',   label: 'Draft Approval Queue', description: '1-click approve every outbound draft before send',        icon: '📝' },
-  { id: 'gmail_drafts',     label: 'Gmail (drafts in inbox)',  description: 'AI drafts land in your Gmail Drafts folder',          icon: '📧' },
-  { id: 'outlook_drafts',   label: 'Outlook (drafts in inbox)', description: 'AI drafts land in your Outlook Drafts folder',       icon: '📨' },
-  { id: 'whatsapp_business', label: 'WhatsApp Business',    description: 'Bilingual draft replies queued for your approval',       icon: '🟢' },
-  { id: 'slack_approvals',  label: 'Slack approvals',       description: 'Tap-to-approve drafts inside Slack',                     icon: '💼' },
-  { id: 'teams_approvals',  label: 'Microsoft Teams approvals', description: 'Tap-to-approve drafts inside Teams',                 icon: '👥' },
+// Beta: only list providers whose Connect URL exists on the API.
+// Google Calendar has a booking adapter but no OAuth routes — Connect 404s
+// in production. Hours alone is enough to go live (see useGoLive).
+const CALENDAR_COMING_SOON = [
+  {
+    id: 'google_calendar',
+    label: 'Google Calendar',
+    description: 'Live booking is not connectable yet. Set office hours to go live without a calendar.',
+    icon: '📅',
+  },
 ];
 
 interface CrmProvider {
@@ -69,9 +61,12 @@ export default function IntegrationsPage() {
   const [syncing, setSyncing] = useState(false);
   const [filevineModalOpen, setFilevineModalOpen] = useState(false);
 
-  // Show universal CRMs always; vertical-specific only when relevant.
+  // Beta: only CRMs with a real connect path (OAuth or Filevine PAT).
+  const WIRED_CRM_IDS = new Set(['hubspot', 'salesforce', 'clio', 'filevine', 'zoho']);
   const visibleCrmProviders = CRM_PROVIDERS.filter(
-    (p) => p.verticals === 'all' || p.verticals.includes(vertical.id)
+    (p) =>
+      WIRED_CRM_IDS.has(p.id) &&
+      (p.verticals === 'all' || p.verticals.includes(vertical.id))
   );
 
   async function handleDisconnect(provider: string) {
@@ -94,14 +89,14 @@ export default function IntegrationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Integrations</h1>
-        <p className="text-gray-500 mt-1">Connect your calendar, CRM, and AI drafting tools</p>
+        <p className="text-gray-500 mt-1">Connect the tools that are live in beta — HubSpot and a few CRMs</p>
       </div>
 
-      {/* ── Calendar / Email / Phone providers ── */}
+      {/* ── Calendar — honest about the missing OAuth routes ── */}
       <div>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Calendar, Phone & Email</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Calendar</p>
         <div className="space-y-4">
-          {PROVIDERS.map((provider) => {
+          {CALENDAR_COMING_SOON.map((provider) => {
             const integration = connectedMap[provider.id];
             const isConnected = integration?.status === 'connected';
 
@@ -116,62 +111,22 @@ export default function IntegrationsPage() {
                         <CheckCircle size={11} /> Connected
                       </span>
                     ) : (
-                      <span className="badge badge-gray">Not connected</span>
+                      <span className="badge badge-gray">Coming soon</span>
                     )}
                   </div>
                   <p className="text-sm text-gray-500 mt-0.5">{provider.description}</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {isConnected ? (
-                    <button
-                      onClick={() => handleDisconnect(provider.id)}
-                      className="btn-danger text-sm"
-                    >
-                      <Trash2 size={14} /> Disconnect
-                    </button>
-                  ) : (
-                    <a
-                      href={integrationsApi.connectUrl(provider.id)}
-                      className="btn-primary text-sm"
-                    >
-                      <ExternalLink size={14} /> Connect
-                    </a>
-                  )}
-                </div>
+                {isConnected ? (
+                  <button
+                    onClick={() => handleDisconnect(provider.id)}
+                    className="btn-danger text-sm shrink-0"
+                  >
+                    <Trash2 size={14} /> Disconnect
+                  </button>
+                ) : null}
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* ── AI Drafting & Approvals (waitlist / coming soon) ── */}
-      <div>
-        <div className="flex items-center gap-3 mb-1">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">AI Drafting & Approvals</p>
-          <span className="text-[10px] bg-brand-50 text-brand-700 font-bold px-2 py-0.5 rounded-full">Coming soon</span>
-        </div>
-        <p className="text-sm text-gray-500 mb-3">
-          Your AI will draft email replies, SMS responses, and call summaries — then queue them for your 1-click approval before sending.
-        </p>
-        <div className="space-y-3">
-          {AI_DRAFT_INTEGRATIONS.map((p) => (
-            <div key={p.id} className="card p-4 flex items-center gap-4 opacity-90">
-              <div className="text-2xl">{p.icon}</div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold text-gray-900">{p.label}</p>
-                  <span className="badge badge-blue">Waitlist</span>
-                </div>
-                <p className="text-sm text-gray-500 mt-0.5">{p.description}</p>
-              </div>
-              <a
-                href={`mailto:${BRAND_SUPPORT_EMAIL}?subject=Waitlist — ${p.label}`}
-                className="btn-secondary text-sm flex items-center gap-1.5 shrink-0"
-              >
-                <Mail size={13} /> Join waitlist
-              </a>
-            </div>
-          ))}
         </div>
       </div>
 

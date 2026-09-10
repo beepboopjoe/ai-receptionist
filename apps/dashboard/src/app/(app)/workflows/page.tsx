@@ -75,7 +75,7 @@ export default function WorkflowsPage() {
 
       {/* Category sections */}
       {CATEGORY_ORDER.map((cat) => {
-        const items = catalog.filter((w) => w.category === cat);
+        const items = catalog.filter((w) => w.category === cat && w.status !== 'coming_soon');
         if (items.length === 0) return null;
         const meta = CATEGORY_META[cat];
         return (
