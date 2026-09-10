@@ -14,7 +14,13 @@
 //
 // Store is injected so tests don't load config/DB.
 // ============================================================
-import { isTruthyEnv, type DemoCallMeBootLog } from './public-demo.helpers.js';
+import {
+  isTruthyEnv,
+  isUniqueViolation,
+  formatDemoEnsureFailureLog,
+  formatDemoEnsureSettingsFailureLog,
+  type DemoCallMeBootLog,
+} from './public-demo.helpers.js';
 import { hasAlwaysOpenStreamHours } from '../telephony/office-hours.js';
 
 /** Accept any 8-4-4-4-12 hex UUID (Postgres uuid type). */
@@ -191,15 +197,6 @@ export function buildDemoSettingsRow(tenantId: string): DemoSettingsRow {
   };
 }
 
-export function isUniqueViolation(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    (err as { code?: string }).code === '23505'
-  );
-}
-
 export async function ensureDemoTenant(
   store: DemoTenantStore,
   tenantId: string,
@@ -218,25 +215,48 @@ export async function ensureDemoTenant(
     tenant = await insertTenantWithSlugFallback(store, id);
   }
 
-  const existingSettings = await store.findSettingsByTenantId(id);
-  let settings: EnsureDemoTenantOutcome = 'exists';
-  if (!existingSettings) {
-    try {
-      await store.insertSettings(buildDemoSettingsRow(id));
-      settings = 'inserted';
-    } catch (err) {
-      if (isUniqueViolation(err)) {
-        const raced = await store.findSettingsByTenantId(id);
-        settings = raced && demoSettingsNeedHeal(raced) ? await healDemoSettings(store, id) : 'exists';
-      } else {
-        throw err;
-      }
+  let settings: EnsureDemoTenantOutcome;
+  try {
+    settings = await ensureDemoSettings(store, id);
+  } catch (err) {
+    // Call-me only needs the tenants row. Don't fail boot (or 503) when
+    // settings heal/insert throws — log the pg error for Railway.
+    if (tenant === 'exists' || tenant === 'inserted') {
+      const { message, fields } = formatDemoEnsureSettingsFailureLog({
+        tenantId: id,
+        tenant,
+        err,
+      });
+      log?.warn(fields, message);
+      return { tenant, settings: 'failed' };
     }
-  } else if (demoSettingsNeedHeal(existingSettings)) {
-    settings = await healDemoSettings(store, id);
+    throw err;
   }
 
   return { tenant, settings };
+}
+
+async function ensureDemoSettings(
+  store: DemoTenantStore,
+  id: string,
+): Promise<EnsureDemoTenantOutcome> {
+  const existingSettings = await store.findSettingsByTenantId(id);
+  if (!existingSettings) {
+    try {
+      await store.insertSettings(buildDemoSettingsRow(id));
+      return 'inserted';
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        const raced = await store.findSettingsByTenantId(id);
+        return raced && demoSettingsNeedHeal(raced) ? await healDemoSettings(store, id) : 'exists';
+      }
+      throw err;
+    }
+  }
+  if (demoSettingsNeedHeal(existingSettings)) {
+    return healDemoSettings(store, id);
+  }
+  return 'exists';
 }
 
 async function healDemoSettings(
@@ -261,8 +281,15 @@ async function insertTenantWithSlugFallback(
     if (!isUniqueViolation(err)) throw err;
     const raced = await store.findTenantById(id);
     if (raced) return 'exists';
-    await store.insertTenant(buildDemoTenantRow(id, demoTenantSlug(id, 1)));
-    return 'inserted';
+    try {
+      await store.insertTenant(buildDemoTenantRow(id, demoTenantSlug(id, 1)));
+      return 'inserted';
+    } catch (err2) {
+      if (!isUniqueViolation(err2)) throw err2;
+      const raced2 = await store.findTenantById(id);
+      if (raced2) return 'exists';
+      throw err2;
+    }
   }
 }
 
@@ -277,15 +304,14 @@ export async function maybeEnsureDemoTenantOnBoot(
   log?: DemoCallMeBootLog,
 ): Promise<EnsureDemoTenantResult | null> {
   if (!shouldEnsureDemoTenant(opts)) return null;
+  const tenantId = opts.tenantId.trim();
   try {
     const result = await ensureDemoTenant(store, opts.tenantId, log);
-    log?.info(
-      { ...result, tenantId: opts.tenantId.trim() },
-      'DEMO_ENSURE_TENANT completed',
-    );
+    log?.info({ ...result, tenantId }, 'DEMO_ENSURE_TENANT completed');
     return result;
   } catch (err) {
-    log?.warn({ err }, 'DEMO_ENSURE_TENANT failed — call-me will 503 until the demo tenant exists');
+    const { message, fields } = formatDemoEnsureFailureLog({ tenantId, err });
+    log?.warn(fields, message);
     return { tenant: 'failed', settings: 'failed' };
   }
 }

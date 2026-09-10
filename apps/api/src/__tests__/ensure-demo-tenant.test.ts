@@ -98,8 +98,9 @@ function createFakeStore(opts?: {
 }
 
 describe('isValidDemoTenantUuid', () => {
-  it('accepts the production DEMO_TENANT_ID', () => {
+  it('accepts a well-formed UUID (including the live call-me tenant id)', () => {
     expect(isValidDemoTenantUuid(DEMO_ID)).toBe(true);
+    expect(isValidDemoTenantUuid('3d0c5b8d-e0f5-450e-a5d4-1b1f2549b267')).toBe(true);
   });
 
   it.each(['', 'not-a-uuid', 'a648f47a-a2b6-444d-96f8', DEMO_ID.replace(/-/g, '')])(
@@ -233,6 +234,50 @@ describe('ensureDemoTenant', () => {
     expect(store.insertedTenants[0]?.id).toBe(DEMO_ID);
   });
 
+  it('treats a drizzle-wrapped unique violation on tenant id as exists', async () => {
+    const store = createFakeStore();
+    store.insertTenant = async () => {
+      store.tenants.add(DEMO_ID);
+      throw Object.assign(new Error('Failed query: insert into tenants'), {
+        cause: uniqueErr(),
+      });
+    };
+    await expect(ensureDemoTenant(store, DEMO_ID)).resolves.toEqual({
+      tenant: 'exists',
+      settings: 'inserted',
+    });
+  });
+
+  it('does not fail boot when settings heal throws but the tenant row exists', async () => {
+    const store = createFakeStore({
+      tenantIds: [DEMO_ID],
+      settings: [
+        {
+          tenantId: DEMO_ID,
+          officeHours: { mon: { open: '09:00', close: '17:00' } },
+          businessContext: 'stale law-firm persona',
+        },
+      ],
+    });
+    store.updateSettings = async () => {
+      throw new Error('record "new" has no field "updated_at"');
+    };
+    const log = { info: vi.fn(), warn: vi.fn() };
+    await expect(ensureDemoTenant(store, DEMO_ID, log)).resolves.toEqual({
+      tenant: 'exists',
+      settings: 'failed',
+    });
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: DEMO_ID,
+        tenant: 'exists',
+        errMessage: 'record "new" has no field "updated_at"',
+      }),
+      expect.stringContaining('DEMO_ENSURE_TENANT settings failed'),
+    );
+    expect(log.warn.mock.calls[0]?.[1]).toContain('err=record "new" has no field "updated_at"');
+  });
+
   it('build helpers pin the signup-minimum columns', () => {
     const tenant = buildDemoTenantRow(DEMO_ID, DEMO_TENANT_SLUG);
     expect(tenant).toEqual({
@@ -329,7 +374,7 @@ describe('maybeEnsureDemoTenantOnBoot', () => {
     );
   });
 
-  it('swallows store errors so boot continues', async () => {
+  it('swallows store errors so boot continues and puts the error in the Railway msg', async () => {
     const store = createFakeStore();
     store.findTenantById = async () => {
       throw new Error('db down');
@@ -343,6 +388,38 @@ describe('maybeEnsureDemoTenantOnBoot', () => {
       ),
     ).resolves.toEqual({ tenant: 'failed', settings: 'failed' });
     expect(log.warn).toHaveBeenCalledOnce();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: DEMO_ID, errMessage: 'db down' }),
+      expect.stringContaining(`tenantId=${DEMO_ID} err=db down`),
+    );
     expect(log.info).not.toHaveBeenCalled();
+  });
+
+  it('logs completed when the tenant exists even if settings heal failed', async () => {
+    const store = createFakeStore({
+      tenantIds: [DEMO_ID],
+      settings: [
+        {
+          tenantId: DEMO_ID,
+          officeHours: { mon: { open: '09:00', close: '17:00' } },
+          businessContext: 'stale',
+        },
+      ],
+    });
+    store.updateSettings = async () => {
+      throw new Error('record "new" has no field "updated_at"');
+    };
+    const log = { info: vi.fn(), warn: vi.fn() };
+    await expect(
+      maybeEnsureDemoTenantOnBoot(
+        { tenantId: DEMO_ID, ensureFlag: '1', nodeEnv: 'development' },
+        store,
+        log,
+      ),
+    ).resolves.toEqual({ tenant: 'exists', settings: 'failed' });
+    expect(log.info).toHaveBeenCalledWith(
+      { tenant: 'exists', settings: 'failed', tenantId: DEMO_ID },
+      'DEMO_ENSURE_TENANT completed',
+    );
   });
 });
