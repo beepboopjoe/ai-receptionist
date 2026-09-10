@@ -57,10 +57,11 @@ describe('Grok voice catalog', () => {
   });
 });
 
-describe('call-me randomizes a public Grok voice server-side', () => {
-  it('POST /public/call-me picks a public voice and passes it to dialDirect', () => {
+describe('call-me pins Aurora for every public dial', () => {
+  it('POST /public/call-me uses DEMO_DEFAULT_VOICE (aurora), not a random picker', () => {
     const src = readFileSync(join(srcRoot, 'public-api/public-demo.router.ts'), 'utf8');
-    expect(src).toContain('pickRandomPublicGrokVoice');
+    expect(src).toContain('DEMO_DEFAULT_VOICE');
+    expect(src).not.toContain('pickRandomPublicGrokVoice');
     expect(src).toContain('voice,');
     expect(src).toMatch(/mode:\s*'demo'/);
   });

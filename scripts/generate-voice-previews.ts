@@ -13,7 +13,10 @@
 // Idempotent: skips files that already exist. Delete a file to force
 // regeneration.
 //
-// Cost estimate at $4.20 / M chars: under $0.01 for the full set.
+// The marketing site currently ships placeholder copies of the prior
+// catalog (eve/ara/rex/sal) under aurora/castor/cosmo/zenith filenames
+// so play buttons are not disabled. Re-run this script with XAI_API_KEY
+// to replace those files with real Aurora / Castor / Cosmo / Zenith TTS.
 // ============================================================
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';

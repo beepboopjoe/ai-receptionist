@@ -72,9 +72,14 @@ function VoiceCard({ voice }: { voice: Voice }) {
         <Waveform active={anyPlaying} />
       </div>
 
-      {/* Name + personality */}
-      <h3 className="font-semibold text-cream-900 text-sm">{voice.name}</h3>
-      <p className="text-xs text-cream-500 mb-4">{voice.personality}</p>
+      {/* Name + personality + named preview */}
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <div>
+          <h3 className="font-semibold text-cream-900 text-sm">{voice.name}</h3>
+          <p className="text-xs text-cream-500 mb-4">{voice.personality}</p>
+        </div>
+        <PreviewPlayButton voiceId={voice.id} displayName={voice.name} />
+      </div>
 
       {/* Play buttons — one per supported language */}
       <div className="flex gap-1.5 flex-wrap">
@@ -88,6 +93,66 @@ function VoiceCard({ voice }: { voice: Voice }) {
         ))}
       </div>
     </div>
+  );
+}
+
+function PreviewPlayButton({ voiceId, displayName }: { voiceId: VoiceId; displayName: string }) {
+  const [playing, setPlaying] = useState(false);
+  const [missing, setMissing] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const toggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const audio = audioRef.current;
+    if (!audio || missing) return;
+    if (playing) {
+      audio.pause();
+      setPlaying(false);
+    } else {
+      audio.play().then(() => setPlaying(true), () => setMissing(true));
+    }
+  }, [playing, missing]);
+
+  const aria = missing
+    ? `${displayName} preview not available yet`
+    : playing
+      ? `Pause ${displayName} sample`
+      : `Play ${displayName} sample`;
+
+  return (
+    <span>
+      <audio
+        ref={audioRef}
+        src={`/audio/voices/${voiceId}-preview.mp3`}
+        preload="none"
+        onEnded={() => setPlaying(false)}
+        onError={() => setMissing(true)}
+      />
+      <button
+        type="button"
+        onClick={toggle}
+        disabled={missing}
+        title={aria}
+        aria-label={aria}
+        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+          missing
+            ? 'bg-cream-100 text-cream-300 cursor-not-allowed'
+            : playing
+              ? 'bg-brand-600 text-white'
+              : 'bg-cream-100 text-cream-700 hover:bg-brand-50 hover:text-brand-700 border border-cream-200'
+        }`}
+      >
+        {playing ? (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+          </svg>
+        ) : (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        )}
+      </button>
+    </span>
   );
 }
 

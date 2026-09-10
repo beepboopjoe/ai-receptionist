@@ -104,7 +104,10 @@ export default function PrivacyPage() {
       <p>
         Submitting a number on the homepage demo asks us to place an automated / AI voice call
         to that number. We collect the number, your IP (rate limiting), and a timestamp. We
-        store enough to enforce “one call per hour per number” and a daily cap. By submitting
+        store enough to enforce a short anti-double-click cooldown per number and a daily cap.
+        By submitting with the required checkbox, you request that call and agree this policy
+        applies. We keep the submitted number (and, if you share them on the call, your name
+        and business) on an internal demo-lead list so we can follow up — we do not auto-redial.
         with the required checkbox, you request that call and agree this policy applies.
       </p>
       <p>

@@ -34,7 +34,7 @@ function messageForStatus(status: number, fallback: string): string {
     return "Live call-me isn't set up on this site yet. Hear a sample instead — same Grok voices your callers hear.";
   }
   if (status === 429) {
-    return 'This number already requested a demo call recently. Hear a sample, or try again later.';
+    return 'Hang on a few seconds, then tap Call me now again if you still want another ring.';
   }
   if (status === 400) return fallback || 'Enter a valid US or Canada mobile number.';
   if (status === 502) return fallback || "We couldn't place the call right now. Hear a sample, or try again in a minute.";
@@ -105,7 +105,7 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
         <div>
           <p className="text-sm font-semibold text-cream-900">Hear it on your phone</p>
           <p className="text-xs text-cream-500 leading-relaxed">
-            Pick a language, then we&apos;ll call you in a Grok voice — US &amp; Canada mobiles. No sign-up.
+            Pick a language, then we&apos;ll call you as Telfin in Aurora — US &amp; Canada mobiles. No sign-up.
           </p>
         </div>
       </div>
@@ -114,14 +114,14 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
         <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
           <p className="text-sm font-semibold text-emerald-800">Calling you now</p>
           <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
-            Pick up to talk to the receptionist in {LANGUAGES[language].label}. If it doesn’t ring in 20 seconds, check spam / unknown callers.
+            Pick up to talk to Telfin in {LANGUAGES[language].label}. If it doesn’t ring in 20 seconds, check spam / unknown callers.
           </p>
           <button
             type="button"
             onClick={reset}
             className="mt-3 text-xs font-semibold text-emerald-800 hover:underline"
           >
-            Call a different number
+            Call again
           </button>
         </div>
       ) : (
@@ -232,7 +232,7 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
 
           {status === 'idle' && (
             <p className="mt-2 text-[11px] text-cream-400">
-              One call per hour per number. We’ll hang up if you don’t answer.
+              We’ll hang up if you don’t answer. Tap again after a few seconds if you want another call — we won’t auto-redial.
             </p>
           )}
         </>

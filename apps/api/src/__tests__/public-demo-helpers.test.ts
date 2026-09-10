@@ -17,6 +17,9 @@ import {
   publicCallMeDialFailureMessage,
   formatPublicCallMeDialFailureLog,
   CARRIER_ERROR_MAX_CHARS,
+  DEMO_AGENT_NAME,
+  DEMO_DEFAULT_VOICE,
+  DEMO_CALL_ME_NUM_COOLDOWN_SECONDS,
   type DemoCallMeRedis,
 } from '../modules/public-api/public-demo.helpers.js';
 
@@ -334,5 +337,13 @@ describe('formatPublicCallMeDialFailureLog', () => {
     expect(message).toContain('httpStatus=unset');
     expect(message).toContain('apiKeyPrefix=none');
     expect(message).toContain('body=empty');
+  });
+});
+
+describe('demo call-me constants', () => {
+  it('names the persona Telfin, pins aurora, and uses an 8s anti-double-click lock', () => {
+    expect(DEMO_AGENT_NAME).toBe('Telfin');
+    expect(DEMO_DEFAULT_VOICE).toBe('aurora');
+    expect(DEMO_CALL_ME_NUM_COOLDOWN_SECONDS).toBe(8);
   });
 });

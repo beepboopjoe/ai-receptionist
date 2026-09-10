@@ -35,13 +35,13 @@ export const CALL_ME_LANG_NATIVE: Record<CallMeLangCode, string> = {
  * start with a close natural variant — not a robotic recitation.
  */
 export const CALL_ME_LANG_GREETING: Record<CallMeLangCode, string> = {
-  en: "Hi, this is Aria with Telfin — thanks for trying the live demo. You're hearing the same AI that would answer your business line, twenty-four seven. What kind of business are you calling from?",
-  es: 'Hola, soy Aria de Telfin — gracias por probar la demo en vivo. Está escuchando la misma inteligencia artificial que contestaría la línea de su negocio, las veinticuatro horas. ¿A qué se dedica su negocio?',
-  it: 'Salve, sono Aria di Telfin — grazie per aver provato la demo dal vivo. Sta ascoltando la stessa intelligenza artificiale che risponderebbe alla linea della sua azienda, ventiquattro ore su ventiquattro. Che tipo di attività gestisce?',
-  ar: 'مرحباً، أنا آريا من تلفين — شكراً لتجربة العرض المباشر. أنت تسمع نفس الذكاء الاصطناعي الذي سيجيب على خط عملك على مدار الساعة. ما نوع عملك؟',
-  fa: 'سلام، من آریا از تلفین هستم — ممنون که دموی زنده را امتحان کردید. همان هوش مصنوعی را می‌شنوید که خط کسب‌وکار شما را شبانه‌روز پاسخ می‌دهد. کسب‌وکار شما چیست؟',
-  hy: 'Բարև ձեզ, ես Արիան եմ Թելֆինից — շնորհակալ ենք, որ փորձում եք ուղիղ դեմոն. Դուք լսում եք նույն արհեստական բանականությունը, որը կպատասխանի ձեր բիզնեսի գծին՝ շուրջօրյա։ Ի՞նչ տեսակի բիզնես ունեք։',
-  ru: 'Здравствуйте, меня зовут Ария, это Telfin — спасибо, что пробуете живое демо. Вы слышите тот же ИИ, который отвечал бы на линию вашего бизнеса круглосуточно. Чем занимается ваша компания?',
+  en: "Hey, this is Telfin — I'm the AI receptionist that answers the phone, books appointments, follows up, and sets things up for a business. What's your name?",
+  es: 'Hola, soy Telfin — la recepcionista de inteligencia artificial que contesta, agenda citas, da seguimiento y deja todo listo. ¿Cómo te llamas?',
+  it: 'Ciao, sono Telfin — la receptionist AI che risponde, prenota appuntamenti, fa il follow-up e sistema il resto. Come ti chiami?',
+  ar: 'مرحباً، أنا تلفين — مساعدة الذكاء الاصطناعي التي ترد على المكالمات وتحجز المواعيد وتتابع. ما اسمك؟',
+  fa: 'سلام، من تلفین هستم — منشی هوش مصنوعی که جواب می‌دهد، وقت می‌گذارد و پیگیری می‌کند. اسم شما چیست؟',
+  hy: 'Բարև, ես Թելֆինն եմ — արհեստական բանականության ռեսեպցիոնիստ, որ պատասխանում է, ամրագրում է և հետևում է. Ի՞նչ է ձեր անունը։',
+  ru: 'Привет, это Telfin — ИИ-ресепшн, который отвечает, записывает на приём и делает фоллоу-ап. Как вас зовут?',
 };
 
 const ALIASES: Record<string, CallMeLangCode> = {

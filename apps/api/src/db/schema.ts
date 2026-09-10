@@ -1074,3 +1074,31 @@ export const emailTemplates = pgTable(
 
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type NewEmailTemplate = typeof emailTemplates.$inferInsert;
+
+// ---- Public call-me / marketing demo leads (platform-admin list) ----
+// Stubbed when a visitor submits a phone on Hear-it-on-your-phone; enriched
+// from the demo transcript on hangup. Not tenant-scoped — Telfin ops only.
+export const demoLeads = pgTable(
+  'demo_leads',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    phoneE164: text('phone_e164').notNull(),
+    name: text('name'),
+    business: text('business'),
+    language: text('language').notNull().default('en'),
+    voice: text('voice').notNull().default('aurora'),
+    closed: boolean('closed').notNull().default(false),
+    callId: uuid('call_id').references(() => calls.id, { onDelete: 'set null' }),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    phoneUniq: unique().on(t.phoneE164),
+    createdIdx: index('demo_leads_created_idx').on(t.createdAt),
+    closedIdx: index('demo_leads_closed_idx').on(t.closed, t.createdAt),
+  })
+);
+
+export type DemoLead = typeof demoLeads.$inferSelect;
+export type NewDemoLead = typeof demoLeads.$inferInsert;

@@ -742,6 +742,27 @@ export async function handleMediaStream(
     }
 
     void triggerPostCallWorkflow({ callId, tenantId, workflow, contact, callSid });
+
+    if (isDemo) {
+      void import('../public-api/demo-lead.service.js')
+        .then(({ enrichDemoLeadFromCall }) =>
+          enrichDemoLeadFromCall({
+            phoneE164: fromNumber,
+            callId,
+            transcript,
+            summary,
+            voice: sessionVoice,
+            ...(language ? { language } : {}),
+            log: {
+              info: (obj, msg) => logger.info(obj, msg),
+              warn: (obj, msg) => logger.warn(obj, msg),
+            },
+          }),
+        )
+        .catch((err) => {
+          logger.warn({ err, callId }, 'Demo call-me lead enrich failed');
+        });
+    }
   });
 
   providerSocket.on('close', () => {

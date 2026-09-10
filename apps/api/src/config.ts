@@ -132,7 +132,9 @@ const envSchema = z.object({
   DEMO_DAILY_CALL_LIMIT: z.coerce.number().int().min(0).default(200),
   /**
    * Ops/testing only. When `1`/`true`/`yes`, skip the per-number Redis
-   * cooldown check and do not SET the cooldown key (daily cap still applies).
+   * anti-double-click cooldown (8s) and do not SET the cooldown key
+   * (daily cap still applies). Intentional second submits are allowed
+   * after the short window; do not auto-redial.
    */
   DEMO_SKIP_COOLDOWN: z.string().default(''),
   /**

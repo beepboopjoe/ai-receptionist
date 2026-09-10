@@ -956,6 +956,20 @@ export interface PlatformStats {
   platformCallsThisMonth: number;
 }
 
+export interface PlatformDemoLead {
+  id: string;
+  phoneE164: string;
+  name: string | null;
+  business: string | null;
+  language: string;
+  voice: string;
+  closed: boolean;
+  callId: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const platformApi = {
   /**
    * Always returns 200 for authenticated users. `ok` is true only when the
@@ -1021,6 +1035,16 @@ export const platformApi = {
       method: 'DELETE',
       body: JSON.stringify({ confirmName }),
     }),
+
+  listDemoLeads: (filter?: { closed?: boolean }) => {
+    const params = new URLSearchParams();
+    if (filter?.closed === true) params.set('closed', 'true');
+    if (filter?.closed === false) params.set('closed', 'false');
+    const q = params.toString();
+    return apiFetch<{ data: PlatformDemoLead[]; total: number }>(
+      `/platform/demo-leads${q ? '?' + q : ''}`
+    );
+  },
 
   /** List every support ticket across all tenants (platform-admin only). */
   listTickets: (filter?: { status?: SupportStatus; category?: SupportCategory }) => {

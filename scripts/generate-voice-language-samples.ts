@@ -12,6 +12,10 @@
 // Idempotent — skips files that already exist.
 // Delete a file to force regeneration.
 // Failures for individual files are logged but do not abort the run.
+//
+// If XAI_API_KEY is unset, the committed aurora/castor/cosmo/zenith MP3s
+// are placeholders copied from the prior eve/ara/rex/sal catalog so the
+// marketing play buttons are not disabled. Run this script to replace them.
 // ============================================================
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';

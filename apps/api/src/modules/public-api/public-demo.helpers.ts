@@ -3,6 +3,19 @@
 // Kept separate from the Fastify router so tests don't load config/DB.
 // ============================================================
 
+/** Spoken persona on homepage call-me / DEMO_TENANT. Paying tenants keep their own name. */
+export const DEMO_AGENT_NAME = 'Telfin';
+
+/** Every public call-me dial uses Aurora. Tenants may still pick the other three. */
+export const DEMO_DEFAULT_VOICE = 'aurora' as const;
+
+/**
+ * Short anti-double-click lock per number. Intentional second submits are
+ * allowed after this window — do not use an hour-long lock, and do not
+ * auto-redial. DEMO_SKIP_COOLDOWN remains ops-only.
+ */
+export const DEMO_CALL_ME_NUM_COOLDOWN_SECONDS = 8;
+
 /** NANP: +1 then 10 digits, area code cannot start with 0 or 1. */
 export const US_CA_E164 = /^\+1[2-9]\d{9}$/;
 

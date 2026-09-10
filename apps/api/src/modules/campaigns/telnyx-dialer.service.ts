@@ -139,8 +139,8 @@ export interface DialDirectParams {
    */
   language?: string;
   /**
-   * Homepage call-me Grok voice (randomized among the public four).
-   * Encoded in client_state; media-stream uses it only when mode is demo.
+   * Homepage call-me Grok voice. Public dials pin aurora. Encoded in
+   * client_state; media-stream uses it only when mode is demo.
    * Omit for test-call / ask-your-AI so the tenant's saved voice is used.
    */
   voice?: string;
