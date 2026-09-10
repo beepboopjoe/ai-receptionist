@@ -53,14 +53,91 @@ export function isJunkDemoNumber(e164: string): boolean {
   return false;
 }
 
+/** Walk drizzle `cause` / `originalError` wrappers to the pg error object. */
+export function unwrapPgError(err: unknown): Record<string, unknown> | null {
+  let current: unknown = err;
+  for (let i = 0; i < 5; i++) {
+    if (typeof current !== 'object' || current === null) return null;
+    const rec = current as Record<string, unknown>;
+    if (typeof rec['code'] === 'string' && /^[0-9A-Z]{5}$/i.test(rec['code'])) return rec;
+    current = rec['cause'] ?? rec['originalError'];
+  }
+  return null;
+}
+
+export interface PgErrorLogFields {
+  errMessage: string;
+  errCode: string;
+  errDetail: string;
+  errConstraint: string;
+  errTable: string;
+}
+
+/** Top-level pg fields — Railway strips nested `err`. */
+export function pgErrorLogFields(err: unknown): PgErrorLogFields {
+  const rec = unwrapPgError(err) ?? (typeof err === 'object' && err !== null ? (err as Record<string, unknown>) : null);
+  const str = (key: string): string => (typeof rec?.[key] === 'string' ? (rec[key] as string) : '');
+  return {
+    errMessage: errMessageOf(err),
+    errCode: str('code'),
+    errDetail: str('detail'),
+    errConstraint: str('constraint'),
+    errTable: str('table'),
+  };
+}
+
+export function pgErrorCode(err: unknown): string {
+  return pgErrorLogFields(err).errCode;
+}
+
+/** Postgres unique-constraint violation (e.g. tenants.slug). */
+export function isUniqueViolation(err: unknown): boolean {
+  return pgErrorCode(err) === '23505';
+}
+
 /** Postgres FK violation (e.g. calls.tenant_id → tenants.id). */
 export function isForeignKeyViolation(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    (err as { code?: string }).code === '23503'
-  );
+  return pgErrorCode(err) === '23503';
+}
+
+export function formatDemoEnsureFailureLog(opts: {
+  tenantId: string;
+  err: unknown;
+}): { message: string; fields: PgErrorLogFields & { tenantId: string } } {
+  const fields = { tenantId: opts.tenantId.trim(), ...pgErrorLogFields(opts.err) };
+  const message = [
+    'DEMO_ENSURE_TENANT failed — call-me will 503 until the demo tenant exists',
+    `tenantId=${fields.tenantId || 'unset'}`,
+    `err=${fields.errMessage || 'empty'}`,
+    `code=${fields.errCode || 'unset'}`,
+    `detail=${fields.errDetail || 'empty'}`,
+    `constraint=${fields.errConstraint || 'unset'}`,
+    `table=${fields.errTable || 'unset'}`,
+  ].join(' ');
+  return { message, fields };
+}
+
+export function formatDemoEnsureSettingsFailureLog(opts: {
+  tenantId: string;
+  tenant: string;
+  err: unknown;
+}): { message: string; fields: PgErrorLogFields & { tenantId: string; tenant: string } } {
+  const fields = {
+    tenantId: opts.tenantId.trim(),
+    tenant: opts.tenant,
+    ...pgErrorLogFields(opts.err),
+  };
+  const message = [
+    'DEMO_ENSURE_TENANT settings failed — tenant row is present so call-me will not 503',
+    `tenantId=${fields.tenantId || 'unset'}`,
+    `tenant=${fields.tenant}`,
+    `err=${fields.errMessage || 'empty'}`,
+    `code=${fields.errCode || 'unset'}`,
+    `detail=${fields.errDetail || 'empty'}`,
+    `constraint=${fields.errConstraint || 'unset'}`,
+    `table=${fields.errTable || 'unset'}`,
+  ].join(' ');
+  return { message, fields };
 }
 
 /** True for ops/testing flags: `1` / `true` / `yes` (case-insensitive, trimmed). */

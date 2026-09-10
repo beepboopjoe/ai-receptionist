@@ -9,6 +9,8 @@ import {
   US_CA_E164,
   isTruthyEnv,
   isForeignKeyViolation,
+  isUniqueViolation,
+  formatDemoEnsureFailureLog,
   scanDelDemoCallMeKeys,
   maybeClearDemoCallMeCooldownsOnBoot,
   errMessageOf,
@@ -73,6 +75,15 @@ describe('isJunkDemoNumber', () => {
 describe('isForeignKeyViolation', () => {
   it('detects pg code 23503', () => {
     expect(isForeignKeyViolation({ code: '23503' })).toBe(true);
+  });
+
+  it('unwraps drizzle cause wrappers', () => {
+    expect(
+      isForeignKeyViolation({
+        message: 'Failed query',
+        cause: { code: '23503', detail: 'Key is not present in table "tenants"' },
+      }),
+    ).toBe(true);
   });
 
   it('rejects other inputs', () => {
@@ -214,6 +225,39 @@ describe('errMessageOf', () => {
   it('stringifies non-Error values', () => {
     expect(errMessageOf('plain')).toBe('plain');
     expect(errMessageOf(42)).toBe('42');
+  });
+});
+
+describe('isUniqueViolation', () => {
+  it('detects pg 23505 through a drizzle cause wrapper', () => {
+    expect(isUniqueViolation({ code: '23505' })).toBe(true);
+    expect(
+      isUniqueViolation({
+        message: 'Failed query: insert',
+        cause: { code: '23505', constraint: 'tenants_slug_key' },
+      }),
+    ).toBe(true);
+    expect(isUniqueViolation({ code: '23503' })).toBe(false);
+  });
+});
+
+describe('formatDemoEnsureFailureLog', () => {
+  it('puts tenantId, err, and pg code in the Railway msg string', () => {
+    const err = Object.assign(new Error('record "new" has no field "updated_at"'), {
+      code: 'P0001',
+      table: 'tenant_settings',
+    });
+    const { message, fields } = formatDemoEnsureFailureLog({
+      tenantId: '3d0c5b8d-e0f5-450e-a5d4-1b1f2549b267',
+      err,
+    });
+    expect(message).toContain('DEMO_ENSURE_TENANT failed');
+    expect(message).toContain('tenantId=3d0c5b8d-e0f5-450e-a5d4-1b1f2549b267');
+    expect(message).toContain('err=record "new" has no field "updated_at"');
+    expect(message).toContain('code=P0001');
+    expect(message).toContain('table=tenant_settings');
+    expect(fields.errMessage).toBe('record "new" has no field "updated_at"');
+    expect(fields.errTable).toBe('tenant_settings');
   });
 });
 

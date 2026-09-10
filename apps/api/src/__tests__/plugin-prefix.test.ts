@@ -85,3 +85,15 @@ describe('escalations schema-drift migration', () => {
     expect(sql).toMatch(/ALTER COLUMN call_id DROP NOT NULL/i);
   });
 });
+
+describe('tenant_settings updated_at schema-drift migration', () => {
+  it('adds updated_at so DEMO_ENSURE_TENANT heal UPDATE cannot 500', () => {
+    const sql = readFileSync(
+      join(srcRoot, 'db/migrations/0040_tenant_settings_updated_at.sql'),
+      'utf8'
+    );
+    expect(sql).toMatch(/ALTER TABLE tenant_settings/i);
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS updated_at/i);
+    expect(sql).toMatch(/tenant_settings_updated_at/);
+  });
+});
