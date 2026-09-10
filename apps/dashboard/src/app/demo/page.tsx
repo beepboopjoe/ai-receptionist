@@ -9,13 +9,16 @@ import dynamic from 'next/dynamic';
 import { Phone, Sparkles, ShieldCheck } from 'lucide-react';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
-import { VoiceLanguageDemo } from '@/components/ui/voice-language-demo';
 import { BRAND_STACK_LINE } from '@/lib/brand';
 import { CallMeWidget } from '@/components/ui/call-me-widget';
 
 // Heavy interactive widget — load on demand, no SSR needed.
 const DashboardTeaser = dynamic(
   () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
+  { ssr: false }
+);
+const VoiceLanguageDemo = dynamic(
+  () => import('@/components/ui/voice-language-demo').then((m) => m.VoiceLanguageDemo),
   { ssr: false }
 );
 
@@ -64,7 +67,7 @@ export default function DemoPage() {
 
       {/* ── Named voices ──────────────────────────────────── */}
       <section className="py-16 bg-cream-50 border-t border-cream-200">
-        <VoiceLanguageDemo hideLanguageSelector />
+        <VoiceLanguageDemo />
       </section>
 
       {/* ── Interactive dashboard preview ──────────────────── */}

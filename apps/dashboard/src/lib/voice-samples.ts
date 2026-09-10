@@ -39,17 +39,57 @@ export const VOICE_CARD_STYLES: Record<VoiceId, { color: string; textColor: stri
 };
 
 // ── Language metadata ─────────────────────────────────────────
-export const LANGUAGES: Record<LangCode, { label: string; flag: string; xaiCode: string }> = {
-  en: { label: 'English',  flag: '🇺🇸', xaiCode: 'en' },
-  es: { label: 'Spanish',  flag: '🇲🇽', xaiCode: 'es' },
-  it: { label: 'Italian',  flag: '🇮🇹', xaiCode: 'it' },
-  ar: { label: 'Arabic',   flag: '🇸🇦', xaiCode: 'ar' },
-  fa: { label: 'Farsi',    flag: '🇮🇷', xaiCode: 'fa' },
-  hy: { label: 'Armenian', flag: '🇦🇲', xaiCode: 'hy' },
-  ru: { label: 'Russian',  flag: '🇷🇺', xaiCode: 'ru' },
+export const LANGUAGES: Record<LangCode, { label: string; flag: string; xaiCode: string; native: string }> = {
+  en: { label: 'English',  flag: '🇺🇸', xaiCode: 'en', native: 'English' },
+  es: { label: 'Spanish',  flag: '🇲🇽', xaiCode: 'es', native: 'Español' },
+  it: { label: 'Italian',  flag: '🇮🇹', xaiCode: 'it', native: 'Italiano' },
+  ar: { label: 'Arabic',   flag: '🇸🇦', xaiCode: 'ar', native: 'العربية' },
+  fa: { label: 'Farsi',    flag: '🇮🇷', xaiCode: 'fa', native: 'فارسی' },
+  hy: { label: 'Armenian', flag: '🇦🇲', xaiCode: 'hy', native: 'Հայերեն' },
+  ru: { label: 'Russian',  flag: '🇷🇺', xaiCode: 'ru', native: 'Русский' },
 };
 
 export const LANG_CODES = Object.keys(LANGUAGES) as LangCode[];
+
+/** Shared across homepage / demo / inbound / outbound voice cards. */
+export const SAMPLE_LANG_STORAGE_KEY = 'telfin-voice-sample-lang';
+
+export function isLangCode(value: unknown): value is LangCode {
+  return typeof value === 'string' && (LANG_CODES as string[]).includes(value);
+}
+
+/** Arabic and Farsi are RTL. Armenian (hy) is LTR. */
+export function isRtlLang(lang: LangCode): boolean {
+  return lang === 'ar' || lang === 'fa';
+}
+
+export function voiceSampleSrc(voice: VoiceId, lang: LangCode): string {
+  return `/audio/voices/${voice}_${lang}.mp3`;
+}
+
+export function parseStoredSampleLang(raw: string | null | undefined): LangCode | null {
+  if (!raw) return null;
+  const code = raw.trim().toLowerCase();
+  return isLangCode(code) ? code : null;
+}
+
+export function readStoredSampleLang(): LangCode | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return parseStoredSampleLang(window.localStorage.getItem(SAMPLE_LANG_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function persistSampleLang(lang: LangCode): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(SAMPLE_LANG_STORAGE_KEY, lang);
+  } catch {
+    /* private mode */
+  }
+}
 
 /** One-sentence “who we are” intro — marketing samples, not a feature pitch. */
 export function voiceIntroLine(voice: VoiceId, lang: LangCode): string {
