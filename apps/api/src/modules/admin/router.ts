@@ -105,6 +105,7 @@ export const DEFAULT_APPT_TYPES_BY_VERTICAL: Record<string, Array<{ id: string; 
 // Vertical list lives in @ai-receptionist/shared. Imported via settings.service re-export
 // so we have one source of truth.
 import { VERTICAL_VALUES as VALID_VERTICALS, isVertical, getPlan, resolvePlanLimits, PLANS } from '@ai-receptionist/shared';
+import { requirePlatformAdmin } from '../platform/platform.router.js';
 
 export async function adminPlugin(app: FastifyInstance) {
   // ================================================================
@@ -424,13 +425,13 @@ export async function adminPlugin(app: FastifyInstance) {
   );
 
   // ================================================================
-  // GRANT PROMO TRIAL (owner-only) — manually grant a tenant
+  // GRANT PROMO TRIAL (platform-admin only) — manually grant a tenant
   // full-tier feature access with a custom minute cap. Used to give
   // friends/testers a hands-on trial without billing them.
   // ================================================================
   app.post(
     '/admin/tenants/:id/grant-promo-trial',
-    { onRequest: [app.requireRole('owner')] },
+    { onRequest: [requirePlatformAdmin] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const body = (request.body ?? {}) as { plan?: string; minutes?: number };
@@ -499,7 +500,7 @@ export async function adminPlugin(app: FastifyInstance) {
   // ================================================================
   app.post(
     '/admin/tenants/:id/revoke-promo-trial',
-    { onRequest: [app.requireRole('owner')] },
+    { onRequest: [requirePlatformAdmin] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
 

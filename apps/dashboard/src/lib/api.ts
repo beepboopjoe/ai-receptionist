@@ -1015,6 +1015,8 @@ export interface PlatformTenant {
   ownerEmail: string | null;
   minutesUsed: number;
   minutesIncluded: number;
+  /** True when the plan has no finite minute cap (Enterprise). */
+  minutesUnlimited?: boolean;
   capReached: boolean;
   /** First unreleased inbound Telnyx number, if any. */
   phone: string | null;
@@ -1076,12 +1078,12 @@ export const platformApi = {
   },
   grantPromoTrial: (tenantId: string, plan: string, minutes: number) =>
     apiFetch<{ ok: true; tenantId: string; plan: string; minutesOverride: number; promoTrial: true }>(
-      `/admin/tenants/${tenantId}/grant-promo-trial`,
+      `/platform/tenants/${tenantId}/grant-promo-trial`,
       { method: 'POST', body: JSON.stringify({ plan, minutes }) }
     ),
   revokePromoTrial: (tenantId: string) =>
     apiFetch<{ ok: true; tenantId: string }>(
-      `/admin/tenants/${tenantId}/revoke-promo-trial`,
+      `/platform/tenants/${tenantId}/revoke-promo-trial`,
       { method: 'POST' }
     ),
 
