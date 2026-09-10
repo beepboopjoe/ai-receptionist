@@ -99,7 +99,9 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
    * Send this on WS open; wait for `session.updated` before response.create
    * so the greeting is encoded as PCMU, not the pre-update default.
    */
-  static buildSessionUpdate(params: CreateVoiceSessionParams & { sessionId: string }) {
+  static buildSessionUpdate(
+    params: CreateVoiceSessionParams & { sessionId: string; silenceDurationMs?: number },
+  ) {
     const voice = validateVoice(params.voice) ?? DEFAULT_VOICE;
     const inputCodec = toXaiCodec(params.audioInputFormat);
     const outputCodec = toXaiCodec(params.audioOutputFormat);
@@ -126,7 +128,9 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
           type: 'server_vad',
           threshold: 0.5,
           prefix_padding_ms: 300,
-          silence_duration_ms: 500,
+          // Demo closer leaves a slightly longer beat so the caller can talk
+          // (~2 min script). Paying-tenant path stays at 500ms. PCMU unchanged.
+          silence_duration_ms: params.silenceDurationMs ?? 500,
         },
       },
     };

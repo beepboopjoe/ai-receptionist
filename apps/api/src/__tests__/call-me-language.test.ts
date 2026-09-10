@@ -40,6 +40,11 @@ describe('normalizeCallMeLanguage', () => {
       expect(CALL_ME_LANG_GREETING[code].length).toBeGreaterThan(20);
     }
   });
+
+  it('English sample opening is the closer AI-reveal line', async () => {
+    const { DEMO_CLOSER_OPENING_EN } = await import('../modules/voice-agent/call-me-demo.prompt.js');
+    expect(CALL_ME_LANG_GREETING.en).toBe(DEMO_CLOSER_OPENING_EN);
+  });
 });
 
 describe('call-me language is wired through the public dial path', () => {

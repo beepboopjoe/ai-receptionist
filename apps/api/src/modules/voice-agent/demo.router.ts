@@ -61,10 +61,11 @@ export async function demoPlugin(app: FastifyInstance) {
     // Homepage call-me shares this product script when the browser demo
     // requests it explicitly. Default vertical samples stay receptionist
     // sketches (dental_receptionist, etc.) so /demo is unchanged.
-    const systemPrompt =
-      useCase === 'telfin_demo' || useCase === 'call_me' || useCase === 'product'
-        ? buildCallMeDemoPrompt()
-        : VERTICAL_PROMPTS[useCase] ?? VERTICAL_PROMPTS['dental_receptionist']!;
+    const isProductDemo =
+      useCase === 'telfin_demo' || useCase === 'call_me' || useCase === 'product';
+    const systemPrompt = isProductDemo
+      ? buildCallMeDemoPrompt()
+      : VERTICAL_PROMPTS[useCase] ?? VERTICAL_PROMPTS['dental_receptionist']!;
 
     // Session timeout
     const timeout = setTimeout(() => {
@@ -102,7 +103,7 @@ export async function demoPlugin(app: FastifyInstance) {
             type: 'server_vad',
             threshold: 0.5,
             prefix_padding_ms: 300,
-            silence_duration_ms: 600,
+            silence_duration_ms: isProductDemo ? 700 : 600,
           },
           tools: [],
           tool_choice: 'none',

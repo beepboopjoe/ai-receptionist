@@ -72,13 +72,14 @@ describe('buildSystemPrompt', () => {
       workflowHint: 'after_hours',
       isDemo: true,
     });
-    expect(prompt).toMatch(/Telfin/i);
+    expect(prompt).toMatch(/assistant from Telfin/i);
     expect(prompt).toMatch(/product demo/i);
     expect(prompt).not.toMatch(/dental practice/i);
     expect(prompt).not.toMatch(/The office is currently closed/i);
     expect(prompt).toMatch(/Never say you are closed/i);
     expect(prompt).toMatch(/2 minutes/);
     expect(prompt).toMatch(/Try Free/);
+    expect(prompt).toMatch(/sound really realistic/);
     expect(prompt).not.toMatch(/\bAria\b/);
   });
 
@@ -91,7 +92,7 @@ describe('buildSystemPrompt', () => {
   it('isDemo honors demoLanguage without affecting non-demo tenants', () => {
     const demo = buildSystemPrompt({ ...BASE_CTX, isDemo: true, demoLanguage: 'es' });
     expect(demo).toMatch(/Speak Spanish from the VERY FIRST word/);
-    expect(demo).toContain('Hola, soy Telfin');
+    expect(demo).toContain('asistente de Telfin');
 
     const paying = buildSystemPrompt({ ...BASE_CTX, vertical: 'dental', demoLanguage: 'es' });
     expect(paying).toMatch(/dental practice/i);

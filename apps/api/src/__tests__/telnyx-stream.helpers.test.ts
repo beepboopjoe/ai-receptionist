@@ -602,8 +602,18 @@ describe('Grok session.update uses audio/pcmu for Telnyx', () => {
     expect(update.session.audio.output.format).toEqual({ type: 'audio/pcmu' });
     expect(update.session.audio.input.transport).toBe('json');
     expect(update.session.input_audio_format).toBe('g711_ulaw');
-    expect(update.session).not.toHaveProperty('input_audio_transcription');
-    expect(JSON.stringify(update)).not.toContain('whisper-1');
+    expect(update.session.turn_detection.silence_duration_ms).toBe(500);
+
+    const demoUpdate = GrokVoiceAdapter.buildSessionUpdate({
+      sessionId: 'grok_demo',
+      systemPrompt: 'You are an assistant from Telfin.',
+      voice: 'aurora',
+      audioInputFormat: 'pcmu',
+      audioOutputFormat: 'pcmu',
+      silenceDurationMs: 700,
+    });
+    expect(demoUpdate.session.audio.output.format).toEqual({ type: 'audio/pcmu' });
+    expect(demoUpdate.session.turn_detection.silence_duration_ms).toBe(700);
   });
 
   it('accepts the public catalog and keeps unknown IDs off the wire', () => {

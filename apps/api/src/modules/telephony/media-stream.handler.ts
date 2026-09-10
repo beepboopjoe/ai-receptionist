@@ -418,6 +418,7 @@ export async function handleMediaStream(
       voice: sessionVoice,
       audioInputFormat: 'pcmu',
       audioOutputFormat: 'pcmu',
+      ...(isDemo ? { silenceDurationMs: 700 } : {}),
     });
     grokSocket.send(JSON.stringify(sessionUpdate));
     logger.info(

@@ -1,11 +1,12 @@
 // ============================================================
-// Homepage call-me product-demo prompt — Telfin closer, ≤2 minutes.
+// Homepage call-me product-demo prompt — Closer path, ≤2 minutes.
 // ============================================================
 import { describe, it, expect } from 'vitest';
 import {
   buildCallMeDemoPrompt,
   CALL_ME_DEMO_FEATURE_MARKERS,
   DEMO_AGENT_NAME,
+  DEMO_CLOSER_OPENING_EN,
 } from '../modules/voice-agent/call-me-demo.prompt.js';
 
 describe('buildCallMeDemoPrompt', () => {
@@ -16,27 +17,30 @@ describe('buildCallMeDemoPrompt', () => {
     }
   });
 
-  it('is Telfin (not Aria), not a fake office, and forbids after-hours deflection', () => {
+  it('is an assistant from Telfin (not Aria), not a fake office, and forbids after-hours deflection', () => {
     const prompt = buildCallMeDemoPrompt();
     expect(DEMO_AGENT_NAME).toBe('Telfin');
-    expect(prompt).toMatch(/You are Telfin/);
+    expect(prompt).toMatch(/assistant from Telfin/);
+    expect(prompt).toContain(DEMO_CLOSER_OPENING_EN);
     expect(prompt).toMatch(/telfin\.ai/i);
     expect(prompt).toMatch(/one-time product demo/i);
     expect(prompt).toMatch(/Never say you are closed/);
     expect(prompt).toMatch(/2 minutes/);
+    expect(prompt).toMatch(/Sound human/);
     expect(prompt).not.toMatch(/\bAria\b/);
     expect(prompt).not.toMatch(/You are the AI receptionist for Bright Smile/i);
     expect(prompt).toMatch(/ONLY if they ask/);
   });
 
-  it('defaults to English and greets in Spanish when language=es', () => {
+  it('defaults to English closer open and greets in Spanish when language=es', () => {
     const en = buildCallMeDemoPrompt();
     expect(en).toMatch(/chose English/);
-    expect(en).toContain('Hey, this is Telfin');
+    expect(en).toContain('assistant from Telfin');
+    expect(en).toContain('sound really realistic');
 
     const es = buildCallMeDemoPrompt({ language: 'es' });
     expect(es).toMatch(/Speak Spanish from the VERY FIRST word/);
-    expect(es).toContain('Hola, soy Telfin');
+    expect(es).toContain('asistente de Telfin');
     expect(es).not.toMatch(/chose English/);
   });
 
