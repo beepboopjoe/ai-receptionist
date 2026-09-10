@@ -6,6 +6,7 @@
 // ============================================================
 import { describe, it, expect } from 'vitest';
 import { buildSystemPrompt, VERTICAL_ESCALATION_VOCAB } from '../modules/voice-agent/prompt-builder.js';
+import { SOUND_HUMAN_MARKERS } from '../modules/voice-agent/sound-human.style.js';
 import { VERTICAL_VALUES, type Vertical } from '@ai-receptionist/shared';
 
 const BASE_CTX = {
@@ -80,7 +81,17 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toMatch(/2 minutes/);
     expect(prompt).toMatch(/Try Free/);
     expect(prompt).toMatch(/sound really realistic/);
+    expect(prompt).toMatch(/Sound human/);
+    expect(prompt).toMatch(/hmm/);
     expect(prompt).not.toMatch(/\bAria\b/);
+  });
+
+  it('paying-tenant Grok receptionist uses the same human-rhythm style as the demo', () => {
+    const prompt = buildSystemPrompt({ ...BASE_CTX, vertical: 'dental' });
+    for (const marker of SOUND_HUMAN_MARKERS) {
+      expect(prompt, `missing human-rhythm marker: ${marker}`).toContain(marker);
+    }
+    expect(prompt).not.toMatch(/product demo/i);
   });
 
   it('non-demo after_hours still tells paying-tenant callers the office is closed', () => {

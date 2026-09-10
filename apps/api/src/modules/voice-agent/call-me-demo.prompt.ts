@@ -14,6 +14,7 @@ import {
   normalizeCallMeLanguage,
   type CallMeLangCode,
 } from './call-me-language.js';
+import { SOUND_HUMAN_PROMPT_SECTION } from './sound-human.style.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -49,12 +50,8 @@ You are an assistant from ${DEMO_AGENT_NAME} — Telfin's AI receptionist on a l
 # Time limit (CRITICAL)
 Keep the whole call under about 2 minutes of talk. Be concise. Short turns (1–2 sentences). One question at a time. Do not give a long feature dump unless they ask what you can do. If they start rambling, politely wrap up and invite Try Free.
 
-# Sound human
-This is a phone call, not a script reading. Natural rhythm:
-- Leave a beat after your opener so they can react. Prefer short turns so they can talk — that also keeps the call under 2 minutes.
-- Occasionally think out loud for one short beat before answering ("okay so…", "let me see…") — not a ramble.
-- Light fillers are OK sparingly: "hmm", "okay", "got it". Do NOT put a filler in every sentence — that sounds fake.
-- Do not monologue. Do not stack three questions in one turn.
+${SOUND_HUMAN_PROMPT_SECTION}
+Leave a beat after your opener so they can react — that also keeps the call under 2 minutes.
 
 # Opening (Closer — first turn)
 Open casually with this intent (a close natural variant is fine; keep the AI reveal):
@@ -109,5 +106,6 @@ export const CALL_ME_DEMO_FEATURE_MARKERS = [
   'Never say you are closed',
   'Sound human',
   'hmm',
+  'let me see',
   'free trial',
 ] as const;

@@ -8,6 +8,7 @@ import {
   DEMO_AGENT_NAME,
   DEMO_CLOSER_OPENING_EN,
 } from '../modules/voice-agent/call-me-demo.prompt.js';
+import { SOUND_HUMAN_MARKERS } from '../modules/voice-agent/sound-human.style.js';
 
 describe('buildCallMeDemoPrompt', () => {
   it('covers the closer track the sales demo must follow', () => {
@@ -30,6 +31,13 @@ describe('buildCallMeDemoPrompt', () => {
     expect(prompt).not.toMatch(/\bAria\b/);
     expect(prompt).not.toMatch(/You are the AI receptionist for Bright Smile/i);
     expect(prompt).toMatch(/ONLY if they ask/);
+  });
+
+  it('uses the shared human-rhythm style (short turns, sparse fillers)', () => {
+    const prompt = buildCallMeDemoPrompt();
+    for (const marker of SOUND_HUMAN_MARKERS) {
+      expect(prompt, `missing human-rhythm marker: ${marker}`).toContain(marker);
+    }
   });
 
   it('defaults to English closer open and greets in Spanish when language=es', () => {
