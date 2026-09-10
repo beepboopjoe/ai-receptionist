@@ -169,7 +169,7 @@ export function ProductChatWidget() {
   );
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-40">
+    <div className="product-chat-root pointer-events-none fixed inset-0 z-40">
       {open && (
         <button
           type="button"
@@ -178,11 +178,10 @@ export function ProductChatWidget() {
           onClick={() => setOpen(false)}
         />
       )}
-      <div className="pointer-events-none absolute bottom-4 right-4 sm:bottom-6 sm:right-6 flex flex-col items-end">
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-end justify-end p-3 sm:p-4">
       {open && (
         <div
-          className="pointer-events-auto mb-3 flex w-[min(100vw-1.5rem,24rem)] flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-xl shadow-cream-900/10"
-          style={{ height: 'min(32rem, calc(100dvh - 6.5rem))' }}
+          className="pointer-events-auto mb-3 flex w-[min(100%,24rem)] max-h-[calc(100%-4.25rem)] flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-xl shadow-cream-900/10"
           role="dialog"
           aria-modal="false"
           aria-labelledby={titleId}
@@ -353,11 +352,12 @@ export function ProductChatWidget() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-900/20 hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+          className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-brand-600 px-3.5 py-3 sm:px-4 text-sm font-semibold text-white shadow-lg shadow-brand-900/20 hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
           aria-expanded={false}
+          aria-label="Ask Telfin"
         >
-          <MessageCircle size={18} />
-          <span className="pr-0.5">Ask Telfin</span>
+          <MessageCircle size={18} aria-hidden />
+          <span className="ask-telfin-label pr-0.5">Ask Telfin</span>
         </button>
       )}
       </div>

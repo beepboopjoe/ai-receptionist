@@ -964,8 +964,9 @@ export function DashboardTeaser() {
         </p>
       </div>
 
-      {/* Browser chrome mockup */}
-      <div className="rounded-2xl border border-gray-200 shadow-2xl shadow-gray-200/80 overflow-hidden bg-white">
+      {/* Browser chrome mockup — swipe horizontally on small screens */}
+      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+      <div className="min-w-[640px] md:min-w-0 rounded-2xl border border-gray-200 shadow-2xl shadow-gray-200/80 overflow-hidden bg-white">
 
         {/* Browser top bar */}
         <div className="bg-gray-100 border-b border-gray-200 px-4 py-3 flex items-center gap-3">
@@ -1061,6 +1062,7 @@ export function DashboardTeaser() {
             </div>
           </main>
         </div>
+      </div>
       </div>
 
       {/* Caption below */}

@@ -13,6 +13,10 @@ import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { BRAND_NAME } from '@/lib/brand';
 import { ProductChatWidget } from '@/components/ui/product-chat-widget';
+import {
+  MarketingPreviewBar,
+  MarketingViewModeProvider,
+} from '@/components/ui/marketing-view-mode';
 
 type NavItem = { label: string; href: string };
 
@@ -23,6 +27,16 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export function MarketingHeader() {
+  return (
+    <MarketingViewModeProvider>
+      <MarketingPreviewBar />
+      <MarketingHeaderInner />
+      <ProductChatWidget />
+    </MarketingViewModeProvider>
+  );
+}
+
+function MarketingHeaderInner() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -35,14 +49,14 @@ export function MarketingHeader() {
   return (
     <>
       <header className="sticky top-0 z-50 glass-nav border-b border-cream-200">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 shrink-0">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-serif text-lg shadow-sm">
               TF
             </div>
-            <span className="font-serif text-lg text-cream-900">{BRAND_NAME}</span>
+            <span className="font-serif text-lg text-cream-900 truncate">{BRAND_NAME}</span>
           </Link>
 
           {/* Desktop nav */}
@@ -104,10 +118,10 @@ export function MarketingHeader() {
         />
       )}
 
-      {/* Mobile drawer */}
+      {/* Mobile drawer — stays inside the phone frame in desktop preview */}
       <div
         id="mobile-nav"
-        className={`fixed top-0 right-0 bottom-0 z-50 w-72 bg-white border-l border-cream-200 shadow-xl transition-transform duration-200 md:hidden overflow-y-auto ${
+        className={`fixed top-0 right-0 bottom-0 z-50 w-[min(18rem,100%)] bg-white border-l border-cream-200 shadow-xl transition-transform duration-200 md:hidden overflow-y-auto ${
           mobileOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -165,7 +179,6 @@ export function MarketingHeader() {
         </nav>
       </div>
 
-      <ProductChatWidget />
     </>
   );
 }

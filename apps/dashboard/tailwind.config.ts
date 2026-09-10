@@ -1,4 +1,31 @@
 import type { Config } from 'tailwindcss';
+import plugin from 'tailwindcss/plugin';
+
+/**
+ * Re-register sm/md/lg/xl/2xl so min-width variants do not apply while
+ * html[data-telfin-view="mobile"] is set (desktop user previewing a
+ * phone frame). Default Tailwind screens are keyed off viewport width
+ * only, so a 390px chassis on a 1440px display would otherwise keep
+ * showing desktop grids and nav.
+ *
+ * Dashboard / login are unaffected: that attribute is only set on
+ * marketing pages. max-* variants also fire in mobile preview so
+ * "below this breakpoint" styles still win.
+ */
+const BREAKPOINTS = { sm: 640, md: 768, lg: 1024, xl: 1280, '2xl': 1536 } as const;
+
+const marketingViewScreens = plugin(({ addVariant }) => {
+  (Object.entries(BREAKPOINTS) as [keyof typeof BREAKPOINTS, number][]).forEach(([name, px]) => {
+    addVariant(
+      name,
+      `@media (min-width: ${px}px) { html:not([data-telfin-view="mobile"]) & }`,
+    );
+    addVariant(`max-${name}`, [
+      `@media (max-width: ${px - 1}px)`,
+      'html[data-telfin-view="mobile"] &',
+    ]);
+  });
+});
 
 const config: Config = {
   content: [
@@ -7,6 +34,8 @@ const config: Config = {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    // Replace default screens — variants come from marketingViewScreens.
+    screens: {},
     extend: {
       colors: {
         // Brand = warm terracotta (replaces former indigo). Used everywhere
@@ -84,7 +113,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [require('@tailwindcss/forms')],
+  plugins: [require('@tailwindcss/forms'), marketingViewScreens],
 };
 
 export default config;

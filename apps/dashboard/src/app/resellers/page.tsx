@@ -27,6 +27,10 @@ import {
   Crown,
 } from 'lucide-react';
 import { BRAND_ICON_INITIALS, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
+import {
+  MarketingPreviewBar,
+  MarketingViewModeProvider,
+} from '@/components/ui/marketing-view-mode';
 
 // ── Commission calculator ─────────────────────────────────────────────────────
 type TierKey = 'affiliate' | 'reseller' | 'white_label';
@@ -254,12 +258,14 @@ const WL_FEATURES = [
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function ResellersPage() {
   return (
+    <MarketingViewModeProvider>
     <div className="min-h-screen bg-cream-50 text-cream-900">
+      <MarketingPreviewBar />
 
       {/* ── Nav ─────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 glass-nav border-b border-cream-200">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+          <Link href="/" className="flex items-center gap-3 min-w-0 shrink-0">
             <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-serif text-lg shadow-sm">
               {BRAND_ICON_INITIALS}
             </div>
@@ -271,9 +277,9 @@ export default function ResellersPage() {
             <Link href="/pricing" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Pricing</Link>
             <Link href="/resellers" className="text-sm font-medium text-brand-600">Affiliate</Link>
           </nav>
-          <div className="flex items-center gap-3">
-            <Link href="/partners/login" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors">Partner login</Link>
-            <Link href="/signup" className="glow-btn inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Link href="/partners/login" className="text-sm font-medium text-cream-700 hover:text-cream-900 transition-colors truncate">Partner login</Link>
+            <Link href="/signup" className="glow-btn inline-flex items-center gap-2 rounded-lg bg-brand-600 px-3 sm:px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors shrink-0">
               Try free
             </Link>
           </div>
@@ -285,7 +291,7 @@ export default function ResellersPage() {
         <div className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 mb-6">
           <Building2 size={12} /> Reseller & White-Label Program
         </div>
-        <h1 className="font-serif text-5xl lg:text-6xl font-bold text-cream-900 leading-tight mb-5">
+        <h1 className="font-serif text-[2.15rem] sm:text-5xl lg:text-6xl font-bold text-cream-900 leading-tight mb-5 break-words">
           Sell Telfin<br />
           <span className="text-brand-600">as your own product</span>
         </h1>
@@ -529,5 +535,6 @@ export default function ResellersPage() {
         </div>
       </footer>
     </div>
+    </MarketingViewModeProvider>
   );
 }
