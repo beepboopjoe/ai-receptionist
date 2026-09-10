@@ -82,8 +82,8 @@ export interface MediaStreamParams {
    */
   mode?: string;
   /**
-   * Homepage call-me spoken language (en/es/it/ar/fa/hy/ru). Only set on
-   * public demo dials — ignored for paying-tenant inbound.
+   * Optional leftover call-me language. Live public dials omit this so the
+   * demo prompt auto-detects from speech. Ignored for paying-tenant inbound.
    */
   language?: string;
   /**

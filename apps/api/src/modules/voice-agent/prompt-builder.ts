@@ -48,8 +48,9 @@ export interface PromptContext {
    */
   isDemo?: boolean;
   /**
-   * Call-me visitor language (en/es/it/ar/fa/hy/ru). Only honored when
-   * isDemo is true — paying-tenant inbound never reads this.
+   * Optional leftover call-me language (en/es/it/ar/fa/hy/ru/auto).
+   * Live demo dials omit this so the prompt auto-detects from speech.
+   * Only honored when isDemo is true — paying-tenant inbound never reads this.
    */
   demoLanguage?: string;
 }

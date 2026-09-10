@@ -230,7 +230,12 @@ function VoicePlayer({ voice, lang }: { voice: VoiceId; lang: LangCode }) {
 }
 
 // ── Public export ─────────────────────────────────────────────
-export function VoiceLanguageDemo() {
+export function VoiceLanguageDemo({
+  hideLanguageSelector = false,
+}: {
+  /** Public /demo hides the language picker; inbound/outbound keep it. */
+  hideLanguageSelector?: boolean;
+} = {}) {
   const [activeVoice, setActiveVoice] = useState<VoiceId>('aurora');
   const [activeLang, setActiveLang] = useState<LangCode>('en');
 
@@ -242,10 +247,12 @@ export function VoiceLanguageDemo() {
           🌐 Multilingual AI
         </div>
         <h2 className="text-3xl md:text-4xl font-black text-cream-900 tracking-tight mb-3">
-          Every voice. Every language.
+          {hideLanguageSelector ? 'Every voice.' : 'Every voice. Every language.'}
         </h2>
         <p className="text-cream-600 text-base max-w-xl mx-auto">
-          Choose a voice and language to hear a one-line intro — Aurora, Castor, Cosmo, and Zenith, each saying their own name.
+          {hideLanguageSelector
+            ? 'Choose a voice to hear a one-line intro — Aurora, Castor, Cosmo, and Zenith, each saying their own name. Live calls detect language automatically.'
+            : 'Choose a voice and language to hear a one-line intro — Aurora, Castor, Cosmo, and Zenith, each saying their own name.'}
         </p>
       </div>
 
@@ -275,29 +282,31 @@ export function VoiceLanguageDemo() {
         </div>
       </div>
 
-      {/* Language selector */}
-      <div className="mb-8">
-        <p className="text-xs font-semibold text-cream-500 uppercase tracking-widest mb-3 text-center">Choose a language</p>
-        <div className="flex flex-wrap justify-center gap-2">
-          {LANG_CODES.map((l) => {
-            const meta = LANGUAGES[l];
-            return (
-              <button
-                key={l}
-                onClick={() => setActiveLang(l)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm font-medium transition-all ${
-                  activeLang === l
-                    ? 'bg-cream-900 border-cream-900 text-white'
-                    : 'bg-white border-cream-200 text-cream-700 hover:border-cream-400 hover:text-cream-900'
-                }`}
-              >
-                <span className="text-base leading-none">{meta.flag}</span>
-                <span>{meta.label}</span>
-              </button>
-            );
-          })}
+      {/* Language selector — hidden on /demo; inbound/outbound keep it */}
+      {!hideLanguageSelector && (
+        <div className="mb-8">
+          <p className="text-xs font-semibold text-cream-500 uppercase tracking-widest mb-3 text-center">Choose a language</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {LANG_CODES.map((l) => {
+              const meta = LANGUAGES[l];
+              return (
+                <button
+                  key={l}
+                  onClick={() => setActiveLang(l)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm font-medium transition-all ${
+                    activeLang === l
+                      ? 'bg-cream-900 border-cream-900 text-white'
+                      : 'bg-white border-cream-200 text-cream-700 hover:border-cream-400 hover:text-cream-900'
+                  }`}
+                >
+                  <span className="text-base leading-none">{meta.flag}</span>
+                  <span>{meta.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Player */}
       <VoicePlayer key={`${activeVoice}_${activeLang}`} voice={activeVoice} lang={activeLang} />

@@ -100,13 +100,18 @@ describe('buildSystemPrompt', () => {
     expect(prompt).not.toMatch(/product demo/i);
   });
 
-  it('isDemo honors demoLanguage without affecting non-demo tenants', () => {
-    const demo = buildSystemPrompt({ ...BASE_CTX, isDemo: true, demoLanguage: 'es' });
-    expect(demo).toMatch(/Speak Spanish from the VERY FIRST word/);
-    expect(demo).toContain('asistente de Telfin');
+  it('isDemo auto-detects language by default and still honors an explicit leftover language', () => {
+    const demo = buildSystemPrompt({ ...BASE_CTX, isDemo: true });
+    expect(demo).toMatch(/Detect the caller's language from their speech/);
+    expect(demo).not.toMatch(/chose English/);
+
+    const demoEs = buildSystemPrompt({ ...BASE_CTX, isDemo: true, demoLanguage: 'es' });
+    expect(demoEs).toMatch(/Speak Spanish \(es\) from the VERY FIRST word/);
+    expect(demoEs).toContain('asistente de Telfin');
 
     const paying = buildSystemPrompt({ ...BASE_CTX, vertical: 'dental', demoLanguage: 'es' });
     expect(paying).toMatch(/dental practice/i);
     expect(paying).not.toMatch(/Speak Spanish from the VERY FIRST word/);
+    expect(paying).not.toMatch(/Detect the caller's language from their speech/);
   });
 });

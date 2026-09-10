@@ -9,6 +9,8 @@ import {
   CALL_ME_LANG_CODES,
   CALL_ME_LANG_GREETING,
   DEFAULT_CALL_ME_LANG,
+  callMeAutoDetectPromptBlock,
+  isAutoCallMeLanguage,
   normalizeCallMeLanguage,
 } from '../modules/voice-agent/call-me-language.js';
 
@@ -47,11 +49,31 @@ describe('normalizeCallMeLanguage', () => {
   });
 });
 
+describe('call-me auto-detect', () => {
+  it('treats missing / empty / auto as detect-on-call', () => {
+    expect(isAutoCallMeLanguage(undefined)).toBe(true);
+    expect(isAutoCallMeLanguage(null)).toBe(true);
+    expect(isAutoCallMeLanguage('')).toBe(true);
+    expect(isAutoCallMeLanguage('auto')).toBe(true);
+    expect(isAutoCallMeLanguage('en')).toBe(false);
+    expect(isAutoCallMeLanguage('es')).toBe(false);
+  });
+
+  it('auto-detect block opens in English and does not claim a form pick', () => {
+    const block = callMeAutoDetectPromptBlock();
+    expect(block).toMatch(/Detect the caller's language from their speech/);
+    expect(block).toContain(CALL_ME_LANG_GREETING.en);
+    expect(block).not.toMatch(/chose English/);
+    expect(block).not.toMatch(/call-me form/);
+  });
+});
+
 describe('call-me language is wired through the public dial path', () => {
-  it('POST /public/call-me normalizes language and passes it to dialDirect', () => {
+  it('POST /public/call-me dials demo without a pre-selected language', () => {
     const src = readFileSync(join(srcRoot, 'public-api/public-demo.router.ts'), 'utf8');
     expect(src).toContain('normalizeCallMeLanguage');
-    expect(src).toContain('language,');
     expect(src).toMatch(/mode:\s*'demo'/);
+    expect(src).toMatch(/language:\s*'auto'/);
+    expect(src).not.toMatch(/language,\s*\n\s*voice/);
   });
 });

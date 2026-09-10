@@ -10,7 +10,9 @@ import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone.js';
 import utc from 'dayjs/plugin/utc.js';
 import {
+  callMeAutoDetectPromptBlock,
   callMeLanguagePromptBlock,
+  isAutoCallMeLanguage,
   normalizeCallMeLanguage,
   type CallMeLangCode,
 } from './call-me-language.js';
@@ -28,8 +30,12 @@ export const DEMO_CLOSER_OPENING_EN =
 
 export interface CallMeDemoPromptOpts {
   timezone?: string;
-  /** Visitor-selected spoken language for this demo call. Defaults to English. */
-  language?: CallMeLangCode | string;
+  /**
+   * Optional leftover API language. Live call-me omits this so the model
+   * detects language from speech (English fallback). `auto` / empty / missing
+   * all mean detect-on-call.
+   */
+  language?: CallMeLangCode | string | 'auto';
   /** Public origin used to speak the Try Free URL. */
   signupUrl?: string;
 }
@@ -41,7 +47,9 @@ export interface CallMeDemoPromptOpts {
 export function buildCallMeDemoPrompt(opts: CallMeDemoPromptOpts = {}): string {
   const tz = opts.timezone?.trim() || 'America/New_York';
   const now = dayjs().tz(tz);
-  const language = normalizeCallMeLanguage(opts.language);
+  const languageBlock = isAutoCallMeLanguage(opts.language)
+    ? callMeAutoDetectPromptBlock()
+    : callMeLanguagePromptBlock(normalizeCallMeLanguage(opts.language));
   const signup = (opts.signupUrl?.trim() || `https://telfin.ai${DEMO_SIGNUP_PATH}`);
 
   return `# Role
@@ -79,7 +87,7 @@ They asked Telfin to call this number. This is a one-time product demo they init
 - Current time: ${now.format('h:mm A')} ${tz}
 - Hours: 24/7. This demo line is always open. Never say you are closed, after-hours, or that you will take a message until morning.
 
-${callMeLanguagePromptBlock(language)}
+${languageBlock}
 
 # If they ask what you can do
 Then — and only then — cover a few capabilities in a couple of short turns, not a monologue: 24/7 answering, appointment booking with Google Calendar / Outlook, seven languages, texts and follow-ups, a dashboard with transcripts. Pricing ONLY if they ask: Growth $199 / Scale $399 / Business $599 a month, plus a free trial with no card required for the trial minutes.

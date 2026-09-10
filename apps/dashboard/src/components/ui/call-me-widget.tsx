@@ -5,11 +5,11 @@
 // POST /api/v1/public/call-me. Idle → calling → ringing | error.
 // If DEMO_* env is missing the API returns 503; we show a clear
 // fallback that links to /demo instead of breaking the page.
+// Language is detected on the live call — no picker in this UI.
 // ============================================================
 import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Phone, PhoneCall, AlertCircle } from 'lucide-react';
-import { LANG_CODES, LANGUAGES, type LangCode } from '@/lib/voice-samples';
 
 const API_URL = (process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/api/v1').replace(/\/$/, '');
 
@@ -43,7 +43,6 @@ function messageForStatus(status: number, fallback: string): string {
 
 export function CallMeWidget({ compact = false }: { compact?: boolean }) {
   const [raw, setRaw] = useState('');
-  const [language, setLanguage] = useState<LangCode>('en');
   const [status, setStatus] = useState<WidgetStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [consented, setConsented] = useState(false);
@@ -64,7 +63,7 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
       const res = await fetch(`${API_URL}/public/call-me`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: raw, language }),
+        body: JSON.stringify({ phone: raw }),
       });
 
       let body: { message?: string; error?: string } = {};
@@ -85,7 +84,7 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
       setStatus('error');
       setError("We couldn't reach the demo line. Hear a sample instead — the page still works.");
     }
-  }, [raw, language, status, consented]);
+  }, [raw, status, consented]);
 
   const reset = useCallback(() => {
     setStatus('idle');
@@ -105,7 +104,8 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
         <div>
           <p className="text-sm font-semibold text-cream-900">Hear it on your phone</p>
           <p className="text-xs text-cream-500 leading-relaxed">
-            Pick a language, then we&apos;ll call you as Telfin in Aurora — US &amp; Canada mobiles. No sign-up.
+            We&apos;ll call you as Telfin in Aurora — US &amp; Canada mobiles. Language is
+            detected when you pick up. No sign-up.
           </p>
         </div>
       </div>
@@ -114,7 +114,8 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
         <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
           <p className="text-sm font-semibold text-emerald-800">Calling you now</p>
           <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
-            Pick up to talk to Telfin in {LANGUAGES[language].label}. If it doesn’t ring in 20 seconds, check spam / unknown callers.
+            Pick up to talk to Telfin. Speak naturally — the AI matches your language.
+            If it doesn&apos;t ring in 20 seconds, check spam / unknown callers.
           </p>
           <button
             type="button"
@@ -126,40 +127,6 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
         </div>
       ) : (
         <>
-          <fieldset className="mb-3">
-            <legend className="text-xs font-medium text-cream-700 mb-1.5">Demo language</legend>
-            <div className="flex flex-wrap gap-1.5">
-              {LANG_CODES.map((code) => {
-                const selected = language === code;
-                const meta = LANGUAGES[code];
-                return (
-                  <label
-                    key={code}
-                    className={`inline-flex items-center gap-1 cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition-colors focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-1 ${
-                      selected
-                        ? 'border-brand-400 bg-brand-50 text-brand-800'
-                        : 'border-cream-200 bg-white text-cream-600 hover:border-cream-300'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="call-me-language"
-                      value={code}
-                      checked={selected}
-                      onChange={() => setLanguage(code)}
-                      disabled={status === 'calling'}
-                      className="sr-only"
-                      aria-label={meta.label}
-                    />
-                    <span aria-hidden>{meta.flag}</span>
-                    <span className="hidden sm:inline">{meta.label}</span>
-                    <span className="sm:hidden">{code.toUpperCase()}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
-
           <form
             onSubmit={(e) => {
               e.preventDefault();

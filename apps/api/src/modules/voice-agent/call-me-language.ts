@@ -1,8 +1,8 @@
 // ============================================================
 // Homepage call-me spoken-language catalog.
 // Matches product languages: EN ES IT AR FA HY RU.
-// Used by POST /public/call-me, the demo prompt, and (via the
-// dashboard's voice-samples.ts) the call-me widget.
+// Live call-me detects language from speech (English fallback).
+// The public widget does not send a pre-selected language.
 // ============================================================
 
 export const CALL_ME_LANG_CODES = ['en', 'es', 'it', 'ar', 'fa', 'hy', 'ru'] as const;
@@ -79,8 +79,9 @@ export function isCallMeLangCode(value: string): value is CallMeLangCode {
 }
 
 /**
- * Coerce a widget/API value to a supported demo language.
- * Unknown / missing → English so older clients without `language` still work.
+ * Coerce a leftover API value to a supported demo language.
+ * Unknown / missing → English. Live call-me ignores this for the greeting
+ * and uses {@link callMeAutoDetectPromptBlock} instead.
  */
 export function normalizeCallMeLanguage(input: unknown): CallMeLangCode {
   if (input == null) return DEFAULT_CALL_ME_LANG;
@@ -90,21 +91,44 @@ export function normalizeCallMeLanguage(input: unknown): CallMeLangCode {
   return ALIASES[raw] ?? DEFAULT_CALL_ME_LANG;
 }
 
+/** True when the request asked for on-call detection (or sent nothing). */
+export function isAutoCallMeLanguage(input: unknown): boolean {
+  if (input == null) return true;
+  const raw = String(input).trim().toLowerCase();
+  return raw === '' || raw === 'auto';
+}
+
+/**
+ * Default live-demo language instructions: open in English, then match
+ * whatever the caller actually speaks. No UI picker is involved.
+ */
+export function callMeAutoDetectPromptBlock(): string {
+  const greeting = CALL_ME_LANG_GREETING.en;
+  return `# Spoken language
+No language was pre-selected. Detect the caller's language from their speech.
+- Open in English as the safe fallback (first greeting).
+- As soon as you hear them speak Spanish, Italian, Arabic, Farsi, Armenian, or Russian, switch to that language from the next turn — do not ask "is this language OK?"
+- Do not announce that you detected their language unless they ask.
+- If you cannot tell, stay in English.
+
+Sample opening (vary the wording so it does not sound scripted):
+"${greeting}"`;
+}
+
 export function callMeLanguagePromptBlock(lang: CallMeLangCode): string {
   const label = CALL_ME_LANG_LABEL[lang];
   const greeting = CALL_ME_LANG_GREETING[lang];
   if (lang === 'en') {
     return `# Spoken language
-The visitor chose English for this demo. Open in English.
+Open in English as the fallback.
 If they switch to Spanish, Italian, Arabic, Farsi, Armenian, or Russian, follow them automatically — that auto-switch is a product feature.
 
 Sample opening (vary the wording so it does not sound scripted):
 "${greeting}"`;
   }
   return `# Spoken language (IMPORTANT)
-The visitor chose ${label} (${lang}) on the call-me form BEFORE we dialed.
-- Speak ${label} from the VERY FIRST word of the greeting. Do not start in English.
-- Do not ask if ${label} is OK — they already selected it.
+Speak ${label} (${lang}) from the VERY FIRST word of the greeting. Do not start in English.
+- Do not ask if ${label} is OK.
 - Do not apologize for your ${label}. Do not switch to English to "explain better" unless they ask or they start speaking English.
 - If they switch to English or another of the seven languages (English, Spanish, Italian, Arabic, Farsi, Armenian, Russian), follow them automatically — that auto-switch is a product feature.
 
