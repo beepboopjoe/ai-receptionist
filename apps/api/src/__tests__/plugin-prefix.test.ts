@@ -22,6 +22,7 @@ const CRITICAL_ROUTERS = [
   'modules/sms/sms.router.ts',
   'modules/compliance/compliance.router.ts',
   'modules/knowledge-base/kb.router.ts',
+  'modules/public-api/site-chat.router.ts',
 ];
 
 describe('critical routers keep the /api/v1 prefix', () => {

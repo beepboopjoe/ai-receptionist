@@ -801,15 +801,17 @@ function DeleteTenantModal({
   );
 }
 
-// ── Homepage call-me leads (every valid phone submit) ──────────────
+// ── Marketing leads (call-me + site chat) ──────────────────
 function DemoLeadsSection() {
   const [closedFilter, setClosedFilter] = useState<'all' | 'open' | 'closed'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'call_me' | 'site_chat'>('all');
   const { data, isLoading } = useSWR(
-    ['platform-demo-leads', closedFilter],
+    ['platform-demo-leads', closedFilter, sourceFilter],
     () =>
-      platformApi.listDemoLeads(
-        closedFilter === 'all' ? undefined : { closed: closedFilter === 'closed' },
-      ),
+      platformApi.listDemoLeads({
+        ...(closedFilter === 'all' ? {} : { closed: closedFilter === 'closed' }),
+        ...(sourceFilter === 'all' ? {} : { source: sourceFilter }),
+      }),
   );
   const leads = data?.data ?? [];
 
@@ -817,20 +819,31 @@ function DemoLeadsSection() {
     <div className="card">
       <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="font-semibold text-gray-900">Call-me leads</h2>
+          <h2 className="font-semibold text-gray-900">Marketing leads</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Every visitor who submitted a US/CA phone on Hear it on your phone. No invented totals — this is the stored list.
+            Call-me phone submits and Ask Telfin chat captures (same <code>demo_leads</code> table). No invented totals.
           </p>
         </div>
-        <select
-          value={closedFilter}
-          onChange={(e) => setClosedFilter(e.target.value as typeof closedFilter)}
-          className="px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:border-brand-500"
-        >
-          <option value="all">All</option>
-          <option value="open">Not closed</option>
-          <option value="closed">Closed (signaled Try Free)</option>
-        </select>
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value as typeof sourceFilter)}
+            className="px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:border-brand-500"
+          >
+            <option value="all">All sources</option>
+            <option value="call_me">Call-me</option>
+            <option value="site_chat">Site chat</option>
+          </select>
+          <select
+            value={closedFilter}
+            onChange={(e) => setClosedFilter(e.target.value as typeof closedFilter)}
+            className="px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:border-brand-500"
+          >
+            <option value="all">All</option>
+            <option value="open">Not closed</option>
+            <option value="closed">Closed (signaled Try Free)</option>
+          </select>
+        </div>
       </div>
       {isLoading ? (
         <div className="flex justify-center py-10">
@@ -838,7 +851,7 @@ function DemoLeadsSection() {
         </div>
       ) : leads.length === 0 ? (
         <div className="px-6 py-10 text-center text-sm text-gray-500">
-          No call-me submissions stored yet.
+          No marketing leads stored yet.
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -846,10 +859,9 @@ function DemoLeadsSection() {
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-gray-500 border-b border-gray-100">
                 <th className="px-6 py-3 font-medium">Name</th>
-                <th className="px-6 py-3 font-medium">Phone</th>
-                <th className="px-6 py-3 font-medium">Business</th>
-                <th className="px-6 py-3 font-medium">Language</th>
-                <th className="px-6 py-3 font-medium">Voice</th>
+                <th className="px-6 py-3 font-medium">Contact</th>
+                <th className="px-6 py-3 font-medium">Source</th>
+                <th className="px-6 py-3 font-medium">Consent</th>
                 <th className="px-6 py-3 font-medium">Submitted</th>
                 <th className="px-6 py-3 font-medium">Closed</th>
               </tr>
@@ -866,40 +878,66 @@ function DemoLeadsSection() {
   );
 }
 
-function voiceLabel(id: string): string {
-  const map: Record<string, string> = {
-    aurora: 'Aurora',
-    castor: 'Castor',
-    cosmo: 'Cosmo',
-    zenith: 'Zenith',
-  };
-  return map[id] ?? id;
-}
-
 function DemoLeadRow({ lead }: { lead: PlatformDemoLead }) {
+  const [open, setOpen] = useState(false);
   const submitted = new Date(lead.createdAt);
+  const sourceLabel = lead.source === 'site_chat' ? 'Site chat' : 'Call-me';
+  const snippet = (lead.transcript || lead.notes || '').trim();
   return (
-    <tr className="border-b border-gray-50 last:border-0">
-      <td className="px-6 py-3 text-gray-900">{lead.name?.trim() || '—'}</td>
-      <td className="px-6 py-3 font-mono text-xs text-gray-700">{lead.phoneE164}</td>
-      <td className="px-6 py-3 text-gray-700">{lead.business?.trim() || '—'}</td>
-      <td className="px-6 py-3 text-gray-600 uppercase">{lead.language}</td>
-      <td className="px-6 py-3 text-gray-700">{voiceLabel(lead.voice)}</td>
-      <td className="px-6 py-3 text-gray-500 whitespace-nowrap">
-        {Number.isNaN(submitted.getTime()) ? '—' : submitted.toLocaleString()}
-      </td>
-      <td className="px-6 py-3">
-        {lead.closed ? (
-          <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
-            Closed
+    <>
+      <tr className="border-b border-gray-50 last:border-0">
+        <td className="px-6 py-3 text-gray-900">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="text-left font-medium hover:text-brand-700"
+          >
+            {lead.name?.trim() || '—'}
+          </button>
+          {lead.business?.trim() ? (
+            <p className="text-xs text-gray-500 mt-0.5">{lead.business}</p>
+          ) : null}
+        </td>
+        <td className="px-6 py-3 text-gray-700">
+          <p className="font-mono text-xs">{lead.phoneE164?.trim() || '—'}</p>
+          <p className="text-xs text-gray-500 mt-0.5">{lead.email?.trim() || '—'}</p>
+        </td>
+        <td className="px-6 py-3">
+          <span className="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 rounded-full px-2 py-0.5">
+            {sourceLabel}
           </span>
-        ) : (
-          <span className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
-            Not closed
-          </span>
-        )}
-      </td>
-    </tr>
+          {lead.pagePath ? (
+            <p className="text-[11px] text-gray-400 mt-1 font-mono">{lead.pagePath}</p>
+          ) : null}
+        </td>
+        <td className="px-6 py-3 text-xs text-gray-600">
+          {lead.emailConsent ? 'Email' : '—'}
+          {lead.emailConsent && lead.smsConsent ? ' · ' : ''}
+          {lead.smsConsent ? 'SMS/call' : lead.emailConsent ? '' : ''}
+        </td>
+        <td className="px-6 py-3 text-gray-500 whitespace-nowrap">
+          {Number.isNaN(submitted.getTime()) ? '—' : submitted.toLocaleString()}
+        </td>
+        <td className="px-6 py-3">
+          {lead.closed ? (
+            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+              Closed
+            </span>
+          ) : (
+            <span className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+              Not closed
+            </span>
+          )}
+        </td>
+      </tr>
+      {open && snippet && (
+        <tr className="border-b border-gray-50 bg-gray-50/70">
+          <td colSpan={6} className="px-6 py-3 text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">
+            {snippet}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 

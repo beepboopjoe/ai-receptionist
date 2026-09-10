@@ -341,14 +341,23 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
     '/platform/demo-leads',
     { onRequest: [requirePlatformAdmin] },
     async (request, _reply) => {
-      const q = request.query as { closed?: string; limit?: string };
+      const q = request.query as { closed?: string; source?: string; limit?: string };
       const closedFilter =
         q.closed === 'true' ? true : q.closed === 'false' ? false : undefined;
+      const sourceFilter =
+        q.source === 'call_me' || q.source === 'site_chat' ? q.source : undefined;
       const limit = Math.min(500, Math.max(1, Number(q.limit) || 200));
 
       const columns = {
         id: demoLeads.id,
         phoneE164: demoLeads.phoneE164,
+        email: demoLeads.email,
+        source: demoLeads.source,
+        emailConsent: demoLeads.emailConsent,
+        smsConsent: demoLeads.smsConsent,
+        transcript: demoLeads.transcript,
+        conversationId: demoLeads.conversationId,
+        pagePath: demoLeads.pagePath,
         name: demoLeads.name,
         business: demoLeads.business,
         language: demoLeads.language,
@@ -360,13 +369,18 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
         updatedAt: demoLeads.updatedAt,
       } as const;
 
+      const filters = [
+        ...(closedFilter === undefined ? [] : [eq(demoLeads.closed, closedFilter)]),
+        ...(sourceFilter ? [eq(demoLeads.source, sourceFilter)] : []),
+      ];
+
       const rows =
-        closedFilter === undefined
+        filters.length === 0
           ? await db.select(columns).from(demoLeads).orderBy(desc(demoLeads.createdAt)).limit(limit)
           : await db
               .select(columns)
               .from(demoLeads)
-              .where(eq(demoLeads.closed, closedFilter))
+              .where(and(...filters))
               .orderBy(desc(demoLeads.createdAt))
               .limit(limit);
 

@@ -145,7 +145,7 @@ export function useGoLive(): GoLiveStatus {
     {
       id: 'transfer',
       title: 'Add a staff transfer number',
-      desc: 'The number your AI rings for escalations — and for your own test call.',
+      desc: 'Required for escalations, Join call (you ring in on a live AI call), and your own test call.',
       href: '/settings/voice-agent',
       cta: 'Add transfer number',
       done: hasTransfer,

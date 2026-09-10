@@ -111,9 +111,18 @@ describe('resolveConfig', () => {
     expect(config.XAI_API_KEY).toBe('xai-abcdefghijklmnopqrstuvwxyz012345');
   });
 
-  it('defaults XAI_REALTIME_MODEL to grok-voice-think-fast-1.0', () => {
+  it('defaults XAI_CHAT_MODEL to grok-4.3 and XAI_REALTIME_MODEL to grok-voice-think-fast-1.0', () => {
     const { config } = resolveConfig(validEnv);
+    expect(config.XAI_CHAT_MODEL).toBe('grok-4.3');
     expect(config.XAI_REALTIME_MODEL).toBe('grok-voice-think-fast-1.0');
+  });
+
+  it('honors XAI_CHAT_MODEL override', () => {
+    const { config } = resolveConfig({
+      ...validEnv,
+      XAI_CHAT_MODEL: 'grok-4',
+    });
+    expect(config.XAI_CHAT_MODEL).toBe('grok-4');
   });
 
   it('honors XAI_REALTIME_MODEL override', () => {
