@@ -140,8 +140,8 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
       ) : (
         <EmptyState
           icon={XCircle}
-          label="No transcript"
-          hint="Transcripts are saved when the AI conversation completes. Short or failed calls may not have one."
+          label="No transcript for this call"
+          hint="Transcripts appear after the AI conversation finishes. Short, missed, or failed calls often have nothing to show — if a recording exists, you can still play it above."
         />
       )}
     </div>

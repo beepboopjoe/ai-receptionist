@@ -71,7 +71,7 @@ export function TestCallCard({ embedded = false }: { embedded?: boolean }) {
   const [placing, setPlacing] = useState(false);
 
   const disabledReason = !hasTransfer
-    ? 'Save a staff transfer number first — that is the number your AI will ring.'
+    ? 'Save a Staff Transfer Number first — Join call, take-over, and your test call all ring that number.'
     : !hasPhone
       ? 'Buy or port a phone number so the call can come from your line (or a platform demo line).'
       : null;

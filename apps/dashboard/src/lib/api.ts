@@ -1010,7 +1010,14 @@ export interface PlatformStats {
 
 export interface PlatformDemoLead {
   id: string;
-  phoneE164: string;
+  phoneE164: string | null;
+  email: string | null;
+  source: 'call_me' | 'site_chat' | string;
+  emailConsent: boolean;
+  smsConsent: boolean;
+  transcript: string | null;
+  conversationId: string | null;
+  pagePath: string | null;
   name: string | null;
   business: string | null;
   language: string;
@@ -1088,10 +1095,11 @@ export const platformApi = {
       body: JSON.stringify({ confirmName }),
     }),
 
-  listDemoLeads: (filter?: { closed?: boolean }) => {
+  listDemoLeads: (filter?: { closed?: boolean; source?: 'call_me' | 'site_chat' }) => {
     const params = new URLSearchParams();
     if (filter?.closed === true) params.set('closed', 'true');
     if (filter?.closed === false) params.set('closed', 'false');
+    if (filter?.source) params.set('source', filter.source);
     const q = params.toString();
     return apiFetch<{ data: PlatformDemoLead[]; total: number }>(
       `/platform/demo-leads${q ? '?' + q : ''}`

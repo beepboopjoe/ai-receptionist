@@ -51,6 +51,11 @@ const envSchema = z.object({
    * grok-voice-latest if the key's model ACL denies 1.0.
    */
   XAI_REALTIME_MODEL: z.string().min(1).default(DEFAULT_GROK_REALTIME_MODEL),
+  /**
+   * Grok chat-completions model for the public marketing FAQ widget.
+   * Default grok-4.3 (current xAI chat flagship). Override if ACL denies it.
+   */
+  XAI_CHAT_MODEL: z.string().min(1).default('grok-4.3'),
 
   // ElevenLabs (optional fallback voice provider)
   ELEVENLABS_API_KEY: z.string().default(''),

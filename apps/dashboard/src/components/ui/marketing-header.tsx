@@ -12,6 +12,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { BRAND_NAME } from '@/lib/brand';
+import { ProductChatWidget } from '@/components/ui/product-chat-widget';
 
 type NavItem = { label: string; href: string };
 
@@ -163,6 +164,8 @@ export function MarketingHeader() {
           </div>
         </nav>
       </div>
+
+      <ProductChatWidget />
     </>
   );
 }

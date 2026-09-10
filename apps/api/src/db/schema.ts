@@ -1085,14 +1085,23 @@ export const emailTemplates = pgTable(
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type NewEmailTemplate = typeof emailTemplates.$inferInsert;
 
-// ---- Public call-me / marketing demo leads (platform-admin list) ----
-// Stubbed when a visitor submits a phone on Hear-it-on-your-phone; enriched
-// from the demo transcript on hangup. Not tenant-scoped — Telfin ops only.
+// ---- Public call-me + site-chat marketing leads (platform-admin list) ----
+// Call-me: stubbed on phone submit, enriched from transcript on hangup.
+// Site chat: name + email and/or phone after explicit TCPA consent.
+// Not tenant-scoped — Telfin ops only.
 export const demoLeads = pgTable(
   'demo_leads',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    phoneE164: text('phone_e164').notNull(),
+    /** Nullable after 0041 so site-chat email-only leads can persist. */
+    phoneE164: text('phone_e164'),
+    email: text('email'),
+    source: text('source').notNull().default('call_me'),
+    emailConsent: boolean('email_consent').notNull().default(false),
+    smsConsent: boolean('sms_consent').notNull().default(false),
+    transcript: text('transcript'),
+    conversationId: text('conversation_id'),
+    pagePath: text('page_path'),
     name: text('name'),
     business: text('business'),
     language: text('language').notNull().default('en'),
@@ -1107,6 +1116,7 @@ export const demoLeads = pgTable(
     phoneUniq: unique().on(t.phoneE164),
     createdIdx: index('demo_leads_created_idx').on(t.createdAt),
     closedIdx: index('demo_leads_closed_idx').on(t.closed, t.createdAt),
+    sourceIdx: index('demo_leads_source_idx').on(t.source, t.createdAt),
   })
 );
 

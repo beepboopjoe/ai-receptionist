@@ -148,3 +148,19 @@ Outbound pool (already on `purpose='outbound_pool'`) is sized from `concurrentOu
 | `TELNYX_WHOLESALE_LOCAL_CENTS` / `TELNYX_WHOLESALE_TOLLFREE_CENTS` | Promo-trial number cost (defaults $1 / $2) |
 
 Do not set `DEMO_SKIP_COOLDOWN`. Homepage call-me / demo are unchanged.
+
+### Marketing product chatbot
+
+Floating **Ask Telfin** widget on public marketing pages (`MarketingHeader` — homepage, pricing, `/demo`, inbound/outbound, verticals; not the logged-in app).
+
+| Piece | Where |
+|---|---|
+| UI | `apps/dashboard/src/components/ui/product-chat-widget.tsx` |
+| Chat API | `POST /api/v1/public/site-chat` |
+| Lead API | `POST /api/v1/public/site-chat/lead` |
+| Prompt | `apps/api/src/modules/public-api/site-chat.prompt.ts` |
+| Admin list | `/platform` → Marketing leads (same `demo_leads` table as call-me) |
+
+Env: uses existing `XAI_API_KEY`. Optional `XAI_CHAT_MODEL` (default `grok-4.3`). Fastify per-IP caps plus Redis hourly caps. Does not place calls. Lead capture requires name + email and/or US/CA phone, with explicit email and (if phone) SMS/call consent checkboxes.
+
+Google Calendar OAuth for live booking is **not** in this slice — tenants can still go live on office hours alone; calendar connect remains the existing integrations page.
