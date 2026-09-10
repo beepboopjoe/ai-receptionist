@@ -19,6 +19,15 @@ const PUBLIC_API_EXAMPLE = (
   process.env['NEXT_PUBLIC_API_URL'] ?? `https://api.${BRAND_DOMAIN}/api/v1`
 ).replace(/\/$/, '');
 
+/** Swagger UI lives on the API origin (`/docs`), not the Next.js app. */
+const API_DOCS_URL = (() => {
+  try {
+    return `${new URL(PUBLIC_API_EXAMPLE).origin}/docs`;
+  } catch {
+    return `https://api.${BRAND_DOMAIN}/docs`;
+  }
+})();
+
 export default function ApiKeysPage() {
   const toast = useToast();
   const { data, isLoading } = useSWR('api-keys', () => apiKeysApi.list());
@@ -46,7 +55,7 @@ export default function ApiKeysPage() {
           <p className="text-gray-500 mt-1">
             Mint keys to access the Public API at{' '}
             <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">/api/v1/public/*</code>.
-            See the <a href="/docs" className="text-brand-600 hover:underline">interactive API docs</a> for endpoint details.
+            See the <a href={API_DOCS_URL} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">interactive API docs</a> for endpoint details.
           </p>
         </div>
         <button onClick={() => setShowCreate(true)} className="btn-primary shrink-0">
@@ -100,7 +109,7 @@ export default function ApiKeysPage() {
 {`curl -H "Authorization: Bearer ark_live_…" \\
   ${PUBLIC_API_EXAMPLE}/public/whoami`}
         </pre>
-        <a href="/docs" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline text-xs">
+        <a href={API_DOCS_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline text-xs">
           Full API reference <ExternalLink size={11} />
         </a>
       </div>

@@ -37,7 +37,16 @@ import {
   AlertTriangle,
   MoreVertical,
 } from 'lucide-react';
-import { platformApi, type PlatformTenant, type AdminSupportTicket, type SupportCategory, type SupportStatus, type PlatformDemoLead } from '@/lib/api';
+import {
+  platformApi,
+  type PlatformTenant,
+  type AdminSupportTicket,
+  type SupportCategory,
+  type SupportStatus,
+  type PlatformDemoLead,
+  type PlatformBillingKind,
+  type PlatformGoLiveBlocker,
+} from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 
 const PLAN_OPTIONS = ['growth', 'scale', 'business', 'enterprise'] as const;
@@ -95,7 +104,7 @@ export default function PlatformAdminPage() {
         <div>
           <h1 className="font-serif text-3xl text-gray-900 tracking-tight">Platform Admin</h1>
           <p className="text-gray-600 mt-1">
-            Every tenant on the platform. Grant promo trials, view usage, monitor signups.
+            Signed-up businesses and homepage call-me leads. Grant promo trials, see who is live, who is trial vs paid.
           </p>
         </div>
       </div>
@@ -130,10 +139,15 @@ export default function PlatformAdminPage() {
 
       <DemoLeadsSection />
 
-      {/* Tenants table */}
+      {/* Clients (signed-up tenants) */}
       <div className="card">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
-          <h2 className="font-semibold text-gray-900">Tenants</h2>
+          <div>
+            <h2 className="font-semibold text-gray-900">Clients</h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Dashboard accounts — not the call-me list above. Phone, last call, and go-live blockers come from live tenant data.
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -162,17 +176,19 @@ export default function PlatformAdminPage() {
           </div>
         ) : tenantsData.data.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm text-gray-500">
-            {search ? `No tenants match "${search}"` : 'No tenants yet'}
+            {search ? `No clients match "${search}"` : 'No clients yet'}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-3 text-left font-semibold">Tenant</th>
-                  <th className="px-3 py-3 text-left font-semibold">Plan</th>
+                  <th className="px-6 py-3 text-left font-semibold">Client</th>
+                  <th className="px-3 py-3 text-left font-semibold">Phone</th>
+                  <th className="px-3 py-3 text-left font-semibold">Billing</th>
+                  <th className="px-3 py-3 text-left font-semibold">Last call</th>
+                  <th className="px-3 py-3 text-left font-semibold">Go-live</th>
                   <th className="px-3 py-3 text-left font-semibold">Minutes</th>
-                  <th className="px-3 py-3 text-left font-semibold">Status</th>
                   <th className="px-6 py-3 text-right font-semibold">Action</th>
                 </tr>
               </thead>
@@ -279,6 +295,67 @@ function StatCard({
   );
 }
 
+const BLOCKER_LABELS: Record<PlatformGoLiveBlocker, string> = {
+  phone: 'No number',
+  voice: 'No voice',
+  hours: 'No hours',
+  transfer: 'No transfer',
+};
+
+function blockerLabel(id: PlatformGoLiveBlocker): string {
+  return BLOCKER_LABELS[id] ?? id;
+}
+
+function BillingBadge({
+  billing,
+  plan,
+  capReached,
+}: {
+  billing: PlatformBillingKind | undefined;
+  plan: string;
+  capReached: boolean;
+}) {
+  const kind = billing ?? 'unknown';
+  const label =
+    kind === 'promo'
+      ? 'Promo trial'
+      : kind === 'trial'
+        ? 'Trial'
+        : kind === 'paid'
+          ? 'Paid'
+          : kind === 'suspended'
+            ? 'Suspended'
+            : kind === 'canceled'
+              ? 'Canceled'
+              : plan === 'trial'
+                ? 'Trial'
+                : plan;
+  const color =
+    kind === 'paid'
+      ? 'text-emerald-700 bg-emerald-50'
+      : kind === 'promo'
+        ? 'text-indigo-700 bg-indigo-50'
+        : kind === 'trial'
+          ? 'text-blue-700 bg-blue-50'
+          : kind === 'suspended'
+            ? 'text-rose-700 bg-rose-50'
+            : kind === 'canceled'
+              ? 'text-gray-600 bg-gray-100'
+              : 'text-gray-700 bg-gray-100';
+  return (
+    <div>
+      <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${color}`}>
+        {kind === 'promo' && <Sparkles size={9} />}
+        {label}
+      </span>
+      <div className="text-xs text-gray-500 capitalize mt-0.5">{plan}</div>
+      {capReached && (
+        <div className="text-[11px] font-semibold text-red-700 mt-0.5">Cap reached</div>
+      )}
+    </div>
+  );
+}
+
 // ── Tenant row ─────────────────────────────────────────────────────
 function TenantRow({
   tenant,
@@ -312,25 +389,55 @@ function TenantRow({
       : minutesPct >= 80
         ? 'bg-amber-500'
         : 'bg-brand-500';
+  const lastCall = tenant.lastCallAt ? new Date(tenant.lastCallAt) : null;
+  const lastCallLabel =
+    lastCall && !Number.isNaN(lastCall.getTime())
+      ? lastCall.toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+      : 'Never';
+  const blockers = tenant.goLiveBlockers ?? [];
 
   return (
     <tr className="hover:bg-gray-50">
       <td className="px-6 py-3">
         <div className="font-medium text-gray-900">{tenant.name}</div>
         <div className="text-xs text-gray-500 truncate max-w-xs">
-          {tenant.ownerEmail ?? `slug: ${tenant.slug}`} · created {created}
+          {tenant.ownerEmail ?? `slug: ${tenant.slug}`} · {tenant.vertical.replace('_', ' ')} · {created}
         </div>
       </td>
+      <td className="px-3 py-3 font-mono text-xs text-gray-700 whitespace-nowrap">
+        {tenant.phone ?? '—'}
+      </td>
       <td className="px-3 py-3">
-        <div className="flex items-center gap-1.5">
-          <span className="font-medium text-gray-900 capitalize">{tenant.plan}</span>
-          {tenant.promoTrial && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full">
-              <Sparkles size={9} /> Promo
-            </span>
-          )}
-        </div>
-        <div className="text-xs text-gray-500 capitalize">{tenant.vertical.replace('_', ' ')}</div>
+        <BillingBadge billing={tenant.billing} plan={tenant.plan} capReached={tenant.capReached} />
+      </td>
+      <td className="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">{lastCallLabel}</td>
+      <td className="px-3 py-3">
+        {isSuspended ? (
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">
+            <Ban size={10} /> Suspended
+          </span>
+        ) : blockers.length === 0 ? (
+          <span className="inline-flex text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+            Ready
+          </span>
+        ) : (
+          <span
+            className="inline-flex text-xs font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full"
+            title={blockers.map(blockerLabel).join(', ')}
+          >
+            {blockers.length} blocker{blockers.length === 1 ? '' : 's'}
+          </span>
+        )}
+        {blockers.length > 0 && (
+          <div className="text-[11px] text-gray-500 mt-1 max-w-[9rem]">
+            {blockers.map(blockerLabel).join(' · ')}
+          </div>
+        )}
       </td>
       <td className="px-3 py-3">
         <div className="text-sm text-gray-900">
@@ -339,33 +446,6 @@ function TenantRow({
         <div className="w-24 h-1 bg-gray-100 rounded-full overflow-hidden mt-1">
           <div className={`h-full ${minutesColor}`} style={{ width: `${minutesPct}%` }} />
         </div>
-      </td>
-      <td className="px-3 py-3">
-        {isSuspended ? (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">
-            <Ban size={10} /> Suspended
-          </span>
-        ) : tenant.capReached ? (
-          <span className="inline-flex text-xs font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
-            Cap reached
-          </span>
-        ) : tenant.subscriptionStatus === 'active' ? (
-          <span className="inline-flex text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-            Active
-          </span>
-        ) : tenant.subscriptionStatus === 'trialing' ? (
-          <span className="inline-flex text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
-            Trialing
-          </span>
-        ) : tenant.isActive ? (
-          <span className="inline-flex text-xs font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-full">
-            {tenant.subscriptionStatus ?? 'no sub'}
-          </span>
-        ) : (
-          <span className="inline-flex text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-            Inactive
-          </span>
-        )}
       </td>
       <td className="px-6 py-3 text-right">
         <div className="inline-flex items-center gap-1">

@@ -146,9 +146,15 @@ export default function ContactsPage() {
           <div className="p-6 space-y-4">
             <EmptyState
               icon={Users}
-              label={`No ${vertical.contactNounPlural} found`}
-              hint={search ? 'Try a different search term.' : `Import a CSV from your CRM, or add ${vertical.contactNounPlural} as they call in.`}
-              {...(search ? {} : { cta: { label: 'Go to Settings → Integrations', href: '/settings/integrations' } })}
+              label={search ? `No ${vertical.contactNounPlural} match that search` : `No ${vertical.contactNounPlural} yet`}
+              hint={
+                search
+                  ? 'Try a different name, phone, or email.'
+                  : `${heading} appear here when someone calls your AI. You can also import a CSV during setup.`
+              }
+              {...(search
+                ? {}
+                : { cta: { label: 'Call your AI', href: '/dashboard#test-call' } })}
             />
           </div>
         ) : (

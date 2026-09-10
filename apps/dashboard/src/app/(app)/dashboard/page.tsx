@@ -166,8 +166,8 @@ export default function DashboardPage() {
 
       <GoLiveChecklist />
 
-      {/* ── Ask your AI (Phase 29b) — plain-English single-task calls ── */}
-      <AskYourAiCard />
+      {/* Ask-your-AI is outbound-shaped — keep it off the first-run checklist. */}
+      {goLive.ready && <AskYourAiCard />}
 
       {/* ── Stats grid ── */}
       <div className="grid grid-cols-2 xl:grid-cols-6 gap-4">

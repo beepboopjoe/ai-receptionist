@@ -927,6 +927,15 @@ export const smsApi = {
 // Reserved for emails listed in ADMIN_EMAILS on the API. Lets you reach
 // across every tenant in the system: list/search them, grant promo
 // trials, view platform-wide stats. Used by /platform in the dashboard.
+export type PlatformGoLiveBlocker = 'phone' | 'voice' | 'hours' | 'transfer';
+export type PlatformBillingKind =
+  | 'promo'
+  | 'trial'
+  | 'paid'
+  | 'suspended'
+  | 'canceled'
+  | 'unknown';
+
 export interface PlatformTenant {
   id: string;
   name: string;
@@ -942,6 +951,11 @@ export interface PlatformTenant {
   minutesUsed: number;
   minutesIncluded: number;
   capReached: boolean;
+  /** First unreleased inbound Telnyx number, if any. */
+  phone: string | null;
+  lastCallAt: string | null;
+  goLiveBlockers: PlatformGoLiveBlocker[];
+  billing: PlatformBillingKind;
 }
 
 export interface PlatformStats {

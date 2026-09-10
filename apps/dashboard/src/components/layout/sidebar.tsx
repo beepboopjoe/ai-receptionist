@@ -87,7 +87,6 @@ const settingsNavAdvanced = [
   { href: '/settings/api-keys', label: 'API Keys', icon: null },
   { href: '/settings/audit-log', label: 'Audit Log', icon: null },
   { href: '/settings/compliance', label: 'Compliance', icon: 'shield' as const },
-  { href: '/settings/agent', label: 'AI Agent', icon: 'sparkles' as const },
 ];
 
 const PLAN_COLORS: Record<string, string> = {
@@ -152,9 +151,9 @@ export function Sidebar() {
     },
     { revalidateOnFocus: false, dedupingInterval: 5 * 60 * 1000 }
   );
-  // Founder chrome stays off first-run customer tenants even if this
-  // email is in ADMIN_EMAILS (Joey testing a law-firm account).
-  const isPlatformAdmin = platformAdmin?.ok === true && goLive.ready;
+  // Show Platform Admin whenever this email is in ADMIN_EMAILS. Beta
+  // founders need the clients list before their own tenant is live.
+  const isPlatformAdmin = platformAdmin?.ok === true;
 
   const isHighUsage = usagePercent >= 80;
   const showUpgradeCta = !loading && plan === 'trial';
@@ -167,9 +166,8 @@ export function Sidebar() {
   // Shared renderer for both Essentials + Advanced settings groups.
   function renderSettingsLink({ href, label, icon }: { href: string; label: string; icon: string | null }) {
     const isCompliance = icon === 'shield';
-    const isAgent = icon === 'sparkles';
     const isSupport = icon === 'lifebuoy';
-    const NavIcon = isCompliance ? Shield : isAgent ? Sparkles : isSupport ? LifeBuoy : Settings;
+    const NavIcon = isCompliance ? Shield : isSupport ? LifeBuoy : Settings;
     const showBadge = isCompliance && showComplianceBadge;
     return (
       <Link
@@ -292,7 +290,7 @@ export function Sidebar() {
 
         {/* Main nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {/* Platform-admin — ADMIN_EMAILS + go-live complete. Hidden on first-run. */}
+          {/* Platform-admin — ADMIN_EMAILS. Visible on first-run so the clients list is reachable. */}
           {isPlatformAdmin && (
             <Link
               href="/platform"

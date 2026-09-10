@@ -12,13 +12,23 @@
 // ============================================================
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../../db/client.js';
-import { tenants, calls, adminUsers, demoLeads } from '../../db/schema.js';
-import { and, eq, gte, sql, desc, ilike, or, inArray } from 'drizzle-orm';
+import {
+  tenants,
+  calls,
+  adminUsers,
+  demoLeads,
+  tenantPhoneNumbers,
+  tenantSettings,
+  phonePortRequests,
+} from '../../db/schema.js';
+import { and, eq, gte, sql, desc, ilike, or, inArray, isNull } from 'drizzle-orm';
 import { config } from '../../config.js';
 import { AuthError, NotFoundError, ValidationError } from '../../lib/errors.js';
 import { auditLog } from '../../audit/audit-logger.js';
 import { getStripe } from '../billing/stripe.client.js';
 import { probeTelnyxAuth } from '../../lib/telnyx-auth.js';
+import { DEFAULT_PUBLIC_GROK_VOICE } from '@ai-receptionist/shared';
+import { billingKind, computeGoLiveBlockers } from './go-live-blockers.js';
 
 /** Gate: caller's JWT email must appear in ADMIN_EMAILS. */
 async function requirePlatformAdmin(
@@ -210,28 +220,109 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
       // Compute minutes used per tenant for this month in one query.
       const tenantIds = limited.map((t) => t.id);
       let usageByTenant = new Map<string, number>();
+      const lastCallByTenant = new Map<string, Date>();
+      const phoneByTenant = new Map<string, string>();
+      const pendingPortByTenant = new Set<string>();
+      const settingsByTenant = new Map<
+        string,
+        { voiceName: string | null; transferNumber: string | null; officeHours: unknown }
+      >();
       if (tenantIds.length > 0) {
-        const rows = await db
-          .select({
-            tenantId: calls.tenantId,
-            totalSeconds: sql<number>`COALESCE(SUM(${calls.durationSeconds}), 0)`,
-          })
-          .from(calls)
-          .where(and(inArray(calls.tenantId, tenantIds), gte(calls.startedAt, monthStart)))
-          .groupBy(calls.tenantId);
+        const [usageRows, lastCallRows, phoneRows, portRows, settingsRows] = await Promise.all([
+          db
+            .select({
+              tenantId: calls.tenantId,
+              totalSeconds: sql<number>`COALESCE(SUM(${calls.durationSeconds}), 0)`,
+            })
+            .from(calls)
+            .where(and(inArray(calls.tenantId, tenantIds), gte(calls.startedAt, monthStart)))
+            .groupBy(calls.tenantId),
+          db
+            .select({
+              tenantId: calls.tenantId,
+              lastCallAt: sql<Date>`MAX(${calls.startedAt})`,
+            })
+            .from(calls)
+            .where(inArray(calls.tenantId, tenantIds))
+            .groupBy(calls.tenantId),
+          db
+            .select({
+              tenantId: tenantPhoneNumbers.tenantId,
+              phoneE164: tenantPhoneNumbers.phoneE164,
+              isPrimary: tenantPhoneNumbers.isPrimary,
+            })
+            .from(tenantPhoneNumbers)
+            .where(
+              and(
+                inArray(tenantPhoneNumbers.tenantId, tenantIds),
+                isNull(tenantPhoneNumbers.releasedAt),
+                eq(tenantPhoneNumbers.purpose, 'inbound')
+              )
+            ),
+          db
+            .select({ tenantId: phonePortRequests.tenantId })
+            .from(phonePortRequests)
+            .where(
+              and(
+                inArray(phonePortRequests.tenantId, tenantIds),
+                inArray(phonePortRequests.status, ['pending', 'submitted', 'in_progress'])
+              )
+            ),
+          db
+            .select({
+              tenantId: tenantSettings.tenantId,
+              voiceName: tenantSettings.voiceName,
+              transferNumber: tenantSettings.transferNumber,
+              officeHours: tenantSettings.officeHours,
+            })
+            .from(tenantSettings)
+            .where(inArray(tenantSettings.tenantId, tenantIds)),
+        ]);
         usageByTenant = new Map(
-          rows.map((r) => [r.tenantId, Math.ceil((Number(r.totalSeconds) ?? 0) / 60)])
+          usageRows.map((r) => [r.tenantId, Math.ceil((Number(r.totalSeconds) ?? 0) / 60)])
         );
+        for (const row of lastCallRows) {
+          if (row.lastCallAt) lastCallByTenant.set(row.tenantId, row.lastCallAt);
+        }
+        // Prefer the primary inbound number when a tenant has several.
+        for (const row of phoneRows) {
+          const existing = phoneByTenant.get(row.tenantId);
+          if (!existing || row.isPrimary) phoneByTenant.set(row.tenantId, row.phoneE164);
+        }
+        for (const row of portRows) pendingPortByTenant.add(row.tenantId);
+        for (const row of settingsRows) {
+          settingsByTenant.set(row.tenantId, {
+            voiceName: row.voiceName,
+            transferNumber: row.transferNumber,
+            officeHours: row.officeHours,
+          });
+        }
       }
 
       const enriched = limited.map((t) => {
         const minutesUsed = usageByTenant.get(t.id) ?? 0;
         const minutesIncluded = t.minutesOverride ?? PLAN_MINUTES[t.plan] ?? 0;
+        const settings = settingsByTenant.get(t.id);
+        const goLiveBlockers = computeGoLiveBlockers({
+          hasInboundPhone: phoneByTenant.has(t.id),
+          hasPendingPort: pendingPortByTenant.has(t.id),
+          voiceName: settings?.voiceName ?? DEFAULT_PUBLIC_GROK_VOICE,
+          officeHours: settings?.officeHours ?? {},
+          transferNumber: settings?.transferNumber ?? '',
+        });
         return {
           ...t,
           minutesUsed,
           minutesIncluded,
           capReached: t.promoTrial && minutesUsed >= minutesIncluded,
+          phone: phoneByTenant.get(t.id) ?? null,
+          lastCallAt: lastCallByTenant.get(t.id) ?? null,
+          goLiveBlockers,
+          billing: billingKind({
+            plan: t.plan,
+            subscriptionStatus: t.subscriptionStatus,
+            promoTrial: t.promoTrial,
+          }),
         };
       });
 
