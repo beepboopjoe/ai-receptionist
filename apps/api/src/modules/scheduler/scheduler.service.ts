@@ -7,6 +7,7 @@ import { integrations, tenantSettings, appointments } from '../../db/schema.js';
 import { eq, and, gte, lte } from 'drizzle-orm';
 import { decryptCredentials } from '../../lib/encryption.js';
 import { createCalendarAdapter } from './adapters/calendar.factory.js';
+import { persistGoogleCalendarTokens } from './google-calendar-oauth.js';
 import type { ICalendarAdapter, TimeSlot, CalendarEvent } from './adapters/base.adapter.js';
 import { NotFoundError, IntegrationError } from '../../lib/errors.js';
 import { audit } from '../../audit/audit-logger.js';
@@ -59,7 +60,19 @@ async function getCalendarAdapter(tenantId: string): Promise<{
     if (integration) {
       const creds = decryptCredentials(integration.credentials as Record<string, string>);
       const meta = integration.metadata as Record<string, string>;
-      const adapter = createCalendarAdapter(provider, creds);
+      const adapter = createCalendarAdapter(
+        provider,
+        creds,
+        provider === 'google'
+          ? {
+              onTokens: (tokens) => {
+                void persistGoogleCalendarTokens({ tenantId, tokens }).catch((err) => {
+                  console.error('[scheduler] failed to persist Google token refresh:', err);
+                });
+              },
+            }
+          : undefined
+      );
       return { adapter, calendarId: meta['calendar_id'] ?? 'primary' };
     }
   }

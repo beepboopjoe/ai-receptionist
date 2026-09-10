@@ -42,6 +42,7 @@ import { phoneNumbersPlugin } from './modules/phone-numbers/phone.router.js';
 import { affiliatePlugin } from './modules/affiliates/affiliate.router.js';
 import { partnerPlugin } from './modules/affiliates/partner.router.js';
 import { hubspotOAuthPlugin } from './modules/crm/hubspot-oauth.router.js';
+import { googleCalendarOAuthPlugin } from './modules/scheduler/google-calendar-oauth.router.js';
 import { campaignsPlugin } from './modules/campaigns/campaign.router.js';
 import { demoPlugin } from './modules/voice-agent/demo.router.js';
 import { webhookPlugin } from './modules/webhooks/webhook.router.js';
@@ -196,6 +197,8 @@ async function buildApp() {
   await app.register(affiliatePlugin, { prefix: '/api/v1' });
   await app.register(partnerPlugin, { prefix: '/api/v1' });
   await app.register(hubspotOAuthPlugin, { prefix: '/api/v1' });
+  await app.register(googleCalendarOAuthPlugin, { prefix: '/api/v1' });
+  console.log('[boot] googleCalendarOAuthPlugin registered (/api/v1/integrations/google-calendar/*)');
   await app.register(smsPlugin, { prefix: '/api/v1' });
   await app.register(compliancePlugin, { prefix: '/api/v1' });
   await app.register(agentPlugin, { prefix: '/api/v1' });

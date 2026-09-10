@@ -2,27 +2,23 @@
 // Calendar adapter factory — resolves concrete adapter by provider name
 // ============================================================
 import type { ICalendarAdapter } from './base.adapter.js';
-import { GoogleCalendarAdapter } from './google.adapter.js';
+import { GoogleCalendarAdapter, type GoogleCalendarAdapterOpts } from './google.adapter.js';
 import { MicrosoftCalendarAdapter } from './microsoft.adapter.js';
-
-type AdapterConstructor = new (credentials: Record<string, string>) => ICalendarAdapter;
-
-const registry: Record<string, AdapterConstructor> = {
-  google: GoogleCalendarAdapter,
-  microsoft: MicrosoftCalendarAdapter,
-};
 
 export function createCalendarAdapter(
   provider: string,
-  credentials: Record<string, string>
+  credentials: Record<string, string>,
+  opts?: GoogleCalendarAdapterOpts
 ): ICalendarAdapter {
-  const Adapter = registry[provider];
-  if (!Adapter) {
-    throw new Error(`Unknown calendar provider: ${provider}. Supported: ${Object.keys(registry).join(', ')}`);
+  if (provider === 'google') {
+    return new GoogleCalendarAdapter(credentials, opts);
   }
-  return new Adapter(credentials);
+  if (provider === 'microsoft') {
+    return new MicrosoftCalendarAdapter(credentials);
+  }
+  throw new Error(`Unknown calendar provider: ${provider}. Supported: google, microsoft`);
 }
 
 export function getSupportedCalendarProviders(): string[] {
-  return Object.keys(registry);
+  return ['google', 'microsoft'];
 }

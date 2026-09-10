@@ -475,6 +475,27 @@ export const integrationsApi = {
   /** Calendar / CRM OAuth start URL. Base already includes `/api/v1`. */
   connectUrl: (providerId: string) =>
     apiUrl(`/integrations/${providerId.replace(/_/g, '-')}/connect`),
+
+  /**
+   * Google Calendar — POST so the JWT Authorization header is sent.
+   * A GET `<a href>` 401s (token lives in localStorage, not a cookie).
+   */
+  googleCalendarStatus: () =>
+    apiFetch<{
+      configured: boolean;
+      connected: boolean;
+      accountEmail: string | null;
+      calendarId: string | null;
+      errorMessage: string | null;
+      redirectUri: string;
+    }>('/integrations/google-calendar/status'),
+  connectGoogleCalendar: (returnTo?: string) =>
+    apiFetch<{ url: string }>('/integrations/google-calendar/connect', {
+      method: 'POST',
+      body: JSON.stringify(returnTo ? { returnTo } : {}),
+    }),
+  disconnectGoogleCalendar: () =>
+    apiFetch('/integrations/google-calendar/disconnect', { method: 'POST' }),
 };
 
 // ---- Knowledge Base (Phase 12.8 / 14) ----

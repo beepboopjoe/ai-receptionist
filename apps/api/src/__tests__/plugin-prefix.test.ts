@@ -23,6 +23,7 @@ const CRITICAL_ROUTERS = [
   'modules/compliance/compliance.router.ts',
   'modules/knowledge-base/kb.router.ts',
   'modules/public-api/site-chat.router.ts',
+  'modules/scheduler/google-calendar-oauth.router.ts',
 ];
 
 describe('critical routers keep the /api/v1 prefix', () => {
