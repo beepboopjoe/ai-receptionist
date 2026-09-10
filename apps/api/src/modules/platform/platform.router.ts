@@ -27,11 +27,19 @@ import { AuthError, NotFoundError, ValidationError } from '../../lib/errors.js';
 import { auditLog } from '../../audit/audit-logger.js';
 import { getStripe } from '../billing/stripe.client.js';
 import { probeTelnyxAuth } from '../../lib/telnyx-auth.js';
-import { DEFAULT_PUBLIC_GROK_VOICE } from '@ai-receptionist/shared';
-import { billingKind, computeGoLiveBlockers } from './go-live-blockers.js';
+import { DEFAULT_PUBLIC_GROK_VOICE, PLANS } from '@ai-receptionist/shared';
+import {
+  billingKind,
+  computeGoLiveBlockers,
+  countsTowardMrr,
+  planPriceCents,
+  resolveIncludedMinutes,
+} from './go-live-blockers.js';
+
+const VALID_PROMO_PLANS = PLANS.map((p) => p.key);
 
 /** Gate: caller's JWT email must appear in ADMIN_EMAILS. */
-async function requirePlatformAdmin(
+export async function requirePlatformAdmin(
   request: FastifyRequest,
   _reply: FastifyReply
 ): Promise<void> {
@@ -48,24 +56,6 @@ async function requirePlatformAdmin(
     throw new AuthError('Platform admin only');
   }
 }
-
-// Same source of truth as admin/router.ts (kept in sync manually for now).
-const PLAN_PRICE: Record<string, number> = {
-  trial: 0,
-  starter: 79,
-  growth: 199,
-  scale: 399,
-  enterprise: 0,
-  pro: 0,
-};
-const PLAN_MINUTES: Record<string, number> = {
-  trial: 10,
-  starter: 200,
-  growth: 750,
-  scale: 1500,
-  enterprise: 99999,
-  pro: 1500,
-};
 
 export async function platformPlugin(app: FastifyInstance): Promise<void> {
   // ── Self-check — used by the sidebar to decide whether to render the
@@ -125,11 +115,13 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
       const signups7d = tenantRows.filter((t) => t.createdAt >= sevenDaysAgo).length;
       const signups30d = tenantRows.filter((t) => t.createdAt >= thirtyDaysAgo).length;
 
-      // MRR = sum of monthly plan price for tenants whose Stripe sub status is
-      // active or trialing. Annual plans are normalised to monthly.
+      // MRR = sum of shared-catalog monthly prices for paying tenants.
+      // Promo trials are complimentary and must not inflate this number.
+      // Usage-ledger detail (per-tenant billed minutes) is owned by a
+      // parallel PR — this endpoint stays a rollup until that lands.
       const mrrCents = tenantRows
-        .filter((t) => t.status === 'active' || t.status === 'trialing')
-        .reduce((sum, t) => sum + (PLAN_PRICE[t.plan] ?? 0) * 100, 0);
+        .filter((t) => countsTowardMrr({ subscriptionStatus: t.status, promoTrial: t.promoTrial }))
+        .reduce((sum, t) => sum + planPriceCents(t.plan), 0);
 
       // Churn proxy: count of tenants whose subscription is canceled or past_due
       const churnedRecently = tenantRows.filter(
@@ -190,6 +182,7 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
           subscriptionStatus: tenants.subscriptionStatus,
           promoTrial: tenants.promoTrial,
           minutesOverride: tenants.minutesOverride,
+          legacyPricing: tenants.legacyPricing,
           createdAt: tenants.createdAt,
           ownerEmail: adminUsers.email,
         })
@@ -302,7 +295,11 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
 
       const enriched = limited.map((t) => {
         const minutesUsed = usageByTenant.get(t.id) ?? 0;
-        const minutesIncluded = t.minutesOverride ?? PLAN_MINUTES[t.plan] ?? 0;
+        const { minutesIncluded, unlimited } = resolveIncludedMinutes({
+          plan: t.plan,
+          minutesOverride: t.minutesOverride,
+          legacyPricing: t.legacyPricing,
+        });
         const settings = settingsByTenant.get(t.id);
         const goLiveBlockers = computeGoLiveBlockers({
           hasInboundPhone: phoneByTenant.has(t.id),
@@ -315,7 +312,8 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
           ...t,
           minutesUsed,
           minutesIncluded,
-          capReached: t.promoTrial && minutesUsed >= minutesIncluded,
+          minutesUnlimited: unlimited,
+          capReached: t.promoTrial && !unlimited && minutesUsed >= minutesIncluded,
           phone: phoneByTenant.get(t.id) ?? null,
           lastCallAt: lastCallByTenant.get(t.id) ?? null,
           goLiveBlockers,
@@ -385,6 +383,103 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
               .limit(limit);
 
       return { data: rows, total: rows.length };
+    }
+  );
+
+  // Grant / revoke live on /platform so the admin UI does not depend on
+  // /admin/tenants/:id/* (those routes are owner-gated for the caller's
+  // own tenant and are the wrong auth hop for founder ops).
+  app.post(
+    '/platform/tenants/:id/grant-promo-trial',
+    { onRequest: [requirePlatformAdmin] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const body = (request.body ?? {}) as { plan?: string; minutes?: number };
+
+      if (!body.plan || !VALID_PROMO_PLANS.includes(body.plan as (typeof VALID_PROMO_PLANS)[number])) {
+        throw new ValidationError(`plan must be one of: ${VALID_PROMO_PLANS.join(', ')}`);
+      }
+      if (
+        typeof body.minutes !== 'number' ||
+        !Number.isInteger(body.minutes) ||
+        body.minutes < 1 ||
+        body.minutes > 10_000
+      ) {
+        throw new ValidationError('minutes must be an integer between 1 and 10000');
+      }
+
+      const [target] = await db
+        .select({ id: tenants.id, name: tenants.name })
+        .from(tenants)
+        .where(eq(tenants.id, id))
+        .limit(1);
+      if (!target) throw new NotFoundError('Tenant not found');
+
+      await db
+        .update(tenants)
+        .set({
+          plan: body.plan,
+          minutesOverride: body.minutes,
+          promoTrial: true,
+          isActive: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(tenants.id, id));
+
+      auditLog({
+        tenantId: id,
+        actorType: 'admin_user',
+        actorId: (request.user as { sub: string }).sub,
+        action: 'tenant.promo_trial_granted',
+        entityType: 'tenant',
+        entityId: id,
+        metadata: {
+          plan: body.plan,
+          minutes: body.minutes,
+          targetName: target.name,
+          grantedBy: (request.user as { email: string }).email,
+        },
+      });
+
+      return reply.send({
+        ok: true,
+        tenantId: id,
+        plan: body.plan,
+        minutesOverride: body.minutes,
+        promoTrial: true,
+      });
+    }
+  );
+
+  app.post(
+    '/platform/tenants/:id/revoke-promo-trial',
+    { onRequest: [requirePlatformAdmin] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+
+      const [target] = await db
+        .select({ id: tenants.id })
+        .from(tenants)
+        .where(eq(tenants.id, id))
+        .limit(1);
+      if (!target) throw new NotFoundError('Tenant not found');
+
+      await db
+        .update(tenants)
+        .set({ minutesOverride: null, promoTrial: false, updatedAt: new Date() })
+        .where(eq(tenants.id, id));
+
+      auditLog({
+        tenantId: id,
+        actorType: 'admin_user',
+        actorId: (request.user as { sub: string }).sub,
+        action: 'tenant.promo_trial_revoked',
+        entityType: 'tenant',
+        entityId: id,
+        metadata: { revokedBy: (request.user as { email: string }).email },
+      });
+
+      return reply.send({ ok: true, tenantId: id });
     }
   );
 
