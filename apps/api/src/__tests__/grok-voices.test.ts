@@ -163,6 +163,12 @@ describe('marketing voice sample languages', () => {
     expect(demoUi).toContain('useSampleLanguage');
     expect(demoUi).not.toContain('hideLanguageSelector');
     expect(demoPage).not.toContain('hideLanguageSelector');
+    expect(demoPage).toMatch(/voice-language-demo[\s\S]{0,120}ssr:\s*false/);
+    const hook = readFileSync(
+      join(repoRoot, 'apps/dashboard/src/lib/use-sample-language.ts'),
+      'utf8',
+    );
+    expect(hook).toContain('readStoredSampleLang() ?? defaultLang');
     expect(chips).toContain('Sample language');
     expect(chips).toContain('toUpperCase');
     expect(callMe).not.toContain('SampleLanguageChips');
