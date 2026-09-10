@@ -35,6 +35,7 @@ import {
   planPriceCents,
   resolveIncludedMinutes,
 } from './go-live-blockers.js';
+import { getUsageSnapshotsForTenants, type TenantUsageSnapshotRow } from '../billing/usage-ledger.service.js';
 
 const VALID_PROMO_PLANS = PLANS.map((p) => p.key);
 
@@ -117,8 +118,6 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
 
       // MRR = sum of shared-catalog monthly prices for paying tenants.
       // Promo trials are complimentary and must not inflate this number.
-      // Usage-ledger detail (per-tenant billed minutes) is owned by a
-      // parallel PR — this endpoint stays a rollup until that lands.
       const mrrCents = tenantRows
         .filter((t) => countsTowardMrr({ subscriptionStatus: t.status, promoTrial: t.promoTrial }))
         .reduce((sum, t) => sum + planPriceCents(t.plan), 0);
@@ -220,8 +219,9 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
         string,
         { voiceName: string | null; transferNumber: string | null; officeHours: unknown }
       >();
+      let ledgerByTenant = new Map<string, TenantUsageSnapshotRow>();
       if (tenantIds.length > 0) {
-        const [usageRows, lastCallRows, phoneRows, portRows, settingsRows] = await Promise.all([
+        const [usageRows, lastCallRows, phoneRows, portRows, settingsRows, ledgerRows] = await Promise.all([
           db
             .select({
               tenantId: calls.tenantId,
@@ -271,6 +271,7 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
             })
             .from(tenantSettings)
             .where(inArray(tenantSettings.tenantId, tenantIds)),
+          getUsageSnapshotsForTenants(tenantIds, monthStart),
         ]);
         usageByTenant = new Map(
           usageRows.map((r) => [r.tenantId, Math.ceil((Number(r.totalSeconds) ?? 0) / 60)])
@@ -291,6 +292,7 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
             officeHours: row.officeHours,
           });
         }
+        ledgerByTenant = ledgerRows;
       }
 
       const enriched = limited.map((t) => {
@@ -308,6 +310,7 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
           officeHours: settings?.officeHours ?? {},
           transferNumber: settings?.transferNumber ?? '',
         });
+        const ledger = ledgerByTenant.get(t.id);
         return {
           ...t,
           minutesUsed,
@@ -322,6 +325,21 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
             subscriptionStatus: t.subscriptionStatus,
             promoTrial: t.promoTrial,
           }),
+          usageLedger: ledger
+            ? {
+                aiMinutes: ledger.aiMinutes,
+                telnyxCents: ledger.telnyxCents,
+                grokEstimateCents: ledger.grokEstimateCents,
+                numberMonthlyCents: ledger.numberMonthlyCents,
+                smsCount: ledger.smsCount,
+              }
+            : {
+                aiMinutes: 0,
+                telnyxCents: 0,
+                grokEstimateCents: 0,
+                numberMonthlyCents: 0,
+                smsCount: 0,
+              },
         };
       });
 

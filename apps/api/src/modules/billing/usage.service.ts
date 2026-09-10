@@ -26,7 +26,7 @@ import { getPlan, resolvePlanLimits } from '@ai-receptionist/shared';
  * For tenants without a Stripe sub yet (trial, never-paid), we use
  * a calendar-month window keyed off the tenant creation date.
  */
-function periodBoundsFor(tenant: {
+export function periodBoundsFor(tenant: {
   currentPeriodEnd: Date | null;
   createdAt: Date;
 }): { start: Date; end: Date } {

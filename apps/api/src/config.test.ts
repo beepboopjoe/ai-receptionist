@@ -93,6 +93,10 @@ describe('resolveConfig', () => {
     expect(config.DEMO_SKIP_COOLDOWN).toBe('');
     expect(config.DEMO_CLEAR_COOLDOWNS_ON_BOOT).toBe('');
     expect(config.DEMO_ENSURE_TENANT).toBe('');
+    expect(config.TELNYX_INBOUND_CENTS_PER_MIN).toBe(0.35);
+    expect(config.TELNYX_OUTBOUND_CENTS_PER_MIN).toBe(0.7);
+    expect(config.TELNYX_SMS_CENTS).toBe(0.4);
+    expect(config.GROK_CENTS_PER_MIN).toBe(6);
   });
 
   it('sanitizes TELNYX_API_KEY quotes, whitespace, and Bearer prefix', () => {

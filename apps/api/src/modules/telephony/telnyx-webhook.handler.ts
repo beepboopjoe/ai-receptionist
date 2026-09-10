@@ -21,8 +21,11 @@
 // ============================================================
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../../db/client.js';
-import { calls, tenants, campaignContacts, outboundCampaigns, contacts, smsMessages, notifications } from '../../db/schema.js';
+import { calls, tenants, tenantSettings, campaignContacts, outboundCampaigns, contacts, smsMessages, notifications } from '../../db/schema.js';
 import { and, eq, sql } from 'drizzle-orm';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
 import {
   answerCall,
   startMediaStream,
@@ -32,7 +35,14 @@ import {
   startCallRecording,
   stopMediaStream,
   joinCallToConference,
+  transferInboundCall,
+  dialOverflowStaff,
 } from '../campaigns/telnyx-dialer.service.js';
+import { isAfterHoursCall } from './office-hours.js';
+import { resolveInboundRoutingAction, type InboundRoutingAction } from './inbound-routing.js';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 import { outboundDialerQueue } from '../../queue/queues.js';
 import { sendSms } from '../notifications/adapters/telnyx-sms.adapter.js';
 import { getTenantFromNumber } from '../sms/tenant-from-number.js';
@@ -122,10 +132,14 @@ interface TelnyxCallState {
    */
   streamAttachedAtDial?: boolean;
   /** 'supervisor_join' = staff leg dialed from the live-call Join button. */
-  kind?: 'supervisor_join';
+  kind?: 'supervisor_join' | 'overflow_staff';
   originalCallId?: string;
   originalCallControlId?: string;
   conferenceName?: string;
+  /** Inbound routing: ai | forward | overflow */
+  routing?: 'ai' | 'forward' | 'overflow';
+  awaitingStaff?: boolean;
+  staffNumber?: string;
 }
 
 function encodeState(state: TelnyxCallState): string {
@@ -210,7 +224,7 @@ async function dispatch(
       break;
 
     case 'call.answered':
-      if (state.kind === 'supervisor_join') {
+      if (state.kind === 'supervisor_join' || state.kind === 'overflow_staff') {
         await onSupervisorJoinAnswered(call_control_id, state);
         break;
       }
@@ -310,6 +324,30 @@ async function onCallInitiated(
     return;
   }
 
+  const [settings] = await db
+    .select({
+      inboundRoutingMode: tenantSettings.inboundRoutingMode,
+      transferNumber: tenantSettings.transferNumber,
+      officeHours: tenantSettings.officeHours,
+    })
+    .from(tenantSettings)
+    .where(eq(tenantSettings.tenantId, tenant.id))
+    .limit(1);
+
+  const tz = tenant.timezone || 'America/New_York';
+  const now = dayjs().tz(tz);
+  const isAfterHours = isAfterHoursCall({
+    now,
+    officeHours: (settings?.officeHours ?? {}) as Record<string, unknown>,
+    dayKey: now.format('ddd').toLowerCase(),
+  });
+  const action = resolveInboundRoutingAction({
+    mode: settings?.inboundRoutingMode,
+    isAfterHours,
+    staffNumber: settings?.transferNumber,
+  });
+  const routingState = routingStateForAction(action, settings?.transferNumber ?? null);
+
   // Create call record (rcCallId = call_control_id, same role as Twilio's CallSid)
   const [call] = await db
     .insert(calls)
@@ -331,10 +369,14 @@ async function onCallInitiated(
     fromNumber,
     callSid: callControlId,
     isOutbound: false,
+    ...routingState,
   });
 
   await answerCall(callControlId, clientState);
-  logger.info({ callControlId, callId: call?.id, tenantId: tenant.id }, 'Inbound call answered');
+  logger.info(
+    { callControlId, callId: call?.id, tenantId: tenant.id, action, isAfterHours },
+    'Inbound call answered',
+  );
 }
 
 /**
@@ -347,6 +389,50 @@ async function onCallAnswered(
   state: TelnyxCallState,
   payload: TelnyxEventPayload
 ): Promise<void> {
+  if (state.routing === 'forward' && state.staffNumber) {
+    try {
+      await transferInboundCall(callControlId, state.staffNumber, {
+        from: payload.to,
+        clientState: encodeState(state),
+      });
+      if (state.callId) {
+        await db
+          .update(calls)
+          .set({ status: 'transferred', outcome: 'escalated', updatedAt: new Date() })
+          .where(eq(calls.id, state.callId));
+      }
+      logger.info({ callControlId, to: state.staffNumber }, 'after_hours_ai forwarded to staff');
+    } catch (err) {
+      logger.warn({ err, callControlId }, 'Staff forward failed — falling back to AI');
+      await startStream(callControlId, { ...state, routing: 'ai', awaitingStaff: false });
+    }
+    return;
+  }
+
+  if (state.routing === 'overflow' && state.awaitingStaff && state.staffNumber && state.callId) {
+    const from = payload.to || state.fromNumber;
+    if (!from) {
+      logger.warn({ callControlId }, 'Overflow missing from-number — falling back to AI');
+      await startStream(callControlId, { ...state, routing: 'ai', awaitingStaff: false });
+      return;
+    }
+    try {
+      await dialOverflowStaff({
+        to: state.staffNumber,
+        from,
+        originalCallId: state.callId,
+        originalCallControlId: callControlId,
+        conferenceName: `telfin-overflow-${state.callId.replace(/-/g, '').slice(0, 24)}`,
+        tenantId: state.tenantId ?? '',
+      });
+      logger.info({ callControlId, to: state.staffNumber }, 'overflow_ai ringing staff');
+    } catch (err) {
+      logger.warn({ err, callControlId }, 'Overflow staff dial failed — falling back to AI');
+      await startStream(callControlId, { ...state, routing: 'ai', awaitingStaff: false });
+    }
+    return;
+  }
+
   if (!shouldStartStreamOnAnswer(state)) {
     // Campaign outbound — AMD is running; wait for call.machine.detection.ended.
     if (state.campaignId) {
@@ -441,6 +527,11 @@ async function onCallHangup(
     return;
   }
 
+  if (state.kind === 'overflow_staff') {
+    await onOverflowStaffHangup(state);
+    return;
+  }
+
   if (state.callId) {
     // Don't clobber a live takeover/join — the stream handler persists
     // transcript after this webhook and should keep status=transferred.
@@ -474,9 +565,28 @@ async function onCallHangup(
   // the caller hung up before the AI could help. Best-effort — never throws.
   // The text-back routes through the tenant's own provisioned number; the helper
   // skips if no number is provisioned.
-  if (!state.isOutbound && state.callId && state.tenantId && state.fromNumber && config.TELNYX_API_KEY) {
+  if (
+    !state.isOutbound &&
+    state.routing !== 'forward' &&
+    state.routing !== 'overflow' &&
+    state.callId &&
+    state.tenantId &&
+    state.fromNumber &&
+    config.TELNYX_API_KEY
+  ) {
     void sendMissedCallTextBack(state.callId, state.tenantId, state.fromNumber).catch((err) => {
       logger.warn({ err, callControlId }, 'Missed-call text-back failed');
+    });
+  }
+
+  if (
+    !state.isOutbound &&
+    state.callId &&
+    state.tenantId &&
+    (state.routing === 'forward' || state.routing === 'overflow')
+  ) {
+    void recordStaffHandledTelnyxUsage(state).catch((err) => {
+      logger.warn({ err, callControlId }, 'Staff-handled usage ledger write failed');
     });
   }
 
@@ -484,6 +594,68 @@ async function onCallHangup(
 }
 
 // ---- Internal helpers ----
+
+function routingStateForAction(
+  action: InboundRoutingAction,
+  staffNumber: string | null,
+): Pick<TelnyxCallState, 'routing' | 'awaitingStaff' | 'staffNumber'> {
+  if (action === 'forward_staff' && staffNumber) {
+    return { routing: 'forward', awaitingStaff: false, staffNumber };
+  }
+  if (action === 'overflow_try_staff' && staffNumber) {
+    return { routing: 'overflow', awaitingStaff: true, staffNumber };
+  }
+  return { routing: 'ai', awaitingStaff: false };
+}
+
+async function onOverflowStaffHangup(state: TelnyxCallState): Promise<void> {
+  const originalId = state.originalCallControlId;
+  const originalCallId = state.originalCallId;
+  if (!originalId || !originalCallId) return;
+
+  const [call] = await db
+    .select({ status: calls.status })
+    .from(calls)
+    .where(eq(calls.id, originalCallId))
+    .limit(1);
+
+  if (!call || call.status === 'transferred' || call.status === 'completed' || call.status === 'missed') {
+    logger.info({ originalCallId, status: call?.status }, 'Overflow staff hung up after connect');
+    return;
+  }
+
+  logger.info({ originalCallId, originalId }, 'Overflow staff no-answer — starting AI');
+  await startStream(originalId, {
+    callId: originalCallId,
+    tenantId: state.tenantId,
+    callSid: originalId,
+    isOutbound: false,
+    routing: 'ai',
+    awaitingStaff: false,
+  });
+}
+
+async function recordStaffHandledTelnyxUsage(state: TelnyxCallState): Promise<void> {
+  if (!state.callId || !state.tenantId) return;
+  const [call] = await db
+    .select({ status: calls.status, startedAt: calls.startedAt, durationSeconds: calls.durationSeconds })
+    .from(calls)
+    .where(eq(calls.id, state.callId))
+    .limit(1);
+  if (!call || call.status !== 'transferred') return;
+  const seconds =
+    call.durationSeconds ??
+    (call.startedAt ? Math.max(0, Math.round((Date.now() - call.startedAt.getTime()) / 1000)) : 0);
+  if (seconds <= 0) return;
+  const { recordCallUsage } = await import('../billing/usage-ledger.service.js');
+  await recordCallUsage({
+    tenantId: state.tenantId,
+    callId: state.callId,
+    minutes: seconds / 60,
+    direction: 'inbound',
+    aiHandled: false,
+  });
+}
 
 async function startStream(
   callControlId: string,
@@ -689,6 +861,9 @@ async function sendMissedCallTextBack(
   const body = `Hi! We missed your call at ${businessName}. How can we help? Reply here or call us back anytime.`;
 
   const msgId = await sendSms(callerPhone, body, fromNumber);
+  void import('../billing/usage-ledger.service.js').then(({ recordSmsUsage }) =>
+    recordSmsUsage(tenantId, 'outbound')
+  );
   logger.info({ tenantId, callerPhone, callId }, 'Missed-call text-back sent');
 
   // Match contact for the thread
@@ -754,6 +929,10 @@ async function onMessageReceived(event: TelnyxMessageEventData): Promise<void> {
     .from(contacts)
     .where(and(eq(contacts.tenantId, tenantId), eq(contacts.phoneE164, fromPhone)))
     .limit(1);
+
+  void import('../billing/usage-ledger.service.js').then(({ recordSmsUsage }) =>
+    recordSmsUsage(tenantId, 'inbound')
+  );
 
   await db.insert(smsMessages).values({
     tenantId,

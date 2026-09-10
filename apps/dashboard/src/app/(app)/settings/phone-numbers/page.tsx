@@ -11,10 +11,13 @@
 import { useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import { phoneNumbersApi, outboundPoolApi, type AvailableNumber, type OwnedNumber, type PortRequestRow } from '@/lib/api';
-import { Phone, Search, Trash2, Star, X, ArrowRight, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Zap, Shield, BarChart2, MapPin, Layers } from 'lucide-react';
+import { Phone, Search, Trash2, Star, X, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Zap, Shield, BarChart2, MapPin, Layers } from 'lucide-react';
 import { useToast } from '@/components/ui/toast';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton as UiSkeleton } from '@/components/ui/skeleton';
+import { ForwardYourLineCard } from '@/components/settings/forward-your-line-card';
+import { InboundRoutingCard } from '@/components/settings/inbound-routing-card';
+import { BRAND_NAME } from '@/lib/brand';
 
 function formatNumber(e164: string): string {
   if (!e164 || e164 === 'pending') return 'Number pending';
@@ -292,18 +295,11 @@ export default function PhoneNumbersPage() {
         <div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Your numbers</h1>
           <p className="text-gray-500 mt-1 text-sm">
-            Inbound DIDs your AI answers on, plus the auto-managed outbound pool for campaigns.
-            {allotmentLabel}
+            Paid go-live auto-assigns a {BRAND_NAME} inbound DID. Forward your existing business
+            line to it. {allotmentLabel} Outbound campaign numbers stay auto-managed.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => setPortOpen(true)}
-            className="btn-secondary inline-flex items-center gap-2 text-sm"
-            title="Move an existing business number from another carrier"
-          >
-            <ArrowRight size={14} /> Port my number
-          </button>
           <button
             onClick={() => setSearchOpen(true)}
             className="btn-primary inline-flex items-center gap-2 text-sm"
@@ -331,6 +327,14 @@ export default function PhoneNumbersPage() {
           {' '}Outbound campaign numbers are auto-managed and do not use these slots.
         </p>
       </div>
+
+      <ForwardYourLineCard
+        did={
+          owned.find((n) => (n.provisionStatus ?? 'active') === 'active' && n.phoneE164?.startsWith('+'))
+            ?.phoneE164 ?? null
+        }
+      />
+      <InboundRoutingCard />
 
       {/* ── Promo-trial at-cost pricing banner ─────────────────── */}
       {isPromoPricing && (
@@ -503,7 +507,7 @@ export default function PhoneNumbersPage() {
         <EmptyState
           icon={Phone}
           label="No numbers yet"
-          hint="We’ll auto-assign a US inbound DID when you go live on a paid plan. You can also provision one now."
+          hint="We’ll auto-assign a US inbound DID when you go live on a paid plan. Forward your existing line to it — porting is optional later."
           cta={{ label: autoProvisioning ? 'Provisioning…' : 'Get my number', onClick: handleAutoProvision }}
         />
       ) : (
@@ -555,6 +559,22 @@ export default function PhoneNumbersPage() {
           ))}
         </div>
       )}
+
+      <div className="rounded-xl border border-gray-200 bg-gray-50 px-5 py-4 space-y-2">
+        <p className="text-sm font-semibold text-gray-900">Later · optional — port your existing number</p>
+        <p className="text-xs text-gray-500 leading-relaxed">
+          Porting is not a day-one blocker. Forwarding gets you live today. When you are ready
+          (typically 5–14 business days, LOA required), we can move the old number onto {BRAND_NAME}
+          so callers see that caller ID on the DID itself.
+        </p>
+        <button
+          type="button"
+          onClick={() => setPortOpen(true)}
+          className="btn-secondary text-sm"
+        >
+          Start a port request
+        </button>
+      </div>
 
       {/* ── Outbound campaign number pool (auto-managed, read-only) ── */}
       <div className="card overflow-hidden">
@@ -703,7 +723,7 @@ export default function PhoneNumbersPage() {
             <div className="p-5 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h2 className="font-serif text-xl text-cream-900">Port your existing number</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Keep your current business number. Free porting — typically 5–14 business days.</p>
+                <p className="text-xs text-gray-500 mt-0.5">Optional — not required to go live. Free porting, typically 5–14 business days. Forwarding works today.</p>
               </div>
               <button onClick={() => setPortOpen(false)} className="p-1.5 rounded hover:bg-gray-100">
                 <X size={18} />

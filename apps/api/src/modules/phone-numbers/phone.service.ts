@@ -263,6 +263,16 @@ export async function purchaseTenantNumber(params: {
     }
   }
 
+  if (monthlyCostCents > 0) {
+    void import('../billing/usage-ledger.service.js').then(({ recordNumberMonthlyUsage }) =>
+      recordNumberMonthlyUsage({
+        tenantId: params.tenantId,
+        monthlyCostCents,
+        phoneE164: params.phoneE164,
+      })
+    );
+  }
+
   return {
     number: {
       id: row.id,

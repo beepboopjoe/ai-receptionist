@@ -100,7 +100,7 @@ export function useGoLive(): GoLiveStatus {
   const hasPendingPort = ports.some((p) =>
     ['pending', 'submitted', 'in_progress'].includes(p.status)
   );
-  const phoneReady = hasPhone || hasPendingPort;
+  const phoneReady = hasPhone;
 
   const voiceName = String(settings?.voiceName ?? DEFAULT_PUBLIC_GROK_VOICE).toLowerCase();
   const hasGrokVoice = (GROK_VOICE_IDS as readonly string[]).includes(voiceName);
@@ -118,12 +118,14 @@ export function useGoLive(): GoLiveStatus {
   const steps: GoLiveStep[] = [
     {
       id: 'phone',
-      title: 'Get a phone number',
-      desc: hasPendingPort
-        ? 'A port request is in progress — your existing number is on the way.'
-        : 'We’ll auto-assign a US inbound DID on go-live, or buy/port one here.',
+      title: 'Get a Telfin inbound number',
+      desc: hasPhone
+        ? 'Forward your existing business line to this DID. Porting is optional later.'
+        : hasPendingPort
+          ? 'A port is in progress, but go-live uses the auto-assigned Telfin DID — forwarding works today.'
+          : 'We’ll auto-assign a US inbound DID on paid go-live. Forward your existing line to it.',
       href: '/settings/phone-numbers',
-      cta: hasPendingPort ? 'View port status' : 'Get a number',
+      cta: hasPhone ? 'Forwarding instructions' : 'Get a number',
       done: phoneReady,
     },
     {

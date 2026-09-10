@@ -131,6 +131,17 @@ const envSchema = z.object({
   TELNYX_WHOLESALE_LOCAL_CENTS: z.coerce.number().int().min(0).default(100),
   TELNYX_WHOLESALE_TOLLFREE_CENTS: z.coerce.number().int().min(0).default(200),
 
+  /**
+   * Internal COGS estimates for the usage ledger (not customer prices).
+   * Documented as estimates — Telnyx/xAI invoices remain the source of
+   * truth for actual spend. Defaults track typical US list rates + the
+   * fully-loaded ~$0.07/min model in packages/shared billing.types.ts.
+   */
+  TELNYX_INBOUND_CENTS_PER_MIN: z.coerce.number().min(0).default(0.35),
+  TELNYX_OUTBOUND_CENTS_PER_MIN: z.coerce.number().min(0).default(0.7),
+  TELNYX_SMS_CENTS: z.coerce.number().min(0).default(0.4),
+  GROK_CENTS_PER_MIN: z.coerce.number().min(0).default(6),
+
   // Public homepage "Call me now" widget (Phase 12.3).
   // DEMO_TENANT_ID points at a real tenant row pre-configured with a generic
   // demo persona. DEMO_FROM_NUMBER is the E.164 number the call originates

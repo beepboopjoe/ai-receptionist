@@ -279,6 +279,7 @@ export default function PlatformAdminPage() {
                   <th className="px-3 py-3 text-left font-semibold">Last call</th>
                   <th className="px-3 py-3 text-left font-semibold">Go-live</th>
                   <th className="px-3 py-3 text-left font-semibold">Minutes</th>
+                  <th className="px-3 py-3 text-left font-semibold">Ledger</th>
                   <th className="px-6 py-3 text-right font-semibold">Action</th>
                 </tr>
               </thead>
@@ -540,6 +541,21 @@ function TenantRow({
         <div className="w-24 h-1 bg-gray-100 rounded-full overflow-hidden mt-1">
           <div className={`h-full ${minutesColor}`} style={{ width: `${minutesPct}%` }} />
         </div>
+      </td>
+      <td className="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">
+        {tenant.usageLedger ? (
+          <>
+            <div>{tenant.usageLedger.aiMinutes.toFixed(1)} AI min</div>
+            <div className="text-gray-400">
+              Telnyx ${(tenant.usageLedger.telnyxCents / 100).toFixed(2)}
+              {tenant.usageLedger.numberMonthlyCents > 0
+                ? ` · nums $${(tenant.usageLedger.numberMonthlyCents / 100).toFixed(2)}`
+                : ''}
+            </div>
+          </>
+        ) : (
+          '—'
+        )}
       </td>
       <td className="px-6 py-3 text-right">
         <div className="inline-flex items-center gap-1">

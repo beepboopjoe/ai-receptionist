@@ -4,7 +4,7 @@
 import { db } from '../../db/client.js';
 import { tenantSettings, tenants } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
-import type { OfficeHours, AppointmentType } from '@ai-receptionist/shared';
+import type { OfficeHours, AppointmentType, InboundRoutingMode } from '@ai-receptionist/shared';
 import { VERTICAL_VALUES as _VERTICAL_VALUES, isVertical as _isVertical } from '@ai-receptionist/shared';
 import { ValidationError, NotFoundError } from '../../lib/errors.js';
 import { coerceVoiceSettings } from './voice-coerce.js';
@@ -45,6 +45,7 @@ export async function getTenantInfo(tenantId: string) {
 export interface UpdateSettingsInput {
   officeHours?: OfficeHours;
   afterHoursMode?: 'voicemail' | 'transfer' | 'callback_promise';
+  inboundRoutingMode?: InboundRoutingMode;
   transferNumber?: string;
   maxHoldSeconds?: number;
   voiceName?: string;

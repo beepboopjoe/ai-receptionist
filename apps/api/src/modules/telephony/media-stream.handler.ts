@@ -706,6 +706,18 @@ export async function handleMediaStream(
           logger.error({ err, callId }, 'incrementMinuteUsage failed');
         })
       );
+      void import('../billing/usage-ledger.service.js').then(({ recordCallUsage }) =>
+        recordCallUsage({
+          tenantId,
+          callId,
+          minutes,
+          direction: isOutbound ? 'outbound' : 'inbound',
+          isDemo,
+          mode,
+        }).catch((err) => {
+          logger.error({ err, callId }, 'recordCallUsage failed');
+        })
+      );
     }
 
     // Clean up session memory

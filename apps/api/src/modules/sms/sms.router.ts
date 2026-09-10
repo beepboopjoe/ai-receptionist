@@ -176,6 +176,9 @@ async function smsRouterPlugin(app: FastifyInstance) {
       }
 
       const msgId = await sendSms(to, body, fromNumber);
+      void import('../billing/usage-ledger.service.js').then(({ recordSmsUsage }) =>
+        recordSmsUsage(tenantId, 'outbound')
+      );
 
       const [contact] = await db
         .select({ id: contacts.id })

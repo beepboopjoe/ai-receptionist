@@ -74,6 +74,20 @@ export function lookupTodayHours(
  * Demo / call-me is always treated as open so callers never hear
  * "we're closed" on the public product demo.
  */
+function holidayDates(officeHours: OfficeHours | Record<string, unknown>): string[] {
+  const rec = officeHours as Record<string, unknown>;
+  return Array.isArray(rec.holidays)
+    ? rec.holidays.filter((d): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
+    : [];
+}
+
+export function isHolidayDate(
+  officeHours: OfficeHours | Record<string, unknown>,
+  now: Dayjs,
+): boolean {
+  return holidayDates(officeHours).includes(now.format('YYYY-MM-DD'));
+}
+
 export function isAfterHoursCall(opts: {
   now: Dayjs;
   officeHours: OfficeHours | Record<string, unknown>;
@@ -82,6 +96,7 @@ export function isAfterHoursCall(opts: {
   isDemo?: boolean;
 }): boolean {
   if (opts.isDemo) return false;
+  if (isHolidayDate(opts.officeHours, opts.now)) return true;
   const today = lookupTodayHours(opts.officeHours, opts.dayKey);
   if (!today) return true;
   return isOutsideHours(opts.now, today.open, today.close);

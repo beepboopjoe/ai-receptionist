@@ -2,15 +2,27 @@
 import Link from 'next/link';
 import { ArrowRight, Check, Phone, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { callsApi } from '@/lib/api';
+import { callsApi, phoneNumbersApi } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useGoLive, type GoLiveStep } from '@/lib/useGoLive';
+import { ForwardYourLineCard } from '@/components/settings/forward-your-line-card';
+import useSWR from 'swr';
 
 export function GoLiveChecklist() {
   const goLive = useGoLive();
+  const { data: phonesPayload } = useSWR('phone-numbers', () => phoneNumbersApi.list());
+  const did =
+    (phonesPayload?.data ?? []).find(
+      (n) => (n.provisionStatus ?? 'active') === 'active' && n.phoneE164?.startsWith('+')
+    )?.phoneE164 ?? null;
   if (goLive.loading) return null;
   if (goLive.ready) {
-    return <TestCallCard />;
+    return (
+      <div className="space-y-4">
+        {did && <ForwardYourLineCard did={did} />}
+        <TestCallCard />
+      </div>
+    );
   }
 
   return (
@@ -27,6 +39,7 @@ export function GoLiveChecklist() {
           <ChecklistStep key={step.id} step={step} index={i + 1} />
         ))}
       </div>
+      {did && <ForwardYourLineCard did={did} />}
       <TestCallCard embedded />
     </div>
   );

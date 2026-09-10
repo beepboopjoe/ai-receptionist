@@ -39,7 +39,7 @@ describe('computeGoLiveBlockers', () => {
     ).toEqual(['phone', 'voice', 'hours', 'transfer']);
   });
 
-  it('treats a pending port and default aurora as ready except hours/transfer', () => {
+  it('does not treat a pending port as a day-one phone — port is later / optional', () => {
     expect(
       computeGoLiveBlockers({
         hasInboundPhone: false,
@@ -48,7 +48,7 @@ describe('computeGoLiveBlockers', () => {
         officeHours: {},
         transferNumber: null,
       }),
-    ).toEqual(['hours', 'transfer']);
+    ).toEqual(['phone', 'hours', 'transfer']);
   });
 
   it('is empty when hard prerequisites are met', () => {
@@ -127,6 +127,7 @@ describe('platform tenants list exposes beta client fields', () => {
     expect(src).toContain('lastCallAt');
     expect(src).toContain('goLiveBlockers');
     expect(src).toContain('billingKind');
+    expect(src).toContain('usageLedger');
     expect(src).toContain('tenantPhoneNumbers');
     expect(src).toContain('DEFAULT_PUBLIC_GROK_VOICE');
     expect(src).toContain('resolveIncludedMinutes');
