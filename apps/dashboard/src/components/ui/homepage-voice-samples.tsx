@@ -1,17 +1,13 @@
 'use client';
 // ============================================================
-// HomepageVoiceSamples — Voice showcase section on the landing
-// page. Four public Grok voices (Aurora / Castor / Cosmo / Zenith),
-// each with a play button per supported language.
-//
-// Audio files: /audio/voices/{voice}_{lang}.mp3
-// Generate:    pnpm tsx scripts/generate-voice-language-samples.ts
-// Source of truth for the voice/language catalog: @/lib/voice-samples
+// HomepageVoiceSamples — four public Grok voices, one-sentence intros.
+// Audio: /audio/voices/{voice}-preview.mp3
+// Generate: pnpm tsx scripts/generate-voice-previews.ts
 // ============================================================
 import { useState, useRef, useCallback } from 'react';
 import {
-  LANG_CODES, LANGUAGES, VOICE_IDS, VOICES, VOICE_CARD_STYLES,
-  type LangCode, type VoiceId,
+  VOICE_IDS, VOICES, VOICE_CARD_STYLES, voiceIntroLine,
+  type VoiceId,
 } from '@/lib/voice-samples';
 
 interface Voice {
@@ -30,7 +26,6 @@ const HOMEPAGE_VOICES: Voice[] = VOICE_IDS.map((id) => ({
   textColor: VOICE_CARD_STYLES[id].textColor,
 }));
 
-// ── Animated waveform bars (shows when either lang is playing) ─
 function Waveform({ active }: { active: boolean }) {
   return (
     <div className="flex items-end gap-0.5 h-4">
@@ -48,93 +43,49 @@ function Waveform({ active }: { active: boolean }) {
   );
 }
 
-// ── Voice card ────────────────────────────────────────────────
 function VoiceCard({ voice }: { voice: Voice }) {
-  const [anyPlaying, setAnyPlaying] = useState(false);
-
-  // Track playing state from child buttons via a shared counter
-  // (simpler than lifting audio refs up)
-  const playingCount = useRef(0);
-  const handlePlay = useCallback((isPlaying: boolean) => {
-    playingCount.current += isPlaying ? 1 : -1;
-    setAnyPlaying(playingCount.current > 0);
-  }, []);
-
-  return (
-    <div className={`rounded-2xl border p-5 bg-white transition-all hover:shadow-sm ${
-      anyPlaying ? 'border-brand-300 shadow-sm' : 'border-cream-200'
-    }`}>
-      {/* Avatar + waveform row */}
-      <div className="flex items-center justify-between mb-3">
-        <div className={`w-10 h-10 rounded-xl ${voice.color} flex items-center justify-center shrink-0`}>
-          <span className={`font-serif text-lg font-bold ${voice.textColor}`}>{voice.name[0]}</span>
-        </div>
-        <Waveform active={anyPlaying} />
-      </div>
-
-      {/* Name + personality */}
-      <h3 className="font-semibold text-cream-900 text-sm">{voice.name}</h3>
-      <p className="text-xs text-cream-500 mb-4">{voice.personality}</p>
-
-      {/* Play buttons — one per supported language */}
-      <div className="flex gap-1.5 flex-wrap">
-        {LANG_CODES.map((lang) => (
-          <PlayButtonWithTrack
-            key={lang}
-            voice={voice.id}
-            lang={lang}
-            onPlayChange={handlePlay}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Play button that reports play/pause state upward ──────────
-// One button per language. Compact flag-only chips so 7 languages
-// fit cleanly inside each voice card.
-function PlayButtonWithTrack({
-  voice, lang, onPlayChange,
-}: {
-  voice: string;
-  lang: LangCode;
-  onPlayChange: (isPlaying: boolean) => void;
-}) {
   const [playing, setPlaying] = useState(false);
   const [missing, setMissing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const meta = LANGUAGES[lang];
+  const intro = voiceIntroLine(voice.id, 'en');
 
-  const toggle = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggle = useCallback(() => {
     const audio = audioRef.current;
     if (!audio || missing) return;
     if (playing) {
       audio.pause();
       setPlaying(false);
-      onPlayChange(false);
     } else {
-      audio.play().then(() => {
-        setPlaying(true);
-        onPlayChange(true);
-      }, () => setMissing(true));
+      audio.play().then(() => setPlaying(true), () => setMissing(true));
     }
-  }, [playing, missing, onPlayChange]);
+  }, [playing, missing]);
 
   const aria = missing
-    ? `Audio for ${meta.label} not available yet`
+    ? `${voice.name} sample not available yet`
     : playing
-      ? `Pause ${meta.label} sample`
-      : `Play ${meta.label} sample`;
+      ? `Pause ${voice.name} sample`
+      : `Play ${voice.name} sample`;
 
   return (
-    <span>
+    <div className={`rounded-2xl border p-5 bg-white transition-all hover:shadow-sm ${
+      playing ? 'border-brand-300 shadow-sm' : 'border-cream-200'
+    }`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className={`w-10 h-10 rounded-xl ${voice.color} flex items-center justify-center shrink-0`}>
+          <span className={`font-serif text-lg font-bold ${voice.textColor}`}>{voice.name[0]}</span>
+        </div>
+        <Waveform active={playing} />
+      </div>
+
+      <h3 className="font-semibold text-cream-900 text-sm">{voice.name}</h3>
+      <p className="text-xs text-cream-500 mb-3">{voice.personality}</p>
+      <p className="text-xs text-cream-600 leading-relaxed mb-4">{intro}</p>
+
       <audio
         ref={audioRef}
-        src={`/audio/voices/${voice}_${lang}.mp3`}
+        src={`/audio/voices/${voice.id}-preview.mp3`}
         preload="none"
-        onEnded={() => { setPlaying(false); onPlayChange(false); }}
+        onEnded={() => setPlaying(false)}
         onError={() => setMissing(true)}
       />
       <button
@@ -143,7 +94,7 @@ function PlayButtonWithTrack({
         disabled={missing}
         title={aria}
         aria-label={aria}
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold transition-all ${
+        className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
           missing
             ? 'bg-cream-100 text-cream-300 cursor-not-allowed'
             : playing
@@ -151,14 +102,21 @@ function PlayButtonWithTrack({
               : 'bg-cream-100 text-cream-700 hover:bg-brand-50 hover:text-brand-700 border border-cream-200'
         }`}
       >
-        <span className="text-sm leading-none" aria-hidden="true">{meta.flag}</span>
-        <span className="uppercase tracking-wide">{lang}</span>
+        {playing ? (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+          </svg>
+        ) : (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        )}
+        {playing ? 'Pause' : `Play ${voice.name}`}
       </button>
-    </span>
+    </div>
   );
 }
 
-// ── Section ───────────────────────────────────────────────────
 export function HomepageVoiceSamples() {
   return (
     <section className="py-20 px-6 bg-cream-50">
@@ -169,7 +127,7 @@ export function HomepageVoiceSamples() {
             Pick the voice that fits your brand.
           </h2>
           <p className="text-cream-600 mt-3 max-w-xl mx-auto">
-            Aurora, Castor, Cosmo, and Zenith — natural Grok voices, seven languages. Tap a flag to hear it.
+            Aurora, Castor, Cosmo, and Zenith — tap play to hear a one-line intro from each.
           </p>
         </div>
 

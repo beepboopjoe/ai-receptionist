@@ -1,39 +1,54 @@
 // ============================================================
-// Homepage call-me product-demo prompt — feature coverage.
+// Homepage call-me product-demo prompt — Closer path, ≤2 minutes.
 // ============================================================
 import { describe, it, expect } from 'vitest';
 import {
   buildCallMeDemoPrompt,
   CALL_ME_DEMO_FEATURE_MARKERS,
+  DEMO_AGENT_NAME,
+  DEMO_CLOSER_OPENING_EN,
 } from '../modules/voice-agent/call-me-demo.prompt.js';
+import { SOUND_HUMAN_MARKERS } from '../modules/voice-agent/sound-human.style.js';
 
 describe('buildCallMeDemoPrompt', () => {
-  it('covers every major product capability the sales demo must articulate', () => {
+  it('covers the closer track the sales demo must follow', () => {
     const prompt = buildCallMeDemoPrompt({ timezone: 'America/New_York' });
     for (const marker of CALL_ME_DEMO_FEATURE_MARKERS) {
       expect(prompt, `missing feature marker: ${marker}`).toContain(marker);
     }
   });
 
-  it('is a Telfin product demo, not a fake office, and forbids after-hours deflection', () => {
+  it('is an assistant from Telfin (not Aria), not a fake office, and forbids after-hours deflection', () => {
     const prompt = buildCallMeDemoPrompt();
-    expect(prompt).toMatch(/Aria/);
+    expect(DEMO_AGENT_NAME).toBe('Telfin');
+    expect(prompt).toMatch(/assistant from Telfin/);
+    expect(prompt).toContain(DEMO_CLOSER_OPENING_EN);
     expect(prompt).toMatch(/telfin\.ai/i);
     expect(prompt).toMatch(/one-time product demo/i);
     expect(prompt).toMatch(/Never say you are closed/);
+    expect(prompt).toMatch(/2 minutes/);
+    expect(prompt).toMatch(/Sound human/);
+    expect(prompt).not.toMatch(/\bAria\b/);
     expect(prompt).not.toMatch(/You are the AI receptionist for Bright Smile/i);
-    expect(prompt).toMatch(/ONLY if they ask/i);
-    expect(prompt).toMatch(/dental, legal \/ PI, real estate, insurance, home services/i);
+    expect(prompt).toMatch(/ONLY if they ask/);
   });
 
-  it('defaults to English and greets in Spanish when language=es', () => {
+  it('uses the shared human-rhythm style (short turns, sparse fillers)', () => {
+    const prompt = buildCallMeDemoPrompt();
+    for (const marker of SOUND_HUMAN_MARKERS) {
+      expect(prompt, `missing human-rhythm marker: ${marker}`).toContain(marker);
+    }
+  });
+
+  it('defaults to English closer open and greets in Spanish when language=es', () => {
     const en = buildCallMeDemoPrompt();
     expect(en).toMatch(/chose English/);
-    expect(en).toContain("Hi, this is Aria with Telfin");
+    expect(en).toContain('assistant from Telfin');
+    expect(en).toContain('sound really realistic');
 
     const es = buildCallMeDemoPrompt({ language: 'es' });
     expect(es).toMatch(/Speak Spanish from the VERY FIRST word/);
-    expect(es).toContain('Hola, soy Aria de Telfin');
+    expect(es).toContain('asistente de Telfin');
     expect(es).not.toMatch(/chose English/);
   });
 

@@ -7,6 +7,7 @@ import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone.js';
 import utc from 'dayjs/plugin/utc.js';
 import { buildCallMeDemoPrompt } from './call-me-demo.prompt.js';
+import { SOUND_HUMAN_PROMPT_SECTION } from './sound-human.style.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -122,7 +123,9 @@ export function buildSystemPrompt(ctx: PromptContext): string {
 
   // ---- Identity ----
   sections.push(`# Role
-You are the AI receptionist for ${ctx.practiceName}, a ${terms.label}. You answer inbound phone calls on behalf of the ${terms.businessNoun}. You are warm, professional, and efficient. You speak clearly and at a measured pace.`);
+You are the AI receptionist for ${ctx.practiceName}, a ${terms.label}. You answer inbound phone calls on behalf of the ${terms.businessNoun}. You are warm, professional, and efficient. You speak clearly and at a measured pace.
+
+${SOUND_HUMAN_PROMPT_SECTION}`);
 
   // ---- About this business (owner-supplied free-text) ----
   // Sits right after Role so the AI has tenant-specific facts (services,
@@ -266,7 +269,8 @@ ${getTopicsToAvoid(vertical, terms)}`);
 - Keep responses short and conversational — this is a phone call, not a chat
 - Confirm key details by repeating them back (dates, times, names)
 - Offer no more than 3 ${terms.appointmentNoun} slot options at a time
-- Always end the call with a brief summary of what was accomplished`);
+- Always end the call with a brief summary of what was accomplished
+- Follow # Sound human: short turns, a light think-out-loud beat when useful, fillers only sparingly`);
 
   return sections.join('\n\n');
 }

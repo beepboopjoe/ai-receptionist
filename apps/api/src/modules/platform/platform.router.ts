@@ -12,7 +12,7 @@
 // ============================================================
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../../db/client.js';
-import { tenants, calls, adminUsers } from '../../db/schema.js';
+import { tenants, calls, adminUsers, demoLeads } from '../../db/schema.js';
 import { and, eq, gte, sql, desc, ilike, or, inArray } from 'drizzle-orm';
 import { config } from '../../config.js';
 import { AuthError, NotFoundError, ValidationError } from '../../lib/errors.js';
@@ -241,6 +241,44 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
       }
 
       return { data: enriched, total: filtered.length };
+    }
+  );
+
+  // ── Homepage / call-me leads (every valid phone submit) ────────────
+  app.get(
+    '/platform/demo-leads',
+    { onRequest: [requirePlatformAdmin] },
+    async (request, _reply) => {
+      const q = request.query as { closed?: string; limit?: string };
+      const closedFilter =
+        q.closed === 'true' ? true : q.closed === 'false' ? false : undefined;
+      const limit = Math.min(500, Math.max(1, Number(q.limit) || 200));
+
+      const columns = {
+        id: demoLeads.id,
+        phoneE164: demoLeads.phoneE164,
+        name: demoLeads.name,
+        business: demoLeads.business,
+        language: demoLeads.language,
+        voice: demoLeads.voice,
+        closed: demoLeads.closed,
+        callId: demoLeads.callId,
+        notes: demoLeads.notes,
+        createdAt: demoLeads.createdAt,
+        updatedAt: demoLeads.updatedAt,
+      } as const;
+
+      const rows =
+        closedFilter === undefined
+          ? await db.select(columns).from(demoLeads).orderBy(desc(demoLeads.createdAt)).limit(limit)
+          : await db
+              .select(columns)
+              .from(demoLeads)
+              .where(eq(demoLeads.closed, closedFilter))
+              .orderBy(desc(demoLeads.createdAt))
+              .limit(limit);
+
+      return { data: rows, total: rows.length };
     }
   );
 

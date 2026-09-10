@@ -35,13 +35,13 @@ export const CALL_ME_LANG_NATIVE: Record<CallMeLangCode, string> = {
  * start with a close natural variant — not a robotic recitation.
  */
 export const CALL_ME_LANG_GREETING: Record<CallMeLangCode, string> = {
-  en: "Hi, this is Aria with Telfin — thanks for trying the live demo. You're hearing the same AI that would answer your business line, twenty-four seven. What kind of business are you calling from?",
-  es: 'Hola, soy Aria de Telfin — gracias por probar la demo en vivo. Está escuchando la misma inteligencia artificial que contestaría la línea de su negocio, las veinticuatro horas. ¿A qué se dedica su negocio?',
-  it: 'Salve, sono Aria di Telfin — grazie per aver provato la demo dal vivo. Sta ascoltando la stessa intelligenza artificiale che risponderebbe alla linea della sua azienda, ventiquattro ore su ventiquattro. Che tipo di attività gestisce?',
-  ar: 'مرحباً، أنا آريا من تلفين — شكراً لتجربة العرض المباشر. أنت تسمع نفس الذكاء الاصطناعي الذي سيجيب على خط عملك على مدار الساعة. ما نوع عملك؟',
-  fa: 'سلام، من آریا از تلفین هستم — ممنون که دموی زنده را امتحان کردید. همان هوش مصنوعی را می‌شنوید که خط کسب‌وکار شما را شبانه‌روز پاسخ می‌دهد. کسب‌وکار شما چیست؟',
-  hy: 'Բարև ձեզ, ես Արիան եմ Թելֆինից — շնորհակալ ենք, որ փորձում եք ուղիղ դեմոն. Դուք լսում եք նույն արհեստական բանականությունը, որը կպատասխանի ձեր բիզնեսի գծին՝ շուրջօրյա։ Ի՞նչ տեսակի բիզնես ունեք։',
-  ru: 'Здравствуйте, меня зовут Ария, это Telfin — спасибо, что пробуете живое демо. Вы слышите тот же ИИ, который отвечал бы на линию вашего бизнеса круглосуточно. Чем занимается ваша компания?',
+  en: "Hey, this is an assistant from Telfin — I know I sound really realistic, but I'm actually an AI receptionist that can answer your calls, book appointments, follow up with leads, and set things up for you.",
+  es: 'Hola, soy un asistente de Telfin — sé que sueno muy real, pero en realidad soy una recepcionista de inteligencia artificial que puede contestar tus llamadas, agendar citas, dar seguimiento a leads y dejarlo todo listo.',
+  it: 'Ciao, sono un assistente di Telfin — so di suonare molto realistico, ma in realtà sono una receptionist AI che può rispondere alle tue chiamate, prenotare appuntamenti, fare follow-up con i lead e sistemare il resto.',
+  ar: 'مرحباً، أنا مساعد من تلفين — أعلم أنني أبدو واقعياً جداً، لكنني في الحقيقة موظفة استقبال بالذكاء الاصطناعي يمكنها الرد على مكالماتك وحجز المواعيد ومتابعة العملاء المحتملين وترتيب الأمور.',
+  fa: 'سلام، من یک دستیار از طرف تلفین هستم — می‌دانم خیلی واقعی به نظر می‌رسم، اما در واقع یک منشی هوش مصنوعی هستم که می‌تواند به تماس‌هایتان جواب بدهد، وقت بگذارد، سرنخ‌ها را پیگیری کند و کارها را راه بیندازد.',
+  hy: 'Բարև, ես Թելֆինի օգնական եմ — գիտեմ, որ շատ իրական եմ հնչում, բայց իրականում արհեստական բանականության ռեսեպցիոնիստ եմ, որ կարող է պատասխանել ձեր զանգերին, ամրագրել ժամեր, հետևել լիդերին և կարգավորել գործերը.',
+  ru: 'Привет, я ассистент Telfin — знаю, что звучу очень реалистично, но на самом деле я ИИ-ресепшн: могу отвечать на звонки, записывать на приём, делать фоллоу-ап по лидам и всё настроить.',
 };
 
 const ALIASES: Record<string, CallMeLangCode> = {

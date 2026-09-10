@@ -6,6 +6,7 @@
 // ============================================================
 import { describe, it, expect } from 'vitest';
 import { buildSystemPrompt, VERTICAL_ESCALATION_VOCAB } from '../modules/voice-agent/prompt-builder.js';
+import { SOUND_HUMAN_MARKERS } from '../modules/voice-agent/sound-human.style.js';
 import { VERTICAL_VALUES, type Vertical } from '@ai-receptionist/shared';
 
 const BASE_CTX = {
@@ -72,15 +73,25 @@ describe('buildSystemPrompt', () => {
       workflowHint: 'after_hours',
       isDemo: true,
     });
-    expect(prompt).toMatch(/Telfin/i);
+    expect(prompt).toMatch(/assistant from Telfin/i);
     expect(prompt).toMatch(/product demo/i);
     expect(prompt).not.toMatch(/dental practice/i);
     expect(prompt).not.toMatch(/The office is currently closed/i);
     expect(prompt).toMatch(/Never say you are closed/i);
-    expect(prompt).toMatch(/\$199/);
-    expect(prompt).toMatch(/HubSpot/);
-    expect(prompt).toMatch(/Knowledge Base/);
-    expect(prompt).toMatch(/CONFIRM/);
+    expect(prompt).toMatch(/2 minutes/);
+    expect(prompt).toMatch(/Try Free/);
+    expect(prompt).toMatch(/sound really realistic/);
+    expect(prompt).toMatch(/Sound human/);
+    expect(prompt).toMatch(/hmm/);
+    expect(prompt).not.toMatch(/\bAria\b/);
+  });
+
+  it('paying-tenant Grok receptionist uses the same human-rhythm style as the demo', () => {
+    const prompt = buildSystemPrompt({ ...BASE_CTX, vertical: 'dental' });
+    for (const marker of SOUND_HUMAN_MARKERS) {
+      expect(prompt, `missing human-rhythm marker: ${marker}`).toContain(marker);
+    }
+    expect(prompt).not.toMatch(/product demo/i);
   });
 
   it('non-demo after_hours still tells paying-tenant callers the office is closed', () => {
@@ -92,7 +103,7 @@ describe('buildSystemPrompt', () => {
   it('isDemo honors demoLanguage without affecting non-demo tenants', () => {
     const demo = buildSystemPrompt({ ...BASE_CTX, isDemo: true, demoLanguage: 'es' });
     expect(demo).toMatch(/Speak Spanish from the VERY FIRST word/);
-    expect(demo).toContain('Hola, soy Aria de Telfin');
+    expect(demo).toContain('asistente de Telfin');
 
     const paying = buildSystemPrompt({ ...BASE_CTX, vertical: 'dental', demoLanguage: 'es' });
     expect(paying).toMatch(/dental practice/i);

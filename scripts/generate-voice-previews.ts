@@ -4,8 +4,11 @@
 // Run:    pnpm tsx scripts/generate-voice-previews.ts
 // Needs:  XAI_API_KEY in env (get from https://console.x.ai)
 //
-// Produces one short preview clip per xAI voice (~5 seconds each):
+// Produces one short (~3s) intro clip per xAI voice:
 //   apps/dashboard/public/audio/voices/{voice}-preview.mp3
+//
+// Line: "Hi, I'm [Voice] from Telfin — your AI phone receptionist."
+// Pass --force (or FORCE=1) to overwrite existing files.
 //
 // The settings page plays these when a user clicks ▶ on a voice card
 // so they can hear the voice before saving their choice.
@@ -13,7 +16,9 @@
 // Idempotent: skips files that already exist. Delete a file to force
 // regeneration.
 //
-// Cost estimate at $4.20 / M chars: under $0.01 for the full set.
+// Each file must be Grok TTS for that voice_id speaking that voice's
+// display name (Aurora sample says "Aurora", never "Castor"). Pass
+// --force after rotating keys or copy so we do not keep mismatched clips.
 // ============================================================
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -24,11 +29,13 @@ const __dirname = dirname(__filename);
 const OUT_DIR = join(__dirname, '..', 'apps', 'dashboard', 'public', 'audio', 'voices');
 const TTS_URL = 'https://api.x.ai/v1/tts';
 
+const FORCE = process.argv.includes('--force') || process.env['FORCE'] === '1';
+
 const VOICES = [
-  { id: 'aurora', text: "Hi! I'm Aurora, your AI receptionist. I'll answer every call 24/7, book appointments, and make sure no caller ever goes to voicemail again." },
-  { id: 'castor', text: "Hello, this is Castor. I'm your AI receptionist — always available, always professional. Let me handle your calls while you focus on your patients." },
-  { id: 'cosmo', text: "Hi there! Cosmo here, your AI receptionist. I'll manage your inbound calls, schedule appointments, and escalate anything urgent to your team." },
-  { id: 'zenith', text: "Good afternoon. This is Zenith, your AI receptionist. Every call answered, every appointment booked, every lead captured — I'll make sure nothing slips through." },
+  { id: 'aurora', text: "Hi, I'm Aurora from Telfin — your AI phone receptionist." },
+  { id: 'castor', text: "Hi, I'm Castor from Telfin — your AI phone receptionist." },
+  { id: 'cosmo', text: "Hi, I'm Cosmo from Telfin — your AI phone receptionist." },
+  { id: 'zenith', text: "Hi, I'm Zenith from Telfin — your AI phone receptionist." },
 ];
 
 // Prior catalog kept for later regeneration if we re-enable legacy IDs:
@@ -50,7 +57,7 @@ if (!existsSync(OUT_DIR)) {
 async function generatePreview(voice: typeof VOICES[0]) {
   const outPath = join(OUT_DIR, `${voice.id}-preview.mp3`);
 
-  if (existsSync(outPath)) {
+  if (existsSync(outPath) && !FORCE) {
     console.log(`⏭  ${voice.id}-preview.mp3 already exists — skipping`);
     return;
   }
