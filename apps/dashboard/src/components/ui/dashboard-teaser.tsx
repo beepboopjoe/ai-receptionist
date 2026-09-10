@@ -864,7 +864,7 @@ function VoiceAgentView() {
               { flag: '🇺🇸', lang: 'English',  on: true  },
               { flag: '🇲🇽', lang: 'Spanish',  on: true  },
               { flag: '🇮🇹', lang: 'Italian',  on: false },
-              { flag: '🇸🇦', lang: 'Arabic',   on: false },
+              { flag: '🇱🇧', lang: 'Arabic',   on: false },
               { flag: '🇮🇷', lang: 'Farsi',    on: false },
               { flag: '🇦🇲', lang: 'Armenian', on: false },
               { flag: '🇷🇺', lang: 'Russian',  on: false },

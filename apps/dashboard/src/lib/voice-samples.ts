@@ -43,7 +43,7 @@ export const LANGUAGES: Record<LangCode, { label: string; flag: string; xaiCode:
   en: { label: 'English',  flag: '🇺🇸', xaiCode: 'en', native: 'English' },
   es: { label: 'Spanish',  flag: '🇲🇽', xaiCode: 'es', native: 'Español' },
   it: { label: 'Italian',  flag: '🇮🇹', xaiCode: 'it', native: 'Italiano' },
-  ar: { label: 'Arabic',   flag: '🇸🇦', xaiCode: 'ar', native: 'العربية' },
+  ar: { label: 'Arabic',   flag: '🇱🇧', xaiCode: 'ar', native: 'العربية' },
   fa: { label: 'Farsi',    flag: '🇮🇷', xaiCode: 'fa', native: 'فارسی' },
   hy: { label: 'Armenian', flag: '🇦🇲', xaiCode: 'hy', native: 'Հայերեն' },
   ru: { label: 'Russian',  flag: '🇷🇺', xaiCode: 'ru', native: 'Русский' },
