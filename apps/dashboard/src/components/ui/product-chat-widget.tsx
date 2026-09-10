@@ -169,7 +169,16 @@ export function ProductChatWidget() {
   );
 
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-40 sm:bottom-6 sm:right-6">
+    <div className="pointer-events-none fixed inset-0 z-40">
+      {open && (
+        <button
+          type="button"
+          className="pointer-events-auto absolute inset-0 bg-cream-900/25 sm:pointer-events-none sm:bg-transparent"
+          aria-label="Dismiss chat"
+          onClick={() => setOpen(false)}
+        />
+      )}
+      <div className="pointer-events-none absolute bottom-4 right-4 sm:bottom-6 sm:right-6 flex flex-col items-end">
       {open && (
         <div
           className="pointer-events-auto mb-3 flex w-[min(100vw-1.5rem,24rem)] flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-xl shadow-cream-900/10"
@@ -340,16 +349,18 @@ export function ProductChatWidget() {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-900/20 hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-        aria-expanded={open}
-        aria-controls={open ? titleId : undefined}
-      >
-        {open ? <X size={18} /> : <MessageCircle size={18} />}
-        <span className="pr-0.5">{open ? 'Close' : 'Ask Telfin'}</span>
-      </button>
+      {!open && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-900/20 hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+          aria-expanded={false}
+        >
+          <MessageCircle size={18} />
+          <span className="pr-0.5">Ask Telfin</span>
+        </button>
+      )}
+      </div>
     </div>
   );
 }
