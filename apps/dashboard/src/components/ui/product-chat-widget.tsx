@@ -178,11 +178,10 @@ export function ProductChatWidget() {
           onClick={() => setOpen(false)}
         />
       )}
-      <div className="pointer-events-none absolute bottom-4 right-4 sm:bottom-6 sm:right-6 flex flex-col items-end">
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-end justify-end p-3 sm:p-4">
       {open && (
         <div
-          className="pointer-events-auto mb-3 flex w-[min(100%-1.5rem,24rem)] max-w-full flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-xl shadow-cream-900/10"
-          style={{ height: 'min(32rem, calc(100% - 6.5rem))' }}
+          className="pointer-events-auto mb-3 flex w-[min(100%,24rem)] max-h-[calc(100%-4.25rem)] flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-xl shadow-cream-900/10"
           role="dialog"
           aria-modal="false"
           aria-labelledby={titleId}
@@ -358,7 +357,7 @@ export function ProductChatWidget() {
           aria-label="Ask Telfin"
         >
           <MessageCircle size={18} aria-hidden />
-          <span className="pr-0.5">Ask Telfin</span>
+          <span className="ask-telfin-label pr-0.5">Ask Telfin</span>
         </button>
       )}
       </div>

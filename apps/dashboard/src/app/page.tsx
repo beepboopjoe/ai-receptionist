@@ -105,7 +105,7 @@ export default function LandingPage() {
 
       <MarketingHeader />
 
-      <section className="mesh-gradient-light pt-20 sm:pt-24 pb-16 px-4 sm:px-6">
+      <section className="mesh-gradient-light pt-14 sm:pt-20 md:pt-24 pb-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto text-center">
 
           <div className="inline-flex items-center gap-2 bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold px-4 py-2 rounded-full mb-7">
@@ -145,7 +145,7 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <div id="call-me" className="mt-10 scroll-mt-24">
+          <div id="call-me" className="mt-8 sm:mt-10 scroll-mt-24">
             <CallMeWidget />
           </div>
         </div>
