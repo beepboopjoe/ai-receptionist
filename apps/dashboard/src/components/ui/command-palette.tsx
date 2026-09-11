@@ -19,12 +19,18 @@ import { searchApi, type SearchHits } from '@/lib/api';
 import { useVertical } from '@/lib/useVertical';
 
 interface FlatHit {
-  type: 'contact' | 'call' | 'appointment' | 'escalation';
+  type: 'contact' | 'call' | 'appointment' | 'escalation' | 'page';
   id: string;
   title: string;
   subtitle: string;
   href: string;
 }
+
+const PAGE_SHORTCUTS: { id: string; title: string; subtitle: string; href: string; keywords: string[] }[] = [
+  { id: 'help', title: 'Contact support', subtitle: 'Submit a ticket — we reply by email', href: '/support', keywords: ['help', 'support', 'ticket', 'contact'] },
+  { id: 'test-call', title: 'Test call', subtitle: 'Hear your AI receptionist on the phone', href: '/test-call', keywords: ['test', 'call', 'try', 'demo', 'practice'] },
+  { id: 'workflows', title: 'Workflows', subtitle: 'Front-desk automations', href: '/workflows', keywords: ['workflow', 'automation', 'front desk'] },
+];
 
 const EMPTY: SearchHits = { contacts: [], calls: [], appointments: [], escalations: [] };
 
@@ -128,8 +134,25 @@ export function CommandPalette() {
         href: `/escalations`,
       });
     }
+    const needle = q.trim().toLowerCase();
+    if (needle.length >= 2) {
+      for (const page of PAGE_SHORTCUTS) {
+        if (
+          page.keywords.some((k) => k.includes(needle) || needle.includes(k)) ||
+          page.title.toLowerCase().includes(needle)
+        ) {
+          list.unshift({
+            type: 'page',
+            id: page.id,
+            title: page.title,
+            subtitle: page.subtitle,
+            href: page.href,
+          });
+        }
+      }
+    }
     return list;
-  }, [hits]);
+  }, [hits, q]);
 
   // Reset active row when results change.
   useEffect(() => {
@@ -231,6 +254,7 @@ const ICONS = {
   call: Phone,
   appointment: Calendar,
   escalation: AlertCircle,
+  page: Search,
 } as const;
 
 const TYPE_LABEL = {
@@ -238,6 +262,7 @@ const TYPE_LABEL = {
   call: 'Call',
   appointment: 'Appointment',
   escalation: 'Escalation',
+  page: 'Page',
 } as const;
 
 function HitRow({

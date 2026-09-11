@@ -154,7 +154,7 @@ export default function ContactsPage() {
                 ? {}
                 : isDemoAccount
                   ? { cta: { label: 'Upgrade to go live', href: '/billing' } }
-                  : { cta: { label: 'Call your AI', href: '/dashboard#test-call' } })}
+                  : { cta: { label: 'Test call', href: '/test-call' } })}
             />
           </div>
         ) : (

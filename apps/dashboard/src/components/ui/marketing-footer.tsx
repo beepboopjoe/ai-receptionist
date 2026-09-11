@@ -25,6 +25,7 @@ const FOOTER_LINKS = [
   ['Knowledge base', '/knowledge-base'],
   ['Affiliate',      '/resellers'],
   ['Partners',       '/partners'],
+  ['Support',        '/support'],
 ] as const;
 
 const LEGAL_LINKS = [

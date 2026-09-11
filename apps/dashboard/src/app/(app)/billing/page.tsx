@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { billingApi } from '@/lib/api';
 import { Phone, Calendar, Zap, CheckCircle, ExternalLink } from 'lucide-react';
 import { Skeleton as UiSkeleton, StatCardSkeleton } from '@/components/ui/skeleton';
@@ -462,7 +463,11 @@ export default function BillingPage() {
           {/* ── Footer CTA ── */}
           <div className="text-center py-4">
             <p className="text-sm text-gray-500">
-              Questions? Contact us at{' '}
+              Questions?{' '}
+              <Link href="/support" className="text-brand-600 hover:underline font-medium">
+                Submit a support ticket
+              </Link>
+              {' '}or email{' '}
               <a
                 href={`mailto:${BRAND_SUPPORT_EMAIL}`}
                 className="text-brand-600 hover:underline font-medium"

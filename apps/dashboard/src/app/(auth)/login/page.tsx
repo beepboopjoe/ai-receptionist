@@ -6,6 +6,11 @@ import { login } from '@/lib/auth';
 import { BRAND_NAME } from '@/lib/brand';
 import { GoogleOAuthButton } from '@/components/ui/referral-capture';
 
+function safeNextPath(raw: string | null): string {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return '/dashboard';
+  return raw;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -19,7 +24,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      router.replace('/dashboard');
+      const next = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('next');
+      router.replace(safeNextPath(next));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {

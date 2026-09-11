@@ -18,9 +18,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isAuthenticated()) {
-      router.replace('/login');
+      const next = encodeURIComponent(pathname || '/dashboard');
+      router.replace(`/login?next=${next}`);
     }
-  }, [router]);
+  }, [router, pathname]);
 
   return (
     <TenantProvider>
