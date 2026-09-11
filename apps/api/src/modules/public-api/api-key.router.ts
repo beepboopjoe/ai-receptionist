@@ -9,7 +9,7 @@ import { tenantApiKeys } from '../../db/schema.js';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '../../lib/errors.js';
 import { auditLog } from '../../audit/audit-logger.js';
-import { generateApiKey } from './api-key.service.js';
+import { generateApiKey, type ApiKeyScheme } from './api-key.service.js';
 
 const VALID_SCOPES = ['read', 'write'] as const;
 
@@ -44,10 +44,11 @@ export async function apiKeyAdminPlugin(app: FastifyInstance): Promise<void> {
     { onRequest: [app.requireRole('owner')] },
     async (request, reply) => {
       const { tenantId, id: actorId } = request.authUser;
-      const { name, scope, expiresInDays } = request.body as {
+      const { name, scope, expiresInDays, kind } = request.body as {
         name: string;
         scope?: string;
         expiresInDays?: number;
+        kind?: 'mcp' | 'public';
       };
 
       if (!name || name.trim().length === 0) {
@@ -63,7 +64,8 @@ export async function apiKeyAdminPlugin(app: FastifyInstance): Promise<void> {
         expiresAt = new Date(Date.now() + expiresInDays * 86_400_000);
       }
 
-      const { rawToken, prefix, keyHash } = generateApiKey();
+      const scheme: ApiKeyScheme = kind === 'mcp' ? 'telfin_sk_' : 'ark_live_';
+      const { rawToken, prefix, keyHash } = generateApiKey(scheme);
       const [created] = await db
         .insert(tenantApiKeys)
         .values({

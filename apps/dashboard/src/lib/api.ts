@@ -372,7 +372,7 @@ export interface ApiKey {
 
 export const apiKeysApi = {
   list: () => apiFetch<{ data: ApiKey[] }>('/api-keys'),
-  create: (body: { name: string; scope?: 'read' | 'write'; expiresInDays?: number }) =>
+  create: (body: { name: string; scope?: 'read' | 'write'; expiresInDays?: number; kind?: 'mcp' | 'public' }) =>
     apiFetch<ApiKey & { rawToken: string; message: string }>('/api-keys', {
       method: 'POST',
       body: JSON.stringify(body),

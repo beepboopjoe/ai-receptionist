@@ -2,9 +2,9 @@
 // ============================================================
 // Settings → API Keys
 //
-// Owner-only. Customers mint keys here to call /api/v1/public/*.
-// Raw tokens are shown exactly once at creation — after the modal
-// closes the secret is unrecoverable and they must rotate.
+// Owner-only. Customers mint keys here to call /api/v1/public/*
+// and the Telfin MCP connector at /mcp. Raw tokens are shown
+// exactly once at creation.
 // ============================================================
 import useSWR, { mutate } from 'swr';
 import { useState } from 'react';
@@ -20,13 +20,23 @@ const PUBLIC_API_EXAMPLE = (
 ).replace(/\/$/, '');
 
 /** Swagger UI lives on the API origin (`/docs`), not the Next.js app. */
-const API_DOCS_URL = (() => {
+const API_ORIGIN = (() => {
   try {
-    return `${new URL(PUBLIC_API_EXAMPLE).origin}/docs`;
+    return new URL(PUBLIC_API_EXAMPLE).origin;
   } catch {
-    return `https://api.${BRAND_DOMAIN}/docs`;
+    return `https://api.${BRAND_DOMAIN}`;
   }
 })();
+
+const API_DOCS_URL = `${API_ORIGIN}/docs`;
+const MCP_URL = `${API_ORIGIN}/mcp`;
+
+function displayKeyHint(prefix: string): string {
+  if (prefix.startsWith('telfin_sk_') || prefix.startsWith('ark_live_')) {
+    return `${prefix}…`;
+  }
+  return `ark_live_${prefix}…`;
+}
 
 export default function ApiKeysPage() {
   const toast = useToast();
@@ -34,7 +44,13 @@ export default function ApiKeysPage() {
   const keys = data?.data ?? [];
 
   const [showCreate, setShowCreate] = useState(false);
+  const [createKind, setCreateKind] = useState<'mcp' | 'public'>('public');
   const [newKey, setNewKey] = useState<{ rawToken: string; name: string } | null>(null);
+
+  function openCreate(kind: 'mcp' | 'public') {
+    setCreateKind(kind);
+    setShowCreate(true);
+  }
 
   async function handleRevoke(key: ApiKey) {
     if (!confirm(`Revoke "${key.name}"? Any integration using this key will stop working immediately.`)) return;
@@ -47,18 +63,24 @@ export default function ApiKeysPage() {
     }
   }
 
+  function copy(text: string, label: string) {
+    void navigator.clipboard.writeText(text).then(() => toast.success(`${label} copied`));
+  }
+
   return (
     <div className="space-y-8 max-w-4xl">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">API Keys</h1>
           <p className="text-gray-500 mt-1">
-            Mint keys to access the Public API at{' '}
-            <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">/api/v1/public/*</code>.
-            See the <a href={API_DOCS_URL} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">interactive API docs</a> for endpoint details.
+            Mint keys for the Public API and for Claude / Cursor MCP. Secrets are shown once.
+            Interactive REST docs:{' '}
+            <a href={API_DOCS_URL} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">
+              {API_DOCS_URL}
+            </a>
           </p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary shrink-0">
+        <button onClick={() => openCreate('public')} className="btn-primary shrink-0">
           <Plus size={16} /> New key
         </button>
       </div>
@@ -73,6 +95,7 @@ export default function ApiKeysPage() {
 
       {showCreate && (
         <CreateKeyForm
+          defaultKind={createKind}
           onCancel={() => setShowCreate(false)}
           onCreated={(rawToken, name) => {
             setShowCreate(false);
@@ -81,6 +104,47 @@ export default function ApiKeysPage() {
           }}
         />
       )}
+
+      <section className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-gray-900">Claude / Cursor connector (MCP)</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Remote MCP endpoint for this Telfin account. Tools are tenant-scoped. v1 cannot place outbound calls or run campaigns.
+            </p>
+          </div>
+          <button onClick={() => openCreate('mcp')} className="btn-secondary shrink-0 text-sm">
+            <Key size={14} /> Create MCP key
+          </button>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-gray-500 mb-1">Connector URL</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-xs bg-white border border-indigo-100 rounded-md px-3 py-2 font-mono break-all">
+              {MCP_URL}
+            </code>
+            <button onClick={() => copy(MCP_URL, 'MCP URL')} className="btn-secondary text-sm" type="button">
+              <Copy size={14} /> Copy
+            </button>
+          </div>
+        </div>
+        <ol className="text-sm text-gray-700 space-y-2 list-decimal pl-5">
+          <li>
+            Create a <strong>write</strong> MCP key above (prefix <code className="text-xs bg-white px-1 rounded">telfin_sk_</code>). Save the secret.
+          </li>
+          <li>
+            <strong>Claude</strong> (custom connector): add a remote MCP server with URL{' '}
+            <code className="text-xs bg-white px-1 rounded">{MCP_URL}</code>
+            and header <code className="text-xs bg-white px-1 rounded">Authorization: Bearer telfin_sk_…</code>.
+          </li>
+          <li>
+            <strong>Cursor</strong>: add an HTTP MCP server in <code className="text-xs bg-white px-1 rounded">mcp.json</code> with the same URL and header.
+          </li>
+        </ol>
+        <p className="text-xs text-gray-500">
+          Full steps live in the repo at <code className="text-xs">docs/telfin-mcp.md</code>.
+        </p>
+      </section>
 
       <section className="card">
         <div className="px-6 py-4 border-b border-gray-100">
@@ -92,7 +156,7 @@ export default function ApiKeysPage() {
           <EmptyState
             icon={Key}
             label="No API keys yet"
-            hint="Create one above to start integrating against the Public API."
+            hint="Create one above to start integrating against the Public API or MCP."
           />
         ) : (
           <div className="divide-y divide-gray-50">
@@ -104,7 +168,7 @@ export default function ApiKeysPage() {
       </section>
 
       <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-sm text-gray-700 space-y-2">
-        <p className="font-semibold text-gray-900">Quick start</p>
+        <p className="font-semibold text-gray-900">Public API quick start</p>
         <pre className="bg-white border border-gray-200 rounded-md p-3 text-xs font-mono overflow-x-auto">
 {`curl -H "Authorization: Bearer ark_live_…" \\
   ${PUBLIC_API_EXAMPLE}/public/whoami`}
@@ -160,15 +224,18 @@ function NewKeyBanner({
 
 // ── Create form ────────────────────────────────────────────────
 function CreateKeyForm({
+  defaultKind,
   onCancel,
   onCreated,
 }: {
+  defaultKind: 'mcp' | 'public';
   onCancel: () => void;
   onCreated: (rawToken: string, name: string) => void;
 }) {
   const toast = useToast();
-  const [name, setName] = useState('');
-  const [scope, setScope] = useState<'read' | 'write'>('read');
+  const [name, setName] = useState(defaultKind === 'mcp' ? 'Claude MCP' : '');
+  const [kind, setKind] = useState<'mcp' | 'public'>(defaultKind);
+  const [scope, setScope] = useState<'read' | 'write'>(defaultKind === 'mcp' ? 'write' : 'read');
   const [expiresInDays, setExpiresInDays] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -185,6 +252,7 @@ function CreateKeyForm({
         name: name.trim(),
         scope,
         ...(days && days > 0 ? { expiresInDays: days } : {}),
+        ...(kind === 'mcp' ? { kind: 'mcp' as const } : {}),
       });
       onCreated(res.rawToken, res.name);
     } catch (err) {
@@ -214,6 +282,39 @@ function CreateKeyForm({
       </div>
 
       <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Key type</label>
+        <div className="grid grid-cols-2 gap-2">
+          {([
+            { id: 'public' as const, title: 'Public API', hint: 'Prefix ark_live_ — REST /api/v1/public/*' },
+            { id: 'mcp' as const, title: 'MCP connector', hint: 'Prefix telfin_sk_ — Claude / Cursor' },
+          ]).map((opt) => (
+            <label
+              key={opt.id}
+              className={`flex items-start gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-colors ${
+                kind === opt.id ? 'border-brand-300 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="kind"
+                value={opt.id}
+                checked={kind === opt.id}
+                onChange={() => {
+                  setKind(opt.id);
+                  if (opt.id === 'mcp') setScope('write');
+                }}
+                className="mt-1"
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-900">{opt.title}</p>
+                <p className="text-xs text-gray-500">{opt.hint}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Scope</label>
         <div className="grid grid-cols-2 gap-2">
           {(['read', 'write'] as const).map((s) => (
@@ -235,8 +336,8 @@ function CreateKeyForm({
                 <p className="text-sm font-medium text-gray-900 capitalize">{s}-only</p>
                 <p className="text-xs text-gray-500">
                   {s === 'read'
-                    ? 'GET endpoints only. Safe for analytics tools.'
-                    : 'Full access — create, update, delete.'}
+                    ? 'GET / read tools only. Safe for analytics.'
+                    : 'Full access — create leads, send SMS, REST writes.'}
                 </p>
               </div>
             </label>
@@ -285,7 +386,7 @@ function KeyRow({ apiKey, onRevoke }: { apiKey: ApiKey; onRevoke: () => void }) 
           {expiresSoon && <span className="badge badge-yellow">Expires soon</span>}
         </div>
         <p className="text-xs text-gray-500 mt-1 font-mono">
-          ark_live_{apiKey.prefix}…
+          {displayKeyHint(apiKey.prefix)}
           {apiKey.lastUsedAt && ` · last used ${new Date(apiKey.lastUsedAt).toLocaleString()}`}
           {apiKey.expiresAt && ` · expires ${new Date(apiKey.expiresAt).toLocaleDateString()}`}
         </p>
