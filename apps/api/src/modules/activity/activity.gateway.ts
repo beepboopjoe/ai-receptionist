@@ -50,7 +50,8 @@ export async function activityGatewayPlugin(app: FastifyInstance): Promise<void>
         return;
       }
 
-      // Send a welcome so the dashboard's `connected` indicator flips on.
+      // Transport frame only — no timestamp. Dashboard must not render this
+      // as a Live Activity row (that produced "Invalid Date").
       try { ws.send(JSON.stringify({ type: 'connected', tenantId })); } catch { /* ignore */ }
 
       const unsubscribe = subscribe(tenantId, ws);

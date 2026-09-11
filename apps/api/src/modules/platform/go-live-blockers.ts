@@ -59,6 +59,24 @@ export function billingKind(input: {
   return 'unknown';
 }
 
+/**
+ * Promo grants are for complimentary / unpaid accounts.
+ * Hide Grant for anyone already on a paid Stripe subscription, a Stripe
+ * trial of a paid plan, or enterprise — those should not be overwritten.
+ * Existing promo rows keep Revoke in the UI; the API still allows updating
+ * an active promo (minutes / plan) via the same grant endpoint.
+ */
+export function canGrantPromoTrial(input: {
+  plan: string;
+  subscriptionStatus: string | null;
+  promoTrial: boolean;
+}): boolean {
+  if (input.promoTrial) return true;
+  if (input.plan === 'enterprise') return false;
+  if (input.subscriptionStatus === 'active' || input.subscriptionStatus === 'trialing') return false;
+  return true;
+}
+
 /** Monthly list price in cents — sourced from shared PLANS, not a stale copy. */
 export function planPriceCents(planKey: string): number {
   return Math.round((getPlan(planKey)?.monthlyPrice ?? 0) * 100);

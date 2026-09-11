@@ -20,8 +20,7 @@ export type GoLiveStepId =
   | 'voice'
   | 'hours'
   | 'transfer'
-  | 'calendar_or_hours'
-  | 'test_call';
+  | 'calendar';
 
 export interface GoLiveStep {
   id: GoLiveStepId;
@@ -44,8 +43,12 @@ export interface GoLiveStatus {
   hasCalendar: boolean;
   transferNumber: string;
   voiceName: string;
+  /** Required setup cards — phone, voice, hours, transfer. */
   steps: GoLiveStep[];
+  /** Calendar is optional; hours alone is enough to go live. */
+  optionalStep: GoLiveStep;
   completedCount: number;
+  requiredCount: number;
 }
 
 function hasOpenOfficeHours(hours: unknown): boolean {
@@ -150,26 +153,21 @@ export function useGoLive(): GoLiveStatus {
       cta: 'Add transfer number',
       done: hasTransfer,
     },
-    {
-      id: 'calendar_or_hours',
-      title: 'Connect a calendar (or keep hours)',
-      desc: 'Calendar lets the AI book live. Hours alone is enough to go live without booking.',
-      href: '/settings/integrations',
-      cta: 'Connect calendar',
-      done: hasCalendar || hasOpenHours,
-    },
-    {
-      id: 'test_call',
-      title: 'Call your AI',
-      desc: 'Place a free test call — your AI rings the transfer number so you can hear it.',
-      href: '/dashboard#test-call',
-      cta: 'Make a test call',
-      done: false,
-    },
   ];
 
+  const optionalStep: GoLiveStep = {
+    id: 'calendar',
+    title: 'Connect a calendar (optional)',
+    desc: hasCalendar
+      ? 'Calendar is connected — the AI can book live.'
+      : 'Hours are enough to go live. Connect a calendar later if you want the AI to book on the call.',
+    href: '/settings/integrations',
+    cta: 'Connect calendar',
+    done: hasCalendar,
+  };
+
   const hardReady = phoneReady && hasGrokVoice && hasOpenHours && hasTransfer;
-  const completedCount = steps.filter((s) => s.id !== 'test_call' && s.done).length;
+  const completedCount = steps.filter((s) => s.done).length;
 
   return {
     loading,
@@ -183,6 +181,8 @@ export function useGoLive(): GoLiveStatus {
     transferNumber,
     voiceName,
     steps,
+    optionalStep,
     completedCount,
+    requiredCount: steps.length,
   };
 }

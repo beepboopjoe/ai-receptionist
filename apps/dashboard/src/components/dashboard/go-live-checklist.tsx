@@ -18,21 +18,31 @@ export function GoLiveChecklist() {
       <div>
         <h2 className="font-serif text-xl text-cream-900 mb-1">Let&apos;s get your front desk answering</h2>
         <p className="text-sm text-cream-700">
-          {goLive.completedCount} of {goLive.steps.filter((s) => s.id !== 'test_call').length} setup
-          steps done. Finish these so callers can reach your AI.
+          {goLive.completedCount} of {goLive.requiredCount} setup{' '}
+          {goLive.requiredCount === 1 ? 'step' : 'steps'} done. Finish these so callers can reach
+          your AI.
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {goLive.steps.map((step, i) => (
           <ChecklistStep key={step.id} step={step} index={i + 1} />
         ))}
+        <ChecklistStep step={goLive.optionalStep} optional />
       </div>
       <TestCallCard embedded />
     </div>
   );
 }
 
-function ChecklistStep({ step, index }: { step: GoLiveStep; index: number }) {
+function ChecklistStep({
+  step,
+  index,
+  optional = false,
+}: {
+  step: GoLiveStep;
+  index?: number;
+  optional?: boolean;
+}) {
   return (
     <Link
       href={step.href}
@@ -45,15 +55,19 @@ function ChecklistStep({ step, index }: { step: GoLiveStep; index: number }) {
       <div className="flex items-start gap-3">
         <div
           className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold ${
-            step.done ? 'bg-emerald-600 text-white' : 'bg-brand-600 text-white'
+            step.done
+              ? 'bg-emerald-600 text-white'
+              : optional
+                ? 'bg-cream-200 text-cream-700'
+                : 'bg-brand-600 text-white'
           }`}
         >
-          {step.done ? <Check size={14} /> : index}
+          {step.done ? <Check size={14} /> : optional ? '•' : index}
         </div>
         <div className="min-w-0">
           <p className="font-semibold text-sm text-cream-900 mb-0.5">{step.title}</p>
           <p className="text-xs text-cream-600 leading-relaxed mb-2">{step.desc}</p>
-          {!step.done && step.id !== 'test_call' && (
+          {!step.done && (
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 group-hover:gap-1.5 transition-all">
               {step.cta} <ArrowRight size={11} />
             </span>

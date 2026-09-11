@@ -16,6 +16,7 @@ import { KnowledgeBaseCard } from '@/components/dashboard/knowledge-base-card';
 import { GoLiveChecklist } from '@/components/dashboard/go-live-checklist';
 import { useGoLive } from '@/lib/useGoLive';
 import { formatMinutesLimit } from '@/lib/plan-display';
+import { formatTimeOrDash } from '@/lib/dates';
 
 interface EventStyle { color: string; dot: string }
 
@@ -309,7 +310,7 @@ export default function DashboardPage() {
                         <p className="text-xs text-gray-500 mt-1 truncate">{name || phone}</p>
                       )}
                       <p className="text-xs text-gray-400 mt-0.5">
-                        {new Date(evt.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        {formatTimeOrDash(evt.timestamp)}
                       </p>
                     </div>
                   </div>
