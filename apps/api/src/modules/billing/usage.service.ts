@@ -12,7 +12,7 @@
 // ============================================================
 import { db } from '../../db/client.js';
 import { tenants, minuteUsage, calls } from '../../db/schema.js';
-import { and, eq, gte, sql } from 'drizzle-orm';
+import { and, eq, gte, ne, sql } from 'drizzle-orm';
 import { getStripe } from './stripe.client.js';
 import { getPlan, resolvePlanLimits } from '@ai-receptionist/shared';
 
@@ -215,7 +215,13 @@ export async function isPromoTrialCapped(tenantId: string): Promise<boolean> {
       totalSeconds: sql<number>`COALESCE(SUM(${calls.durationSeconds}), 0)`,
     })
     .from(calls)
-    .where(and(eq(calls.tenantId, tenantId), gte(calls.startedAt, monthStart)));
+    .where(
+      and(
+        eq(calls.tenantId, tenantId),
+        gte(calls.startedAt, monthStart),
+        ne(calls.direction, 'test')
+      )
+    );
 
   const minutesUsed = Math.ceil((Number(row?.totalSeconds) ?? 0) / 60);
   return minutesUsed >= cap;

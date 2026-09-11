@@ -374,7 +374,10 @@ export default function BillingPage() {
               <p className="text-3xl font-bold text-gray-900">
                 {billing.callsThisMonth.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-400">Total calls handled by AI</p>
+              <p className="text-xs text-gray-400">
+                Customer calls this calendar month (test calls excluded). Minutes above use the
+                billing period.
+              </p>
             </div>
 
             {/* Appointments Booked */}

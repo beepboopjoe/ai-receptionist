@@ -23,7 +23,7 @@ import {
   leadDiscoveryJobs,
   kbDocuments,
 } from '../../db/schema.js';
-import { and, eq, gte, count, sql, desc, inArray } from 'drizzle-orm';
+import { and, eq, gte, ne, count, sql, desc, inArray } from 'drizzle-orm';
 
 export type SectionKey =
   | 'calls'
@@ -71,7 +71,9 @@ async function callsCounts(tenantId: string): Promise<LiveCount[]> {
   const [totalRow] = await db
     .select({ value: count() })
     .from(calls)
-    .where(and(eq(calls.tenantId, tenantId), gte(calls.startedAt, since)));
+    .where(
+      and(eq(calls.tenantId, tenantId), gte(calls.startedAt, since), ne(calls.direction, 'test'))
+    );
 
   const [escalatedRow] = await db
     .select({ value: count() })
@@ -80,6 +82,7 @@ async function callsCounts(tenantId: string): Promise<LiveCount[]> {
       and(
         eq(calls.tenantId, tenantId),
         gte(calls.startedAt, since),
+        ne(calls.direction, 'test'),
         sql`${calls.escalationReason} IS NOT NULL`
       )
     );
@@ -110,6 +113,7 @@ async function missedCallsCounts(tenantId: string): Promise<LiveCount[]> {
       and(
         eq(calls.tenantId, tenantId),
         eq(calls.status, 'missed'),
+        ne(calls.direction, 'test'),
         gte(calls.startedAt, since7)
       )
     );
@@ -121,6 +125,7 @@ async function missedCallsCounts(tenantId: string): Promise<LiveCount[]> {
       and(
         eq(calls.tenantId, tenantId),
         eq(calls.status, 'missed'),
+        ne(calls.direction, 'test'),
         gte(calls.startedAt, since1)
       )
     );
@@ -135,7 +140,7 @@ async function missedCallsCounts(tenantId: string): Promise<LiveCount[]> {
       severity: week > 5 ? 'warning' : 'info',
     },
     {
-      label: 'Missed today',
+      label: 'Missed last 24h',
       value: day,
       severity: day > 0 ? 'warning' : 'success',
     },

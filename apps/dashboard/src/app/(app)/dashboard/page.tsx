@@ -93,7 +93,7 @@ function LockedStatCard({ label }: { label: string }) {
 export default function DashboardPage() {
   const { data: calls } = useSWR('calls', () => callsApi.list({ limit: 100 }), { refreshInterval: 30000 });
   const { data: appointments } = useSWR('appointments-today', () =>
-    appointmentsApi.list({ limit: 50, status: 'confirmed' }), { refreshInterval: 30000 }
+    appointmentsApi.list({ limit: 50, status: 'confirmed', upcoming: '1' }), { refreshInterval: 30000 }
   );
   const { data: escalations } = useSWR('escalations', () => escalationsApi.list(), { refreshInterval: 30000 });
   const { data: missed } = useSWR('missed-calls', () => callsApi.getMissed(), { refreshInterval: 30000 });
@@ -119,7 +119,7 @@ export default function DashboardPage() {
     (e: any) => e.status === 'open'
   ).length;
   const upcomingAppts = ((appointments as any)?.data ?? []).length;
-  const missedCount = ((missed as any)?.data ?? []).length;
+  const missedCount = (missed as any)?.total ?? ((missed as any)?.data ?? []).length;
   const activeCampaigns = ((campaigns as any)?.data ?? []).filter(
     (c: any) => c.status === 'running'
   ).length;

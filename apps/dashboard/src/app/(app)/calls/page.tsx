@@ -12,16 +12,12 @@ import { LiveCallDrawer } from '@/components/dashboard/live-call-drawer';
 import { SectionAgent } from '@/components/dashboard/section-agent';
 
 export default function CallsPage() {
-  const { data, isLoading, mutate } = useSWR('calls', () => callsApi.list({ limit: 50 }));
-  const allCalls = (data as any)?.data ?? [];
-
-  // Phase 29a — Missed Calls folded into this page as a filter tab.
-  // The dedicated /missed-calls page (with text-back tooling) still
-  // exists; the Missed tab links to it for the full workflow.
   const [filter, setFilter] = useState<'all' | 'missed'>('all');
-  const calls = filter === 'missed'
-    ? allCalls.filter((c: any) => c.status === 'missed')
-    : allCalls;
+  const { data, isLoading, mutate } = useSWR(
+    ['calls', filter],
+    () => callsApi.list({ limit: 50, ...(filter === 'missed' ? { status: 'missed' } : {}) })
+  );
+  const calls = (data as any)?.data ?? [];
 
   const { activeCalls } = useLiveCalls();
   const [drawerOpen, setDrawerOpen] = useState(false);

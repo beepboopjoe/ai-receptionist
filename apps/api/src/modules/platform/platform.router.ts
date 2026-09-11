@@ -21,7 +21,7 @@ import {
   tenantSettings,
   phonePortRequests,
 } from '../../db/schema.js';
-import { and, eq, gte, sql, desc, ilike, or, inArray, isNull } from 'drizzle-orm';
+import { and, eq, gte, sql, desc, ilike, or, inArray, isNull, ne } from 'drizzle-orm';
 import { config } from '../../config.js';
 import { AuthError, ConflictError, NotFoundError, ValidationError } from '../../lib/errors.js';
 import { auditLog } from '../../audit/audit-logger.js';
@@ -135,7 +135,7 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
           callCount: sql<number>`COUNT(*)`,
         })
         .from(calls)
-        .where(gte(calls.startedAt, monthStart));
+        .where(and(gte(calls.startedAt, monthStart), ne(calls.direction, 'test')));
 
       const platformMinutesThisMonth = Math.round(
         (Number(usageRow?.totalSeconds) ?? 0) / 60
@@ -229,7 +229,13 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
               totalSeconds: sql<number>`COALESCE(SUM(${calls.durationSeconds}), 0)`,
             })
             .from(calls)
-            .where(and(inArray(calls.tenantId, tenantIds), gte(calls.startedAt, monthStart)))
+            .where(
+              and(
+                inArray(calls.tenantId, tenantIds),
+                gte(calls.startedAt, monthStart),
+                ne(calls.direction, 'test')
+              )
+            )
             .groupBy(calls.tenantId),
           db
             .select({

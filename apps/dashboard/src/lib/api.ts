@@ -110,7 +110,7 @@ export const callsApi = {
   },
   get: (id: string) => apiFetch<unknown>(`/calls/${id}`),
   delete: (id: string) => apiFetch<{ deleted: boolean }>(`/calls/${id}`, { method: 'DELETE' }),
-  getMissed: () => apiFetch<{ data: unknown[] }>('/calls/missed'),
+  getMissed: () => apiFetch<{ data: unknown[]; total: number }>('/calls/missed'),
   escalate: (id: string, reason: string) =>
     apiFetch(`/calls/${id}/escalate`, { method: 'POST', body: JSON.stringify({ reason }) }),
   takeover: (id: string) =>
@@ -260,7 +260,7 @@ export const searchApi = {
 
 // ---- Appointments ----
 export const appointmentsApi = {
-  list: (params?: { limit?: number; offset?: number; status?: string }) => {
+  list: (params?: { limit?: number; offset?: number; status?: string; upcoming?: string }) => {
     const q = new URLSearchParams(params as Record<string, string>).toString();
     return apiFetch<{ data: unknown[] }>(`/appointments${q ? '?' + q : ''}`);
   },

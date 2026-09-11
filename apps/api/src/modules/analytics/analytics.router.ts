@@ -17,9 +17,10 @@
 import type { FastifyInstance } from 'fastify';
 import { db } from '../../db/client.js';
 import { calls, appointments, escalations } from '../../db/schema.js';
-import { and, eq, gte, count, sql } from 'drizzle-orm';
+import { and, eq, gte, ne, count, sql } from 'drizzle-orm';
 import { cacheGet, cacheSet } from '../../db/redis.js';
 import { ValidationError } from '../../lib/errors.js';
+import { answeredCallSql } from '../admin/call-stats.js';
 
 // Rough heuristic for "money saved" — average booking value per industry
 // is wildly variable, so we expose a per-tenant override via tenant_settings
@@ -40,7 +41,7 @@ export async function analyticsPlugin(app: FastifyInstance): Promise<void> {
         throw new ValidationError('days must be a positive integer');
       }
 
-      const cacheKey = `analytics:${tenantId}:${days}`;
+      const cacheKey = `analytics:v2:${tenantId}:${days}`;
       const cached = await cacheGet(cacheKey);
       if (cached) {
         return reply.send(JSON.parse(cached));
@@ -64,12 +65,18 @@ export async function analyticsPlugin(app: FastifyInstance): Promise<void> {
         db
           .select({
             total: count(),
-            answered: sql<number>`COUNT(*) FILTER (WHERE ${calls.status} != 'missed')`,
+            answered: sql<number>`COUNT(*) FILTER (WHERE ${answeredCallSql()})`,
             missed: sql<number>`COUNT(*) FILTER (WHERE ${calls.status} = 'missed')`,
             totalDuration: sql<number>`COALESCE(SUM(${calls.durationSeconds}), 0)`,
           })
           .from(calls)
-          .where(and(eq(calls.tenantId, tenantId), gte(calls.startedAt, since))),
+          .where(
+            and(
+              eq(calls.tenantId, tenantId),
+              gte(calls.startedAt, since),
+              ne(calls.direction, 'test')
+            )
+          ),
 
         // ── 2. Appointments booked in window
         db
@@ -111,6 +118,7 @@ export async function analyticsPlugin(app: FastifyInstance): Promise<void> {
             FROM ${calls}
             WHERE ${calls.tenantId} = ${tenantId}
               AND ${calls.startedAt} >= ${sinceIso}
+              AND ${calls.direction} != 'test'
             GROUP BY 1
           ),
           bookings_by_day AS (
@@ -142,6 +150,7 @@ export async function analyticsPlugin(app: FastifyInstance): Promise<void> {
           WHERE ${calls.tenantId} = ${tenantId}
             AND ${calls.startedAt} >= ${sinceIso}
             AND ${calls.direction} = 'inbound'
+            AND ${calls.direction} != 'test'
           GROUP BY 1
           ORDER BY COUNT(*) DESC
           LIMIT 1
