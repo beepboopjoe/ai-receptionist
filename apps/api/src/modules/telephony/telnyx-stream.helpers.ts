@@ -355,8 +355,15 @@ export function formatGrokConnectFailureLog(params: GrokConnectFailureLogFields)
   ].join(' ');
 }
 
-export function formatGrokGreetingLog(params: { callSid: string; grokSessionId?: string }): string {
-  return `Grok session.update + greeting sent callSid=${params.callSid || 'unset'} grokSessionId=${params.grokSessionId || 'unset'}`;
+export function formatGrokGreetingLog(params: {
+  callSid: string;
+  grokSessionId?: string;
+  method?: string;
+  ms?: number;
+}): string {
+  const method = params.method || 'force_message';
+  const ms = typeof params.ms === 'number' ? ` ms=${params.ms}` : '';
+  return `Grok greeting sent method=${method} callSid=${params.callSid || 'unset'} grokSessionId=${params.grokSessionId || 'unset'}${ms}`;
 }
 
 export function formatMediaStreamStartLog(params: {
@@ -410,6 +417,7 @@ export function resolveFastifyWebsocket(connection: unknown): WebSocket {
   return connection as WebSocket;
 }
 
+/** Fallback only — live greeting is force_message (see grok-first-turn.ts). */
 export const GROK_GREETING_CREATE = { type: 'response.create' } as const;
 
 /** Current xAI name; `response.audio.delta` is the OpenAI-compat alias. */

@@ -70,8 +70,13 @@ describe('call-me pins Aurora for every public dial', () => {
   it('media-stream applies the dialed demo voice only on demo calls', () => {
     const src = readFileSync(join(srcRoot, 'telephony/media-stream.handler.ts'), 'utf8');
     expect(src).toContain('resolveSessionGrokVoice');
+    // Dialed call-me voice is passed as demoVoice; resolveSessionGrokVoice
+    // ignores it unless isDemo. Paying tenants get tenant_settings.voice_name.
+    // Conditional spreads (exactOptionalPropertyTypes) omit empty values.
     expect(src).toContain('demoVoice: voice');
-    expect(src).toContain('tenantVoice: settingsRow?.voiceName');
+    expect(src).toContain('tenantVoice: settingsRow.voiceName');
+    expect(src).toContain('...(voice ? { demoVoice: voice } : {})');
+    expect(src).toContain("settingsRow?.voiceName ? { tenantVoice: settingsRow.voiceName } : {}");
   });
 });
 
