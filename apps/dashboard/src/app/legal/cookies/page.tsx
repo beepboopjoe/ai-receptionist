@@ -40,7 +40,7 @@ export default function CookiesPage() {
         <li>
           <strong>Third-party processors for the product itself</strong> (not website
           pixels): Stripe checkout, Google OAuth if you choose “Sign in with Google,”
-          Telnyx and xAI when a call runs — see{' '}
+          our telephony carrier and voice provider when a call runs — see{' '}
           <Link href="/legal/subprocessors">Subprocessors</Link>
         </li>
       </ul>

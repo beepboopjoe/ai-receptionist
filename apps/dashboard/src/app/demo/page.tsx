@@ -38,7 +38,7 @@ export default function DemoPage() {
             Hear the voices. Try a live call.
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
-            Aurora, Castor, Cosmo, and Zenith — the same Grok voices your callers hear.
+            Aurora, Castor, Cosmo, and Zenith — the same Telfin voices your callers hear.
             Enter your number and we&apos;ll call you. Language is detected automatically
             when you pick up. No sign-up required.
           </p>
@@ -89,7 +89,7 @@ export default function DemoPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
             {
-              title: 'Natural Grok voices',
+              title: 'Natural Telfin voices',
               desc: 'Aurora, Castor, Cosmo, and Zenith — conversational cadence, handles interruption. Callers hang up surprised — not annoyed.',
             },
             {

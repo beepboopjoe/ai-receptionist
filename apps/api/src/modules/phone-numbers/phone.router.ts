@@ -40,8 +40,8 @@ export async function phoneNumbersPlugin(app: FastifyInstance): Promise<void> {
   app.post('/phone-numbers/search', { onRequest: [app.requireRole('admin')] }, async (request, reply) => {
     if (!config.TELNYX_API_KEY) {
       return reply.code(503).send({
-        error: 'Telnyx not configured',
-        message: 'TELNYX_API_KEY is not set on the API.',
+        error: 'phone_not_configured',
+        message: 'Phone ordering is not configured on this server.',
       });
     }
     const body = (request.body ?? {}) as {

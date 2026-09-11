@@ -45,7 +45,7 @@ export function CallRecordingPlayer({
       <EmptyState
         icon={Volume2}
         label="No recording for this call"
-        hint="Telnyx saves an MP3 after the call ends — refresh in a few seconds if it just finished. Very short, missed, failed, or some demo calls never get a file. Join / take-over still uses your Staff Transfer Number; it does not create this player."
+        hint="A recording is saved after the call ends — refresh in a few seconds if it just finished. Very short, missed, failed, or some demo calls never get a file. Join / take-over still uses your Staff Transfer Number; it does not create this player."
       />
     );
   }

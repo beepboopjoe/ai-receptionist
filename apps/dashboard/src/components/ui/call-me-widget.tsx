@@ -31,7 +31,7 @@ function formatNational(digits: string): string {
 
 function messageForStatus(status: number, fallback: string): string {
   if (status === 503) {
-    return "Live call-me isn't set up on this site yet. Hear a sample instead — same Grok voices your callers hear.";
+    return "Live call-me isn't set up on this site yet. Hear a sample instead — same Telfin voices your callers hear.";
   }
   if (status === 429) {
     return 'Hang on a few seconds, then tap Call me now again if you still want another ring.';

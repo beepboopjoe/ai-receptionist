@@ -22,7 +22,7 @@ const MODES: Array<{ id: InboundRoutingMode; title: string; body: string }> = [
   {
     id: 'overflow_ai',
     title: 'Try staff first · AI on no-answer',
-    body: 'We ring your Staff Transfer Number first. If no one picks up or the line is busy, the AI takes over. Best-effort via Telnyx Call Control.',
+    body: 'We ring your Staff Transfer Number first. If no one picks up or the line is busy, the AI takes over. Best-effort if staff does not answer.',
   },
 ];
 

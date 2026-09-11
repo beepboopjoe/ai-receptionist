@@ -19,7 +19,7 @@ const TELNYX_BASE = 'https://api.telnyx.com/v2';
 function requireAuthorization(): string {
   const header = telnyxAuthorizationHeader(config.TELNYX_API_KEY);
   if (!header) {
-    throw new IntegrationError('telnyx', 'TELNYX_API_KEY is not configured');
+    throw new IntegrationError('telnyx', 'Phone ordering is not configured');
   }
   return header;
 }

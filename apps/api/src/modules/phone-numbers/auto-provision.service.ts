@@ -216,7 +216,7 @@ export async function ensureInboundDid(
     return markFailed({
       tenantId,
       existingId: retryable?.id,
-      error: 'TELNYX_API_KEY is not set on the API',
+      error: 'Phone ordering is not configured',
     });
   }
 

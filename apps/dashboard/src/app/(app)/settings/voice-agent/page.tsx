@@ -85,7 +85,7 @@ function VoiceCard({
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-gray-900">{voice.label}</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 font-semibold">
-            Grok
+            AI
           </span>
           {voice.isDefault && (
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-700 font-semibold">
@@ -217,7 +217,7 @@ export default function VoiceAgentPage() {
     <div className="space-y-6 max-w-xl">
       <div>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Voice Agent</h1>
-        <p className="text-gray-500 mt-1">Configure your AI receptionist&apos;s Grok voice and behavior</p>
+        <p className="text-gray-500 mt-1">Configure your AI receptionist&apos;s voice and behavior</p>
       </div>
 
       {/* ── Voice & Behavior ───────────────────────────────── */}
@@ -249,7 +249,7 @@ export default function VoiceAgentPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Voice (Grok / xAI)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Voice</label>
           <div className="space-y-2">
             {GROK_VOICES.map((v) => (
               <VoiceCard
@@ -265,7 +265,7 @@ export default function VoiceAgentPage() {
               </p>
             )}
             <p className="text-xs text-gray-400 mt-1">
-              Live calls use Grok voices from xAI: Aurora, Castor, Cosmo, and Zenith. Click ▶ to hear a short preview.
+              Live calls use Telfin voices: Aurora, Castor, Cosmo, and Zenith. Click ▶ to hear a short preview.
             </p>
           </div>
         </div>

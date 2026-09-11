@@ -1809,7 +1809,7 @@ export async function adminPlugin(app: FastifyInstance) {
       if (inbound.status === 'failed' || !inbound.number || inbound.number.phoneE164 === 'pending') {
         return reply.status(502).send({
           error: 'provision_failed',
-          message: inbound.reason ?? 'Telnyx number order failed',
+          message: inbound.reason ?? 'Number order failed',
           inbound,
         });
       }

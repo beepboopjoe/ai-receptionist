@@ -88,7 +88,7 @@ export default function PrivacyPage() {
 
       <h2>4. How we use information</h2>
       <ul>
-        <li>Provide the AI receptionist (Grok / xAI voice over Telnyx telephony)</li>
+        <li>Provide the AI receptionist (AI voice over our phone carrier)</li>
         <li>Place the demo call you request, then apply per-number and per-IP limits</li>
         <li>Create accounts, bill subscriptions, and send transactional email</li>
         <li>Secure the service, prevent abuse, and comply with law</li>
@@ -123,8 +123,8 @@ export default function PrivacyPage() {
         not a guarantee that every configuration is lawful in every jurisdiction.
       </p>
       <p>
-        Voice audio is processed by our voice provider (xAI / Grok) and carried by our
-        telephony carrier (Telnyx). See <Link href="/legal/subprocessors">Subprocessors</Link>.
+        Voice audio is processed by our voice provider and carried by our
+        telephony carrier. See <Link href="/legal/subprocessors">Subprocessors</Link>.
       </p>
 
       <h2>7. Sharing</h2>

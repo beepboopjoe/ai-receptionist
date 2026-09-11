@@ -55,9 +55,17 @@ export class ConflictError extends AppError {
   }
 }
 
+/** Soft labels for vendors tenants might see in HTTP error text. */
+const TENANT_SAFE_PROVIDER: Record<string, string> = {
+  telnyx: 'carrier',
+  grok: 'voice',
+  xai: 'voice',
+};
+
 export class IntegrationError extends AppError {
   constructor(provider: string, message: string) {
-    super(502, `Integration error [${provider}]: ${message}`);
+    const label = TENANT_SAFE_PROVIDER[provider] ?? provider;
+    super(502, `Integration error [${label}]: ${message}`);
     this.name = 'IntegrationError';
   }
 }
