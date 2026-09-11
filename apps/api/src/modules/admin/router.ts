@@ -20,7 +20,8 @@ import {
   complianceEvents,
 } from '../../db/schema.js';
 import crypto from 'node:crypto';
-import { eq, and, desc, asc, count, gte, ilike, or, sql, inArray } from 'drizzle-orm';
+import { eq, and, desc, asc, count, gte, ilike, or, sql, inArray, ne } from 'drizzle-orm';
+import { customerCallsWhere, parseCallListQuery } from './call-stats.js';
 import { config } from '../../config.js';
 import {
   getSettings,
@@ -353,7 +354,7 @@ export async function adminPlugin(app: FastifyInstance) {
   // ================================================================
   app.get(
     '/billing',
-    { onRequest: [app.requireRole("owner")] },
+    { onRequest: [app.requireRole("staff")] },
     async (request, reply) => {
       const { tenantId } = request.authUser;
 
@@ -391,7 +392,13 @@ export async function adminPlugin(app: FastifyInstance) {
           callCount: count(),
         })
         .from(calls)
-        .where(and(eq(calls.tenantId, tenantId), gte(calls.startedAt, monthStart)));
+        .where(
+          and(
+            eq(calls.tenantId, tenantId),
+            gte(calls.startedAt, monthStart),
+            ne(calls.direction, 'test')
+          )
+        );
 
       const [apptRow] = await db
         .select({ apptCount: count() })
@@ -539,13 +546,13 @@ export async function adminPlugin(app: FastifyInstance) {
     async (request, reply) => {
       const { tenantId } = request.authUser;
       const query = request.query as Record<string, string>;
-      const limit = Math.min(parseInt(query['limit'] ?? '25', 10), 100);
-      const offset = parseInt(query['offset'] ?? '0', 10);
+      const { limit, offset, status, includeTest } = parseCallListQuery(query);
+      const where = customerCallsWhere(tenantId, { ...(status ? { status } : {}), includeTest });
 
       const rows = await db
         .select()
         .from(calls)
-        .where(eq(calls.tenantId, tenantId))
+        .where(where)
         .orderBy(desc(calls.startedAt))
         .limit(limit)
         .offset(offset);
@@ -553,7 +560,7 @@ export async function adminPlugin(app: FastifyInstance) {
       const [{ total }] = await db
         .select({ total: count() })
         .from(calls)
-        .where(eq(calls.tenantId, tenantId));
+        .where(where);
 
       return reply.send({ data: rows, total, limit, offset });
     }
@@ -564,13 +571,22 @@ export async function adminPlugin(app: FastifyInstance) {
     { onRequest: [app.requireRole("staff")] },
     async (request, reply) => {
       const { tenantId } = request.authUser;
+      const query = request.query as Record<string, string>;
+      const limit = Math.min(Math.max(parseInt(query['limit'] ?? '50', 10) || 50, 1), 200);
+      const offset = Math.max(parseInt(query['offset'] ?? '0', 10) || 0, 0);
+      const where = customerCallsWhere(tenantId, { status: 'missed' });
       const rows = await db
         .select()
         .from(calls)
-        .where(and(eq(calls.tenantId, tenantId), eq(calls.status, 'missed')))
+        .where(where)
         .orderBy(desc(calls.startedAt))
-        .limit(50);
-      return reply.send({ data: rows });
+        .limit(limit)
+        .offset(offset);
+      const [{ total }] = await db
+        .select({ total: count() })
+        .from(calls)
+        .where(where);
+      return reply.send({ data: rows, total, limit, offset });
     }
   );
 
@@ -1055,6 +1071,9 @@ export async function adminPlugin(app: FastifyInstance) {
 
       const conditions = [eq(appointments.tenantId, tenantId)];
       if (status) conditions.push(eq(appointments.status, status));
+      if (query['upcoming'] === '1') {
+        conditions.push(gte(appointments.startsAt, new Date()));
+      }
 
       const rows = await db
         .select()
