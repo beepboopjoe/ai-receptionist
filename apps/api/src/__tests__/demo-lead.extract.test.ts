@@ -42,6 +42,31 @@ describe('extractDemoLeadFromTranscript', () => {
     ]);
     expect(draft.languageHint).toBe('es');
   });
+
+  it('captures a bare name and business after the agent asks (call-me friend path)', () => {
+    const draft = extractDemoLeadFromTranscript([
+      { role: 'agent', text: 'Hey, this is a representative of Telfin.' },
+      { role: 'caller', text: 'Hello?' },
+      { role: 'agent', text: 'We answer phones and book appointments. What is your name?' },
+      { role: 'caller', text: 'Mike' },
+      { role: 'agent', text: 'Nice to meet you, Mike. What kind of business are you in?' },
+      { role: 'caller', text: 'A plumbing company downtown.' },
+      { role: 'agent', text: 'Want me to note an email?' },
+      { role: 'caller', text: 'Sure, mike@plumbers.com' },
+    ]);
+    expect(draft.name).toBe('Mike');
+    expect(draft.business.toLowerCase()).toContain('plumbing');
+    expect(draft.email).toBe('mike@plumbers.com');
+    expect(draft.closed).toBe(false);
+  });
+
+  it('does not treat I run a shop as a person name', () => {
+    const draft = extractDemoLeadFromTranscript([
+      { role: 'caller', text: "I'm a plumber. I run Harbor Pipe downtown." },
+    ]);
+    expect(draft.name).toBe('');
+    expect(draft.business.toLowerCase()).toContain('harbor pipe');
+  });
 });
 
 describe('emptyDemoLeadDraft', () => {
@@ -75,5 +100,13 @@ describe('demo call-me pin + cooldown + lead persist', () => {
     const src = readFileSync(join(srcRoot, 'platform/platform.router.ts'), 'utf8');
     expect(src).toContain('/platform/demo-leads');
     expect(src).toContain('demoLeads');
+  });
+
+  it('hangup enrich writes extracted name, business, and email', () => {
+    const src = readFileSync(join(srcRoot, 'public-api/demo-lead.service.ts'), 'utf8');
+    expect(src).toContain('name: extracted.name');
+    expect(src).toContain('business: extracted.business');
+    expect(src).toContain('email: extracted.email');
+    expect(src).toContain("source: 'call_me'");
   });
 });

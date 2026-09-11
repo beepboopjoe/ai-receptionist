@@ -1064,16 +1064,19 @@ function DemoLeadRow({ lead }: { lead: PlatformDemoLead }) {
   const snippet = (lead.transcript || lead.notes || '').trim();
   const phone = lead.phoneE164?.trim();
   const email = lead.email?.trim();
-  const displayName = lead.name?.trim() || lead.business?.trim() || phone || 'Phone-only lead';
+  const name = lead.name?.trim();
+  const business = lead.business?.trim();
   return (
     <>
       <tr className="border-b border-gray-50 last:border-0">
         <td className="px-4 sm:px-6 py-3 text-gray-900">
-          <p className="font-medium">{displayName}</p>
-          {lead.business?.trim() && lead.name?.trim() ? (
-            <p className="text-xs text-gray-500 mt-0.5">{lead.business}</p>
-          ) : !lead.name?.trim() && phone && displayName !== phone ? (
-            <p className="text-xs text-gray-500 mt-0.5 font-mono">{phone}</p>
+          <p className={name ? 'font-medium' : 'font-medium text-amber-800'}>
+            {name || 'Name not captured'}
+          </p>
+          {business ? (
+            <p className="text-xs text-gray-500 mt-0.5">{business}</p>
+          ) : lead.source === 'call_me' ? (
+            <p className="text-xs text-gray-400 mt-0.5">Business not captured</p>
           ) : null}
         </td>
         <td className="px-4 sm:px-6 py-3 text-gray-700">
@@ -1085,11 +1088,36 @@ function DemoLeadRow({ lead }: { lead: PlatformDemoLead }) {
             <p className="font-mono text-xs text-gray-400">—</p>
           )}
           {email ? (
-            <a href={`mailto:${email}`} className="block text-xs text-gray-500 mt-0.5 hover:underline">
+            <a
+              href={`mailto:${email}?subject=${encodeURIComponent('Following up from Telfin')}`}
+              className="block text-xs text-gray-500 mt-0.5 hover:underline"
+            >
               {email}
             </a>
           ) : (
             <p className="text-xs text-gray-400 mt-0.5">—</p>
+          )}
+          {(phone || email) && (
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1.5 text-[11px] font-semibold">
+              {phone ? (
+                <a href={`tel:${phone}`} className="text-brand-700 hover:underline">
+                  Call
+                </a>
+              ) : null}
+              {phone ? (
+                <a href={`sms:${phone}`} className="text-brand-700 hover:underline">
+                  Text
+                </a>
+              ) : null}
+              {email ? (
+                <a
+                  href={`mailto:${email}?subject=${encodeURIComponent('Following up from Telfin')}`}
+                  className="text-brand-700 hover:underline"
+                >
+                  Email
+                </a>
+              ) : null}
+            </p>
           )}
         </td>
         <td className="px-4 sm:px-6 py-3">
