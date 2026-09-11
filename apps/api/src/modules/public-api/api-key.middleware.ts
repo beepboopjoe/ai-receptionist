@@ -47,7 +47,7 @@ const apiKeyMiddleware = fp(async (app: FastifyInstance) => {
     return async (request: FastifyRequest, _reply: FastifyReply) => {
       const token = extractToken(request);
       if (!token) {
-        throw new AuthError('API key required. Send "Authorization: Bearer ark_live_…" or "X-API-Key" header.');
+        throw new AuthError('API key required. Send "Authorization: Bearer telfin_sk_…" (or ark_live_…) or "X-API-Key" header.');
       }
       const result = await authenticateApiKey(token);
       if (!result) {

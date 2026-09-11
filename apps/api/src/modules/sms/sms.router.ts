@@ -9,15 +9,9 @@
 // ============================================================
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../../db/client.js';
-import { smsMessages, contacts, tenants } from '../../db/schema.js';
+import { smsMessages, contacts } from '../../db/schema.js';
 import { and, asc, desc, eq, or } from 'drizzle-orm';
-import { sendSms } from '../notifications/adapters/telnyx-sms.adapter.js';
-import { getTenantFromNumber } from './tenant-from-number.js';
-
-// Plans that unlock the two-way SMS inbox (send endpoint).
-// SMS is included on every paid plan; only the 10-min trial is blocked.
-// Reads remain open so downgraded users can still see their history.
-const SMS_SEND_PLANS = new Set(['growth', 'scale', 'business', 'enterprise']);
+import { sendTenantSms } from './send-tenant-sms.js';
 
 async function smsRouterPlugin(app: FastifyInstance) {
   // ── GET /sms/conversations ────────────────────────────────────────────────
@@ -143,61 +137,19 @@ async function smsRouterPlugin(app: FastifyInstance) {
       const { tenantId } = request.authUser;
       const { to, body } = request.body as { to?: string; body?: string };
 
-      if (!to || !body) {
-        return reply.code(400).send({
-          statusCode: 400,
-          error:      'BadRequest',
-          message:    'to and body are required',
-        });
-      }
-
-      // Plan gate (defense in depth — UI also hides this)
-      const [tenant] = await db
-        .select({ plan: tenants.plan })
-        .from(tenants)
-        .where(eq(tenants.id, tenantId))
-        .limit(1);
-
-      if (!tenant || !SMS_SEND_PLANS.has(tenant.plan ?? 'trial')) {
-        return reply.code(402).send({
-          statusCode: 402,
-          error:      'PaymentRequired',
-          message:    'Two-way SMS requires the Starter plan or above.',
-        });
-      }
-
-      const fromNumber = await getTenantFromNumber(tenantId);
-      if (!fromNumber) {
-        return reply.code(412).send({
-          statusCode: 412,
-          error:      'PreconditionFailed',
-          message:    'Provision a phone number in Settings → Phone Numbers before sending SMS.',
-        });
-      }
-
-      const msgId = await sendSms(to, body, fromNumber);
-      void import('../billing/usage-ledger.service.js').then(({ recordSmsUsage }) =>
-        recordSmsUsage(tenantId, 'outbound')
-      );
-
-      const [contact] = await db
-        .select({ id: contacts.id })
-        .from(contacts)
-        .where(and(eq(contacts.tenantId, tenantId), eq(contacts.phoneE164, to)))
-        .limit(1);
-
-      await db.insert(smsMessages).values({
+      const result = await sendTenantSms({
         tenantId,
-        direction:       'outbound',
-        fromNumber,
-        toNumber:        to,
-        body,
-        telnyxMessageId: msgId,
-        status:          'delivered',
-        contactId:       contact?.id ?? null,
+        to: to ?? '',
+        body: body ?? '',
       });
-
-      return { ok: true, messageId: msgId };
+      if (!result.ok) {
+        return reply.code(result.httpStatus).send({
+          statusCode: result.httpStatus,
+          error: result.code,
+          message: result.message,
+        });
+      }
+      return { ok: true, messageId: result.messageId };
     }
   );
 }

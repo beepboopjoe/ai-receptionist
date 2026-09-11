@@ -51,6 +51,7 @@ import { startWebhookDrainWorker, stopWebhookDrainWorker } from './workers/webho
 import apiKeyMiddleware from './modules/public-api/api-key.middleware.js';
 import { apiKeyAdminPlugin } from './modules/public-api/api-key.router.js';
 import { publicApiPlugin } from './modules/public-api/public.router.js';
+import { mcpPlugin } from './modules/mcp/mcp.router.js';
 import { publicDemoPlugin } from './modules/public-api/public-demo.router.js';
 import { publicSiteChatPlugin } from './modules/public-api/site-chat.router.js';
 import { sectionsPlugin } from './modules/sections/section.router.js';
@@ -178,6 +179,8 @@ async function buildApp() {
   await app.register(webhookPlugin, { prefix: '/api/v1' });
   await app.register(apiKeyAdminPlugin, { prefix: '/api/v1' });
   await app.register(publicApiPlugin, { prefix: '/api/v1' });
+  // MCP is mounted at /mcp and /api/v1/mcp (paths declared in the plugin).
+  await app.register(mcpPlugin);
   await app.register(publicDemoPlugin, { prefix: '/api/v1' });
   await app.register(publicSiteChatPlugin, { prefix: '/api/v1' });
   await app.register(sectionsPlugin, { prefix: '/api/v1' });

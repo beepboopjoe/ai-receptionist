@@ -69,6 +69,7 @@ Login to any seed tenant with `owner@<slug>.example.com` / `demo1234`. Slugs:
 | Campaign dialer | `apps/api/src/modules/campaigns/` |
 | Outbound webhooks | `apps/api/src/modules/webhooks/` |
 | Activity feed (WebSocket) | `apps/api/src/modules/activity/` |
+| MCP (Claude / Cursor) | `apps/api/src/modules/mcp/` · docs: `docs/telfin-mcp.md` |
 | Reusable UI primitives | `apps/dashboard/src/components/ui/` |
 | Tenant context provider | `apps/dashboard/src/lib/TenantProvider.tsx` |
 | Feature flags | `apps/dashboard/src/lib/featureFlags.ts` |
@@ -148,6 +149,15 @@ Outbound pool (already on `purpose='outbound_pool'`) is sized from the soft `con
 | `TELNYX_WHOLESALE_LOCAL_CENTS` / `TELNYX_WHOLESALE_TOLLFREE_CENTS` | Promo-trial number cost (defaults $1 / $2) |
 
 Do not set `DEMO_SKIP_COOLDOWN`. Homepage call-me / demo are unchanged.
+
+## Telfin MCP (Claude / Cursor)
+
+Tenants can connect Claude or Cursor to **their own** account via a remote MCP endpoint. This does not place outbound calls.
+
+- Endpoint: `POST /mcp` (alias `POST /api/v1/mcp`)
+- Auth: hashed API key (`telfin_sk_…` or existing `ark_live_…`) minted in **Settings → API Keys**
+- Tools: `telfin_whoami`, `telfin_list_leads`, `telfin_create_lead`, `telfin_list_calls`, `telfin_get_call`, `telfin_list_numbers`, `telfin_send_sms`
+- Setup: [`docs/telfin-mcp.md`](docs/telfin-mcp.md)
 
 ### Env vars (Google Calendar)
 

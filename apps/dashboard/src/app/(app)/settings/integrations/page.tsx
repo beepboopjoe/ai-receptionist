@@ -2,6 +2,7 @@
 import useSWR, { mutate } from 'swr';
 import { ApiError, integrationsApi } from '@/lib/api';
 import { CheckCircle, ExternalLink, Trash2, Mail, RefreshCw, KeyRound } from 'lucide-react';
+import Link from 'next/link';
 import { useVertical } from '@/lib/useVertical';
 import type { Vertical } from '@/lib/verticals';
 import { useEffect, useState } from 'react';
@@ -280,6 +281,26 @@ export default function IntegrationsPage() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* ── Developers / MCP ── */}
+      <div>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Developers</p>
+        <div className="card p-5 flex items-center gap-5">
+          <div className="text-3xl">🔌</div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-gray-900">Claude / Cursor MCP</p>
+              <span className="badge badge-blue">New</span>
+            </div>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Connect Claude, Cursor, or other MCP clients to this Telfin account with a tenant-scoped API key. Read calls and leads; no outbound dialing in v1.
+            </p>
+          </div>
+          <Link href="/settings/api-keys" className="btn-primary text-sm shrink-0">
+            <KeyRound size={13} /> API keys &amp; connector URL
+          </Link>
         </div>
       </div>
 
