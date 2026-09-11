@@ -228,7 +228,7 @@ export async function adminPlugin(app: FastifyInstance) {
     // types and prompts pick it up without a follow-up PATCH.
     const [tenant] = await db
       .insert(tenants)
-      .values({ name: businessName, slug, plan, vertical: resolvedVertical, timezone: 'America/New_York', isActive: false, onboardingStep: 1 })
+      .values({ name: businessName, slug, plan, vertical: resolvedVertical, timezone: 'America/New_York', isActive: false, onboardingStep: 0 })
       .returning();
 
     // Create admin user (owner)
@@ -1653,8 +1653,8 @@ export async function adminPlugin(app: FastifyInstance) {
       const { tenantId } = request.authUser;
       const { step } = request.params as { step: string };
       const stepNum = parseInt(step, 10);
-      if (isNaN(stepNum) || stepNum < 1 || stepNum > 5) {
-        throw new ValidationError('Invalid step number (1-5)');
+      if (isNaN(stepNum) || stepNum < 0 || stepNum > 5) {
+        throw new ValidationError('Invalid step number (0-5)');
       }
       await advanceOnboardingStep(tenantId, stepNum);
       return reply.send({ step: stepNum, completed: true });
@@ -1671,7 +1671,7 @@ export async function adminPlugin(app: FastifyInstance) {
       await activateTenant(tenantId);
 
       const { ensureInboundDid } = await import('../phone-numbers/auto-provision.service.js');
-      const inbound = await ensureInboundDid(tenantId);
+      const inbound = await ensureInboundDid(tenantId, { forceRetry: true });
       if (inbound.status === 'active' || inbound.status === 'skipped') {
         const { ensureOutboundPool } = await import('../outbound-pool/pool.service.js');
         void ensureOutboundPool(tenantId).catch((err) => {
@@ -1706,6 +1706,14 @@ export async function adminPlugin(app: FastifyInstance) {
 
       const { ensureInboundDid } = await import('../phone-numbers/auto-provision.service.js');
       const inbound = await ensureInboundDid(tenantId, { areaCode, forceRetry: true });
+
+      if (inbound.status === 'skipped') {
+        return reply.status(402).send({
+          error: 'plan_has_no_included_number',
+          message: 'Subscribe to a paid plan to get a dedicated inbound number, or buy one in Settings → Phone numbers.',
+          inbound,
+        });
+      }
 
       if (inbound.status === 'failed' || !inbound.number || inbound.number.phoneE164 === 'pending') {
         return reply.status(502).send({

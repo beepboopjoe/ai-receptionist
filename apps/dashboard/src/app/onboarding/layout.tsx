@@ -9,7 +9,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
             {BRAND_ICON_INITIALS}
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Set Up Your Telfin</h1>
-          <p className="text-gray-500 mt-1">Complete these 5 steps to go live</p>
+          <p className="text-gray-500 mt-1">Complete these 6 steps to go live</p>
         </div>
         {children}
       </div>

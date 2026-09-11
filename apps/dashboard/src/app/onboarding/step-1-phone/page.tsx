@@ -1,45 +1,114 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { integrationsApi, onboardingApi } from '@/lib/api';
+import { Suspense, useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import useSWR, { mutate } from 'swr';
+import { integrationsApi, onboardingApi, phoneNumbersApi } from '@/lib/api';
 import { usePlan } from '@/lib/usePlan';
-import { CheckCircle, ArrowRight, Info } from 'lucide-react';
+import { CheckCircle, ArrowRight, Info, AlertCircle } from 'lucide-react';
 import { useVertical } from '@/lib/useVertical';
 
+function formatDid(e164: string): string {
+  const m = /^\+(\d{1,3})(\d{3})(\d{3})(\d{4})$/.exec(e164);
+  if (!m) return e164;
+  return `+${m[1]} (${m[2]}) ${m[3]}-${m[4]}`;
+}
+
 export default function Step1PhonePage() {
+  return (
+    <Suspense fallback={<div className="card p-6 text-sm text-gray-500">Loading phone setup…</div>}>
+      <Step1PhoneInner />
+    </Suspense>
+  );
+}
+
+function Step1PhoneInner() {
   const vertical = useVertical();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const justSubscribed = searchParams.get('subscribed') === '1';
   const { plan } = usePlan();
-  const isTrial = plan === 'trial';
+  const isTrial = plan === 'trial' && !justSubscribed;
+
+  const { data: status } = useSWR('onboarding-status', () => onboardingApi.getStatus());
+  const { data: phones } = useSWR('phone-numbers', () => phoneNumbersApi.list());
+
+  const existingDid =
+    status?.inbound &&
+    status.inbound.phoneE164?.startsWith('+') &&
+    (status.inbound.provisionStatus ?? 'active') === 'active'
+      ? status.inbound.phoneE164
+      : (phones?.data ?? []).find(
+          (n) => n.phoneE164?.startsWith('+') && (n.provisionStatus ?? 'active') === 'active'
+        )?.phoneE164 ?? null;
+  const failedInbound =
+    status?.inbound?.provisionStatus === 'failed' ? status.inbound : null;
+  const includesDid = status?.includesInboundDid ?? !isTrial;
 
   const [areaCode, setAreaCode] = useState('');
-  const [provisioned, setProvisioned] = useState<{ phoneNumber: string } | null>(null);
+  const [provisioned, setProvisioned] = useState<{ phoneNumber: string } | null>(
+    existingDid ? { phoneNumber: existingDid } : null
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [option, setOption] = useState<'twilio' | 'ringcentral' | null>(null);
+  const [option, setOption] = useState<'twilio' | 'ringcentral' | null>(
+    existingDid || justSubscribed ? 'twilio' : null
+  );
   const [trialStepDone, setTrialStepDone] = useState(false);
 
-  // Auto-complete step 1 for trial users — they don't need to provision a number
   useEffect(() => {
-    if (isTrial && option === 'twilio' && !trialStepDone) {
+    if (existingDid && !provisioned) {
+      setProvisioned({ phoneNumber: existingDid });
+      setOption('twilio');
+    }
+  }, [existingDid, provisioned]);
+
+  useEffect(() => {
+    if (isTrial && option === 'twilio' && !trialStepDone && !existingDid) {
       setTrialStepDone(true);
       void onboardingApi.completeStep(1);
     }
-  }, [isTrial, option, trialStepDone]);
+  }, [isTrial, option, trialStepDone, existingDid]);
+
+  useEffect(() => {
+    if (!justSubscribed || provisioned || existingDid || loading) return;
+    setOption('twilio');
+    void handleProvision();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot after Stripe return
+  }, [justSubscribed]);
 
   async function handleProvision() {
     setLoading(true);
     setError('');
     try {
-      const result = await onboardingApi.provisionNumber(areaCode || undefined);
-      setProvisioned(result);
-      await onboardingApi.completeStep(1);
-    } catch (err: any) {
-      setError(err.message ?? 'Provisioning failed');
+      const attempts = justSubscribed ? 6 : 1;
+      let lastErr: Error | null = null;
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const result = await onboardingApi.provisionNumber(areaCode || undefined);
+          setProvisioned(result);
+          await onboardingApi.completeStep(1);
+          await mutate('onboarding-status');
+          await mutate('phone-numbers');
+          await mutate('billing');
+          lastErr = null;
+          break;
+        } catch (err: unknown) {
+          lastErr = err instanceof Error ? err : new Error('Provisioning failed');
+          const msg = lastErr.message.toLowerCase();
+          const waitingForPlan = justSubscribed && (msg.includes('subscribe') || msg.includes('plan'));
+          if (!waitingForPlan) break;
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+      }
+      if (lastErr) setError(lastErr.message);
     } finally {
       setLoading(false);
     }
   }
+
+  const canContinue =
+    Boolean(provisioned) || (isTrial && option === 'twilio') || option === 'ringcentral';
 
   return (
     <div className="space-y-6">
@@ -48,9 +117,13 @@ export default function Step1PhonePage() {
         <p className="text-sm text-gray-500">
           Choose how you want to connect your AI receptionist to your phone system.
         </p>
+        {justSubscribed && (
+          <p className="mt-3 text-sm text-brand-800 bg-brand-50 border border-brand-100 rounded-lg px-3 py-2">
+            Subscription confirmed. We&apos;re assigning your included inbound number now.
+          </p>
+        )}
       </div>
 
-      {/* Option A — Forwarding number (recommended) */}
       <div
         onClick={() => setOption('twilio')}
         className={`card p-6 cursor-pointer transition-all ${
@@ -74,18 +147,25 @@ export default function Step1PhonePage() {
 
         {option === 'twilio' && (
           <div className="mt-5 space-y-3">
-            {isTrial ? (
-              /* ── Trial: platform shared number — no Telnyx provisioning ── */
-              <div className="rounded-xl bg-brand-50 border border-brand-200 px-5 py-4 space-y-2">
+            {isTrial && !provisioned ? (
+              <div className="rounded-xl bg-amber-50 border border-amber-200 px-5 py-4 space-y-2">
                 <div className="flex items-center gap-2">
-                  <Info size={16} className="text-brand-600 shrink-0" />
-                  <p className="text-sm font-semibold text-brand-900">Using platform shared number</p>
+                  <Info size={16} className="text-amber-700 shrink-0" />
+                  <p className="text-sm font-semibold text-amber-950">Dedicated inbound number comes with a paid plan</p>
                 </div>
-                <p className="text-sm text-brand-700">
-                  During your free trial, inbound calls are routed through our shared platform number.
-                  When you subscribe to a paid plan, you&apos;ll get your own dedicated local number.
+                <p className="text-sm text-amber-900">
+                  Free trial does not include a Telfin inbound DID — inbound calls only reach your AI
+                  after you subscribe (Growth includes 2 numbers) or buy a number. You can still hear
+                  the AI with a test call after you add a staff transfer number in step 4.
                 </p>
-                <p className="text-xs text-brand-500">✓ No setup required · ✓ Upgrade anytime for a dedicated number</p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Link href="/pricing" className="btn-primary text-sm">
+                    See plans
+                  </Link>
+                  <Link href="/settings/phone-numbers" className="btn-secondary text-sm">
+                    Phone numbers
+                  </Link>
+                </div>
               </div>
             ) : !provisioned ? (
               <>
@@ -101,13 +181,30 @@ export default function Step1PhonePage() {
                     maxLength={3}
                   />
                 </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
+                {failedInbound?.provisionError && (
+                  <p className="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                    Last order failed: {failedInbound.provisionError}. Retry below or finish later in
+                    Settings → Phone numbers.
+                  </p>
+                )}
+                {error && (
+                  <p className="text-sm text-red-600 flex items-start gap-2">
+                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                    {error}
+                  </p>
+                )}
                 <button
                   onClick={handleProvision}
                   disabled={loading}
                   className="btn-primary"
                 >
-                  {loading ? 'Provisioning…' : 'Provision My Number'}
+                  {loading
+                    ? 'Provisioning…'
+                    : failedInbound
+                      ? 'Retry my number'
+                      : includesDid
+                        ? 'Get my included number'
+                        : 'Provision My Number'}
                 </button>
               </>
             ) : (
@@ -116,18 +213,20 @@ export default function Step1PhonePage() {
                   <CheckCircle size={18} className="text-green-600" />
                   <p className="font-semibold text-green-800">Your number is ready!</p>
                 </div>
-                <p className="text-2xl font-bold text-green-900">{provisioned.phoneNumber}</p>
+                <p className="text-2xl font-bold text-green-900">{formatDid(provisioned.phoneNumber)}</p>
                 <p className="text-sm text-green-700 mt-2">
                   Set your existing {vertical.businessNoun} phone to forward to this number.
                   Your carrier or VoIP provider usually has a &quot;Call Forwarding&quot; or &quot;Forward When Busy&quot; option.
                 </p>
+                <Link href="/settings/phone-numbers" className="text-sm text-green-800 underline mt-2 inline-block">
+                  Same number in Settings → Phone numbers
+                </Link>
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Option B — RingCentral */}
       <div
         onClick={() => setOption('ringcentral')}
         className={`card p-6 cursor-pointer transition-all ${
@@ -156,8 +255,7 @@ export default function Step1PhonePage() {
         )}
       </div>
 
-      {/* Next — shown once user has made a valid selection */}
-      {(provisioned || (isTrial && option === 'twilio') || option === 'ringcentral') && (
+      {canContinue && (
         <button
           onClick={() => router.push('/onboarding/step-2-calendar')}
           className="btn-primary w-full justify-center"

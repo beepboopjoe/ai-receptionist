@@ -32,12 +32,16 @@ export default function Step2CalendarPage() {
     const params = new URLSearchParams(window.location.search);
     const ok = params.get('google_connected');
     const err = params.get('google_error');
-    if (!ok && !err) return;
+    const rc = params.get('rc');
+    if (!ok && !err && !rc) return;
     window.history.replaceState({}, '', window.location.pathname);
     if (ok) {
       setJustConnected(true);
       void mutate('integrations/google-calendar/status');
       void onboardingApi.completeStep(2);
+    }
+    if (rc === 'connected') {
+      void onboardingApi.completeStep(1);
     }
     if (err) setError(googleOAuthErrorMessage(err));
   }, []);

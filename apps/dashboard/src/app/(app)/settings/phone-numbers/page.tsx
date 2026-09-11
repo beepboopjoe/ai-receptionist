@@ -249,7 +249,7 @@ export default function PhoneNumbersPage() {
       if (result.status === 'active' && result.number) {
         toast.success(`Your number is ready: ${formatNumber(result.number.phoneE164)}`);
       } else if (result.status === 'skipped') {
-        toast.info('Your current plan uses the shared trial number. Subscribe to get a dedicated DID.');
+        toast.info('This plan does not include a dedicated inbound number. Subscribe to Growth or higher, or buy a number below.');
       } else {
         toast.error(result.reason ?? 'Telnyx order failed — tap Retry');
       }
@@ -513,7 +513,7 @@ export default function PhoneNumbersPage() {
         <EmptyState
           icon={Phone}
           label="No numbers yet"
-          hint="We’ll auto-assign a US inbound DID when you go live on a paid plan. Forward your existing line to it — porting is optional later."
+          hint="Paid plans auto-assign an included inbound DID on go-live. Trial does not include one — subscribe or buy a number here. Forward your existing line to the DID; porting is optional later."
           cta={{ label: autoProvisioning ? 'Provisioning…' : 'Get my number', onClick: handleAutoProvision }}
         />
       ) : (

@@ -102,6 +102,7 @@ export async function phoneNumbersPlugin(app: FastifyInstance): Promise<void> {
       }
       const result = await ensureInboundDid(request.authUser.tenantId, {
         areaCode: body.areaCode,
+        forceRetry: true,
       });
       const status = result.status === 'failed' ? 502 : 200;
       return reply.code(status).send(result);

@@ -562,15 +562,37 @@ function apiUrl(path: string): string {
 }
 
 // ---- Onboarding ----
+export type OnboardingInbound = {
+  phoneE164: string;
+  provisionStatus: string;
+  provisionError: string | null;
+};
+
+export type OnboardingStatus = {
+  currentStep: number;
+  uiStep: number;
+  isActive: boolean;
+  plan?: string;
+  vertical?: string;
+  includesInboundDid?: boolean;
+  inbound?: OnboardingInbound | null;
+  stepsCompleted: Record<string, boolean>;
+};
+
+export type OnboardingActivateResult = {
+  activated: boolean;
+  inbound?: {
+    status: string;
+    reason?: string;
+    number?: { id: string; phoneE164: string; provisionStatus: string };
+  };
+};
+
 export const onboardingApi = {
-  getStatus: () => apiFetch<{
-    currentStep: number;
-    isActive: boolean;
-    stepsCompleted: Record<string, boolean>;
-  }>('/onboarding/status'),
+  getStatus: () => apiFetch<OnboardingStatus>('/onboarding/status'),
   completeStep: (step: number) =>
     apiFetch(`/onboarding/step/${step}/complete`, { method: 'POST' }),
-  activate: () => apiFetch('/onboarding/activate', { method: 'POST' }),
+  activate: () => apiFetch<OnboardingActivateResult>('/onboarding/activate', { method: 'POST' }),
   provisionNumber: (areaCode?: string) =>
     apiFetch<{ phoneNumber: string; sid: string; provider: string }>(
       '/onboarding/provision-number',

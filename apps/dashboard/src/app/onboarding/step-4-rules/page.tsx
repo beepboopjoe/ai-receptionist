@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { onboardingApi, settingsApi } from '@/lib/api';
+import { onboardingApi, settingsApi, tenantsApi } from '@/lib/api';
 import { ArrowLeft, ArrowRight, Save } from 'lucide-react';
 import { useVertical } from '@/lib/useVertical';
 
@@ -31,6 +31,9 @@ export default function Step4RulesPage() {
         afterHoursMode,
         transferNumber,
       });
+      if (businessName.trim()) {
+        await tenantsApi.update({ name: businessName.trim() });
+      }
       await settingsApi.updateOfficeHours(DEFAULT_HOURS);
       await onboardingApi.completeStep(4);
       router.push('/onboarding/step-5-activate');
