@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-/** Legacy use-case picker — removed. Direct nav continues into remaining onboarding. */
+/** Legacy use-case / plan picker — removed. Free accounts go to the dashboard. */
 export default function OnboardingPlanRedirect() {
-  redirect('/onboarding');
+  redirect('/dashboard');
 }

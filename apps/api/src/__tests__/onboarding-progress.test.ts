@@ -83,28 +83,30 @@ describe('inbound DID plan gate (source)', () => {
 describe('onboarding use-case picker removed', () => {
   const dashboardRoot = join(srcRoot, '../../dashboard/src');
 
-  it('does not send new Google or email signups through /onboarding/plan', () => {
+  it('sends free Google and email signups to the dashboard, not a plan or industry gate', () => {
     const google = readFileSync(join(dashboardRoot, 'app/auth/google-complete/page.tsx'), 'utf8');
     const signup = readFileSync(join(dashboardRoot, 'app/(auth)/signup/page.tsx'), 'utf8');
     expect(google).not.toMatch(/['"`]\/onboarding\/plan['"`]/);
     expect(signup).not.toMatch(/['"`]\/onboarding\/plan['"`]/);
-    expect(google).toMatch(/\/onboarding\/step-0-industry/);
-    expect(signup).toMatch(/\/onboarding\/step-0-industry/);
+    expect(google).not.toMatch(/['"`]\/onboarding\/step-0-industry['"`]/);
+    expect(signup).not.toMatch(/['"`]\/onboarding\/step-0-industry['"`]/);
+    expect(google).toMatch(/router\.replace\(\s*['"]\/dashboard['"]\s*\)/);
+    expect(signup).toMatch(/router\.replace\(\s*['"]\/dashboard['"]\s*\)/);
   });
 
-  it('sends industry continue to phone setup, not the use-case picker', () => {
+  it('does not put a plan chooser after industry; phone setup stays optional', () => {
     const industry = readFileSync(join(dashboardRoot, 'app/onboarding/step-0-industry/page.tsx'), 'utf8');
     expect(industry).not.toMatch(/['"`]\/onboarding\/plan['"`]/);
     expect(industry).toMatch(/\/onboarding\/step-1-phone/);
   });
 
-  it('turns /onboarding/plan into a forward redirect without the use-case picker', () => {
+  it('turns /onboarding/plan into a dashboard redirect without the use-case picker', () => {
     const plan = readFileSync(join(dashboardRoot, 'app/onboarding/plan/page.tsx'), 'utf8');
     const nextConfig = readFileSync(join(dashboardRoot, '../next.config.js'), 'utf8');
-    expect(plan).toMatch(/redirect\(\s*['"]\/onboarding['"]\s*\)/);
+    expect(plan).toMatch(/redirect\(\s*['"]\/dashboard['"]\s*\)/);
     expect(plan).not.toMatch(/What do you want your AI to do/);
     expect(plan).not.toMatch(/onboarding_use_case/);
     expect(nextConfig).toMatch(/source:\s*['"]\/onboarding\/plan['"]/);
-    expect(nextConfig).toMatch(/destination:\s*['"]\/onboarding['"]/);
+    expect(nextConfig).toMatch(/destination:\s*['"]\/dashboard['"]/);
   });
 });

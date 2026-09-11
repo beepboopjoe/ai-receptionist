@@ -192,7 +192,7 @@ export default function SignupPage() {
           window.location.href = url;
           return; // navigation happening — don't call router.replace
         } catch {
-          // Checkout failed — fall through to onboarding, they can upgrade from billing page
+          // Checkout failed — fall through to the dashboard; they can upgrade from billing
         }
       }
 
@@ -201,8 +201,8 @@ export default function SignupPage() {
         try { localStorage.setItem('signup_plan_preference', selectedPlan); } catch { /* ignore */ }
       }
 
-      // Default: start on free trial, billing page handles upgrade
-      router.replace('/onboarding/step-0-industry');
+      // Free account → dashboard. Plan purchase is later via billing/upgrade.
+      router.replace('/dashboard');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
       setLoading(false);
