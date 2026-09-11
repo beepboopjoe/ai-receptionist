@@ -26,11 +26,11 @@ interface TelnyxMessageResponse {
 export async function sendSms(to: string, body: string, from?: string): Promise<string> {
   const authorization = telnyxAuthorizationHeader(config.TELNYX_API_KEY);
   if (!authorization) {
-    throw new IntegrationError('telnyx', 'TELNYX_API_KEY is not configured');
+    throw new IntegrationError('telnyx', 'Texting is not configured');
   }
   const fromNumber = from ?? config.TELNYX_FROM_NUMBER;
   if (!fromNumber) {
-    throw new IntegrationError('telnyx', 'No sender number provided and TELNYX_FROM_NUMBER is not configured');
+    throw new IntegrationError('telnyx', 'No sender number is configured for texting');
   }
 
   const payload: Record<string, string> = {

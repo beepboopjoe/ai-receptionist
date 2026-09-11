@@ -23,10 +23,9 @@ export default function TermsPage() {
       <h2>1. The service</h2>
       <p>
         {BRAND_NAME} provides an AI phone receptionist: inbound answering, optional outbound
-        campaigns and SMS, calendaring, and a dashboard. Voice conversation is powered by{' '}
-        <strong>xAI Grok</strong>. Calls and texts are carried by <strong>Telnyx</strong> as
-        the telephony/SMS provider. We are not selling “Telnyx Conversational AI” as the
-        product; Telnyx is the carrier path.
+        campaigns and SMS, calendaring, and a dashboard. Voice conversation is powered by our
+        AI voice. Calls and texts are carried by our telephony/SMS carrier. We are not selling
+        a third-party conversational AI as the product; the carrier is the transport path.
       </p>
       <p>
         Operator: {BRAND_OPERATOR}. Address: {BRAND_ADDRESS}. Legal entity on file:{' '}
@@ -125,9 +124,10 @@ export default function TermsPage() {
 
       <h2>9. Third-party services</h2>
       <p>
-        Calendars, CRMs, Google sign-in, Stripe, xAI, Telnyx, and hosting providers have their
-        own terms. Outages or policy changes at those providers can affect the product. We are
-        not those providers.
+        Calendars, CRMs, Google sign-in, Stripe, our voice and telephony providers, and hosting
+        providers have their own terms. See <Link href="/legal/subprocessors">Subprocessors</Link>.
+        Outages or policy changes at those providers can affect the product. We are not those
+        providers.
       </p>
 
       <h2>10. Disclaimers</h2>

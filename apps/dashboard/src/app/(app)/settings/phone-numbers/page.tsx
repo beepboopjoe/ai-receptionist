@@ -254,7 +254,7 @@ export default function PhoneNumbersPage() {
       } else if (result.status === 'skipped') {
         toast.info('This plan does not include a dedicated inbound number. Subscribe to Growth or higher, or buy a number below.');
       } else {
-        toast.error(result.reason ?? 'Telnyx order failed — tap Retry');
+        toast.error(result.reason ?? 'Number order failed — tap Retry');
       }
       await mutate('phone-numbers');
       await mutate('phone-numbers-pricing');
@@ -319,7 +319,7 @@ export default function PhoneNumbersPage() {
             onClick={handleAutoProvision}
             disabled={autoProvisioning}
             className="btn-secondary inline-flex items-center gap-2 text-sm disabled:opacity-60"
-            title="Order a US inbound DID via Telnyx and assign it to this tenant"
+            title="Order a US inbound number and assign it to this tenant"
           >
             <Zap size={14} /> {autoProvisioning ? 'Provisioning…' : 'Get my number'}
           </button>

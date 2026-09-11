@@ -589,7 +589,7 @@ function TenantRow({
           <>
             <div>{tenant.usageLedger.aiMinutes.toFixed(1)} AI min</div>
             <div className="text-gray-400">
-              Telnyx ${(tenant.usageLedger.telnyxCents / 100).toFixed(2)}
+              Calling ${(tenant.usageLedger.telnyxCents / 100).toFixed(2)}
               {tenant.usageLedger.numberMonthlyCents > 0
                 ? ` · nums $${(tenant.usageLedger.numberMonthlyCents / 100).toFixed(2)}`
                 : ''}

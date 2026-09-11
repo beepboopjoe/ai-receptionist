@@ -401,8 +401,8 @@ export default function BillingPage() {
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">This period · estimated COGS</h2>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Internal ledger from persisted events. Stripe remains your invoice. Telnyx and
-                  Grok cents are config estimates, not live carrier quotes.
+                  Internal ledger from persisted events. Stripe remains your invoice. Calling and
+                  AI-voice cents are config estimates, not live carrier quotes.
                 </p>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -415,13 +415,13 @@ export default function BillingPage() {
                   <p className="text-lg font-semibold text-gray-900">${(usage.ledger.numberMonthlyCents / 100).toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Est. Telnyx</p>
+                  <p className="text-xs text-gray-500">Est. calling</p>
                   <p className="text-lg font-semibold text-gray-900">
                     ${((usage.ledger.telnyxInboundCents + usage.ledger.telnyxOutboundCents + usage.ledger.telnyxSmsCents) / 100).toFixed(2)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Est. Grok</p>
+                  <p className="text-xs text-gray-500">Est. AI voice</p>
                   <p className="text-lg font-semibold text-gray-900">${(usage.ledger.grokEstimateCents / 100).toFixed(2)}</p>
                 </div>
               </div>

@@ -108,7 +108,7 @@ export async function publicSiteChatPlugin(app: FastifyInstance): Promise<void> 
         tags: ['Public demo'],
         summary: 'Marketing site product chatbot',
         description:
-          'Unauthenticated Telfin FAQ chat via Grok. Does not place calls. Rate-limited per IP.',
+          'Unauthenticated Telfin FAQ chat. Does not place calls. Rate-limited per IP.',
         body: {
           type: 'object',
           required: ['messages'],

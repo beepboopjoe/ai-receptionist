@@ -138,8 +138,8 @@ export function useGoLive(): GoLiveStatus {
     },
     {
       id: 'voice',
-      title: 'Pick a Grok voice',
-      desc: 'Choose Aurora, Castor, Cosmo, or Zenith — xAI Grok voices used on every live call.',
+      title: 'Pick a voice',
+      desc: 'Choose Aurora, Castor, Cosmo, or Zenith — Telfin voices used on every live call.',
       href: '/settings/voice-agent',
       cta: 'Choose a voice',
       done: hasGrokVoice,

@@ -31,7 +31,7 @@ export class TelnyxAdapter implements ITelephonyAdapter {
   private get headers(): HeadersInit {
     const authorization = telnyxAuthorizationHeader(config.TELNYX_API_KEY);
     if (!authorization) {
-      throw new IntegrationError('telnyx', 'TELNYX_API_KEY is not configured');
+      throw new IntegrationError('telnyx', 'Phone ordering is not configured');
     }
     return {
       'Content-Type': 'application/json',
