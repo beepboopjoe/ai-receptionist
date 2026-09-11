@@ -72,7 +72,7 @@ export default function Step2CalendarPage() {
   return (
     <div className="space-y-6">
       <div className="card p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 2 — Connect Your Calendar</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 3 of 6 — Connect Your Calendar</h2>
         <p className="text-sm text-gray-500">
           Connect Google Calendar so the AI can check availability and book {vertical.appointmentNounPlural} in real time.
           You can skip this and go live with office hours only.

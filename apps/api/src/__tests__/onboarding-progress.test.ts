@@ -79,3 +79,32 @@ describe('inbound DID plan gate (source)', () => {
     expect(demo).not.toMatch(/DEMO_SKIP_COOLDOWN\s*=\s*true/);
   });
 });
+
+describe('onboarding use-case picker removed', () => {
+  const dashboardRoot = join(srcRoot, '../../dashboard/src');
+
+  it('does not send new Google or email signups through /onboarding/plan', () => {
+    const google = readFileSync(join(dashboardRoot, 'app/auth/google-complete/page.tsx'), 'utf8');
+    const signup = readFileSync(join(dashboardRoot, 'app/(auth)/signup/page.tsx'), 'utf8');
+    expect(google).not.toMatch(/['"`]\/onboarding\/plan['"`]/);
+    expect(signup).not.toMatch(/['"`]\/onboarding\/plan['"`]/);
+    expect(google).toMatch(/\/onboarding\/step-0-industry/);
+    expect(signup).toMatch(/\/onboarding\/step-0-industry/);
+  });
+
+  it('sends industry continue to phone setup, not the use-case picker', () => {
+    const industry = readFileSync(join(dashboardRoot, 'app/onboarding/step-0-industry/page.tsx'), 'utf8');
+    expect(industry).not.toMatch(/['"`]\/onboarding\/plan['"`]/);
+    expect(industry).toMatch(/\/onboarding\/step-1-phone/);
+  });
+
+  it('turns /onboarding/plan into a forward redirect without the use-case picker', () => {
+    const plan = readFileSync(join(dashboardRoot, 'app/onboarding/plan/page.tsx'), 'utf8');
+    const nextConfig = readFileSync(join(dashboardRoot, '../next.config.js'), 'utf8');
+    expect(plan).toMatch(/redirect\(\s*['"]\/onboarding['"]\s*\)/);
+    expect(plan).not.toMatch(/What do you want your AI to do/);
+    expect(plan).not.toMatch(/onboarding_use_case/);
+    expect(nextConfig).toMatch(/source:\s*['"]\/onboarding\/plan['"]/);
+    expect(nextConfig).toMatch(/destination:\s*['"]\/onboarding['"]/);
+  });
+});

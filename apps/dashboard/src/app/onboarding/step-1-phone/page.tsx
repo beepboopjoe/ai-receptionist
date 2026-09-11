@@ -113,7 +113,7 @@ function Step1PhoneInner() {
   return (
     <div className="space-y-6">
       <div className="card p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 1 — Set Up Your AI Phone Line</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 2 of 6 — Set Up Your AI Phone Line</h2>
         <p className="text-sm text-gray-500">
           Choose how you want to connect your AI receptionist to your phone system.
         </p>
@@ -260,7 +260,7 @@ function Step1PhoneInner() {
           onClick={() => router.push('/onboarding/step-2-calendar')}
           className="btn-primary w-full justify-center"
         >
-          Continue to Step 2 <ArrowRight size={16} />
+          Continue to Step 3 <ArrowRight size={16} />
         </button>
       )}
     </div>

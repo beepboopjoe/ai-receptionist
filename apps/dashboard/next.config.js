@@ -47,6 +47,8 @@ const nextConfig = {
       { source: '/refunds', destination: '/legal/refunds', permanent: true },
       { source: '/legal/cookie-policy', destination: '/legal/cookies', permanent: true },
       { source: '/legal/refund-policy', destination: '/legal/refunds', permanent: true },
+      // Removed use-case picker (was an extra gate that claimed "Step 1 of 6").
+      { source: '/onboarding/plan', destination: '/onboarding', permanent: false },
     ];
   },
   // The shared package uses NodeNext module resolution, which means its

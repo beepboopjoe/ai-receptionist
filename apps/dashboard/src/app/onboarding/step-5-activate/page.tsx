@@ -100,7 +100,7 @@ export default function Step5ActivatePage() {
   return (
     <div className="space-y-6">
       <div className="card p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 5 — Activate</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 6 of 6 — Activate</h2>
         <p className="text-sm text-gray-500">
           Review what&apos;s done, then go live. Paid plans get an included inbound DID here if you
           don&apos;t already have one.

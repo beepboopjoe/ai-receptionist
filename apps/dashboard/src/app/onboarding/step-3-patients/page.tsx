@@ -37,7 +37,7 @@ export default function Step3ContactsPage() {
   return (
     <div className="space-y-6">
       <div className="card p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 3 — Import Your Contacts</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 4 of 6 — Import Your Contacts</h2>
         <p className="text-sm text-gray-500">
           Upload a CSV export from your CRM or {vertical.businessNoun} management system. The AI uses this to
           identify {vertical.contactNounPlural} and greet them by name.

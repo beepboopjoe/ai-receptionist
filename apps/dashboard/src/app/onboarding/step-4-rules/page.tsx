@@ -45,7 +45,7 @@ export default function Step4RulesPage() {
   return (
     <div className="space-y-6">
       <div className="card p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 4 — Configure Office Rules</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 5 of 6 — Configure Office Rules</h2>
         <p className="text-sm text-gray-500">
           Set your office hours, after-hours behavior, and staff transfer number.
         </p>

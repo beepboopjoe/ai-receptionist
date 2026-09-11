@@ -25,12 +25,15 @@ export default function Step0IndustryPage() {
       console.warn('Failed to persist vertical to backend; localStorage will be used as fallback', err);
     }
 
-    router.push('/onboarding/plan');
+    router.push('/onboarding/step-1-phone');
   }
 
   return (
     <div className="space-y-6">
       <div className="text-center pb-2">
+        <p className="text-sm font-medium text-gray-400 mb-3 tracking-wide uppercase">
+          Step 1 of 6
+        </p>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">What kind of business are you?</h1>
         <p className="text-cream-600 mt-2 text-sm">
           We&apos;ll tailor your AI receptionist to your industry.

@@ -3,7 +3,7 @@
 // Google OAuth completion page.
 // Backend redirects here with ?token=…&refresh=…&new=1 after a
 // successful Google sign-in. We persist the tokens then route
-// the user into the dashboard (or onboarding for new accounts).
+// the user into the dashboard (or industry onboarding for new accounts).
 // ============================================================
 import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -51,7 +51,7 @@ function GoogleCompleteInner() {
           /* best-effort — Google signup already attributed server-side when state carried ref */
         }
       }
-      router.replace(isNew ? '/onboarding/plan' : '/dashboard');
+      router.replace(isNew ? '/onboarding/step-0-industry' : '/dashboard');
     })();
   }, [params, router]);
 
