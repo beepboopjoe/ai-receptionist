@@ -157,7 +157,11 @@ export default function PlatformAdminPage() {
             icon={DollarSign}
             label="MRR"
             value={stats ? `$${(stats.mrrCents / 100).toLocaleString()}` : '—'}
-            sub={stats ? `${stats.activeTenants} active tenants` : ''}
+            sub={
+              stats
+                ? `${stats.activeTenants} active ${stats.activeTenants === 1 ? 'tenant' : 'tenants'}`
+                : ''
+            }
           />
           <StatCard
             icon={Users}
@@ -265,8 +269,25 @@ export default function PlatformAdminPage() {
           <EmptyState
             icon={Users}
             label={search || billingFilter !== 'all' ? 'No clients match these filters' : 'No clients yet'}
-            hint={search ? `Nothing matched “${search}”.` : 'Signed-up businesses will show phone, billing, last call, and go-live blockers here.'}
-            compact
+            hint={
+              search
+                ? `Nothing matched “${search}”. Try a different name, slug, or owner email.`
+                : billingFilter !== 'all'
+                  ? 'No clients in this billing filter. Switch to All to see everyone.'
+                  : 'Signed-up businesses will show phone, billing, last call, and go-live blockers here.'
+            }
+            {...((search || billingFilter !== 'all')
+              ? {
+                  cta: {
+                    label: 'Clear filters',
+                    onClick: () => {
+                      setSearchInput('');
+                      setSearch('');
+                      setBillingFilter('all');
+                    },
+                  },
+                }
+              : {})}
           />
         ) : (
           <div className="overflow-x-auto">
@@ -395,6 +416,22 @@ const BLOCKER_LABELS: Record<PlatformGoLiveBlocker, string> = {
 
 function blockerLabel(id: PlatformGoLiveBlocker): string {
   return BLOCKER_LABELS[id] ?? id;
+}
+
+/** Mirrors apps/api go-live-blockers.canGrantPromoTrial — keep in sync. */
+function canGrantPromoTrial(tenant: PlatformTenant): boolean {
+  if (tenant.promoTrial) return true;
+  if (tenant.plan === 'enterprise') return false;
+  if (tenant.subscriptionStatus === 'active' || tenant.subscriptionStatus === 'trialing') return false;
+  if (tenant.billing === 'paid') return false;
+  return true;
+}
+
+function grantBlockedLabel(tenant: PlatformTenant): string {
+  if (tenant.plan === 'enterprise') return 'Enterprise';
+  if (tenant.billing === 'paid' || tenant.subscriptionStatus === 'active') return 'Paid';
+  if (tenant.subscriptionStatus === 'trialing') return 'On a paid trial';
+  return 'Already billed';
 }
 
 function BillingBadge({
@@ -566,13 +603,20 @@ function TenantRow({
             >
               Revoke
             </button>
-          ) : (
+          ) : canGrantPromoTrial(tenant) ? (
             <button
               onClick={onGrant}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors"
             >
               <Sparkles size={11} /> Grant trial
             </button>
+          ) : (
+            <span
+              className="px-2 py-1 text-[11px] font-medium text-gray-400"
+              title="Promo trials are for unpaid accounts. This tenant is already on a paid or enterprise plan."
+            >
+              {grantBlockedLabel(tenant)}
+            </span>
           )}
 
           {/* Account-lifecycle menu — suspend / reactivate / delete */}
@@ -998,6 +1042,7 @@ function DemoLeadsSection() {
                 <th className="px-4 sm:px-6 py-3 font-medium">Consent</th>
                 <th className="px-4 sm:px-6 py-3 font-medium">Submitted</th>
                 <th className="px-4 sm:px-6 py-3 font-medium">Closed</th>
+                <th className="px-4 sm:px-6 py-3 font-medium">Notes</th>
               </tr>
             </thead>
             <tbody>
@@ -1019,20 +1064,16 @@ function DemoLeadRow({ lead }: { lead: PlatformDemoLead }) {
   const snippet = (lead.transcript || lead.notes || '').trim();
   const phone = lead.phoneE164?.trim();
   const email = lead.email?.trim();
+  const displayName = lead.name?.trim() || lead.business?.trim() || phone || 'Phone-only lead';
   return (
     <>
       <tr className="border-b border-gray-50 last:border-0">
         <td className="px-4 sm:px-6 py-3 text-gray-900">
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="inline-flex items-center gap-1 text-left font-medium hover:text-brand-700"
-          >
-            {open ? <ChevronUp size={12} className="text-gray-400" /> : <ChevronDown size={12} className="text-gray-400" />}
-            {lead.name?.trim() || '—'}
-          </button>
-          {lead.business?.trim() ? (
-            <p className="text-xs text-gray-500 mt-0.5 pl-4">{lead.business}</p>
+          <p className="font-medium">{displayName}</p>
+          {lead.business?.trim() && lead.name?.trim() ? (
+            <p className="text-xs text-gray-500 mt-0.5">{lead.business}</p>
+          ) : !lead.name?.trim() && phone && displayName !== phone ? (
+            <p className="text-xs text-gray-500 mt-0.5 font-mono">{phone}</p>
           ) : null}
         </td>
         <td className="px-4 sm:px-6 py-3 text-gray-700">
@@ -1067,7 +1108,7 @@ function DemoLeadRow({ lead }: { lead: PlatformDemoLead }) {
             ? [lead.emailConsent ? 'Email' : null, lead.smsConsent ? 'SMS/call' : null]
                 .filter(Boolean)
                 .join(' · ')
-            : '—'}
+            : 'None recorded'}
         </td>
         <td className="px-4 sm:px-6 py-3 text-gray-500 whitespace-nowrap">
           {Number.isNaN(submitted.getTime()) ? '—' : submitted.toLocaleString()}
@@ -1083,10 +1124,24 @@ function DemoLeadRow({ lead }: { lead: PlatformDemoLead }) {
             </span>
           )}
         </td>
+        <td className="px-4 sm:px-6 py-3">
+          {snippet ? (
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-900"
+            >
+              {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              {open ? 'Hide notes' : 'View notes'}
+            </button>
+          ) : (
+            <span className="text-xs text-gray-400">No notes</span>
+          )}
+        </td>
       </tr>
       {open && (
         <tr className="border-b border-gray-50 bg-gray-50/70">
-          <td colSpan={6} className="px-4 sm:px-6 py-3 text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">
+          <td colSpan={7} className="px-4 sm:px-6 py-3 text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">
             {snippet || 'No transcript or notes stored for this lead.'}
           </td>
         </tr>

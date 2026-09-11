@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   billingKind,
+  canGrantPromoTrial,
   computeGoLiveBlockers,
   countsTowardMrr,
   hasOpenOfficeHours,
@@ -113,11 +114,66 @@ describe('plan catalog helpers (shared PLANS, not a stale copy)', () => {
     });
   });
 
+  it('blocks promo grants on paid / enterprise / Stripe-trialing accounts', () => {
+    expect(canGrantPromoTrial({ plan: 'trial', subscriptionStatus: null, promoTrial: false })).toBe(
+      true,
+    );
+    expect(canGrantPromoTrial({ plan: 'growth', subscriptionStatus: null, promoTrial: false })).toBe(
+      true,
+    );
+    expect(
+      canGrantPromoTrial({ plan: 'growth', subscriptionStatus: 'active', promoTrial: false }),
+    ).toBe(false);
+    expect(
+      canGrantPromoTrial({ plan: 'scale', subscriptionStatus: 'trialing', promoTrial: false }),
+    ).toBe(false);
+    expect(
+      canGrantPromoTrial({ plan: 'enterprise', subscriptionStatus: null, promoTrial: false }),
+    ).toBe(false);
+    expect(
+      canGrantPromoTrial({ plan: 'growth', subscriptionStatus: 'active', promoTrial: true }),
+    ).toBe(true);
+  });
+
   it('keeps promo trials out of MRR', () => {
     expect(countsTowardMrr({ subscriptionStatus: 'active', promoTrial: true })).toBe(false);
     expect(countsTowardMrr({ subscriptionStatus: 'active', promoTrial: false })).toBe(true);
     expect(countsTowardMrr({ subscriptionStatus: 'trialing', promoTrial: false })).toBe(true);
     expect(countsTowardMrr({ subscriptionStatus: 'canceled', promoTrial: false })).toBe(false);
+  });
+});
+
+describe('live-audit dashboard contracts', () => {
+  const dashRoot = join(fileURLToPath(new URL('.', import.meta.url)), '../../../dashboard/src');
+
+  it('filters WS control frames so Live Activity never shows Invalid Date', () => {
+    const feed = readFileSync(join(dashRoot, 'lib/useActivityFeed.ts'), 'utf8');
+    expect(feed).toContain('isActivityEvent');
+    expect(feed).toContain("CONTROL_TYPES");
+    expect(feed).toContain("'connected'");
+    const home = readFileSync(join(dashRoot, 'app/(app)/dashboard/page.tsx'), 'utf8');
+    expect(home).toContain('formatTimeOrDash');
+    expect(home).not.toContain('new Date(evt.timestamp).toLocaleTimeString');
+  });
+
+  it('counts four required go-live steps and keeps calendar optional', () => {
+    const hook = readFileSync(join(dashRoot, 'lib/useGoLive.ts'), 'utf8');
+    expect(hook).toContain('requiredCount: steps.length');
+    expect(hook).toContain("id: 'calendar'");
+    expect(hook).not.toContain('calendar_or_hours');
+    expect(hook).not.toContain("id: 'test_call'");
+    const checklist = readFileSync(join(dashRoot, 'components/dashboard/go-live-checklist.tsx'), 'utf8');
+    expect(checklist).toContain('goLive.requiredCount');
+    expect(checklist).toContain('optional');
+  });
+
+  it('hides Grant trial on paid/enterprise and pluralizes tenant stats', () => {
+    const page = readFileSync(join(dashRoot, 'app/(app)/platform/page.tsx'), 'utf8');
+    expect(page).toContain('canGrantPromoTrial');
+    expect(page).toContain('active ${stats.activeTenants === 1 ? \'tenant\' : \'tenants\'}');
+    expect(page).toContain('No clients match these filters');
+    expect(page).toContain('View notes');
+    expect(page).toContain('No notes');
   });
 });
 
@@ -133,6 +189,7 @@ describe('platform tenants list exposes beta client fields', () => {
     expect(src).toContain('resolveIncludedMinutes');
     expect(src).toContain('countsTowardMrr');
     expect(src).toContain('/platform/tenants/:id/grant-promo-trial');
+    expect(src).toContain('canGrantPromoTrial');
     expect(src).not.toContain('starter: 79');
     expect(src).not.toContain('growth: 750');
   });

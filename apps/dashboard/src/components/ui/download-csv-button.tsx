@@ -21,7 +21,7 @@ interface Props<T> {
   rows: readonly T[];
   columns: readonly CsvColumn<T>[];
   filename: string;
-  /** Override the button label. Defaults to "Download CSV". */
+  /** Override the button label. Defaults to "Export". */
   label?: string;
   /** Disable the button when there's nothing to export. Defaults to true. */
   disableWhenEmpty?: boolean;
@@ -32,7 +32,7 @@ export function DownloadCsvButton<T>({
   rows,
   columns,
   filename,
-  label = 'Download CSV',
+  label = 'Export',
   disableWhenEmpty = true,
   className = '',
 }: Props<T>) {

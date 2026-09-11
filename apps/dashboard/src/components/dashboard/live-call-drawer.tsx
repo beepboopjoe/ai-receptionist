@@ -14,6 +14,7 @@ import { callsApi } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { LiveCall } from '@/lib/useLiveCalls';
+import { formatTimeOrDash } from '@/lib/dates';
 
 interface LiveCallDrawerProps {
   open: boolean;
@@ -223,12 +224,7 @@ export function LiveCallDrawer({
                       entry.role === 'agent' ? 'text-brand-200' : 'text-gray-400'
                     }`}
                   >
-                    {entry.role === 'agent' ? 'AI' : 'Caller'} ·{' '}
-                    {new Date(entry.timestamp).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                    })}
+                    {entry.role === 'agent' ? 'AI' : 'Caller'} · {formatTimeOrDash(entry.timestamp)}
                   </p>
                 </div>
               </div>

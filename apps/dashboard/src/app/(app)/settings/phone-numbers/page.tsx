@@ -92,6 +92,10 @@ export default function PhoneNumbersPage() {
     t === 'toll_free' ? tollFreeCents : localCents;
   const buyLabelFor = (t: 'local' | 'toll_free') =>
     nextIsIncluded ? 'Add (included)' : `Buy ${dollars(costFor(t))}/mo`;
+  const addNumberCta = nextIsIncluded ? 'Add a number' : 'Buy a number';
+  const addNumberTitle = nextIsIncluded
+    ? `Your next number is included on ${planName} — no extra charge`
+    : `Extra numbers bill at ${extrasLabel}`;
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [areaCode, setAreaCode] = useState('');
@@ -302,9 +306,10 @@ export default function PhoneNumbersPage() {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setSearchOpen(true)}
-            className="btn-primary inline-flex items-center gap-2 text-sm"
+            className={`${nextIsIncluded ? 'btn-secondary' : 'btn-primary'} inline-flex items-center gap-2 text-sm`}
+            title={addNumberTitle}
           >
-            <Phone size={14} /> Buy a number
+            <Phone size={14} /> {addNumberCta}
           </button>
           <button
             onClick={handleAutoProvision}
@@ -440,9 +445,10 @@ export default function PhoneNumbersPage() {
               </div>
               <button
                 onClick={() => { setWhyOpen(false); setSearchOpen(true); }}
-                className="btn-primary inline-flex items-center gap-2 text-sm shrink-0"
+                className={`${nextIsIncluded ? 'btn-secondary' : 'btn-primary'} inline-flex items-center gap-2 text-sm shrink-0`}
+                title={addNumberTitle}
               >
-                <Phone size={14} /> Buy a number
+                <Phone size={14} /> {addNumberCta}
               </button>
             </div>
           </div>
@@ -648,8 +654,14 @@ export default function PhoneNumbersPage() {
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-5 border-b border-gray-200 flex items-center justify-between">
               <div>
-                <h2 className="font-serif text-xl text-cream-900">Buy a phone number</h2>
-                <p className="text-xs text-gray-500 mt-0.5">{allotmentLabel}</p>
+                <h2 className="font-serif text-xl text-cream-900">
+                  {nextIsIncluded ? 'Add a phone number' : 'Buy a phone number'}
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {nextIsIncluded
+                    ? `Included on ${planName} — pick a number, no extra charge.`
+                    : allotmentLabel}
+                </p>
               </div>
               <button onClick={() => setSearchOpen(false)} className="p-1.5 rounded hover:bg-gray-100">
                 <X size={18} />

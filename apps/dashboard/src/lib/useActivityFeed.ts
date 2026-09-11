@@ -32,6 +32,16 @@ export interface ActivityEvent {
   timestamp: string;
 }
 
+const CONTROL_TYPES = new Set(['connected', 'error', 'ping', 'pong']);
+
+/** True for a real activity row — not the WS welcome / error frame. */
+export function isActivityEvent(event: unknown): event is ActivityEvent {
+  if (!event || typeof event !== 'object') return false;
+  const e = event as Record<string, unknown>;
+  if (typeof e.type !== 'string' || CONTROL_TYPES.has(e.type)) return false;
+  return true;
+}
+
 interface UseActivityFeedOptions {
   /** Max events to keep in state (oldest dropped first) */
   maxEvents?: number;
@@ -72,6 +82,9 @@ export function useActivityFeed({
     ws.onmessage = (evt) => {
       try {
         const event = JSON.parse(evt.data as string) as ActivityEvent;
+        // Gateway sends `{type:'connected'}` (and `{type:'error'}`) with no
+        // timestamp — those are transport frames, not activity rows.
+        if (!isActivityEvent(event)) return;
         if (isMounted.current) {
           setEvents((prev) => {
             const next = [event, ...prev];

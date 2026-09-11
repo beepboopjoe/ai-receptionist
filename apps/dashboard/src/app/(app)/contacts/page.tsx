@@ -1,7 +1,7 @@
 'use client';
 import useSWR, { mutate } from 'swr';
 import { contactsApi } from '@/lib/api';
-import { Search, ChevronRight, Users, Trash2, Download as DownloadIcon, X } from 'lucide-react';
+import { Search, ChevronRight, Users, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
 import { useVertical } from '@/lib/useVertical';
@@ -9,7 +9,6 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ListRowSkeleton } from '@/components/ui/skeleton';
 import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 import { useToast } from '@/components/ui/toast';
-import { downloadCsv } from '@/lib/csv';
 import { SectionAgent } from '@/components/dashboard/section-agent';
 
 export default function ContactsPage() {
@@ -49,7 +48,7 @@ export default function ContactsPage() {
     setSelected(new Set());
   }
 
-  // ── CSV column shape (used by header button + bulk toolbar) ─
+  // ── CSV column shape (header Export uses selection when present) ─
   const csvColumns = [
     { label: 'First name', value: (c: Record<string, any>) => c['firstName'] ?? '' },
     { label: 'Last name',  value: (c: Record<string, any>) => c['lastName'] ?? '' },
@@ -77,10 +76,6 @@ export default function ContactsPage() {
     }
   }
 
-  function handleBulkExport() {
-    downloadCsv(selectedRows, csvColumns, `${vertical.contactNounPlural}-selected.csv`);
-  }
-
   return (
     <div className="space-y-6">
       <SectionAgent section="contacts" />
@@ -91,9 +86,14 @@ export default function ContactsPage() {
           <p className="text-gray-500 mt-1">{(data as any)?.total ?? 0} total {vertical.contactNounPlural}</p>
         </div>
         <DownloadCsvButton
-          rows={contacts}
+          rows={selected.size > 0 ? selectedRows : contacts}
           columns={csvColumns}
-          filename={`${vertical.contactNounPlural}.csv`}
+          filename={
+            selected.size > 0
+              ? `${vertical.contactNounPlural}-selected.csv`
+              : `${vertical.contactNounPlural}.csv`
+          }
+          label={selected.size > 0 ? `Export ${selected.size}` : 'Export'}
         />
       </div>
 
@@ -116,12 +116,6 @@ export default function ContactsPage() {
             {selected.size} selected
           </span>
           <span className="text-brand-300">·</span>
-          <button
-            onClick={handleBulkExport}
-            className="inline-flex items-center gap-1.5 text-sm text-brand-700 hover:text-brand-900 font-medium"
-          >
-            <DownloadIcon size={14} /> Export selected
-          </button>
           <button
             onClick={handleBulkDelete}
             disabled={bulkBusy}

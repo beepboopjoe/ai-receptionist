@@ -23,13 +23,14 @@ import {
 } from '../../db/schema.js';
 import { and, eq, gte, sql, desc, ilike, or, inArray, isNull } from 'drizzle-orm';
 import { config } from '../../config.js';
-import { AuthError, NotFoundError, ValidationError } from '../../lib/errors.js';
+import { AuthError, ConflictError, NotFoundError, ValidationError } from '../../lib/errors.js';
 import { auditLog } from '../../audit/audit-logger.js';
 import { getStripe } from '../billing/stripe.client.js';
 import { probeTelnyxAuth } from '../../lib/telnyx-auth.js';
 import { DEFAULT_PUBLIC_GROK_VOICE, PLANS } from '@ai-receptionist/shared';
 import {
   billingKind,
+  canGrantPromoTrial,
   computeGoLiveBlockers,
   countsTowardMrr,
   planPriceCents,
@@ -427,11 +428,28 @@ export async function platformPlugin(app: FastifyInstance): Promise<void> {
       }
 
       const [target] = await db
-        .select({ id: tenants.id, name: tenants.name })
+        .select({
+          id: tenants.id,
+          name: tenants.name,
+          plan: tenants.plan,
+          subscriptionStatus: tenants.subscriptionStatus,
+          promoTrial: tenants.promoTrial,
+        })
         .from(tenants)
         .where(eq(tenants.id, id))
         .limit(1);
       if (!target) throw new NotFoundError('Tenant not found');
+      if (
+        !canGrantPromoTrial({
+          plan: target.plan,
+          subscriptionStatus: target.subscriptionStatus,
+          promoTrial: target.promoTrial,
+        })
+      ) {
+        throw new ConflictError(
+          'Cannot grant a promo trial to a tenant that is already on a paid or enterprise plan.',
+        );
+      }
 
       await db
         .update(tenants)
