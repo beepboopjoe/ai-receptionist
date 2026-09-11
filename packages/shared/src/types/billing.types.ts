@@ -87,9 +87,9 @@ export interface Plan {
 export const PLANS: readonly Plan[] = [
   {
     key: 'trial',
-    name: 'Free Trial',
-    tagline: '10 minutes free — no card needed',
-    description: 'Kick the tires on inbound AI answering with 10 minutes of real call time. No credit card, no commitment.',
+    name: 'Free',
+    tagline: 'Explore the dashboard — no card needed',
+    description: 'Browse the Telfin dashboard and sample the AI. Upgrade when you are ready to go live with a phone number and receptionist.',
     monthlyPrice: 0,
     annualMonthlyPrice: 0,
     monthlyMinutes: 10,
@@ -99,10 +99,10 @@ export const PLANS: readonly Plan[] = [
     concurrentInbound: 1,
     concurrentOutbound: 0,
     features: [
-      '10 free minutes of real AI call time',
-      'Keep your existing number (we move it free)',
+      'Explore the dashboard (sample / empty states)',
+      'Sample the AI voice in the browser',
       '🌐 Speaks 7 languages, switches automatically',
-      'Written record of every call',
+      'Upgrade to go live with a dedicated number',
       'No credit card required',
     ],
   },
@@ -250,6 +250,26 @@ export const MINUTE_PACKS = [
  */
 export function getPlan(key: string): Plan | undefined {
   return PLANS.find((p) => p.key === key);
+}
+
+/** Paid catalog keys that can go live (phone + activate). Enterprise is custom/paid. */
+const PAID_PLAN_KEYS: ReadonlySet<string> = new Set(['growth', 'scale', 'business', 'enterprise']);
+
+export function isPaidPlanKey(plan: string | null | undefined): boolean {
+  return PAID_PLAN_KEYS.has((plan ?? '').toLowerCase());
+}
+
+/**
+ * Unpaid dashboard-demo account. Promo-trial tenants are hands-on
+ * (platform-granted) and are NOT treated as demo — they can still
+ * provision numbers and activate.
+ */
+export function isUnpaidDemoAccount(
+  plan: string | null | undefined,
+  promoTrial?: boolean | null
+): boolean {
+  if (promoTrial) return false;
+  return !isPaidPlanKey(plan);
 }
 
 /**

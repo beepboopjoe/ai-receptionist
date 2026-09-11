@@ -29,7 +29,7 @@ export const LEGAL_NAV = [
 
 /** Current paid list prices — keep in sync with PLANS in @ai-receptionist/shared. */
 export const PUBLISHED_PLAN_PRICES = {
-  trial: { name: 'Free Trial', price: 'Free (10 minutes)' },
+  trial: { name: 'Free', price: 'Free (explore the dashboard)' },
   growth: { name: 'Growth', price: '$199/month' },
   scale: { name: 'Scale', price: '$399/month' },
   business: { name: 'Business', price: '$599/month' },

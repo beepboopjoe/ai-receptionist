@@ -154,13 +154,12 @@ function Step1PhoneInner() {
                   <p className="text-sm font-semibold text-amber-950">Dedicated inbound number comes with a paid plan</p>
                 </div>
                 <p className="text-sm text-amber-900">
-                  Free trial does not include a Telfin inbound DID — inbound calls only reach your AI
-                  after you subscribe (Growth includes 2 numbers) or buy a number. You can still hear
-                  the AI with a test call after you add a staff transfer number in step 4.
+                  Free accounts do not include a Telfin inbound DID. Upgrade to go live — Growth
+                  includes 2 numbers. You can keep exploring the dashboard without setting this up now.
                 </p>
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <Link href="/pricing" className="btn-primary text-sm">
-                    See plans
+                  <Link href="/billing" className="btn-primary text-sm">
+                    Upgrade to go live
                   </Link>
                   <Link href="/settings/phone-numbers" className="btn-secondary text-sm">
                     Phone numbers

@@ -19,6 +19,7 @@ import {
   type PortRequestInput,
 } from './port.service.js';
 import { config } from '../../config.js';
+import { getTenantDemoFlags, UPGRADE_TO_GO_LIVE_MESSAGE } from '../billing/demo-account.js';
 
 export async function phoneNumbersPlugin(app: FastifyInstance): Promise<void> {
   // ── List ──────────────────────────────────────────────────
@@ -70,6 +71,13 @@ export async function phoneNumbersPlugin(app: FastifyInstance): Promise<void> {
     if (numberType && numberType !== 'local' && numberType !== 'toll_free') {
       throw new ValidationError('numberType must be "local" or "toll_free"');
     }
+    const demo = await getTenantDemoFlags(request.user!.tenantId);
+    if (demo.isDemo) {
+      return reply.status(402).send({
+        error: 'upgrade_required',
+        message: UPGRADE_TO_GO_LIVE_MESSAGE,
+      });
+    }
     const result = await purchaseTenantNumber({
       tenantId: request.user!.tenantId,
       phoneE164,
@@ -99,6 +107,13 @@ export async function phoneNumbersPlugin(app: FastifyInstance): Promise<void> {
       const body = (request.body ?? {}) as { areaCode?: string };
       if (body.areaCode && !/^\d{3}$/.test(body.areaCode)) {
         throw new ValidationError('areaCode must be 3 digits (e.g. "415")');
+      }
+      const demo = await getTenantDemoFlags(request.authUser.tenantId);
+      if (demo.isDemo) {
+        return reply.status(402).send({
+          error: 'upgrade_required',
+          message: UPGRADE_TO_GO_LIVE_MESSAGE,
+        });
       }
       const result = await ensureInboundDid(request.authUser.tenantId, {
         areaCode: body.areaCode,

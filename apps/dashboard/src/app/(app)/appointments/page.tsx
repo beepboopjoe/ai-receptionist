@@ -8,8 +8,10 @@ import { ListRowSkeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
 import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 import { SectionAgent } from '@/components/dashboard/section-agent';
+import { usePlan } from '@/lib/usePlan';
 
 export default function AppointmentsPage() {
+  const { isDemoAccount } = usePlan();
   const vertical = useVertical();
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const heading = cap(vertical.appointmentNounPlural);
@@ -70,7 +72,14 @@ export default function AppointmentsPage() {
           <EmptyState
             icon={Calendar}
             label={`No upcoming ${vertical.appointmentNounPlural}`}
-            hint="Once your AI receptionist books one, it will appear here."
+            hint={
+              isDemoAccount
+                ? 'Explore the dashboard for now. Upgrade to go live and bookings will appear here.'
+                : 'Once your AI receptionist books one, it will appear here.'
+            }
+            {...(isDemoAccount
+              ? { cta: { label: 'Upgrade to go live', href: '/billing' } }
+              : {})}
             compact
           />
         ) : (

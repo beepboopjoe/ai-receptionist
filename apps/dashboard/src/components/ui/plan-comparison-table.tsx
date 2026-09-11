@@ -21,7 +21,7 @@ type PlanCol = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise';
 
 // Trial is the leftmost column — visitors see "free" before any paid price.
 const PLAN_COLS: { key: PlanCol; name: string; price: string; popular?: boolean }[] = [
-  { key: 'trial',      name: 'Free Trial', price: 'Free'    },
+  { key: 'trial',      name: 'Free', price: 'Free'    },
   { key: 'growth',     name: 'Growth',     price: '$199/mo', popular: true },
   { key: 'scale',      name: 'Scale',      price: '$399/mo' },
   { key: 'business',   name: 'Business',   price: '$599/mo' },

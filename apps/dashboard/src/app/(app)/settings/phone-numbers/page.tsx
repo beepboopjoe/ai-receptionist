@@ -18,6 +18,8 @@ import { Skeleton as UiSkeleton } from '@/components/ui/skeleton';
 import { ForwardYourLineCard } from '@/components/settings/forward-your-line-card';
 import { InboundRoutingCard } from '@/components/settings/inbound-routing-card';
 import { BRAND_NAME } from '@/lib/brand';
+import { usePlan } from '@/lib/usePlan';
+import { DemoUpgradeCard } from '@/components/dashboard/demo-upgrade-card';
 
 function formatNumber(e164: string): string {
   if (!e164 || e164 === 'pending') return 'Number pending';
@@ -59,6 +61,7 @@ function ProvisionBadge({ status }: { status: 'provisioning' | 'active' | 'faile
 
 export default function PhoneNumbersPage() {
   const toast = useToast();
+  const { isDemoAccount } = usePlan();
   const { data, isLoading } = useSWR('phone-numbers', () => phoneNumbersApi.list());
   const owned = data?.data ?? [];
 
@@ -303,6 +306,7 @@ export default function PhoneNumbersPage() {
             line to it. {allotmentLabel} Outbound campaign numbers stay auto-managed.
           </p>
         </div>
+        {!isDemoAccount && (
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setSearchOpen(true)}
@@ -320,6 +324,7 @@ export default function PhoneNumbersPage() {
             <Zap size={14} /> {autoProvisioning ? 'Provisioning…' : 'Get my number'}
           </button>
         </div>
+        )}
       </div>
 
       {/* ── Plan allotment (included slots first) ─────────────── */}
@@ -333,12 +338,21 @@ export default function PhoneNumbersPage() {
         </p>
       </div>
 
+      {!isDemoAccount && (
       <ForwardYourLineCard
         did={
           owned.find((n) => (n.provisionStatus ?? 'active') === 'active' && n.phoneE164?.startsWith('+'))
             ?.phoneE164 ?? null
         }
       />
+      )}
+      {isDemoAccount && (
+        <DemoUpgradeCard
+          title="Upgrade to get a number"
+          body="Phone provisioning unlocks on a paid plan. Growth includes 2 local numbers. You can keep exploring the rest of the dashboard."
+        />
+      )}
+
       <InboundRoutingCard />
 
       {/* ── Promo-trial at-cost pricing banner ─────────────────── */}
@@ -513,8 +527,14 @@ export default function PhoneNumbersPage() {
         <EmptyState
           icon={Phone}
           label="No numbers yet"
-          hint="Paid plans auto-assign an included inbound DID on go-live. Trial does not include one — subscribe or buy a number here. Forward your existing line to the DID; porting is optional later."
-          cta={{ label: autoProvisioning ? 'Provisioning…' : 'Get my number', onClick: handleAutoProvision }}
+          hint={
+            isDemoAccount
+              ? 'Explore the dashboard for now. Upgrade to go live — paid plans auto-assign an included inbound DID.'
+              : 'Paid plans auto-assign an included inbound DID on go-live. Forward your existing line to the DID; porting is optional later.'
+          }
+          {...(isDemoAccount
+            ? { cta: { label: 'Upgrade to go live', href: '/billing' } }
+            : { cta: { label: autoProvisioning ? 'Provisioning…' : 'Get my number', onClick: handleAutoProvision } })}
         />
       ) : (
         <div className="card divide-y divide-gray-100">
@@ -573,6 +593,12 @@ export default function PhoneNumbersPage() {
           (typically 5–14 business days, LOA required), we can move the old number onto {BRAND_NAME}
           so callers see that caller ID on the DID itself.
         </p>
+        {isDemoAccount ? (
+          <p className="text-xs font-medium text-brand-700">
+            Porting unlocks after upgrade —{' '}
+            <a href="/billing" className="underline">see plans</a>.
+          </p>
+        ) : (
         <button
           type="button"
           onClick={() => setPortOpen(true)}
@@ -580,6 +606,7 @@ export default function PhoneNumbersPage() {
         >
           Start a port request
         </button>
+        )}
       </div>
 
       {/* ── Outbound campaign number pool (auto-managed, read-only) ── */}

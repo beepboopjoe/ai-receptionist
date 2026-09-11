@@ -100,7 +100,7 @@ export default function DashboardPage() {
   const { data: campaigns } = useSWR('campaigns', () => campaignsApi.list(), { refreshInterval: 30000 });
   const { events, connected } = useActivityFeed({ maxEvents: 20 });
   // Plan provides usage data (minutes, percent) — feature gating goes through useFeatureFlags.
-  const { isHighUsage, usagePercent, minutesUsed, minutesIncluded } = usePlan();
+  const { isHighUsage, usagePercent, minutesUsed, minutesIncluded, isDemoAccount } = usePlan();
   const { has } = useFeatureFlags();
   const outboundEnabled = has('outbound_campaigns');
   const smsEnabled = has('two_way_sms');
@@ -229,7 +229,14 @@ export default function DashboardPage() {
               <EmptyState
                 icon={Phone}
                 label="No calls yet"
-                hint="When your AI receptionist answers a call, it will show up here."
+                hint={
+                  isDemoAccount
+                    ? 'This is a dashboard preview. Upgrade to go live and calls will show up here.'
+                    : 'When your AI receptionist answers a call, it will show up here.'
+                }
+                {...(isDemoAccount
+                  ? { cta: { label: 'Upgrade to go live', href: '/billing' } }
+                  : {})}
                 compact
               />
             ) : (

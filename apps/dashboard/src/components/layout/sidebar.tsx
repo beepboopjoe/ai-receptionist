@@ -432,7 +432,7 @@ export function Sidebar() {
               />
             </div>
 
-            {/* Persistent upgrade CTA for trial/starter */}
+            {/* Persistent upgrade CTA for Free / demo accounts */}
             {showUpgradeCta && (
               <Link
                 href="/billing"
