@@ -16,7 +16,7 @@ const STEPS = [
 export default function OnboardingIndexPage() {
   const { data } = useSWR('onboarding-status', () => onboardingApi.getStatus());
   const status = data as any;
-  const currentStep = status?.currentStep ?? 1;
+  const currentStep = status?.uiStep ?? status?.currentStep ?? 1;
 
   return (
     <div className="card divide-y divide-gray-50">

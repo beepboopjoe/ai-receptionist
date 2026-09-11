@@ -2,12 +2,19 @@
 // Settings Service — tenant settings CRUD
 // ============================================================
 import { db } from '../../db/client.js';
-import { tenantSettings, tenants } from '../../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { tenantPhoneNumbers, tenantSettings, tenants } from '../../db/schema.js';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import type { OfficeHours, AppointmentType, InboundRoutingMode } from '@ai-receptionist/shared';
 import { VERTICAL_VALUES as _VERTICAL_VALUES, isVertical as _isVertical } from '@ai-receptionist/shared';
 import { ValidationError, NotFoundError } from '../../lib/errors.js';
 import { coerceVoiceSettings } from './voice-coerce.js';
+import { planIncludesInboundDid } from '../outbound-pool/pool-size.js';
+import { isProvisionedE164 } from '../phone-numbers/inbound-did.js';
+import {
+  nextOnboardingStep,
+  onboardingStepsCompleted,
+  onboardingUiStep,
+} from './onboarding-progress.js';
 
 export { coerceVoiceSettings } from './voice-coerce.js';
 
@@ -165,10 +172,19 @@ export async function updateVertical(tenantId: string, vertical: string) {
 // ---- Onboarding ----
 
 export async function advanceOnboardingStep(tenantId: string, step: number) {
+  const [tenant] = await db
+    .select({ onboardingStep: tenants.onboardingStep })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1);
+  if (!tenant) throw new NotFoundError('Tenant not found');
+
+  const onboardingStep = nextOnboardingStep(tenant.onboardingStep, step);
   await db
     .update(tenants)
-    .set({ onboardingStep: step, updatedAt: new Date() })
+    .set({ onboardingStep, updatedAt: new Date() })
     .where(eq(tenants.id, tenantId));
+  return { onboardingStep };
 }
 
 export async function activateTenant(tenantId: string) {
@@ -180,22 +196,53 @@ export async function activateTenant(tenantId: string) {
 
 export async function getOnboardingStatus(tenantId: string) {
   const [tenant] = await db
-    .select({ onboardingStep: tenants.onboardingStep, isActive: tenants.isActive })
+    .select({
+      onboardingStep: tenants.onboardingStep,
+      isActive: tenants.isActive,
+      plan: tenants.plan,
+      vertical: tenants.vertical,
+    })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
     .limit(1);
 
   if (!tenant) throw new NotFoundError('Tenant not found');
 
+  const inboundRows = await db
+    .select({
+      phoneE164: tenantPhoneNumbers.phoneE164,
+      provisionStatus: tenantPhoneNumbers.provisionStatus,
+      provisionError: tenantPhoneNumbers.provisionError,
+    })
+    .from(tenantPhoneNumbers)
+    .where(
+      and(
+        eq(tenantPhoneNumbers.tenantId, tenantId),
+        eq(tenantPhoneNumbers.purpose, 'inbound'),
+        isNull(tenantPhoneNumbers.releasedAt)
+      )
+    )
+    .orderBy(asc(tenantPhoneNumbers.purchasedAt));
+
+  const activeInbound = inboundRows.find(
+    (row) => (row.provisionStatus ?? 'active') === 'active' && isProvisionedE164(row.phoneE164)
+  );
+  const inbound = activeInbound ?? inboundRows[0] ?? null;
+
   return {
     currentStep: tenant.onboardingStep,
+    uiStep: onboardingUiStep(tenant.onboardingStep, tenant.isActive),
     isActive: tenant.isActive,
-    stepsCompleted: {
-      step1_telephony: tenant.onboardingStep >= 1,
-      step2_calendar: tenant.onboardingStep >= 2,
-      step3_contacts: tenant.onboardingStep >= 3,
-      step4_rules: tenant.onboardingStep >= 4,
-      step5_activate: tenant.isActive,
-    },
+    plan: tenant.plan,
+    vertical: tenant.vertical,
+    includesInboundDid: planIncludesInboundDid(tenant.plan),
+    inbound: inbound
+      ? {
+          phoneE164: inbound.phoneE164,
+          provisionStatus: inbound.provisionStatus ?? 'active',
+          provisionError: inbound.provisionError,
+        }
+      : null,
+    stepsCompleted: onboardingStepsCompleted(tenant.onboardingStep, tenant.isActive),
   };
 }

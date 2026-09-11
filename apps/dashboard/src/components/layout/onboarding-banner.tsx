@@ -18,6 +18,7 @@ const DISMISS_TTL_MS = 24 * 3600 * 1000; // 24h
 
 interface OnboardingStatus {
   currentStep: number;
+  uiStep?: number;
   isActive: boolean;
 }
 
@@ -47,7 +48,7 @@ export function OnboardingBanner() {
   if (status.isActive || tenant.isActive) return null;
   if (dismissed) return null;
 
-  const currentStep = Math.max(1, Math.min(status.currentStep ?? 1, TOTAL_STEPS));
+  const currentStep = Math.max(1, Math.min(status.uiStep ?? status.currentStep ?? 1, TOTAL_STEPS));
   const completed = Math.max(0, currentStep - 1);
   const percent = Math.round((completed / TOTAL_STEPS) * 100);
 

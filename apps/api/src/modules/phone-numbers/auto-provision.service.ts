@@ -4,8 +4,9 @@
 // Called on go-live (POST /onboarding/activate) and when a paid
 // subscription starts. Idempotent: if the tenant already has an
 // active inbound number, we return it. Trial plans
-// (includedPhoneNumbers = 0) are skipped — they keep the shared
-// platform number until they subscribe.
+// (includedPhoneNumbers = 0) are skipped — a dedicated DID is
+// assigned after subscribe. `forceRetry` re-runs a failed order
+// but never bypasses the plan gate.
 //
 // Failed Telnyx orders leave a retryable row (phone_e164='pending',
 // provision_status='failed') so the dashboard can Retry.
@@ -164,7 +165,7 @@ export async function ensureInboundDid(
     .where(eq(tenants.id, tenantId))
     .limit(1);
 
-  if (!planIncludesInboundDid(tenant?.plan) && !opts?.forceRetry) {
+  if (!planIncludesInboundDid(tenant?.plan)) {
     return { status: 'skipped', reason: 'plan_has_no_included_number' };
   }
 

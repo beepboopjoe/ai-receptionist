@@ -236,6 +236,9 @@ async function telephonyRoutes(
 
     audit.integrationConnected(tenantId, 'ringcentral', tenantId);
 
+    const { advanceOnboardingStep } = await import('../admin/settings.service.js');
+    await advanceOnboardingStep(tenantId, 1).catch(() => undefined);
+
     return reply.redirect(`${config.DASHBOARD_URL}/onboarding/step-2-calendar?rc=connected`);
   });
 }

@@ -7,6 +7,7 @@ import {
   integrationsApi,
   type PortRequestRow,
 } from './api';
+import { usePlan } from './usePlan';
 import {
   ALL_GROK_VOICES,
   DEFAULT_PUBLIC_GROK_VOICE,
@@ -83,6 +84,8 @@ export function useGoLive(): GoLiveStatus {
     'integrations',
     () => integrationsApi.list()
   );
+  const { plan } = usePlan();
+  const isTrial = plan === 'trial';
 
   const loading =
     settingsLoading || phonesLoading || portsLoading || hoursLoading || integrationsLoading;
@@ -126,9 +129,11 @@ export function useGoLive(): GoLiveStatus {
         ? 'Forward your existing business line to this DID. Porting is optional later.'
         : hasPendingPort
           ? 'A port is in progress, but go-live uses the auto-assigned Telfin DID — forwarding works today.'
-          : 'We’ll auto-assign a US inbound DID on paid go-live. Forward your existing line to it.',
-      href: '/settings/phone-numbers',
-      cta: hasPhone ? 'Forwarding instructions' : 'Get a number',
+          : isTrial
+            ? 'Trial does not include a dedicated inbound DID. Subscribe (Growth includes 2 numbers) or buy one to receive calls.'
+            : 'We’ll auto-assign a US inbound DID on paid go-live. Forward your existing line to it.',
+      href: hasPhone ? '/settings/phone-numbers' : isTrial ? '/pricing' : '/settings/phone-numbers',
+      cta: hasPhone ? 'Forwarding instructions' : isTrial ? 'Subscribe to get a number' : 'Get a number',
       done: phoneReady,
     },
     {

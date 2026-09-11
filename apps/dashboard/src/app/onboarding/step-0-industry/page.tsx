@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { VERTICALS } from '@/lib/verticals';
-import { tenantsApi } from '@/lib/api';
+import { onboardingApi, tenantsApi } from '@/lib/api';
 
 export default function Step0IndustryPage() {
   const router = useRouter();
@@ -20,6 +20,7 @@ export default function Step0IndustryPage() {
     // localStorage is the fallback if the API call fails (e.g. offline / dev mode).
     try {
       await tenantsApi.updateVertical(selected);
+      await onboardingApi.completeStep(0);
     } catch (err) {
       console.warn('Failed to persist vertical to backend; localStorage will be used as fallback', err);
     }

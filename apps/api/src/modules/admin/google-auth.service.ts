@@ -160,7 +160,7 @@ export function makeResolveGoogleUser(app: FastifyInstance) {
         vertical: 'generic',
         timezone: 'America/New_York',
         isActive: false,
-        onboardingStep: 1,
+        onboardingStep: 0,
       })
       .returning();
     if (!tenant) throw new Error('Tenant insert returned no row');

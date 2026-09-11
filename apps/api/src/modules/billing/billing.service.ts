@@ -92,7 +92,7 @@ export async function createCheckoutSession(params: CreateCheckoutParams): Promi
     allow_promotion_codes: true,
     // Pull billing address — required for tax + Stripe Tax (if enabled later).
     billing_address_collection: 'auto',
-    success_url: `${config.DASHBOARD_URL}/billing?success=1&session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${config.DASHBOARD_URL}/onboarding/step-1-phone?subscribed=1&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${config.DASHBOARD_URL}/pricing?canceled=1`,
     // 14-day trial for first-time subscribers. Existing subscribers
     // upgrading to a different tier skip the trial automatically.
@@ -202,7 +202,7 @@ export async function syncSubscription(subscription: Stripe.Subscription): Promi
   // Failures leave a retryable row — never block the Stripe webhook.
   if (subscription.status === 'active' || subscription.status === 'trialing') {
     void import('../phone-numbers/auto-provision.service.js')
-      .then(({ ensureInboundDid }) => ensureInboundDid(tenantId))
+      .then(({ ensureInboundDid }) => ensureInboundDid(tenantId, { forceRetry: true }))
       .catch((err) => console.error('[billing] inbound DID auto-provision failed', err));
     void import('../outbound-pool/pool.service.js')
       .then(({ ensureOutboundPool }) => ensureOutboundPool(tenantId))

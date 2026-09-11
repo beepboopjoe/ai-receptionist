@@ -116,7 +116,7 @@ These paths are the beta foundation for scale calling. Nothing here changes publ
 
 ### How a new tenant gets a number
 
-1. Trial stays on the shared platform number (plan `includedPhoneNumbers = 0`).
+1. Trial does not include a dedicated inbound DID (`includedPhoneNumbers = 0`). Hear the AI via a test call; subscribe or buy a number to receive inbound calls.
 2. On **Go live** (`POST /api/v1/onboarding/activate`) or the first **paid** Stripe subscription, the API calls `ensureInboundDid()` (`apps/api/src/modules/phone-numbers/auto-provision.service.ts`).
 3. That searches Telnyx (`GET /v2/available_phone_numbers`) and orders a US local DID onto `TELNYX_APP_ID` (`POST /v2/number_orders`), then stores it on `tenant_phone_numbers` (`purpose='inbound'`).
 4. Inbound voice is routed by DID via `lookupTenantByDid()` in `apps/api/src/modules/telephony/telnyx-webhook.handler.ts` — not “first tenant in the database”.
