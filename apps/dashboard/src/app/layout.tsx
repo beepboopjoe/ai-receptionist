@@ -6,6 +6,7 @@ import { BRAND_NAME, BRAND_TAGLINE } from '@/lib/brand';
 import { MARKETING_VIEW_BOOT_SCRIPT } from '@/lib/marketing-view-mode';
 import { CookieConsentBanner } from '@/components/ui/cookie-consent-banner';
 import { GatedAnalytics } from '@/components/ui/gated-analytics';
+import { ReferralCapture } from '@/components/ui/referral-capture';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to main content
         </a>
         <div id="main-content">{children}</div>
+        <ReferralCapture />
         <CookieConsentBanner />
         <GatedAnalytics />
       </body>

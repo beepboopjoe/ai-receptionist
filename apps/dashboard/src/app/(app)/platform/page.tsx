@@ -10,6 +10,7 @@
 // 401 interceptor never bounces a non-admin to /login.
 // ============================================================
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import useSWR from 'swr';
 import {
   Sparkles,
@@ -136,6 +137,12 @@ export default function PlatformAdminPage() {
           <p className="text-gray-600 mt-1">
             Signed-up businesses and homepage call-me leads. Grant promo trials, see who is live, who is trial vs paid.
           </p>
+          <Link
+            href="/platform/affiliates"
+            className="inline-flex items-center gap-1.5 mt-2 text-sm font-semibold text-indigo-700 hover:underline"
+          >
+            Affiliates / referral tracking →
+          </Link>
         </div>
       </div>
 

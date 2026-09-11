@@ -130,6 +130,9 @@ export const affiliates = pgTable('affiliates', {
   passwordHash: text('password_hash'),
   payoutEmail: text('payout_email'),
   payoutMethod: text('payout_method').notNull().default('paypal'),
+  // Affiliate v1: optional first-conversion bounty + window (12 months default; 0 = lifetime).
+  flatBountyCents: integer('flat_bounty_cents'),
+  commissionMonths: integer('commission_months').notNull().default(12),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

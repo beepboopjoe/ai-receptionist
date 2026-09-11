@@ -79,7 +79,14 @@ export const authApi = {
       '/auth/login',
       { method: 'POST', body: JSON.stringify({ email, password }) }
     ),
-  register: (body: { businessName: string; email: string; password: string; aiUseCase?: 'inbound' | 'outbound' | 'both'; vertical?: string }) =>
+  register: (body: {
+    businessName: string;
+    email: string;
+    password: string;
+    aiUseCase?: 'inbound' | 'outbound' | 'both';
+    vertical?: string;
+    referralCode?: string;
+  }) =>
     apiFetch<{ token: string; refreshToken: string; user: { id: string; email: string; role: string }; tenant: { id: string; name: string; slug: string; plan: string; vertical?: string } }>(
       '/auth/register',
       { method: 'POST', body: JSON.stringify(body) }
@@ -1159,6 +1166,60 @@ export interface PlatformDemoLead {
   updatedAt: string;
 }
 
+export interface PlatformAffiliate {
+  id: string;
+  code: string;
+  name: string;
+  email: string;
+  commissionPct: number;
+  flatBountyCents: number | null;
+  commissionMonths: number;
+  isActive: boolean;
+  status: string;
+  createdAt: string;
+  referredTenants: number;
+  totalCommissionCents: number;
+  pendingCommissionCents: number;
+  paidOutCommissionCents: number;
+  refUrl: string;
+  shortUrl: string;
+}
+
+export interface PlatformAffiliateTenant {
+  id: string;
+  name: string;
+  plan: string;
+  ownerEmail: string | null;
+  createdAt: string;
+  attributionSignedAt: string | null;
+}
+
+export interface PlatformCommissionEvent {
+  id: string;
+  affiliateId: string;
+  tenantId: string;
+  stripeInvoiceId: string;
+  invoiceAmountCents: number;
+  commissionCents: number;
+  commissionPct: string;
+  payoutStatus: 'pending' | 'paid_out' | string;
+  paidOutAt: string | null;
+  createdAt: string;
+}
+
+export interface PlatformAffiliateDetail {
+  affiliate: PlatformAffiliate;
+  referredTenants: PlatformAffiliateTenant[];
+  events: PlatformCommissionEvent[];
+  stats: {
+    referredTenants: number;
+    conversions: number;
+    totalCommissionCents: number;
+    pendingCommissionCents: number;
+    paidOutCommissionCents: number;
+  };
+}
+
 export const platformApi = {
   /**
    * Always returns 200 for authenticated users. `ok` is true only when the
@@ -1256,6 +1317,23 @@ export const platformApi = {
       `/platform/support/tickets/${id}/reopen`,
       { method: 'POST' }
     ),
+
+  listAffiliates: () => apiFetch<{ data: PlatformAffiliate[] }>('/admin/affiliates'),
+  createAffiliate: (body: {
+    name: string;
+    email: string;
+    code?: string;
+    commissionPct?: number;
+    flatBountyCents?: number | null;
+    commissionMonths?: number;
+  }) =>
+    apiFetch<PlatformAffiliate>('/admin/affiliates', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  getAffiliate: (id: string) => apiFetch<PlatformAffiliateDetail>(`/admin/affiliates/${id}`),
+  markCommissionPaid: (id: string) =>
+    apiFetch<PlatformCommissionEvent>(`/admin/commissions/${id}/mark-paid`, { method: 'POST' }),
 };
 
 // ---- Support ----

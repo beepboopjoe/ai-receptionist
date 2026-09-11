@@ -14,17 +14,56 @@ import bcrypt from 'bcryptjs';
 import { db } from '../../db/client.js';
 import { affiliates, tenants, commissionEvents, payoutRequests } from '../../db/schema.js';
 import { and, eq, sql, desc } from 'drizzle-orm';
+import { ConflictError, ValidationError } from '../../lib/errors.js';
+import { config } from '../../config.js';
+import {
+  DEFAULT_COMMISSION_MONTHS,
+  DEFAULT_COMMISSION_PCT,
+  decideAttribution,
+  evaluateCommission,
+  generateAffiliateCode,
+  isDuplicateCommissionError,
+  isValidAffiliateCode,
+  normalizeAffiliateCode,
+} from './affiliate.helpers.js';
 
 const SALT_ROUNDS = 10;
 
-/** Generate a URL-safe 8-character affiliate code. */
-export function generateAffiliateCode(): string {
-  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no I/O/0/1 ambiguity
-  let out = '';
-  for (let i = 0; i < 8; i++) {
-    out += alphabet[Math.floor(Math.random() * alphabet.length)];
+export { generateAffiliateCode, normalizeAffiliateCode, isValidAffiliateCode };
+
+export function referralUrls(code: string): { refUrl: string; shortUrl: string } {
+  const base = (config.DASHBOARD_URL || 'https://telfin.ai').replace(/\/$/, '');
+  const encoded = encodeURIComponent(code);
+  return {
+    refUrl: `${base}/?ref=${encoded}`,
+    shortUrl: `${base}/r/${encoded}`,
+  };
+}
+
+async function allocateUniqueCode(preferred?: string): Promise<string> {
+  if (preferred) {
+    const code = normalizeAffiliateCode(preferred);
+    if (!isValidAffiliateCode(code)) {
+      throw new ValidationError('Referral code must be 3–32 characters (A–Z, 0–9, _ or -)');
+    }
+    const [existing] = await db
+      .select({ id: affiliates.id })
+      .from(affiliates)
+      .where(eq(affiliates.code, code))
+      .limit(1);
+    if (existing) throw new ConflictError('Referral code already in use');
+    return code;
   }
-  return out;
+  for (let i = 0; i < 8; i++) {
+    const code = generateAffiliateCode();
+    const [existing] = await db
+      .select({ id: affiliates.id })
+      .from(affiliates)
+      .where(eq(affiliates.code, code))
+      .limit(1);
+    if (!existing) return code;
+  }
+  throw new ConflictError('Could not allocate a unique referral code');
 }
 
 /**
@@ -38,7 +77,7 @@ export async function attributeTenant(params: {
   tenantId: string;
   code: string;
 }): Promise<{ affiliateId: string; alreadyAttributed: boolean } | null> {
-  const normalized = params.code.trim().toUpperCase();
+  const normalized = normalizeAffiliateCode(params.code);
   if (!normalized) return null;
 
   const [affiliate] = await db
@@ -46,7 +85,6 @@ export async function attributeTenant(params: {
     .from(affiliates)
     .where(eq(affiliates.code, normalized))
     .limit(1);
-  if (!affiliate || !affiliate.isActive) return null;
 
   const [tenant] = await db
     .select({ id: tenants.id, existingAffiliate: tenants.affiliateId })
@@ -55,16 +93,22 @@ export async function attributeTenant(params: {
     .limit(1);
   if (!tenant) return null;
 
-  if (tenant.existingAffiliate) {
-    return { affiliateId: tenant.existingAffiliate, alreadyAttributed: true };
+  const decision = decideAttribution({
+    existingAffiliateId: tenant.existingAffiliate,
+    lookedUpAffiliateId: affiliate?.id,
+    affiliateActive: Boolean(affiliate?.isActive),
+  });
+  if (decision.action === 'reject') return null;
+  if (decision.action === 'keep') {
+    return { affiliateId: decision.affiliateId, alreadyAttributed: true };
   }
 
   await db
     .update(tenants)
-    .set({ affiliateId: affiliate.id, attributionSignedAt: new Date(), updatedAt: new Date() })
+    .set({ affiliateId: decision.affiliateId, attributionSignedAt: new Date(), updatedAt: new Date() })
     .where(eq(tenants.id, params.tenantId));
 
-  return { affiliateId: affiliate.id, alreadyAttributed: false };
+  return { affiliateId: decision.affiliateId, alreadyAttributed: false };
 }
 
 /**
@@ -80,22 +124,51 @@ export async function recordCommissionEvent(params: {
   tenantId: string;
   stripeInvoiceId: string;
   invoiceAmountCents: number;
+  invoicePaidAt?: Date;
 }): Promise<{ commissionCents: number } | null> {
   // Find the affiliate via the tenant row.
   const [row] = await db
     .select({
       affiliateId: tenants.affiliateId,
+      attributionSignedAt: tenants.attributionSignedAt,
       commissionPct: affiliates.commissionPct,
       affiliateActive: affiliates.isActive,
+      flatBountyCents: affiliates.flatBountyCents,
+      commissionMonths: affiliates.commissionMonths,
     })
     .from(tenants)
     .leftJoin(affiliates, eq(tenants.affiliateId, affiliates.id))
     .where(eq(tenants.id, params.tenantId))
     .limit(1);
-  if (!row?.affiliateId || !row.affiliateActive || !row.commissionPct) return null;
 
-  const pct = Number(row.commissionPct);
-  const commissionCents = Math.round(params.invoiceAmountCents * (pct / 100));
+  let priorPaidConversions = 0;
+  if (row?.affiliateId) {
+    const [prior] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(commissionEvents)
+      .where(
+        and(
+          eq(commissionEvents.tenantId, params.tenantId),
+          eq(commissionEvents.affiliateId, row.affiliateId)
+        )
+      );
+    priorPaidConversions = Number(prior?.n ?? 0);
+  }
+
+  const eligibility = evaluateCommission({
+    invoiceAmountCents: params.invoiceAmountCents,
+    hasAffiliate: Boolean(row?.affiliateId),
+    affiliateActive: Boolean(row?.affiliateActive),
+    attributionSignedAt: row?.attributionSignedAt,
+    commissionMonths: row?.commissionMonths ?? DEFAULT_COMMISSION_MONTHS,
+    commissionPct: Number(row?.commissionPct ?? DEFAULT_COMMISSION_PCT),
+    flatBountyCents: row?.flatBountyCents,
+    priorPaidConversions,
+    invoicePaidAt: params.invoicePaidAt ?? new Date(),
+  });
+  if (!eligibility.eligible || !row?.affiliateId) return null;
+
+  const pct = Number(row.commissionPct ?? DEFAULT_COMMISSION_PCT);
 
   try {
     await db.insert(commissionEvents).values({
@@ -103,16 +176,13 @@ export async function recordCommissionEvent(params: {
       tenantId: params.tenantId,
       stripeInvoiceId: params.stripeInvoiceId,
       invoiceAmountCents: params.invoiceAmountCents,
-      commissionCents,
+      commissionCents: eligibility.commissionCents,
       commissionPct: pct.toFixed(2),
     });
-    return { commissionCents };
+    return { commissionCents: eligibility.commissionCents };
   } catch (err) {
     // Unique-constraint violation = duplicate webhook delivery. Ignore.
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('commission_events_invoice_uniq') || msg.includes('duplicate key')) {
-      return null;
-    }
+    if (isDuplicateCommissionError(err)) return null;
     throw err;
   }
 }
@@ -331,7 +401,7 @@ export async function createPayoutRequest(params: {
     .values({
       affiliateId: params.affiliateId,
       requestedAmountCents: params.requestedAmountCents,
-      note: params.note,
+      ...(params.note !== undefined ? { note: params.note } : {}),
     })
     .returning({ id: payoutRequests.id, status: payoutRequests.status, requestedAmountCents: payoutRequests.requestedAmountCents });
 
@@ -385,8 +455,8 @@ export async function updatePayoutRequest(id: string, params: {
     .update(payoutRequests)
     .set({
       status: params.status,
-      adminNote: params.adminNote,
       processedAt: new Date(),
+      ...(params.adminNote !== undefined ? { adminNote: params.adminNote } : {}),
     })
     .where(eq(payoutRequests.id, id))
     .returning();
@@ -407,6 +477,155 @@ export async function approvePartner(affiliateId: string) {
 
 // ── Admin aggregate stats ─────────────────────────────────────────────────────
 
+export interface CreateAffiliateInput {
+  name: string;
+  email: string;
+  code?: string;
+  commissionPct?: number;
+  flatBountyCents?: number | null;
+  commissionMonths?: number;
+}
+
+export async function createAffiliate(params: CreateAffiliateInput) {
+  const name = params.name.trim();
+  const email = params.email.toLowerCase().trim();
+  if (!name) throw new ValidationError('name is required');
+  if (!email || !email.includes('@')) throw new ValidationError('valid email is required');
+
+  const commissionPct =
+    params.commissionPct === undefined ? DEFAULT_COMMISSION_PCT : params.commissionPct;
+  if (commissionPct < 0 || commissionPct > 100) {
+    throw new ValidationError('commissionPct must be 0–100');
+  }
+
+  const commissionMonths =
+    params.commissionMonths === undefined ? DEFAULT_COMMISSION_MONTHS : params.commissionMonths;
+  if (!Number.isInteger(commissionMonths) || commissionMonths < 0 || commissionMonths > 120) {
+    throw new ValidationError('commissionMonths must be 0–120 (0 = lifetime)');
+  }
+
+  const flatBountyCents =
+    params.flatBountyCents === undefined || params.flatBountyCents === null
+      ? null
+      : Math.floor(params.flatBountyCents);
+  if (flatBountyCents !== null && (flatBountyCents < 0 || flatBountyCents > 1_000_000_00)) {
+    throw new ValidationError('flatBountyCents must be 0–100000000');
+  }
+
+  const [emailTaken] = await db
+    .select({ id: affiliates.id })
+    .from(affiliates)
+    .where(eq(affiliates.email, email))
+    .limit(1);
+  if (emailTaken) throw new ConflictError('An affiliate with this email already exists');
+
+  const code = await allocateUniqueCode(params.code);
+
+  const [row] = await db
+    .insert(affiliates)
+    .values({
+      code,
+      name,
+      email,
+      commissionPct: commissionPct.toFixed(2),
+      flatBountyCents,
+      commissionMonths,
+      isActive: true,
+      status: 'active',
+    })
+    .returning();
+
+  if (!row) throw new Error('Affiliate insert returned no row');
+  return serializeAffiliate(row);
+}
+
+function serializeAffiliate(row: typeof affiliates.$inferSelect) {
+  const urls = referralUrls(row.code);
+  return {
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    email: row.email,
+    commissionPct: Number(row.commissionPct),
+    flatBountyCents: row.flatBountyCents,
+    commissionMonths: row.commissionMonths,
+    isActive: row.isActive,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+    ...urls,
+  };
+}
+
+export async function getAffiliateDetail(id: string) {
+  const [affiliate] = await db.select().from(affiliates).where(eq(affiliates.id, id)).limit(1);
+  if (!affiliate) return null;
+
+  const referred = await db
+    .select({
+      id: tenants.id,
+      name: tenants.name,
+      plan: tenants.plan,
+      createdAt: tenants.createdAt,
+      attributionSignedAt: tenants.attributionSignedAt,
+      ownerEmail: sql<string | null>`(
+        SELECT email FROM admin_users
+        WHERE tenant_id = ${tenants.id} AND role = 'owner'
+        ORDER BY created_at ASC
+        LIMIT 1
+      )`,
+    })
+    .from(tenants)
+    .where(eq(tenants.affiliateId, id))
+    .orderBy(desc(tenants.createdAt));
+
+  const events = await db
+    .select()
+    .from(commissionEvents)
+    .where(eq(commissionEvents.affiliateId, id))
+    .orderBy(desc(commissionEvents.createdAt));
+
+  const pendingCommissionCents = events
+    .filter((e) => e.payoutStatus === 'pending')
+    .reduce((sum, e) => sum + e.commissionCents, 0);
+  const paidOutCommissionCents = events
+    .filter((e) => e.payoutStatus === 'paid_out')
+    .reduce((sum, e) => sum + e.commissionCents, 0);
+
+  return {
+    affiliate: serializeAffiliate(affiliate),
+    referredTenants: referred.map((t) => ({
+      id: t.id,
+      name: t.name,
+      plan: t.plan,
+      ownerEmail: t.ownerEmail,
+      createdAt: t.createdAt.toISOString(),
+      attributionSignedAt: t.attributionSignedAt?.toISOString() ?? null,
+    })),
+    events: events.map((e) => ({
+      ...e,
+      commissionPct: String(e.commissionPct),
+      createdAt: e.createdAt.toISOString(),
+      paidOutAt: e.paidOutAt?.toISOString() ?? null,
+    })),
+    stats: {
+      referredTenants: referred.length,
+      conversions: events.length,
+      totalCommissionCents: pendingCommissionCents + paidOutCommissionCents,
+      pendingCommissionCents,
+      paidOutCommissionCents,
+    },
+  };
+}
+
+export async function markCommissionPaid(id: string) {
+  const [row] = await db
+    .update(commissionEvents)
+    .set({ payoutStatus: 'paid_out', paidOutAt: new Date() })
+    .where(eq(commissionEvents.id, id))
+    .returning();
+  return row ?? null;
+}
+
 /** Aggregate stats for the admin affiliates list page. */
 export async function listAffiliatesWithStats(): Promise<
   Array<{
@@ -415,11 +634,17 @@ export async function listAffiliatesWithStats(): Promise<
     name: string;
     email: string;
     commissionPct: number;
+    flatBountyCents: number | null;
+    commissionMonths: number;
     isActive: boolean;
+    status: string;
     createdAt: string;
     referredTenants: number;
     totalCommissionCents: number;
     pendingCommissionCents: number;
+    paidOutCommissionCents: number;
+    refUrl: string;
+    shortUrl: string;
   }>
 > {
   const rows = await db
@@ -429,7 +654,10 @@ export async function listAffiliatesWithStats(): Promise<
       name: affiliates.name,
       email: affiliates.email,
       commissionPct: affiliates.commissionPct,
+      flatBountyCents: affiliates.flatBountyCents,
+      commissionMonths: affiliates.commissionMonths,
       isActive: affiliates.isActive,
+      status: affiliates.status,
       createdAt: affiliates.createdAt,
       referredTenants: sql<number>`(
         SELECT COUNT(*)::int FROM ${tenants} WHERE ${tenants.affiliateId} = ${affiliates.id}
@@ -442,8 +670,14 @@ export async function listAffiliatesWithStats(): Promise<
         WHERE ${commissionEvents.affiliateId} = ${affiliates.id}
           AND ${commissionEvents.payoutStatus} = 'pending'
       ), 0)`,
+      paidOutCommissionCents: sql<number>`COALESCE((
+        SELECT SUM(commission_cents)::int FROM ${commissionEvents}
+        WHERE ${commissionEvents.affiliateId} = ${affiliates.id}
+          AND ${commissionEvents.payoutStatus} = 'paid_out'
+      ), 0)`,
     })
-    .from(affiliates);
+    .from(affiliates)
+    .orderBy(desc(affiliates.createdAt));
 
   return rows.map((r) => ({
     id: r.id,
@@ -451,10 +685,15 @@ export async function listAffiliatesWithStats(): Promise<
     name: r.name,
     email: r.email,
     commissionPct: Number(r.commissionPct),
+    flatBountyCents: r.flatBountyCents,
+    commissionMonths: r.commissionMonths,
     isActive: r.isActive,
+    status: r.status,
     createdAt: r.createdAt.toISOString(),
     referredTenants: Number(r.referredTenants),
     totalCommissionCents: Number(r.totalCommissionCents),
     pendingCommissionCents: Number(r.pendingCommissionCents),
+    paidOutCommissionCents: Number(r.paidOutCommissionCents),
+    ...referralUrls(r.code),
   }));
 }

@@ -1,45 +1,26 @@
 // ============================================================
-// Affiliate / reseller endpoints.
+// Affiliate / reseller endpoints (Affiliate v1 — lean referrals).
 //
 // Platform-owner only routes for managing affiliates + reading
-// commission events. Gated by the ADMIN_EMAILS env var on top
-// of the normal JWT auth.
+// commission events. Gated by ADMIN_EMAILS via requirePlatformAdmin.
 //
-// Public endpoint:
-//   POST /auth/attribute-affiliate — called from the signup flow
-//   to record the ?ref= attribution. Uses the regular JWT auth so
-//   the new tenant is attributing themselves.
+// Public / tenant:
+//   POST /auth/attribute-affiliate — signup / Google-complete
+//   records ?ref= / cookie / typed code. First-touch wins.
 // ============================================================
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { db } from '../../db/client.js';
-import { affiliates, commissionEvents } from '../../db/schema.js';
-import { desc, eq } from 'drizzle-orm';
-import { config } from '../../config.js';
-import { AuthError, ValidationError, NotFoundError } from '../../lib/errors.js';
+import type { FastifyInstance } from 'fastify';
+import { ValidationError, NotFoundError } from '../../lib/errors.js';
+import { requirePlatformAdmin } from '../platform/platform.router.js';
 import {
   attributeTenant,
   listAffiliatesWithStats,
-  generateAffiliateCode,
   listAllPayoutRequests,
   updatePayoutRequest,
   approvePartner,
+  createAffiliate,
+  getAffiliateDetail,
+  markCommissionPaid,
 } from './affiliate.service.js';
-
-/** Allow only emails in ADMIN_EMAILS (comma-separated). */
-async function requirePlatformAdmin(request: FastifyRequest, _reply: FastifyReply): Promise<void> {
-  await request.jwtVerify();
-  const allowed = config.ADMIN_EMAILS
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  if (allowed.length === 0) {
-    throw new AuthError('Platform admin not configured — set ADMIN_EMAILS on the API');
-  }
-  const email = (request.user as { email?: string })?.email?.toLowerCase();
-  if (!email || !allowed.includes(email)) {
-    throw new AuthError('Platform admin only');
-  }
-}
 
 export async function affiliatePlugin(app: FastifyInstance): Promise<void> {
   // ── Tenant-side: attribute the signed-in tenant to a code ───
@@ -47,7 +28,7 @@ export async function affiliatePlugin(app: FastifyInstance): Promise<void> {
     const { code } = (request.body ?? {}) as { code?: string };
     if (!code) throw new ValidationError('code is required');
     const result = await attributeTenant({
-      tenantId: request.user!.tenantId,
+      tenantId: request.authUser.tenantId,
       code,
     });
     if (!result) {
@@ -64,48 +45,45 @@ export async function affiliatePlugin(app: FastifyInstance): Promise<void> {
 
   // ── Platform admin: create an affiliate ─────────────────────
   app.post('/admin/affiliates', { onRequest: [requirePlatformAdmin] }, async (request, reply) => {
-    const { name, email, commissionPct } = (request.body ?? {}) as {
+    const { name, email, code, commissionPct, flatBountyCents, commissionMonths } = (request.body ?? {}) as {
       name?: string;
       email?: string;
+      code?: string;
       commissionPct?: number;
+      flatBountyCents?: number | null;
+      commissionMonths?: number;
     };
     if (!name || !email) throw new ValidationError('name and email are required');
-    if (commissionPct !== undefined && (commissionPct < 0 || commissionPct > 100)) {
-      throw new ValidationError('commissionPct must be 0–100');
-    }
-    // Generate a unique code — retry on the off chance of collision.
-    let code = generateAffiliateCode();
-    for (let i = 0; i < 5; i++) {
-      const [existing] = await db.select({ id: affiliates.id }).from(affiliates).where(eq(affiliates.code, code)).limit(1);
-      if (!existing) break;
-      code = generateAffiliateCode();
-    }
-    const [row] = await db
-      .insert(affiliates)
-      .values({
-        code,
-        name,
-        email: email.toLowerCase().trim(),
-        commissionPct: commissionPct !== undefined ? commissionPct.toFixed(2) : '20.00',
-      })
-      .returning();
+    const row = await createAffiliate({
+      name,
+      email,
+      ...(code ? { code } : {}),
+      ...(commissionPct !== undefined ? { commissionPct } : {}),
+      ...(flatBountyCents !== undefined ? { flatBountyCents } : {}),
+      ...(commissionMonths !== undefined ? { commissionMonths } : {}),
+    });
     return reply.code(201).send(row);
   });
+
+  // ── Platform admin: affiliate detail (tenants + conversions) ─
+  app.get<{ Params: { id: string } }>(
+    '/admin/affiliates/:id',
+    { onRequest: [requirePlatformAdmin] },
+    async (request, reply) => {
+      const detail = await getAffiliateDetail(request.params.id);
+      if (!detail) throw new NotFoundError('Affiliate', request.params.id);
+      return reply.send(detail);
+    }
+  );
 
   // ── Platform admin: list commission events for one affiliate ─
   app.get<{ Params: { id: string } }>(
     '/admin/affiliates/:id/commissions',
     { onRequest: [requirePlatformAdmin] },
     async (request, reply) => {
-      const { id } = request.params;
-      const [affiliate] = await db.select().from(affiliates).where(eq(affiliates.id, id)).limit(1);
-      if (!affiliate) throw new NotFoundError('Affiliate', id);
-      const events = await db
-        .select()
-        .from(commissionEvents)
-        .where(eq(commissionEvents.affiliateId, id))
-        .orderBy(desc(commissionEvents.createdAt));
-      return reply.send({ affiliate, events });
+      const detail = await getAffiliateDetail(request.params.id);
+      if (!detail) throw new NotFoundError('Affiliate', request.params.id);
+      return reply.send({ affiliate: detail.affiliate, events: detail.events });
     }
   );
 
@@ -114,13 +92,8 @@ export async function affiliatePlugin(app: FastifyInstance): Promise<void> {
     '/admin/commissions/:id/mark-paid',
     { onRequest: [requirePlatformAdmin] },
     async (request, reply) => {
-      const { id } = request.params;
-      const [row] = await db
-        .update(commissionEvents)
-        .set({ payoutStatus: 'paid_out', paidOutAt: new Date() })
-        .where(eq(commissionEvents.id, id))
-        .returning();
-      if (!row) throw new NotFoundError('CommissionEvent', id);
+      const row = await markCommissionPaid(request.params.id);
+      if (!row) throw new NotFoundError('CommissionEvent', request.params.id);
       return reply.send(row);
     }
   );
@@ -160,7 +133,10 @@ export async function affiliatePlugin(app: FastifyInstance): Promise<void> {
       if (!status || !['approved', 'paid', 'rejected'].includes(status)) {
         throw new ValidationError('status must be approved | paid | rejected');
       }
-      const row = await updatePayoutRequest(id, { status, adminNote });
+      const row = await updatePayoutRequest(id, {
+        status,
+        ...(adminNote !== undefined ? { adminNote } : {}),
+      });
       if (!row) throw new NotFoundError('PayoutRequest', id);
       return reply.send(row);
     }
