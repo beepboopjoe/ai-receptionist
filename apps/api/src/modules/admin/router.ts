@@ -35,6 +35,7 @@ import {
   updateTenantProfile,
 } from './settings.service.js';
 import { AuthError, NotFoundError, ValidationError } from '../../lib/errors.js';
+import { shouldStripLegalBlock, stripLegalPracticeAreaBlock } from './vertical-migrate.js';
 import { auditLog } from '../../audit/audit-logger.js';
 import type { JwtPayload } from './auth.middleware.js';
 import { encryptCredentials, decryptCredentials } from '../../lib/encryption.js';
@@ -1482,13 +1483,21 @@ export async function adminPlugin(app: FastifyInstance) {
         })
         .from(integrations)
         .where(eq(integrations.tenantId, tenantId));
-      return reply.send({ data: rows });
+      return reply.send({
+        data: rows,
+        configured: {
+          hubspot: Boolean(config.HUBSPOT_CLIENT_ID),
+          salesforce: Boolean(config.SALESFORCE_CLIENT_ID),
+          clio: Boolean(config.CLIO_CLIENT_ID),
+          zoho: Boolean(config.ZOHO_CLIENT_ID),
+        },
+      });
     }
   );
 
   app.delete(
     '/integrations/:provider',
-    { onRequest: [app.requireRole("owner")] },
+    { onRequest: [app.requireRole("admin")] },
     async (request, reply) => {
       const { tenantId } = request.authUser;
       const { provider } = request.params as { provider: string };
@@ -1616,17 +1625,43 @@ export async function adminPlugin(app: FastifyInstance) {
 
   app.patch(
     '/tenant',
-    { onRequest: [app.requireRole("owner")] },
+    { onRequest: [app.requireRole("admin")] },
     async (request, reply) => {
       const { tenantId, id: actorId } = request.authUser;
-      const body = request.body as { vertical?: string; name?: string; timezone?: string };
+      const body = request.body as {
+        vertical?: string;
+        name?: string;
+        timezone?: string;
+        migrateAppointmentTypes?: boolean;
+        stripVerticalContext?: boolean;
+      };
 
+      const current = await getTenantInfo(tenantId);
       const updated = await updateTenantProfile(tenantId, {
         vertical: body.vertical,
         name: body.name,
         timezone: body.timezone,
       });
-      if (body.vertical) {
+      if (body.vertical && body.vertical !== current.vertical) {
+        if (body.migrateAppointmentTypes) {
+          const types =
+            DEFAULT_APPT_TYPES_BY_VERTICAL[body.vertical] ??
+            DEFAULT_APPT_TYPES_BY_VERTICAL['generic'];
+          await updateAppointmentTypes(tenantId, types);
+        }
+        if (
+          body.stripVerticalContext ||
+          shouldStripLegalBlock(current.vertical, body.vertical)
+        ) {
+          const settings = await getSettings(tenantId);
+          const next = stripLegalPracticeAreaBlock(
+            (settings as { businessContext?: string }).businessContext
+          );
+          const prev = String((settings as { businessContext?: string }).businessContext ?? '');
+          if (next !== prev.trim()) {
+            await updateSettings(tenantId, { businessContext: next });
+          }
+        }
         auditLog({
           tenantId,
           actorType: 'admin_user',
@@ -1634,7 +1669,12 @@ export async function adminPlugin(app: FastifyInstance) {
           action: 'tenant.vertical_changed',
           entityType: 'tenant',
           entityId: tenantId,
-          metadata: { vertical: body.vertical },
+          metadata: {
+            vertical: body.vertical,
+            from: current.vertical,
+            migrateAppointmentTypes: Boolean(body.migrateAppointmentTypes),
+            stripVerticalContext: Boolean(body.stripVerticalContext),
+          },
         });
       }
       if (body.name || body.timezone) {

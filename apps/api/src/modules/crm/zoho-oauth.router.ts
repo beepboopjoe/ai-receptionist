@@ -48,6 +48,27 @@ export async function zohoOAuthPlugin(app: FastifyInstance): Promise<void> {
     }
   );
 
+  app.post(
+    '/integrations/zoho/connect',
+    { onRequest: [app.requireRole('admin')] },
+    async (request, reply) => {
+      if (!config.ZOHO_CLIENT_ID) {
+        return reply.code(503).send({
+          error: 'Zoho not configured',
+          message: 'ZOHO_CLIENT_ID is not set on this server. Contact support.',
+        });
+      }
+      const { tenantId } = request.authUser;
+      const body = (request.body ?? {}) as { dc?: string };
+      const resolvedDc = parseDc(body.dc);
+      const nonce = randomBytes(16).toString('hex');
+      const state = Buffer.from(JSON.stringify({ tenantId, nonce, dc: resolvedDc })).toString('base64url');
+      const { redis } = await import('../../db/redis.js');
+      await redis.set(`${NONCE_PREFIX}${nonce}`, tenantId, 'EX', NONCE_TTL_SEC);
+      return reply.send({ url: buildAuthUrl(state, resolvedDc) });
+    }
+  );
+
   app.get('/integrations/zoho/callback', async (request, reply) => {
     const { code, state, error } = request.query as {
       code?: string; state?: string; error?: string;
