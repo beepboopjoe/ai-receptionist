@@ -6,6 +6,8 @@ import { settingsApi, tenantsApi } from '@/lib/api';
 import { VERTICALS } from '@/lib/verticals';
 import { useToast } from '@/components/ui/toast';
 import { useTenant } from '@/lib/TenantProvider';
+import { useRouter } from 'next/navigation';
+import { VerticalSwitchConfirm } from '@/components/settings/vertical-switch-confirm';
 
 const TIMEZONES = [
   'America/New_York',
@@ -24,6 +26,7 @@ const TIMEZONES = [
 
 export default function BusinessProfilePage() {
   const toast = useToast();
+  const router = useRouter();
   const { refresh } = useTenant();
   const { data, isLoading } = useSWR('settings', () => settingsApi.get());
   const tenant = (data as { tenant?: { name?: string; timezone?: string; vertical?: string } } | undefined)?.tenant;
@@ -32,6 +35,9 @@ export default function BusinessProfilePage() {
   const [timezone, setTimezone] = useState('America/New_York');
   const [vertical, setVertical] = useState('generic');
   const [saving, setSaving] = useState(false);
+  const [pendingVertical, setPendingVertical] = useState<string | null>(null);
+  const [migrateTypes, setMigrateTypes] = useState(true);
+  const [openCurate, setOpenCurate] = useState(true);
 
   useEffect(() => {
     if (!tenant) return;
@@ -45,11 +51,21 @@ export default function BusinessProfilePage() {
       toast.error('Business name is required.');
       return;
     }
+    if (tenant?.vertical && vertical !== tenant.vertical) {
+      setPendingVertical(vertical);
+      return;
+    }
+    await persist({ name: name.trim(), timezone });
+  }
+
+  async function persist(body: Parameters<typeof tenantsApi.update>[0], goCurate = false) {
     setSaving(true);
     try {
-      await tenantsApi.update({ name: name.trim(), timezone, vertical });
+      await tenantsApi.update(body);
       await Promise.all([mutate('settings'), mutate('tenant'), refresh()]);
-      toast.success('Business profile saved');
+      toast.success(body.vertical ? 'Industry updated' : 'Business profile saved');
+      setPendingVertical(null);
+      if (goCurate) router.push('/settings/voice-agent/curate');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not save profile');
     } finally {
@@ -113,6 +129,10 @@ export default function BusinessProfilePage() {
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-gray-400 mt-1">
+                Switching industry updates AI vocabulary. Calendar, CRM, and phone numbers are kept.
+                You can also change this under Voice Agent.
+              </p>
             </div>
 
             <button onClick={save} disabled={saving} className="btn-primary">
@@ -122,6 +142,34 @@ export default function BusinessProfilePage() {
           </>
         )}
       </div>
+
+      {pendingVertical && tenant?.vertical && (
+        <VerticalSwitchConfirm
+          fromId={tenant.vertical}
+          toId={pendingVertical}
+          migrateTypes={migrateTypes}
+          onMigrateTypesChange={setMigrateTypes}
+          openCurate={openCurate}
+          onOpenCurateChange={setOpenCurate}
+          saving={saving}
+          onCancel={() => {
+            setPendingVertical(null);
+            setVertical(tenant.vertical ?? 'generic');
+          }}
+          onConfirm={() =>
+            persist(
+              {
+                name: name.trim(),
+                timezone,
+                vertical: pendingVertical,
+                migrateAppointmentTypes: migrateTypes,
+                stripVerticalContext: tenant.vertical === 'legal' && pendingVertical !== 'legal',
+              },
+              openCurate
+            )
+          }
+        />
+      )}
     </div>
   );
 }

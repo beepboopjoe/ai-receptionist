@@ -34,6 +34,25 @@ export async function clioOAuthPlugin(app: FastifyInstance): Promise<void> {
     }
   );
 
+  app.post(
+    '/integrations/clio/connect',
+    { onRequest: [app.requireRole('admin')] },
+    async (request, reply) => {
+      if (!config.CLIO_CLIENT_ID) {
+        return reply.code(503).send({
+          error: 'Clio not configured',
+          message: 'CLIO_CLIENT_ID is not set on this server. Contact support.',
+        });
+      }
+      const { tenantId } = request.authUser;
+      const nonce = randomBytes(16).toString('hex');
+      const state = Buffer.from(JSON.stringify({ tenantId, nonce })).toString('base64url');
+      const { redis } = await import('../../db/redis.js');
+      await redis.set(`${NONCE_PREFIX}${nonce}`, tenantId, 'EX', NONCE_TTL_SEC);
+      return reply.send({ url: buildAuthUrl(state) });
+    }
+  );
+
   app.get('/integrations/clio/callback', async (request, reply) => {
     const { code, state, error } = request.query as {
       code?: string; state?: string; error?: string;

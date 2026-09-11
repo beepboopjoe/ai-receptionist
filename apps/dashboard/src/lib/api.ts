@@ -419,15 +419,24 @@ export const webhooksApi = {
 // ---- Tenant (current tenant info & vertical/industry update) ----
 export const tenantsApi = {
   get: () => apiFetch<{ id: string; name: string; slug: string; plan: string; vertical: string; timezone: string; isActive: boolean; onboardingStep: number }>('/tenant'),
-  update: (body: { vertical?: string; name?: string; timezone?: string }) =>
+  update: (body: {
+    vertical?: string;
+    name?: string;
+    timezone?: string;
+    migrateAppointmentTypes?: boolean;
+    stripVerticalContext?: boolean;
+  }) =>
     apiFetch<{ id: string; name: string; timezone: string; vertical: string }>('/tenant', {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
-  updateVertical: (vertical: string) =>
+  updateVertical: (
+    vertical: string,
+    opts?: { migrateAppointmentTypes?: boolean; stripVerticalContext?: boolean }
+  ) =>
     apiFetch<{ id: string; vertical: string }>('/tenant', {
       method: 'PATCH',
-      body: JSON.stringify({ vertical }),
+      body: JSON.stringify({ vertical, ...opts }),
     }),
 };
 
@@ -443,7 +452,30 @@ export const settingsApi = {
 
 // ---- Integrations ----
 export const integrationsApi = {
-  list: () => apiFetch<{ data: unknown[] }>('/integrations'),
+  list: () =>
+    apiFetch<{
+      data: unknown[];
+      configured?: {
+        hubspot?: boolean;
+        salesforce?: boolean;
+        clio?: boolean;
+        zoho?: boolean;
+      };
+    }>('/integrations'),
+  connectHubspot: () =>
+    apiFetch<{ url: string }>('/integrations/hubspot/connect', { method: 'POST' }),
+  connectSalesforce: (sandbox?: boolean) =>
+    apiFetch<{ url: string }>('/integrations/salesforce/connect', {
+      method: 'POST',
+      body: JSON.stringify(sandbox ? { sandbox: true } : {}),
+    }),
+  connectClio: () =>
+    apiFetch<{ url: string }>('/integrations/clio/connect', { method: 'POST' }),
+  connectZoho: (dc: 'com' | 'eu' | 'in' | 'com.au' | 'jp' = 'com') =>
+    apiFetch<{ url: string }>('/integrations/zoho/connect', {
+      method: 'POST',
+      body: JSON.stringify({ dc }),
+    }),
   disconnect: (provider: string) =>
     apiFetch(`/integrations/${provider}`, { method: 'DELETE' }),
   syncHubspot: () =>

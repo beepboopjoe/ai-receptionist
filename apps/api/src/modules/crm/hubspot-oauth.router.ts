@@ -46,6 +46,25 @@ export async function hubspotOAuthPlugin(app: FastifyInstance): Promise<void> {
     }
   );
 
+  app.post(
+    '/integrations/hubspot/connect',
+    { onRequest: [app.requireRole('admin')] },
+    async (request, reply) => {
+      if (!config.HUBSPOT_CLIENT_ID) {
+        return reply.code(503).send({
+          error: 'HubSpot not configured',
+          message: 'HUBSPOT_CLIENT_ID is not set on this server. Contact support.',
+        });
+      }
+      const { tenantId } = request.authUser;
+      const nonce = randomBytes(16).toString('hex');
+      const state = Buffer.from(JSON.stringify({ tenantId, nonce })).toString('base64url');
+      const { redis } = await import('../../db/redis.js');
+      await redis.set(`${NONCE_PREFIX}${nonce}`, tenantId, 'EX', NONCE_TTL_SEC);
+      return reply.send({ url: buildAuthUrl(state) });
+    }
+  );
+
   // ── Callback — exchange code, store encrypted tokens ──────
   app.get(
     '/integrations/hubspot/callback',

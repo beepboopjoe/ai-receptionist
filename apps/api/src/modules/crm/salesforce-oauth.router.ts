@@ -43,6 +43,27 @@ export async function salesforceOAuthPlugin(app: FastifyInstance): Promise<void>
     }
   );
 
+  app.post(
+    '/integrations/salesforce/connect',
+    { onRequest: [app.requireRole('admin')] },
+    async (request, reply) => {
+      if (!config.SALESFORCE_CLIENT_ID) {
+        return reply.code(503).send({
+          error: 'Salesforce not configured',
+          message: 'SALESFORCE_CLIENT_ID is not set on this server. Contact support.',
+        });
+      }
+      const { tenantId } = request.authUser;
+      const body = (request.body ?? {}) as { sandbox?: boolean };
+      const isSandbox = Boolean(body.sandbox);
+      const nonce = randomBytes(16).toString('hex');
+      const state = Buffer.from(JSON.stringify({ tenantId, nonce, isSandbox })).toString('base64url');
+      const { redis } = await import('../../db/redis.js');
+      await redis.set(`${NONCE_PREFIX}${nonce}`, tenantId, 'EX', NONCE_TTL_SEC);
+      return reply.send({ url: buildAuthUrl(state, isSandbox) });
+    }
+  );
+
   // ── Callback ──
   app.get('/integrations/salesforce/callback', async (request, reply) => {
     const { code, state, error } = request.query as {

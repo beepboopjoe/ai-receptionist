@@ -60,6 +60,7 @@ export default function IntegrationsPage() {
   const vertical = useVertical();
   const toast = useToast();
   const { data } = useSWR('integrations', () => integrationsApi.list());
+  const crmConfigured = data?.configured ?? {};
   const { data: googleStatus, error: googleStatusError } = useSWR(
     'integrations/google-calendar/status',
     () => integrationsApi.googleCalendarStatus()
@@ -80,11 +81,27 @@ export default function IntegrationsPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
-    const ok = params.get('google_connected');
-    const err = params.get('google_error');
-    if (!ok && !err) return;
-    if (ok) toast.success('Google Calendar connected');
-    if (err) toast.error(googleOAuthErrorMessage(err));
+    const oauthReturns: Array<[string, string, string]> = [
+      ['google_connected', 'google_error', 'Google Calendar'],
+      ['hubspot_connected', 'hubspot_error', 'HubSpot'],
+      ['salesforce_connected', 'salesforce_error', 'Salesforce'],
+      ['clio_connected', 'clio_error', 'Clio'],
+      ['zoho_connected', 'zoho_error', 'Zoho CRM'],
+    ];
+    let handled = false;
+    for (const [okKey, errKey, label] of oauthReturns) {
+      const ok = params.get(okKey);
+      const err = params.get(errKey);
+      if (!ok && !err) continue;
+      handled = true;
+      if (ok) toast.success(`${label} connected`);
+      if (err) {
+        toast.error(
+          okKey === 'google_connected' ? googleOAuthErrorMessage(err) : `${label} connect failed (${err})`
+        );
+      }
+    }
+    if (!handled) return;
     window.history.replaceState({}, '', window.location.pathname);
     void mutate('integrations');
     void mutate('integrations/google-calendar/status');
@@ -97,6 +114,44 @@ export default function IntegrationsPage() {
       WIRED_CRM_IDS.has(p.id) &&
       (p.verticals === 'all' || p.verticals.includes(vertical.id))
   );
+  const hiddenConnected = CRM_PROVIDERS.filter(
+    (p) =>
+      WIRED_CRM_IDS.has(p.id) &&
+      !visibleCrmProviders.some((v) => v.id === p.id) &&
+      connectedMap[p.id]?.status === 'connected'
+  );
+
+  const [connectingCrm, setConnectingCrm] = useState<string | null>(null);
+
+  async function handleConnectCrm(providerId: string) {
+    setConnectingCrm(providerId);
+    try {
+      const result =
+        providerId === 'hubspot'
+          ? await integrationsApi.connectHubspot()
+          : providerId === 'salesforce'
+            ? await integrationsApi.connectSalesforce()
+            : providerId === 'clio'
+              ? await integrationsApi.connectClio()
+              : await integrationsApi.connectZoho();
+      window.location.href = result.url;
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : `Could not start ${providerId} connect.`);
+      setConnectingCrm(null);
+    }
+  }
+
+  function crmBadge(
+    providerId: string,
+    isConnected: boolean,
+    errorMessage?: string | null
+  ): { label: string; className: string } {
+    const configured = crmConfigured[providerId as keyof typeof crmConfigured];
+    if (isConnected && errorMessage) return { label: 'Error', className: 'badge badge-red' };
+    if (isConnected) return { label: 'Connected', className: 'badge badge-green' };
+    if (configured === false) return { label: 'Not configured', className: 'badge badge-gray' };
+    return { label: 'Not connected', className: 'badge badge-gray' };
+  }
 
   async function handleDisconnect(provider: string) {
     if (!confirm(`Disconnect ${provider}?`)) return;
@@ -198,13 +253,15 @@ export default function IntegrationsPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-gray-900">{provider.label}</p>
-                    {isConnected ? (
-                      <span className="badge badge-green flex items-center gap-1">
-                        <CheckCircle size={11} /> Connected
-                      </span>
-                    ) : (
-                      <span className="badge badge-gray">{isHubSpot ? 'Not connected' : 'Custom setup'}</span>
-                    )}
+                    {(() => {
+                      const badge = crmBadge(provider.id, isConnected, integration?.errorMessage);
+                      return (
+                        <span className={`${badge.className} flex items-center gap-1`}>
+                          {isConnected && !integration?.errorMessage && <CheckCircle size={11} />}
+                          {badge.label}
+                        </span>
+                      );
+                    })()}
                     {provider.badge && !isConnected && (
                       <span className={`badge ${provider.badge === 'Popular' ? 'badge-green' : 'badge-blue'}`}>
                         {provider.badge}
@@ -245,22 +302,21 @@ export default function IntegrationsPage() {
                         </button>
                       </>
                     ) : isOAuth ? (
-                      <a
-                        href={
-                          provider.id === 'hubspot'
-                            ? integrationsApi.connectHubspotUrl()
-                            : provider.id === 'salesforce'
-                              ? integrationsApi.connectSalesforceUrl()
-                              : provider.id === 'clio'
-                                ? integrationsApi.connectClioUrl()
-                                : provider.id === 'zoho'
-                                  ? integrationsApi.connectZohoUrl()
-                                  : integrationsApi.connectUrl(provider.id)
-                        }
-                        className="btn-primary text-sm flex items-center gap-1.5"
-                      >
-                        <ExternalLink size={13} /> Connect {provider.label}
-                      </a>
+                      crmConfigured[provider.id as keyof typeof crmConfigured] === false ? (
+                        <button type="button" disabled className="btn-secondary text-sm opacity-60 cursor-not-allowed">
+                          Connect unavailable
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleConnectCrm(provider.id)}
+                          disabled={connectingCrm === provider.id}
+                          className="btn-primary text-sm flex items-center gap-1.5"
+                        >
+                          <ExternalLink size={13} />
+                          {connectingCrm === provider.id ? 'Redirecting…' : `Connect ${provider.label}`}
+                        </button>
+                      )
                     ) : isFilevine ? (
                       <button
                         onClick={() => setFilevineModalOpen(true)}
@@ -282,6 +338,37 @@ export default function IntegrationsPage() {
             );
           })}
         </div>
+        {hiddenConnected.length > 0 && (
+          <div className="mt-4 space-y-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+              Connected (other industry)
+            </p>
+            {hiddenConnected.map((provider) => {
+              return (
+                <div key={provider.id} className="card p-5 flex items-center gap-5">
+                  <div className="text-3xl">{provider.icon}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-gray-900">{provider.label}</p>
+                      <span className="badge badge-green flex items-center gap-1">
+                        <CheckCircle size={11} /> Connected
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      Still connected after you switched industry. Disconnect here if you no longer need it.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDisconnect(provider.id)}
+                    className="btn-danger text-sm"
+                  >
+                    <Trash2 size={14} /> Disconnect
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Developers / MCP ── */}

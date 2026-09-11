@@ -6,6 +6,9 @@ import Link from 'next/link';
 import { Save, Loader2, Sparkles, ArrowRight, Phone, Scale } from 'lucide-react';
 import { VERTICALS } from '@/lib/verticals';
 import { useToast } from '@/components/ui/toast';
+import { useRouter } from 'next/navigation';
+import { useTenant } from '@/lib/TenantProvider';
+import { VerticalSwitchConfirm } from '@/components/settings/vertical-switch-confirm';
 import { KnowledgeBaseCard } from '@/components/dashboard/knowledge-base-card';
 import {
   LEGAL_PRACTICE_AREAS,
@@ -132,7 +135,12 @@ export default function VoiceAgentPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [placingTestCall, setPlacingTestCall] = useState(false);
+  const [pendingVertical, setPendingVertical] = useState<string | null>(null);
+  const [migrateTypes, setMigrateTypes] = useState(true);
+  const [openCurate, setOpenCurate] = useState(true);
   const toast = useToast();
+  const router = useRouter();
+  const { refresh } = useTenant();
 
   async function placeTestCall() {
     if (!transferNumber) {
@@ -178,16 +186,13 @@ export default function VoiceAgentPage() {
   async function save() {
     setSaving(true);
     try {
-      await Promise.all([
-        settingsApi.update({
-          voiceName,
-          voiceProvider: 'grok',
-          afterHoursMode,
-          transferNumber,
-          businessContext,
-        }),
-        tenant?.vertical !== vertical ? tenantsApi.updateVertical(vertical) : Promise.resolve(),
-      ]);
+      await settingsApi.update({
+        voiceName,
+        voiceProvider: 'grok',
+        afterHoursMode,
+        transferNumber,
+        businessContext,
+      });
       try { localStorage.setItem('onboarding_vertical', vertical); } catch { /* ignore */ }
       await mutate('settings');
       await mutate('tenant');
@@ -214,7 +219,14 @@ export default function VoiceAgentPage() {
           <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
           <select
             value={vertical}
-            onChange={(e) => setVertical(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              if (tenant?.vertical && next !== tenant.vertical) {
+                setPendingVertical(next);
+                return;
+              }
+              setVertical(next);
+            }}
             className="input"
           >
             {VERTICALS.map((v) => (
@@ -224,7 +236,8 @@ export default function VoiceAgentPage() {
             ))}
           </select>
           <p className="text-xs text-gray-400 mt-1">
-            Industry tunes the AI receptionist&apos;s vocabulary, escalation triggers, and example workflows.
+            Industry tunes vocabulary and workflows. Phone numbers and calendar/CRM stay connected.
+            Also editable under Settings → Business profile.
           </p>
         </div>
 
@@ -372,6 +385,38 @@ export default function VoiceAgentPage() {
           {saved ? '✓ Saved!' : saving ? 'Saving…' : 'Save Changes'}
         </button>
       </div>
+
+      {pendingVertical && tenant?.vertical && (
+        <VerticalSwitchConfirm
+          fromId={tenant.vertical}
+          toId={pendingVertical}
+          migrateTypes={migrateTypes}
+          onMigrateTypesChange={setMigrateTypes}
+          openCurate={openCurate}
+          onOpenCurateChange={setOpenCurate}
+          saving={saving}
+          onCancel={() => setPendingVertical(null)}
+          onConfirm={async () => {
+            setSaving(true);
+            try {
+              await tenantsApi.updateVertical(pendingVertical, {
+                migrateAppointmentTypes: migrateTypes,
+                stripVerticalContext: tenant.vertical === 'legal' && pendingVertical !== 'legal',
+              });
+              try { localStorage.setItem('onboarding_vertical', pendingVertical); } catch { /* ignore */ }
+              setVertical(pendingVertical);
+              setPendingVertical(null);
+              await Promise.all([mutate('settings'), mutate('tenant'), refresh()]);
+              toast.success('Industry updated');
+              if (openCurate) router.push('/settings/voice-agent/curate');
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : 'Could not switch industry');
+            } finally {
+              setSaving(false);
+            }
+          }}
+        />
+      )}
 
     </div>
   );
