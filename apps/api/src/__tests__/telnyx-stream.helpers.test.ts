@@ -371,7 +371,7 @@ describe('Railway-visible log messages', () => {
     expect(grok403).toContain('Bearer [redacted]');
 
     expect(formatGrokGreetingLog({ callSid: 'v2:abc', grokSessionId: 'grok_1' })).toContain(
-      'Grok session.update + greeting sent',
+      'Grok greeting sent method=force_message',
     );
 
     expect(formatMediaStreamStartLog({
@@ -479,7 +479,7 @@ describe('production sources use the working Telnyx + Grok path', () => {
     expect(src).toContain('...(voice && { voice })');
   });
 
-  it('media WS handler uses the v10 socket and greets via response.create', () => {
+  it('media WS handler uses the v10 socket and greets via force_message', () => {
     const router = readFileSync(join(srcRoot, 'modules/telephony/router.ts'), 'utf8');
     expect(router).toContain('resolveFastifyWebsocket');
     expect(router).toContain('resolveMediaStreamParams');
@@ -497,7 +497,7 @@ describe('production sources use the working Telnyx + Grok path', () => {
     expect(adapter).not.toMatch(/model:\s*'whisper-1'/);
 
     const media = readFileSync(join(srcRoot, 'modules/telephony/media-stream.handler.ts'), 'utf8');
-    expect(media).toContain('GROK_GREETING_CREATE');
+    expect(media).toContain('buildGrokForceMessage');
     expect(media).toContain('formatGrokConnectFailureLog');
     expect(media).toContain("on('unexpected-response'");
     expect(media).toContain('collectLimitedHttpBody');
@@ -610,6 +610,8 @@ describe('Grok session.update uses audio/pcmu for Telnyx', () => {
     expect(update.session.audio.input.transport).toBe('json');
     expect(update.session.input_audio_format).toBe('g711_ulaw');
     expect(update.session.turn_detection.silence_duration_ms).toBe(500);
+    expect(update.session.reasoning).toEqual({ effort: 'none' });
+    expect(update.session.tools).toEqual([]);
 
     const demoUpdate = GrokVoiceAdapter.buildSessionUpdate({
       sessionId: 'grok_demo',

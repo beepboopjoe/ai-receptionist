@@ -2,12 +2,16 @@
 // Media Stream Handler — provider-agnostic WebSocket audio relay
 //
 // Bridges a Telnyx (or RC) WebSocket audio stream to the Grok
-// Voice WebSocket and back. Wire format is nearly identical
-// across providers:
+// Voice WebSocket and back.
+//
+// Time-to-first-audio: Grok WS opens immediately (handshake overlaps
+// DB). Greeting is xAI force_message (TTS, no think loop) after
+// session.updated applies PCMU. reasoning.effort=none on session.update.
+// Railway logs: `TTFA <stage> callSid=… ms=…`
 //   provider → server: { event: 'media', media: { payload: '<base64>' } }
 //   server → provider: same shape (Telnyx) or with streamSid (Twilio legacy)
 // ============================================================
-import type { WebSocket } from 'ws';
+import { WebSocket } from 'ws';
 import { db } from '../../db/client.js';
 import { calls, tenants, tenantSettings, campaignContacts } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -45,7 +49,6 @@ import {
   formatGrokRelaySummaryLog,
   formatGrokSessionUpdateLog,
   formatGrokUnexpectedBinaryLog,
-  GROK_GREETING_CREATE,
   GROK_GREETING_FALLBACK_MS,
   isGrokAudioDeltaType,
   summarizeEventCounts,
@@ -55,6 +58,14 @@ import {
   collectLimitedHttpBody,
   xaiApiKeyLogFields,
 } from '../../lib/xai-auth.js';
+import {
+  alreadySpokenPromptSection,
+  buildGrokForceMessage,
+  buildGrokGreetingFallbackCreate,
+  firstTurnGreetingText,
+  formatTtfaLog,
+  GROK_FORCE_MESSAGE_AUDIO_FALLBACK_MS,
+} from './grok-first-turn.js';
 import pino from 'pino';
 
 dayjs.extend(utc);
@@ -113,189 +124,25 @@ export async function handleMediaStream(
   const { callId, tenantId, fromNumber, callSid, campaignContactId, campaignId, streamSid, adHocTask, mode, language, voice } = params;
   const isOutbound = !!campaignContactId;
   const isDemo = isDemoCallMeTenant(tenantId, config.DEMO_TENANT_ID) || mode === 'demo';
+  const startedAt = Date.now();
+  const ttfa = (stage: string) => {
+    const ms = Date.now() - startedAt;
+    logger.info({ callSid, tenantId, stage, ms }, formatTtfaLog({ callSid, stage, ms }));
+  };
 
-  // 0. PROMO-TRIAL CAP CHECK — refuse to open the AI media stream if the
-  //    tenant was granted a hands-on promo trial and has consumed all
-  //    allotted minutes this month. Closes the inbound WS immediately so
-  //    no minutes are billed, and the dashboard logs a "Call blocked" event.
-  if (await isPromoTrialCapped(tenantId)) {
-    logger.info({ tenantId, callId, callSid }, 'Promo-trial cap reached — refusing call');
-    pushActivity(tenantId, 'call_blocked', {
-      callId,
-      callSid,
-      fromNumber,
-      reason: 'promo_trial_cap_reached',
-    });
-    try { providerSocket.close(1008, 'Promo trial cap reached'); } catch { /* socket may already be closed */ }
-    return;
-  }
-
-  // 1. Identify caller (inbound only — outbound contacts are already known)
-  const contact = isOutbound ? null : await identifyCaller(fromNumber, tenantId);
-
-  // 2. Fetch tenant + settings in one parallel round-trip
-  const [[tenantRow], [settingsRow]] = await Promise.all([
-    db.select({ timezone: tenants.timezone, name: tenants.name, vertical: tenants.vertical, storeTranscripts: tenants.storeTranscripts })
-      .from(tenants)
-      .where(eq(tenants.id, tenantId))
-      .limit(1),
-    db.select({
-      officeHours:    tenantSettings.officeHours,
-      appointmentTypes: tenantSettings.appointmentTypes,
-      transferNumber: tenantSettings.transferNumber,
-      voiceName:      tenantSettings.voiceName,
-      businessContext: tenantSettings.businessContext,
-    })
-      .from(tenantSettings)
-      .where(eq(tenantSettings.tenantId, tenantId))
-      .limit(1),
-  ]);
-
-  const tz = tenantRow?.timezone ?? 'America/New_York';
-  // Use the actual tenant/business name — not a hardcoded placeholder
-  const practiceName = tenantRow?.name ?? 'Our Office';
-  const vertical = (tenantRow?.vertical ?? 'dental') as Vertical;
-  // PHI minimization: when a tenant opts out of transcript storage, we keep
-  // the summary + duration (needed for billing/analytics) but never persist
-  // the verbatim conversation.
-  const storeTranscripts = tenantRow?.storeTranscripts ?? true;
-  const apptTypes    = (settingsRow?.appointmentTypes ?? []) as AppointmentType[];
-  const officeHours  = (settingsRow?.officeHours ?? {}) as OfficeHours;
-  const sessionVoice = resolveSessionGrokVoice({
-    isDemo,
-    demoVoice: voice,
-    tenantVoice: settingsRow?.voiceName,
-  });
-
-  // 3. Determine workflow + build system prompt
-  let workflow: string;
-  let systemPrompt: string;
-
-  if (isOutbound && campaignContactId) {
-    workflow = 'outbound_qualification';
-    const [lead] = await db
-      .select({ firstName: campaignContacts.firstName })
-      .from(campaignContacts)
-      .where(eq(campaignContacts.id, campaignContactId))
-      .limit(1);
-
-    // If this call belongs to a goal-driven campaign (Phase 12.4), use the
-    // goal's pitch override so the AI opens with goal-specific context rather
-    // than the generic vertical pitch.
-    let goalPitch: string | undefined;
-    if (campaignId) {
-      const { outboundCampaigns } = await import('../../db/schema.js');
-      const [c] = await db
-        .select({ goal: outboundCampaigns.goal })
-        .from(outboundCampaigns)
-        .where(eq(outboundCampaigns.id, campaignId))
-        .limit(1);
-      if (c?.goal) {
-        const { findGoal } = await import('../campaigns/campaign-goals.service.js');
-        goalPitch = findGoal(c.goal)?.pitchOverride;
-      }
-    }
-
-    systemPrompt = buildOutboundQualificationPrompt({
-      practiceName,
-      vertical,
-      leadFirstName: lead?.firstName ?? null,
-      availableAppointmentTypes: apptTypes.map((t: AppointmentType) => t.name).join(', '),
-      campaignId: campaignId ?? '',
-      campaignContactId,
-      ...(goalPitch && { goalPitch }),
-    });
-  } else {
-    const now     = dayjs().tz(tz);
-    const dayName = now.format('ddd').toLowerCase();
-    const isAfterHours = isAfterHoursCall({
-      now,
-      officeHours,
-      dayKey: dayName,
-      isDemo,
-    });
-    workflow = isDemo
-      ? 'new_contact'
-      : isAfterHours
-        ? 'after_hours'
-        : contact
-          ? 'existing_contact'
-          : 'new_contact';
-
-    // Phase 12.8 — pull top-K knowledge-base chunks for grounding. Synthetic
-    // query because we have no caller utterance yet at call-start. Always
-    // resolves to [] on any error (no OPENAI_API_KEY, no docs, embed failure)
-    // so the prompt stays well-formed regardless. Skip for the public product
-    // demo so leftover dental/legal docs cannot override the sales script.
-    let kbChunks: string[] = [];
-    if (!isDemo) {
-      const { retrieveRelevantChunks } = await import('../knowledge-base/kb.service.js');
-      const kbQuery = `${practiceName} ${vertical} ${apptTypes[0]?.name ?? ''}`.trim();
-      kbChunks = await retrieveRelevantChunks(tenantId, kbQuery, 4);
-    }
-
-    systemPrompt = buildSystemPrompt({
-      practiceName,
-      vertical,
-      timezone: tz,
-      officeHours,
-      appointmentTypes: apptTypes,
-      providers: [],
-      caller: isDemo ? null : contact,
-      workflowHint: workflow === 'after_hours'
-        ? 'after_hours'
-        : (workflow as 'new_contact' | 'existing_contact'),
-      transferNumber: settingsRow?.transferNumber ?? null,
-      businessContext: settingsRow?.businessContext ?? null,
-      ...(kbChunks.length > 0 && { kbChunks }),
-      ...(adHocTask && { adHocTask }), // Phase 29b — Ask-your-AI single-task call
-      ...(isDemo && { isDemo: true }),
-      ...(isDemo && language && { demoLanguage: language }),
-    });
-  }
-
-  // 4. Fire call.started immediately so the dashboard's live activity
-  //    feed reflects the inbound call within ~1s of pickup. Both helpers
-  //    are fire-and-forget — never throw.
-  emitWebhook(tenantId, 'call.started', {
-    callId,
-    callSid,
-    fromNumber,
-    direction: isOutbound ? 'outbound' : 'inbound',
-    vertical,
-  });
-  pushActivity(tenantId, 'call_started', {
-    callId,
-    fromNumber,
-    contactName: contact ? `${contact.firstName} ${contact.lastName}` : undefined,
-  });
-
-  // 5. Save call state to Redis (vertical is included so the post-call
-  //    orchestrator can route to vertical-specific flow variants later).
-  await saveCallState({
-    callId,
-    rcCallId: callSid,
-    tenantId,
-    fromNumber,
-    toNumber: '',
-    contact,
-    workflow,
-    currentStep: 'greeting',
-    retryCount: 0,
-    collectedData: isOutbound ? { campaignContactId, campaignId, vertical } : { vertical },
-    startedAt: new Date().toISOString(),
-    lastActivityAt: new Date().toISOString(),
-    elevenLabsSessionId: null,
-  });
-
-  // 5. Create Grok Voice session (returns WS URL + auth headers)
+  // Open Grok immediately so TLS/handshake overlaps DB + prompt work.
+  // session.update (codec, voice, prompt) waits until prep below finishes.
   const voiceAdapter = createVoiceAdapter('grok');
+  const earlyVoice = resolveSessionGrokVoice({
+    isDemo,
+    ...(voice ? { demoVoice: voice } : {}),
+  });
   let session;
   try {
     session = await voiceAdapter.createSession({
-      systemPrompt,
-      voice: sessionVoice,
-      audioInputFormat: 'pcmu',  // G.711 µ-law from Telnyx
+      systemPrompt: '',
+      voice: earlyVoice,
+      audioInputFormat: 'pcmu',
       audioOutputFormat: 'pcmu',
       callMetadata: { callId, tenantId, fromNumber },
     });
@@ -313,9 +160,7 @@ export async function handleMediaStream(
     throw err;
   }
 
-  // 6. Open WebSocket to Grok Realtime API
-  const { WebSocket: WS } = await import('ws');
-  const grokSocket = new WS(session.webSocketUrl, {
+  const grokSocket = new WebSocket(session.webSocketUrl, {
     headers: session.headers ?? {},
   });
 
@@ -323,6 +168,21 @@ export async function handleMediaStream(
   const connectLog = grokConnectLogFields(session);
   let grokHandshakeLogged = false;
   let grokHandshakeCapture = false;
+
+  let contact: Contact | null = null;
+  let vertical: Vertical = 'dental';
+  let storeTranscripts = true;
+  let workflow = 'new_contact';
+  let systemPrompt = '';
+  let sessionVoice = earlyVoice;
+  let greetingText = firstTurnGreetingText({ isDemo, isOutbound, practiceName: 'Our Office' });
+  let grokOpen = false;
+  let promptReady = false;
+  let sessionUpdateSent = false;
+  let greetingAudioDone = false;
+  let pendingKbPrompt: string | null = null;
+  const inboundAudioQueue: string[] = [];
+  const MAX_INBOUND_QUEUE = 80;
 
   const logGrokConnectFailure = (err: unknown, extras?: { httpStatus?: number | null; bodyClipped?: string }) => {
     if (grokHandshakeLogged) return;
@@ -381,37 +241,10 @@ export async function handleMediaStream(
     grokEventCounts[type] = (grokEventCounts[type] ?? 0) + 1;
   };
 
-  const sendGreeting = (reason: 'session.updated' | 'fallback') => {
-    if (greetingSent || grokSocket.readyState !== WS.OPEN) return;
-    greetingSent = true;
-    if (greetingFallbackTimer) {
-      clearTimeout(greetingFallbackTimer);
-      greetingFallbackTimer = undefined;
-    }
-    grokSocket.send(JSON.stringify(GROK_GREETING_CREATE));
-    logger.info(
-      { callSid, grokSessionId, tenantId, reason },
-      formatGrokGreetingLog({ callSid, grokSessionId }),
-    );
-    // If Grok never emits audio (wrong event type / empty response), surface it.
-    noAudioWatchdog = setTimeout(() => {
-      if (grokAudioBytesToTelnyx > 0) return;
-      logger.warn(
-        { callSid, tenantId, grokEventCounts },
-        formatGrokNoAudioWatchdogLog({
-          callSid,
-          audioDeltasReceived: grokAudioDeltasReceived,
-          audioBytesToTelnyx: grokAudioBytesToTelnyx,
-          eventCounts: summarizeEventCounts(grokEventCounts),
-        }),
-      );
-    }, 8_000);
-  };
-
-  // 7. session.update on open. Do NOT response.create here — current xAI
-  //    defaults to audio/pcm @ 24 kHz until session.updated applies audio/pcmu.
-  //    Greeting in the default codec is forwarded as PCMU and plays as silence.
-  grokSocket.on('open', () => {
+  const trySendSessionUpdate = () => {
+    if (sessionUpdateSent || !grokOpen || !promptReady) return;
+    if (grokSocket.readyState !== WebSocket.OPEN) return;
+    sessionUpdateSent = true;
     const sessionUpdate = GrokVoiceAdapter.buildSessionUpdate({
       sessionId: grokSessionId,
       systemPrompt,
@@ -421,6 +254,7 @@ export async function handleMediaStream(
       ...(isDemo ? { silenceDurationMs: 700 } : {}),
     });
     grokSocket.send(JSON.stringify(sessionUpdate));
+    ttfa('session_update');
     logger.info(
       { callSid, grokSessionId, tenantId },
       formatGrokSessionUpdateLog({ callSid, grokSessionId }),
@@ -429,6 +263,73 @@ export async function handleMediaStream(
       logger.warn({ callSid, tenantId }, formatGrokGreetingFallbackLog({ callSid }));
       sendGreeting('fallback');
     }, GROK_GREETING_FALLBACK_MS);
+  };
+
+  const injectPendingKb = () => {
+    if (!pendingKbPrompt || !greetingAudioDone) return;
+    if (grokSocket.readyState !== WebSocket.OPEN) return;
+    const kbPrompt = pendingKbPrompt;
+    pendingKbPrompt = null;
+    grokSocket.send(JSON.stringify(GrokVoiceAdapter.buildSessionUpdate({
+      sessionId: grokSessionId,
+      systemPrompt: kbPrompt,
+      voice: sessionVoice,
+      audioInputFormat: 'pcmu',
+      audioOutputFormat: 'pcmu',
+      ...(isDemo ? { silenceDurationMs: 700 } : {}),
+    })));
+    logger.info({ callSid, tenantId }, formatTtfaLog({
+      callSid,
+      stage: 'kb_injected',
+      ms: Date.now() - startedAt,
+    }));
+  };
+
+  const sendGreeting = (reason: 'session.updated' | 'fallback') => {
+    if (greetingSent || grokSocket.readyState !== WebSocket.OPEN) return;
+    if (!sessionUpdateSent && reason !== 'fallback') return;
+    greetingSent = true;
+    if (greetingFallbackTimer) {
+      clearTimeout(greetingFallbackTimer);
+      greetingFallbackTimer = undefined;
+    }
+    grokSocket.send(JSON.stringify(buildGrokForceMessage(greetingText)));
+    ttfa('greeting_sent');
+    logger.info(
+      { callSid, grokSessionId, tenantId, reason, method: 'force_message' },
+      formatGrokGreetingLog({
+        callSid,
+        grokSessionId,
+        method: 'force_message',
+        ms: Date.now() - startedAt,
+      }),
+    );
+    noAudioWatchdog = setTimeout(() => {
+      if (grokAudioBytesToTelnyx > 0) return;
+      if (grokSocket.readyState === WebSocket.OPEN) {
+        grokSocket.send(JSON.stringify(buildGrokGreetingFallbackCreate(greetingText)));
+        logger.warn(
+          { callSid, tenantId },
+          formatTtfaLog({ callSid, stage: 'force_message_fallback_response_create', ms: Date.now() - startedAt }),
+        );
+      }
+      logger.warn(
+        { callSid, tenantId, grokEventCounts },
+        formatGrokNoAudioWatchdogLog({
+          callSid,
+          audioDeltasReceived: grokAudioDeltasReceived,
+          audioBytesToTelnyx: grokAudioBytesToTelnyx,
+          eventCounts: summarizeEventCounts(grokEventCounts),
+        }),
+      );
+    }, GROK_FORCE_MESSAGE_AUDIO_FALLBACK_MS);
+  };
+
+  // Codec is PCM until session.updated. Do not greet on WS open.
+  grokSocket.on('open', () => {
+    grokOpen = true;
+    ttfa('grok_ws_open');
+    trySendSessionUpdate();
   });
 
   // 8. Relay audio: Telnyx inbound track → Grok (never echo outbound)
@@ -457,11 +358,16 @@ export async function handleMediaStream(
           }),
         );
       }
-      if (grokSocket.readyState === WS.OPEN) {
+      // Hold inbound until the opener is on the wire so line noise cannot
+      // barge-in-cancel force_message. force_message is interruptible:false
+      // as a second guard.
+      if (grokSocket.readyState === WebSocket.OPEN && greetingSent) {
         grokSocket.send(JSON.stringify({
           type: 'input_audio_buffer.append',
           audio: inbound.payload,
         }));
+      } else if (inboundAudioQueue.length < MAX_INBOUND_QUEUE) {
+        inboundAudioQueue.push(inbound.payload);
       }
     } else if (msg['event'] === 'stop') {
       grokSocket.close();
@@ -521,8 +427,23 @@ export async function handleMediaStream(
     }
 
     // Codec is applied on session.updated — greet only then (not on created).
-    if (eventType === 'session.updated') {
+    // Ignore later session.updated from a post-greeting KB prompt inject.
+    if (eventType === 'session.updated' && sessionUpdateSent && !greetingSent) {
       sendGreeting('session.updated');
+    }
+
+    if (eventType === 'response.done' && greetingSent && !greetingAudioDone) {
+      greetingAudioDone = true;
+      injectPendingKb();
+      while (inboundAudioQueue.length > 0) {
+        const queued = inboundAudioQueue.shift();
+        if (queued && grokSocket.readyState === WebSocket.OPEN) {
+          grokSocket.send(JSON.stringify({
+            type: 'input_audio_buffer.append',
+            audio: queued,
+          }));
+        }
+      }
     }
 
     // Let the adapter process transcript events and tell us what was finalized.
@@ -551,6 +472,13 @@ export async function handleMediaStream(
         { event, callSid, tenantId },
         `Grok session error callSid=${callSid} tenantId=${tenantId} err=${grokMsg}`,
       );
+      if (greetingSent && grokAudioBytesToTelnyx === 0 && grokSocket.readyState === WebSocket.OPEN) {
+        grokSocket.send(JSON.stringify(buildGrokGreetingFallbackCreate(greetingText)));
+        logger.warn(
+          { callSid, tenantId },
+          formatTtfaLog({ callSid, stage: 'force_message_error_fallback', ms: Date.now() - startedAt }),
+        );
+      }
     }
 
     if (eventType === 'response.done' && grokAudioBytesToTelnyx === 0) {
@@ -584,11 +512,16 @@ export async function handleMediaStream(
             }),
           );
         }
-        if (providerSocket.readyState === WS.OPEN) {
+        if (providerSocket.readyState === WebSocket.OPEN) {
           providerSocket.send(JSON.stringify(buildTelnyxOutboundMediaMessage(audioPayload, streamSid)));
           grokAudioBytesToTelnyx += payloadBytes;
           if (!loggedFirstGrokToTelnyx) {
             loggedFirstGrokToTelnyx = true;
+            if (noAudioWatchdog) {
+              clearTimeout(noAudioWatchdog);
+              noAudioWatchdog = undefined;
+            }
+            ttfa('first_audio_to_telnyx');
             logger.info(
               { callSid, tenantId, eventType, payloadBytes },
               formatFirstGrokAudioToTelnyxLog({ callSid, eventType, payloadBytes }),
@@ -797,13 +730,203 @@ export async function handleMediaStream(
   });
 
   providerSocket.on('close', () => {
-    if (grokSocket.readyState === WS.OPEN) grokSocket.close();
+    if (grokSocket.readyState === WebSocket.OPEN) grokSocket.close();
   });
 
   providerSocket.on('error', (err) => {
     logger.error({ err, callSid }, 'Provider WebSocket error');
-    if (grokSocket.readyState === WS.OPEN) grokSocket.close();
+    if (grokSocket.readyState === WebSocket.OPEN) grokSocket.close();
   });
+
+  // Prep overlaps the Grok TLS handshake. Do not await OpenAI embeddings
+  // before the opener — KB is injected after the greeting response.done.
+  const [capped, identified, tenantRows, settingsRows] = await Promise.all([
+    isPromoTrialCapped(tenantId),
+    isOutbound ? Promise.resolve(null) : identifyCaller(fromNumber, tenantId),
+    db.select({ timezone: tenants.timezone, name: tenants.name, vertical: tenants.vertical, storeTranscripts: tenants.storeTranscripts })
+      .from(tenants)
+      .where(eq(tenants.id, tenantId))
+      .limit(1),
+    db.select({
+      officeHours:    tenantSettings.officeHours,
+      appointmentTypes: tenantSettings.appointmentTypes,
+      transferNumber: tenantSettings.transferNumber,
+      voiceName:      tenantSettings.voiceName,
+      businessContext: tenantSettings.businessContext,
+    })
+      .from(tenantSettings)
+      .where(eq(tenantSettings.tenantId, tenantId))
+      .limit(1),
+  ]);
+
+  if (capped) {
+    logger.info({ tenantId, callId, callSid }, 'Promo-trial cap reached — refusing call');
+    pushActivity(tenantId, 'call_blocked', {
+      callId,
+      callSid,
+      fromNumber,
+      reason: 'promo_trial_cap_reached',
+    });
+    try { grokSocket.close(); } catch { /* ignore */ }
+    try { providerSocket.close(1008, 'Promo trial cap reached'); } catch { /* socket may already be closed */ }
+    return;
+  }
+
+  contact = identified;
+  const tenantRow = tenantRows[0];
+  const settingsRow = settingsRows[0];
+  const tz = tenantRow?.timezone ?? 'America/New_York';
+  const practiceName = tenantRow?.name ?? 'Our Office';
+  vertical = (tenantRow?.vertical ?? 'dental') as Vertical;
+  storeTranscripts = tenantRow?.storeTranscripts ?? true;
+  const apptTypes    = (settingsRow?.appointmentTypes ?? []) as AppointmentType[];
+  const officeHours  = (settingsRow?.officeHours ?? {}) as OfficeHours;
+  sessionVoice = resolveSessionGrokVoice({
+    isDemo,
+    ...(voice ? { demoVoice: voice } : {}),
+    ...(settingsRow?.voiceName ? { tenantVoice: settingsRow.voiceName } : {}),
+  });
+
+  let leadFirstName: string | null = null;
+  let inboundAfterHours = false;
+  const inboundPromptArgs = {
+    practiceName,
+    vertical,
+    timezone: tz,
+    officeHours,
+    appointmentTypes: apptTypes,
+    providers: [] as string[],
+    caller: isDemo ? null : contact,
+    workflowHint: 'new_contact' as 'new_contact' | 'existing_contact' | 'after_hours',
+    transferNumber: settingsRow?.transferNumber ?? null,
+    businessContext: settingsRow?.businessContext ?? null,
+    ...(adHocTask && { adHocTask }),
+    ...(isDemo && { isDemo: true as const }),
+    ...(isDemo && language && { demoLanguage: language }),
+  };
+
+  if (isOutbound && campaignContactId) {
+    workflow = 'outbound_qualification';
+    const [lead] = await db
+      .select({ firstName: campaignContacts.firstName })
+      .from(campaignContacts)
+      .where(eq(campaignContacts.id, campaignContactId))
+      .limit(1);
+    leadFirstName = lead?.firstName ?? null;
+
+    let goalPitch: string | undefined;
+    if (campaignId) {
+      const { outboundCampaigns } = await import('../../db/schema.js');
+      const [c] = await db
+        .select({ goal: outboundCampaigns.goal })
+        .from(outboundCampaigns)
+        .where(eq(outboundCampaigns.id, campaignId))
+        .limit(1);
+      if (c?.goal) {
+        const { findGoal } = await import('../campaigns/campaign-goals.service.js');
+        goalPitch = findGoal(c.goal)?.pitchOverride;
+      }
+    }
+
+    const outboundPrompt = buildOutboundQualificationPrompt({
+      practiceName,
+      vertical,
+      leadFirstName,
+      availableAppointmentTypes: apptTypes.map((t: AppointmentType) => t.name).join(', '),
+      campaignId: campaignId ?? '',
+      campaignContactId,
+      ...(goalPitch && { goalPitch }),
+    });
+    greetingText = firstTurnGreetingText({
+      isDemo,
+      isOutbound: true,
+      practiceName,
+      ...(leadFirstName ? { leadFirstName } : {}),
+      ...(adHocTask ? { adHocTask } : {}),
+    });
+    systemPrompt = `${outboundPrompt}\n\n${alreadySpokenPromptSection(greetingText)}`;
+  } else {
+    const now     = dayjs().tz(tz);
+    const dayName = now.format('ddd').toLowerCase();
+    inboundAfterHours = isAfterHoursCall({
+      now,
+      officeHours,
+      dayKey: dayName,
+      isDemo,
+    });
+    workflow = isDemo
+      ? 'new_contact'
+      : inboundAfterHours
+        ? 'after_hours'
+        : contact
+          ? 'existing_contact'
+          : 'new_contact';
+    inboundPromptArgs.workflowHint = workflow === 'after_hours'
+      ? 'after_hours'
+      : (workflow as 'new_contact' | 'existing_contact');
+
+    greetingText = firstTurnGreetingText({
+      isDemo,
+      isOutbound: false,
+      practiceName,
+      isAfterHours: inboundAfterHours,
+      ...(!isDemo && contact?.firstName ? { callerFirstName: contact.firstName } : {}),
+      ...(adHocTask ? { adHocTask } : {}),
+    });
+    systemPrompt = `${buildSystemPrompt(inboundPromptArgs)}\n\n${alreadySpokenPromptSection(greetingText)}`;
+
+    if (!isDemo) {
+      void import('../knowledge-base/kb.service.js')
+        .then(({ retrieveRelevantChunks }) => {
+          const kbQuery = `${practiceName} ${vertical} ${apptTypes[0]?.name ?? ''}`.trim();
+          return retrieveRelevantChunks(tenantId, kbQuery, 4);
+        })
+        .then((kbChunks) => {
+          if (!kbChunks.length) return;
+          pendingKbPrompt = `${buildSystemPrompt({
+            ...inboundPromptArgs,
+            kbChunks,
+          })}\n\n${alreadySpokenPromptSection(greetingText)}`;
+          injectPendingKb();
+        })
+        .catch((err) => {
+          logger.warn({ err, callSid, tenantId }, 'KB retrieve deferred from greeting failed');
+        });
+    }
+  }
+
+  emitWebhook(tenantId, 'call.started', {
+    callId,
+    callSid,
+    fromNumber,
+    direction: isOutbound ? 'outbound' : 'inbound',
+    vertical,
+  });
+  pushActivity(tenantId, 'call_started', {
+    callId,
+    fromNumber,
+    contactName: contact ? `${contact.firstName} ${contact.lastName}` : undefined,
+  });
+
+  void saveCallState({
+    callId,
+    rcCallId: callSid,
+    tenantId,
+    fromNumber,
+    toNumber: '',
+    contact,
+    workflow,
+    currentStep: 'greeting',
+    retryCount: 0,
+    collectedData: isOutbound ? { campaignContactId, campaignId, vertical } : { vertical },
+    startedAt: new Date().toISOString(),
+    lastActivityAt: new Date().toISOString(),
+    elevenLabsSessionId: null,
+  });
+
+  promptReady = true;
+  ttfa('prompt_ready');
+  trySendSessionUpdate();
 }
 
 // ---- Helpers ----

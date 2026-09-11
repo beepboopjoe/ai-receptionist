@@ -96,8 +96,14 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
    * Do NOT send OpenAI-only `input_audio_transcription.model: whisper-1` —
    * xAI rejects unknown transcription models and then keeps the PCM default.
    *
-   * Send this on WS open; wait for `session.updated` before response.create
-   * so the greeting is encoded as PCMU, not the pre-update default.
+   * reasoning.effort MUST be "none" on phone calls. xAI defaults this to
+   * "high" on grok-voice-think-fast, which burns ~20–30s thinking before
+   * the first greeting TTS. tools: [] so a default web/x_search cannot
+   * stall the opener. Both are documented session fields.
+   *
+   * Send this as soon as the WS is open and the prompt is ready; wait for
+   * `session.updated` before the first spoken turn so PCMU (not default PCM)
+   * is on the wire.
    */
   static buildSessionUpdate(
     params: CreateVoiceSessionParams & { sessionId: string; silenceDurationMs?: number },
@@ -111,6 +117,8 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
       session: {
         instructions: params.systemPrompt,
         voice,
+        reasoning: { effort: 'none' as const },
+        tools: [] as unknown[],
         audio: {
           input: {
             format: inputCodec,
@@ -137,9 +145,9 @@ export class GrokVoiceAdapter implements IVoiceAdapter {
   }
 
   /**
-   * Kick the first agent turn so the callee hears a greeting without
-   * speaking first. Send after session.update (same order as the working
-   * Telnyx↔Grok devmode bridge).
+   * Bare response.create — fallback only if force_message yields no audio.
+   * The live path uses buildGrokForceMessage() so TTS does not wait on the
+   * thinking loop.
    */
   static buildGreetingCreate() {
     return { type: 'response.create' as const };
