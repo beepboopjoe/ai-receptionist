@@ -32,7 +32,7 @@ describe('test call replaces Try your AI', () => {
     expect(sidebar).toContain("href: '/test-call'");
     expect(sidebar).toContain("href: '/support'");
     expect(sidebar).toContain("label: 'Help'");
-    expect(sidebar).toContain("href: '/platform/support'");
+    expect(sidebar).toContain('href="/platform/support"');
     expect(sidebar).not.toMatch(/Try your AI/);
     expect(sidebar).not.toContain("href: '/voice-demo'");
   });
