@@ -43,9 +43,12 @@ describe('normalizeCallMeLanguage', () => {
     }
   });
 
-  it('English sample opening is the closer AI-reveal line', async () => {
-    const { DEMO_CLOSER_OPENING_EN } = await import('../modules/voice-agent/call-me-demo.prompt.js');
-    expect(CALL_ME_LANG_GREETING.en).toBe(DEMO_CLOSER_OPENING_EN);
+  it('English sample opening is the representative line (no AI, no receptionist)', async () => {
+    const { DEMO_OPENING_EN } = await import('../modules/voice-agent/call-me-demo.prompt.js');
+    expect(CALL_ME_LANG_GREETING.en).toBe(DEMO_OPENING_EN);
+    expect(CALL_ME_LANG_GREETING.en).toMatch(/representative of Telfin/i);
+    expect(CALL_ME_LANG_GREETING.en).not.toMatch(/receptionist/i);
+    expect(CALL_ME_LANG_GREETING.en).not.toMatch(/\bAI\b/i);
   });
 });
 

@@ -18,6 +18,7 @@ export interface UpsertDemoLeadInput {
   phoneE164: string;
   callId?: string | null;
   draft: DemoLeadDraft;
+  transcript?: string | null;
   log?: DemoCallMeBootLog;
 }
 
@@ -40,10 +41,12 @@ export async function upsertDemoLead(
         id: demoLeads.id,
         name: demoLeads.name,
         business: demoLeads.business,
+        email: demoLeads.email,
         language: demoLeads.language,
         voice: demoLeads.voice,
         closed: demoLeads.closed,
         notes: demoLeads.notes,
+        transcript: demoLeads.transcript,
         callId: demoLeads.callId,
       })
       .from(demoLeads)
@@ -52,10 +55,12 @@ export async function upsertDemoLead(
 
     const name = preferExisting(input.draft.name, existing?.name);
     const business = preferExisting(input.draft.business, existing?.business);
+    const email = preferExisting(input.draft.email, existing?.email);
     const language = input.draft.language.trim() || existing?.language || 'en';
     const voice = input.draft.voice.trim() || existing?.voice || 'aurora';
     const closed = input.draft.closed || Boolean(existing?.closed);
     const notes = preferExisting(input.draft.notes, existing?.notes);
+    const transcript = preferExisting(input.transcript ?? '', existing?.transcript);
     const callId = input.callId ?? existing?.callId ?? null;
 
     if (existing) {
@@ -64,10 +69,12 @@ export async function upsertDemoLead(
         .set({
           name,
           business,
+          email,
           language,
           voice,
           closed,
           notes,
+          transcript,
           callId,
           updatedAt: new Date(),
         })
@@ -85,10 +92,13 @@ export async function upsertDemoLead(
         phoneE164: phone,
         name,
         business,
+        email,
+        source: 'call_me',
         language,
         voice,
         closed,
         notes,
+        transcript,
         callId,
       })
       .returning({ id: demoLeads.id });
@@ -137,16 +147,23 @@ export async function enrichDemoLeadFromCall(params: {
   log?: DemoCallMeBootLog;
 }): Promise<void> {
   const extracted = extractDemoLeadFromTranscript(params.transcript, params.summary);
+  const transcriptText = params.transcript
+    .map((line) => `${line.role ?? '?'}: ${(line.text ?? '').trim()}`)
+    .filter((line) => !line.endsWith(':'))
+    .join('\n')
+    .slice(0, 8000);
   await upsertDemoLead({
     phoneE164: params.phoneE164,
     draft: emptyDemoLeadDraft({
       name: extracted.name,
       business: extracted.business,
+      email: extracted.email,
       language: extracted.languageHint || params.language || 'en',
       voice: params.voice || 'aurora',
       closed: extracted.closed,
       notes: extracted.notes,
     }),
+    ...(transcriptText && { transcript: transcriptText }),
     ...(params.callId != null && { callId: params.callId }),
     ...(params.log && { log: params.log }),
   });
