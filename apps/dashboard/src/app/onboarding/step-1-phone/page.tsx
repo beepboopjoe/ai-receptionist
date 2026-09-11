@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import useSWR, { mutate } from 'swr';
@@ -15,6 +15,14 @@ function formatDid(e164: string): string {
 }
 
 export default function Step1PhonePage() {
+  return (
+    <Suspense fallback={<div className="card p-6 text-sm text-gray-500">Loading phone setup…</div>}>
+      <Step1PhoneInner />
+    </Suspense>
+  );
+}
+
+function Step1PhoneInner() {
   const vertical = useVertical();
   const router = useRouter();
   const searchParams = useSearchParams();
