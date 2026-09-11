@@ -1736,6 +1736,17 @@ export async function adminPlugin(app: FastifyInstance) {
     async (request, reply) => {
       const { tenantId, id: actorId } = request.authUser;
 
+      const { getTenantDemoFlags, UPGRADE_TO_GO_LIVE_MESSAGE } = await import(
+        '../billing/demo-account.js'
+      );
+      const demo = await getTenantDemoFlags(tenantId);
+      if (demo.isDemo) {
+        return reply.status(402).send({
+          error: 'upgrade_required',
+          message: UPGRADE_TO_GO_LIVE_MESSAGE,
+        });
+      }
+
       // Activate tenant
       await activateTenant(tenantId);
 

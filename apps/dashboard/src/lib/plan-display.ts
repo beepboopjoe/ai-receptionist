@@ -2,8 +2,8 @@
 // Enterprise (and any override) uses -1 as the unlimited sentinel.
 
 const PLAN_LABELS: Record<string, string> = {
-  trial: 'Free Trial',
-  starter: 'Free Trial',
+  trial: 'Free',
+  starter: 'Free',
   growth: 'Growth',
   scale: 'Scale',
   business: 'Business',
@@ -12,7 +12,7 @@ const PLAN_LABELS: Record<string, string> = {
 
 /** Human plan name. Unknown keys fall back to the raw value. */
 export function planDisplayName(plan: string | null | undefined): string {
-  if (!plan) return 'Free Trial';
+  if (!plan) return 'Free';
   return PLAN_LABELS[plan] ?? plan;
 }
 

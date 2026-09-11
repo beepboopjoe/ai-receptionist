@@ -130,10 +130,10 @@ export function useGoLive(): GoLiveStatus {
         : hasPendingPort
           ? 'A port is in progress, but go-live uses the auto-assigned Telfin DID — forwarding works today.'
           : isTrial
-            ? 'Trial does not include a dedicated inbound DID. Subscribe (Growth includes 2 numbers) or buy one to receive calls.'
+            ? 'Free does not include a dedicated inbound DID. Upgrade (Growth includes 2 numbers) to receive calls.'
             : 'We’ll auto-assign a US inbound DID on paid go-live. Forward your existing line to it.',
-      href: hasPhone ? '/settings/phone-numbers' : isTrial ? '/pricing' : '/settings/phone-numbers',
-      cta: hasPhone ? 'Forwarding instructions' : isTrial ? 'Subscribe to get a number' : 'Get a number',
+      href: hasPhone ? '/settings/phone-numbers' : isTrial ? '/billing' : '/settings/phone-numbers',
+      cta: hasPhone ? 'Forwarding instructions' : isTrial ? 'Upgrade to get a number' : 'Get a number',
       done: phoneReady,
     },
     {

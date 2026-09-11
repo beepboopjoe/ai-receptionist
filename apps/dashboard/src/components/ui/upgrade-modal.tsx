@@ -1,11 +1,13 @@
 'use client';
 // ============================================================
-// UpgradeModal — shown when user hits usage limits or
-// tries to access locked features (Starter → Growth)
+// UpgradeModal — shown when a user hits a locked feature or
+// tries to go live from a Free / demo account.
+// Prices and minute/number counts come from the shared catalog.
 // ============================================================
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { X, Zap, CheckCircle } from 'lucide-react';
+import { getPlan } from '@ai-receptionist/shared';
 
 export type UpgradeReason =
   | 'usage_limit'
@@ -14,12 +16,21 @@ export type UpgradeReason =
   | 'second_number'
   | 'pro_analytics'
   | 'multi_location'
-  | 'knowledge_base';
+  | 'knowledge_base'
+  | 'go_live';
 
 interface UpgradeModalProps {
   open: boolean;
   onClose: () => void;
   reason?: UpgradeReason;
+}
+
+const growth = getPlan('growth')!;
+const scale = getPlan('scale')!;
+const business = getPlan('business')!;
+
+function usdMo(price: number): string {
+  return `$${price}/mo`;
 }
 
 const MODAL_CONTENT: Record<
@@ -29,92 +40,104 @@ const MODAL_CONTENT: Record<
   usage_limit: {
     icon: '⚡',
     title: "You're running low on AI minutes",
-    description: "You've used 80%+ of your monthly AI minutes. Upgrade to Growth for 3× the capacity before you hit overage charges.",
+    description: `You've used 80%+ of your monthly AI minutes. Upgrade to ${growth.name} for more included time before overage charges.`,
     features: [
-      '600 AI minutes/month (vs 200 on Starter)',
-      'Priority support',
-      'Outbound campaign access',
+      `${growth.monthlyMinutes.toLocaleString()} AI minutes/month`,
+      `${growth.includedPhoneNumbers} local phone numbers included`,
+      'Outbound campaigns and two-way SMS',
     ],
-    cta: 'Upgrade to Growth · $179/mo',
-    targetPlan: 'Growth',
+    cta: `Upgrade to ${growth.name} · ${usdMo(growth.monthlyPrice)}`,
+    targetPlan: growth.name,
   },
   outbound_locked: {
     icon: '📣',
-    title: 'Outbound campaigns require Growth',
-    description: 'AI calling campaigns — dial lead lists, qualify prospects, and book appointments automatically — are available on Growth and Scale plans.',
+    title: `Outbound campaigns require ${growth.name}`,
+    description: 'AI calling campaigns — dial lead lists, qualify prospects, and book appointments automatically — are available on paid plans.',
     features: [
       'Upload leads via CSV',
       'AI dials and qualifies automatically',
       'Books appointments from cold leads',
     ],
-    cta: 'Upgrade to Growth · $199/mo',
-    targetPlan: 'Growth',
+    cta: `Upgrade to ${growth.name} · ${usdMo(growth.monthlyPrice)}`,
+    targetPlan: growth.name,
   },
   sms_locked: {
     icon: '💬',
     title: 'Two-way SMS requires a paid plan',
-    description: 'Upgrade to Starter (or any paid plan) to send and receive SMS with your contacts, plus automated 24h + 2h appointment reminders.',
+    description: `Upgrade to ${growth.name} (or any paid plan) to send and receive SMS with your contacts, plus automated 24h + 2h appointment reminders.`,
     features: [
       'Two-way SMS inbox with your contacts',
       'Automated appointment reminders (24h + 2h)',
       'Missed-call text-back replies under 10s',
     ],
-    cta: 'Upgrade to Starter · $79/mo',
-    targetPlan: 'Starter',
+    cta: `Upgrade to ${growth.name} · ${usdMo(growth.monthlyPrice)}`,
+    targetPlan: growth.name,
   },
   second_number: {
     icon: '📱',
-    title: 'Additional phone numbers require Scale',
-    description: 'Adding a second location or phone line is available on Scale and above.',
+    title: `Additional phone numbers require ${scale.name}`,
+    description: `${growth.name} includes ${growth.includedPhoneNumbers} numbers. ${scale.name} includes ${scale.includedPhoneNumbers} — plus extras at the add-on rate.`,
     features: [
-      '2 phone numbers on Scale',
+      `${scale.includedPhoneNumbers} phone numbers included on ${scale.name}`,
       'Multi-location AI configurations',
       'Separate AI configurations per line',
     ],
-    cta: 'Upgrade to Scale · $399/mo',
-    targetPlan: 'Scale',
+    cta: `Upgrade to ${scale.name} · ${usdMo(scale.monthlyPrice)}`,
+    targetPlan: scale.name,
   },
   pro_analytics: {
     icon: '📊',
-    title: 'Advanced analytics require Scale',
-    description: 'Call quality scores, conversion funnels, and custom reports — available on Scale plan.',
+    title: `Advanced analytics require ${scale.name}`,
+    description: 'Call quality scores, conversion funnels, and custom reports — available on Scale and above.',
     features: [
       'Call quality scoring per conversation',
       'Conversion funnel analytics',
       'Custom report builder & CSV export',
     ],
-    cta: 'Upgrade to Scale · $399/mo',
-    targetPlan: 'Scale',
+    cta: `Upgrade to ${scale.name} · ${usdMo(scale.monthlyPrice)}`,
+    targetPlan: scale.name,
   },
   multi_location: {
     icon: '🏢',
-    title: 'Multi-location management requires Scale',
+    title: `Multi-location management requires ${scale.name}`,
     description: 'Manage multiple locations, each with its own phone number and AI configuration.',
     features: [
-      '2 phone numbers included',
+      `${scale.includedPhoneNumbers} phone numbers included`,
       'Per-location AI configuration',
       'Unified analytics dashboard',
     ],
-    cta: 'Upgrade to Scale · $399/mo',
-    targetPlan: 'Scale',
+    cta: `Upgrade to ${scale.name} · ${usdMo(scale.monthlyPrice)}`,
+    targetPlan: scale.name,
   },
   knowledge_base: {
     icon: '📚',
-    title: 'Knowledge Base is available on the Business plan',
+    title: `Knowledge Base is available on the ${business.name} plan`,
     description: 'Upload PDFs and Word docs so the AI answers from your fee schedules, FAQs, and policies. Most teams start with Curate-My-Agent — full document search is a Business feature.',
     features: [
       'Upload PDF, DOCX, TXT, and Markdown',
       '500 documents / 2 GB storage',
       'AI grounds every call in your docs',
     ],
-    cta: 'Upgrade to Business · $599/mo',
-    targetPlan: 'Business',
+    cta: `Upgrade to ${business.name} · ${usdMo(business.monthlyPrice)}`,
+    targetPlan: business.name,
+  },
+  go_live: {
+    icon: '📞',
+    title: 'Upgrade to go live',
+    description: `You're exploring the dashboard. A dedicated inbound number and AI receptionist activation unlock on ${growth.name} and above.`,
+    features: [
+      `${growth.includedPhoneNumbers} local phone numbers included`,
+      `${growth.monthlyMinutes.toLocaleString()} AI call minutes every month`,
+      'Activate your receptionist and forward your existing line',
+    ],
+    cta: `Upgrade to ${growth.name} · ${usdMo(growth.monthlyPrice)}`,
+    targetPlan: growth.name,
   },
 };
 
 export function UpgradeModal({ open, onClose, reason = 'usage_limit' }: UpgradeModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  const content = MODAL_CONTENT[reason];
+  const content = MODAL_CONTENT[reason] ?? MODAL_CONTENT.go_live;
 
   // Close on Escape key
   useEffect(() => {

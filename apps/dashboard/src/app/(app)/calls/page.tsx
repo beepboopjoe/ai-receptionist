@@ -10,8 +10,10 @@ import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 import { useLiveCalls } from '@/lib/useLiveCalls';
 import { LiveCallDrawer } from '@/components/dashboard/live-call-drawer';
 import { SectionAgent } from '@/components/dashboard/section-agent';
+import { usePlan } from '@/lib/usePlan';
 
 export default function CallsPage() {
+  const { isDemoAccount } = usePlan();
   const [filter, setFilter] = useState<'all' | 'missed'>('all');
   const { data, isLoading, mutate } = useSWR(
     ['calls', filter],
@@ -135,8 +137,13 @@ export default function CallsPage() {
             hint={
               filter === 'missed'
                 ? 'Great news — your AI has been picking up. Missed calls would appear here.'
-                : 'Once your AI receptionist answers a call, it will show up here with a transcript and outcome.'
+                : isDemoAccount
+                  ? 'Explore the dashboard for now. Upgrade to go live and real calls will appear here.'
+                  : 'Once your AI receptionist answers a call, it will show up here with a transcript and outcome.'
             }
+            {...(isDemoAccount && filter !== 'missed'
+              ? { cta: { label: 'Upgrade to go live', href: '/billing' } }
+              : {})}
           />
         ) : (
           <div className="divide-y divide-gray-50">

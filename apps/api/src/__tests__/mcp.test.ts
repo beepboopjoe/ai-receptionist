@@ -124,7 +124,7 @@ class MemoryMcpStore implements McpStore {
       return {
         ok: false,
         code: 'SmsNotEnabled',
-        message: 'SMS is not enabled for this tenant. Two-way SMS requires the Starter plan or above.',
+        message: 'SMS is not enabled for this tenant. Two-way SMS requires the Growth plan or above.',
       };
     }
     return { ok: true, messageId: `msg-${tenantId}-${input.to}` };

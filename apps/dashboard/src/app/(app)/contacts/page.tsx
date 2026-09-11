@@ -10,8 +10,10 @@ import { ListRowSkeleton } from '@/components/ui/skeleton';
 import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 import { useToast } from '@/components/ui/toast';
 import { SectionAgent } from '@/components/dashboard/section-agent';
+import { usePlan } from '@/lib/usePlan';
 
 export default function ContactsPage() {
+  const { isDemoAccount } = usePlan();
   const vertical = useVertical();
   const toast = useToast();
   const [search, setSearch] = useState('');
@@ -144,11 +146,15 @@ export default function ContactsPage() {
               hint={
                 search
                   ? 'Try a different name, phone, or email.'
-                  : `${heading} appear here when someone calls your AI. You can also import a CSV during setup.`
+                  : isDemoAccount
+                    ? `${heading} appear here after you go live. Explore the dashboard, then upgrade when you are ready.`
+                    : `${heading} appear here when someone calls your AI. You can also import a CSV during setup.`
               }
               {...(search
                 ? {}
-                : { cta: { label: 'Call your AI', href: '/dashboard#test-call' } })}
+                : isDemoAccount
+                  ? { cta: { label: 'Upgrade to go live', href: '/billing' } }
+                  : { cta: { label: 'Call your AI', href: '/dashboard#test-call' } })}
             />
           </div>
         ) : (

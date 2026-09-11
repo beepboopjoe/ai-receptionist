@@ -5,17 +5,23 @@ import { useState } from 'react';
 import { callsApi, phoneNumbersApi } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useGoLive, type GoLiveStep } from '@/lib/useGoLive';
+import { usePlan } from '@/lib/usePlan';
+import { DemoUpgradeCard } from '@/components/dashboard/demo-upgrade-card';
 import { ForwardYourLineCard } from '@/components/settings/forward-your-line-card';
 import useSWR from 'swr';
 
 export function GoLiveChecklist() {
   const goLive = useGoLive();
+  const { isDemoAccount, loading: planLoading } = usePlan();
   const { data: phonesPayload } = useSWR('phone-numbers', () => phoneNumbersApi.list());
   const did =
     (phonesPayload?.data ?? []).find(
       (n) => (n.provisionStatus ?? 'active') === 'active' && n.phoneE164?.startsWith('+')
     )?.phoneE164 ?? null;
-  if (goLive.loading) return null;
+  if (goLive.loading || planLoading) return null;
+  if (isDemoAccount) {
+    return <DemoUpgradeCard />;
+  }
   if (goLive.ready) {
     return (
       <div className="space-y-4">

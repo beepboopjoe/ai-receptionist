@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import useSWR, { mutate } from 'swr';
 import { onboardingApi, callsApi, phoneNumbersApi } from '@/lib/api';
 import { CheckCircle, Circle, ArrowLeft, Zap, Phone, Loader2, AlertCircle } from 'lucide-react';
+import { usePlan } from '@/lib/usePlan';
+import { DemoUpgradeCard } from '@/components/dashboard/demo-upgrade-card';
 
 export default function Step5ActivatePage() {
   const router = useRouter();
+  const { isDemoAccount } = usePlan();
   const { data: status } = useSWR('onboarding-status', () => onboardingApi.getStatus());
   const { data: phones } = useSWR('phone-numbers', () => phoneNumbersApi.list());
   const [activating, setActivating] = useState(false);
@@ -192,6 +195,12 @@ export default function Step5ActivatePage() {
         </div>
       </div>
 
+      {isDemoAccount ? (
+        <DemoUpgradeCard
+          title="Upgrade to activate"
+          body="Receptionist activation and a dedicated inbound number unlock on a paid plan. You can keep exploring the dashboard in the meantime."
+        />
+      ) : (
       <div className="card p-6 bg-brand-600 text-white text-center">
         <Zap size={36} className="mx-auto mb-3 opacity-90" />
         <p className="text-xl font-bold mb-1">Ready to go live?</p>
@@ -207,6 +216,7 @@ export default function Step5ActivatePage() {
           {activating ? 'Activating…' : '🚀 Go Live!'}
         </button>
       </div>
+      )}
 
       <button onClick={() => router.back()} className="btn-secondary">
         <ArrowLeft size={16} /> Back

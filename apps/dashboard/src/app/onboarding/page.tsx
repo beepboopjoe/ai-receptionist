@@ -3,6 +3,8 @@ import useSWR from 'swr';
 import { onboardingApi } from '@/lib/api';
 import Link from 'next/link';
 import { CheckCircle, Circle, ChevronRight } from 'lucide-react';
+import { usePlan } from '@/lib/usePlan';
+import { DemoUpgradeCard } from '@/components/dashboard/demo-upgrade-card';
 
 const STEPS = [
   { num: 1, label: 'Pick your industry', href: '/onboarding/step-0-industry' },
@@ -14,12 +16,20 @@ const STEPS = [
 ];
 
 export default function OnboardingIndexPage() {
+  const { isDemoAccount } = usePlan();
   const { data } = useSWR('onboarding-status', () => onboardingApi.getStatus());
   const status = data as any;
   const currentStep = status?.uiStep ?? status?.currentStep ?? 1;
 
   return (
-    <div className="card divide-y divide-gray-50">
+    <div className="space-y-6">
+      {isDemoAccount && (
+        <DemoUpgradeCard
+          title="Upgrade to go live"
+          body="These steps are an optional preview. Phone provisioning and receptionist activation unlock after you subscribe."
+        />
+      )}
+      <div className="card divide-y divide-gray-50">
       {STEPS.map(({ num, label, href }) => {
         const isComplete = num < currentStep;
         const isCurrent = num === currentStep;
@@ -46,13 +56,16 @@ export default function OnboardingIndexPage() {
                 {label}
               </p>
               {isCurrent && (
-                <p className="text-xs text-brand-500 mt-0.5">← Start here</p>
+                <p className="text-xs text-brand-500 mt-0.5">
+                  {isDemoAccount ? '← Optional preview' : '← Start here'}
+                </p>
               )}
             </div>
             <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
           </Link>
         );
       })}
+      </div>
     </div>
   );
 }

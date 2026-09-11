@@ -6,7 +6,7 @@
 // SWR caches the request for 60 s and deduplicates concurrent calls.
 // ============================================================
 import useSWR from 'swr';
-import { planAllowsKb } from '@ai-receptionist/shared';
+import { isUnpaidDemoAccount, planAllowsKb } from '@ai-receptionist/shared';
 import { billingApi } from './api';
 
 export type PlanTier = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise';
@@ -30,6 +30,11 @@ export interface PlanState {
   promoTrial: boolean;
   /** true when promoTrial && minutesUsed >= minutesIncluded — call paths are blocked */
   capReached: boolean;
+  /**
+   * Unpaid dashboard-demo account (trial/unknown, not a platform-granted
+   * promo trial). Browse the UI; phone provision + activate stay behind upgrade.
+   */
+  isDemoAccount: boolean;
   loading: boolean;
 }
 
@@ -53,6 +58,7 @@ export function usePlan(): PlanState {
     isHighUsage: (b?.usagePercent ?? 0) >= 80,
     promoTrial: b?.promoTrial ?? false,
     capReached: b?.capReached ?? false,
+    isDemoAccount: !isLoading && isUnpaidDemoAccount(plan, b?.promoTrial ?? false),
     loading: isLoading,
   };
 }

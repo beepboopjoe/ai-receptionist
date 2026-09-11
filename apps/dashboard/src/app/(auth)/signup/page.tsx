@@ -317,7 +317,7 @@ export default function SignupPage() {
               <p className="text-xs text-gray-400 mb-3">
                 {fromPricingPage && planInfo.paid
                   ? "Confirm your plan — you'll continue to secure payment after creating your account."
-                  : "Pick a plan. Paid plans charge immediately via Stripe; the free trial activates on signup."}
+                  : "Pick a plan. Paid plans charge immediately via Stripe. Free lets you explore the dashboard — upgrade when you are ready to go live."}
               </p>
 
               <div className="space-y-2">
@@ -438,8 +438,8 @@ export default function SignupPage() {
               {fromPricingPage && planInfo.paid
                 ? `You'll be taken to Stripe to complete your ${planInfo.name} (${planInfo.priceDisplay}) subscription.`
                 : planInfo.paid
-                  ? `You'll start on the free 10-minute trial; upgrade to ${planInfo.name} (${planInfo.priceDisplay}) any time from the dashboard.`
-                  : 'No credit card required. 10 AI minutes to explore.'}
+                  ? `You'll start on Free so you can explore the dashboard; upgrade to ${planInfo.name} (${planInfo.priceDisplay}) any time from Billing.`
+                  : 'No credit card required. Explore the dashboard, then upgrade to go live.'}
             </p>
           </form>
 
