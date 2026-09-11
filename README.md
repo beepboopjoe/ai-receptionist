@@ -70,6 +70,7 @@ Login to any seed tenant with `owner@<slug>.example.com` / `demo1234`. Slugs:
 | Outbound webhooks | `apps/api/src/modules/webhooks/` |
 | Activity feed (WebSocket) | `apps/api/src/modules/activity/` |
 | MCP (Claude / Cursor) | `apps/api/src/modules/mcp/` · docs: `docs/telfin-mcp.md` |
+| Affiliates / referrals | `apps/api/src/modules/affiliates/` · docs: `docs/AFFILIATE.md` · admin UI `/platform/affiliates` |
 | Reusable UI primitives | `apps/dashboard/src/components/ui/` |
 | Tenant context provider | `apps/dashboard/src/lib/TenantProvider.tsx` |
 | Feature flags | `apps/dashboard/src/lib/featureFlags.ts` |

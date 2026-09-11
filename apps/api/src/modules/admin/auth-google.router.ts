@@ -20,6 +20,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { OAuth2Client } from 'google-auth-library';
 import { randomBytes } from 'node:crypto';
 import { config } from '../../config.js';
+import { normalizeAffiliateCode } from '../affiliates/affiliate.helpers.js';
 
 const SCOPES = ['openid', 'email', 'profile'];
 
@@ -29,11 +30,14 @@ interface PluginOpts {
    * shape we hand back to the dashboard. Swap this out for the real
    * DB-backed implementation once Postgres is wired up.
    */
-  resolveUser: (profile: { googleId: string; email: string; name?: string; picture?: string }) => Promise<{
+  resolveUser: (
+    profile: { googleId: string; email: string; name?: string | undefined; picture?: string | undefined },
+    extras?: { referralCode?: string | undefined }
+  ) => Promise<{
     token: string;
     refreshToken: string;
     isNewUser: boolean;
-    user: { id: string; email: string; role: string; firstName?: string; lastName?: string };
+    user: { id: string; email: string; role: string; firstName?: string | undefined; lastName?: string | undefined };
     tenant: { id: string; name: string; slug: string; plan: string };
   }>;
 }
@@ -56,11 +60,11 @@ export const googleAuthPlugin: (opts: PluginOpts) => FastifyPluginAsync =
     }
 
     // In-memory state store (CSRF protection). For prod use Redis.
-    const stateStore = new Map<string, number>();
+    const stateStore = new Map<string, { ts: number; ref?: string }>();
     const STATE_TTL_MS = 10 * 60 * 1000;
 
     // ── Step 1: start the flow ──────────────────────────────
-    app.get('/auth/google', async (_req, reply) => {
+    app.get<{ Querystring: { ref?: string } }>('/auth/google', async (req, reply) => {
       if (!configured) {
         return reply.code(501).send({
           error: 'Google sign-in not configured',
@@ -70,10 +74,11 @@ export const googleAuthPlugin: (opts: PluginOpts) => FastifyPluginAsync =
       }
 
       const state = randomBytes(16).toString('hex');
-      stateStore.set(state, Date.now());
+      const ref = normalizeAffiliateCode(typeof req.query.ref === 'string' ? req.query.ref : '');
+      stateStore.set(state, { ts: Date.now(), ...(ref ? { ref } : {}) });
       // Clean expired state entries opportunistically
-      for (const [k, ts] of stateStore) {
-        if (Date.now() - ts > STATE_TTL_MS) stateStore.delete(k);
+      for (const [k, entry] of stateStore) {
+        if (Date.now() - entry.ts > STATE_TTL_MS) stateStore.delete(k);
       }
 
       const params = new URLSearchParams({
@@ -104,8 +109,8 @@ export const googleAuthPlugin: (opts: PluginOpts) => FastifyPluginAsync =
           return reply.code(400).send({ error: 'Missing code or state' });
         }
 
-        const issuedAt = stateStore.get(state);
-        if (!issuedAt || Date.now() - issuedAt > STATE_TTL_MS) {
+        const issued = stateStore.get(state);
+        if (!issued || Date.now() - issued.ts > STATE_TTL_MS) {
           return reply.code(400).send({ error: 'Invalid or expired state' });
         }
         stateStore.delete(state);
@@ -123,17 +128,21 @@ export const googleAuthPlugin: (opts: PluginOpts) => FastifyPluginAsync =
             return reply.code(400).send({ error: 'Invalid Google identity' });
           }
 
-          const resolved = await resolveUser({
-            googleId: payload.sub,
-            email: payload.email,
-            name: payload.name,
-            picture: payload.picture,
-          });
+          const resolved = await resolveUser(
+            {
+              googleId: payload.sub,
+              email: payload.email,
+              ...(payload.name !== undefined ? { name: payload.name } : {}),
+              ...(payload.picture !== undefined ? { picture: payload.picture } : {}),
+            },
+            issued.ref ? { referralCode: issued.ref } : undefined
+          );
 
           const target = new URL(`${dashboardUrl}/auth/google-complete`);
           target.searchParams.set('token', resolved.token);
           target.searchParams.set('refresh', resolved.refreshToken);
           if (resolved.isNewUser) target.searchParams.set('new', '1');
+          if (issued.ref) target.searchParams.set('ref', issued.ref);
           return reply.redirect(target.toString());
         } catch (err) {
           app.log.error({ err }, 'Google OAuth callback failed');

@@ -8,6 +8,8 @@
 import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BRAND_ICON_INITIALS } from '@/lib/brand';
+import { authApi } from '@/lib/api';
+import { clearReferralCode, persistReferralCode, readReferralCode } from '@/lib/referral';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +37,22 @@ function GoogleCompleteInner() {
     } catch {
       // ignore
     }
-    router.replace(isNew ? '/onboarding/plan' : '/dashboard');
+
+    const fromUrl = params.get('ref');
+    if (fromUrl) persistReferralCode(fromUrl);
+    const referralCode = fromUrl || readReferralCode();
+
+    void (async () => {
+      if (isNew && referralCode) {
+        try {
+          await authApi.attributeAffiliate(referralCode);
+          clearReferralCode();
+        } catch {
+          /* best-effort — Google signup already attributed server-side when state carried ref */
+        }
+      }
+      router.replace(isNew ? '/onboarding/plan' : '/dashboard');
+    })();
   }, [params, router]);
 
   return null;

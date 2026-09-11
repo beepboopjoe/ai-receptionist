@@ -167,10 +167,10 @@ export async function stripeWebhookPlugin(app: FastifyInstance): Promise<void> {
           break;
         }
         case 'invoice.paid': {
-          // Subscription status sync arrives via customer.subscription.updated.
-          // Here we record an affiliate commission event if the tenant
-          // was attributed at signup. Idempotent — duplicate webhook
-          // deliveries collide on the (invoice, affiliate) unique index.
+          // Paid conversion (Affiliate v1): invoice.paid with amount_paid > 0.
+          // $0 trial invoices do not create a commission. Duplicate Stripe
+          // deliveries are ignored via stripe_webhook_events PK + the
+          // (stripe_invoice_id, affiliate_id) unique index.
           const invoice = event.data.object;
           const customerId =
             typeof invoice.customer === 'string'
@@ -180,10 +180,14 @@ export async function stripeWebhookPlugin(app: FastifyInstance): Promise<void> {
             const tenantId = await tenantIdForStripeCustomer(customerId);
             if (tenantId) {
               try {
+                const paidAtUnix = invoice.status_transitions?.paid_at ?? invoice.created;
                 const result = await recordCommissionEvent({
                   tenantId,
                   stripeInvoiceId: invoice.id ?? '',
                   invoiceAmountCents: invoice.amount_paid,
+                  ...(typeof paidAtUnix === 'number'
+                    ? { invoicePaidAt: new Date(paidAtUnix * 1000) }
+                    : {}),
                 });
                 if (result) {
                   app.log.info(

@@ -19,6 +19,7 @@ import { auditLog } from '../../audit/audit-logger.js';
 import { DEFAULT_APPT_TYPES_BY_VERTICAL } from './router.js';
 import type { JwtPayload } from './auth.middleware.js';
 import type { FastifyInstance } from 'fastify';
+import { attributeTenant } from '../affiliates/affiliate.service.js';
 
 interface GoogleProfile {
   googleId: string;
@@ -67,7 +68,10 @@ export function makeResolveGoogleUser(app: FastifyInstance) {
     return t;
   }
 
-  return async function resolveGoogleUser(profile: GoogleProfile): Promise<ResolvedUser> {
+  return async function resolveGoogleUser(
+    profile: GoogleProfile,
+    extras?: { referralCode?: string | undefined }
+  ): Promise<ResolvedUser> {
     const normalizedEmail = profile.email.toLowerCase().trim();
 
     // 1. Returning user: matched by google_id
@@ -203,8 +207,19 @@ export function makeResolveGoogleUser(app: FastifyInstance) {
       action: 'tenant.registered',
       entityType: 'tenant',
       entityId: tenant.id,
-      metadata: { signupMethod: 'google' },
+      metadata: {
+        signupMethod: 'google',
+        ...(extras?.referralCode ? { referralCode: extras.referralCode } : {}),
+      },
     });
+
+    if (extras?.referralCode) {
+      try {
+        await attributeTenant({ tenantId: tenant.id, code: extras.referralCode });
+      } catch {
+        // Invalid / inactive code must never block Google signup.
+      }
+    }
 
     const tokens = issueTokens(user);
     return {

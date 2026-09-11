@@ -102,7 +102,8 @@ export function CookieConsentBanner() {
               <span>
                 <span className="block text-sm font-semibold text-cream-900">Essential</span>
                 <span className="block text-xs text-cream-600">
-                  Always on. Sign-in, security, and storing this preference.
+                  Always on. Sign-in, security, storing this preference, and first-party
+                  affiliate referral (<code>telfin_ref</code>) when you use a partner link.
                 </span>
               </span>
             </label>

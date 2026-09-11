@@ -108,6 +108,7 @@ export const DEFAULT_APPT_TYPES_BY_VERTICAL: Record<string, Array<{ id: string; 
 // so we have one source of truth.
 import { VERTICAL_VALUES as VALID_VERTICALS, isVertical, getPlan, resolvePlanLimits, PLANS } from '@ai-receptionist/shared';
 import { requirePlatformAdmin } from '../platform/platform.router.js';
+import { attributeTenant } from '../affiliates/affiliate.service.js';
 
 export async function adminPlugin(app: FastifyInstance) {
   // ================================================================
@@ -188,12 +189,13 @@ export async function adminPlugin(app: FastifyInstance) {
   app.post('/auth/register', {
     config: { rateLimit: { max: 3, timeWindow: '1 hour' } },
   }, async (request, reply) => {
-    const { businessName, email, password, aiUseCase, vertical } = request.body as {
+    const { businessName, email, password, aiUseCase, vertical, referralCode } = request.body as {
       businessName: string;
       email: string;
       password: string;
       aiUseCase?: 'inbound' | 'outbound' | 'both';
       vertical?: string;
+      referralCode?: string;
     };
 
     if (!businessName || !email || !password) {
@@ -256,6 +258,14 @@ export async function adminPlugin(app: FastifyInstance) {
       },
     });
 
+    if (referralCode) {
+      try {
+        await attributeTenant({ tenantId: tenant.id, code: referralCode });
+      } catch {
+        // Invalid / inactive code must never block signup.
+      }
+    }
+
     auditLog({
       tenantId: tenant.id,
       actorType: 'admin_user',
@@ -263,7 +273,7 @@ export async function adminPlugin(app: FastifyInstance) {
       action: 'tenant.registered',
       entityType: 'tenant',
       entityId: tenant.id,
-      metadata: { aiUseCase },
+      metadata: { aiUseCase, ...(referralCode ? { referralCode } : {}) },
     });
 
     const payload: Omit<JwtPayload, 'iat' | 'exp'> = {

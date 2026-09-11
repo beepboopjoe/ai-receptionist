@@ -143,7 +143,7 @@ export async function partnerPlugin(app: FastifyInstance): Promise<void> {
       requestedAmountCents: Math.floor(amountCents),
       payoutEmail: payoutEmail.trim(),
       payoutMethod: payoutMethod ?? 'paypal',
-      note,
+      ...(note !== undefined ? { note } : {}),
     });
 
     if ('error' in result) {

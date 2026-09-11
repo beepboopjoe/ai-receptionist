@@ -25,7 +25,10 @@ export default function CookiesPage() {
       <ul>
         <li>
           <strong>Essential local storage / cookies</strong> after you sign in (auth and
-          refresh tokens) and to remember cookie preferences
+          refresh tokens), to remember cookie preferences, and a first-party{' '}
+          <code>telfin_ref</code> cookie (90 days) when you arrive via an affiliate
+          link (<code>/?ref=CODE</code> or <code>/r/CODE</code>) so we can credit the
+          partner who referred you. That cookie is not a third-party advertising pixel.
         </li>
         <li>
           <strong>Self-hosted webfonts</strong> served with the app (no runtime request to
