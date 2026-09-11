@@ -6,6 +6,7 @@
 // SWR caches the request for 60 s and deduplicates concurrent calls.
 // ============================================================
 import useSWR from 'swr';
+import { planAllowsKb } from '@ai-receptionist/shared';
 import { billingApi } from './api';
 
 export type PlanTier = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise';
@@ -18,6 +19,8 @@ export interface PlanState {
   analyticsEnabled: boolean;
   /** true for Scale and above — enables multi-location management */
   multiLocationEnabled: boolean;
+  /** true for Business and enterprise — PDF/DOCX Knowledge Base uploads */
+  kbEnabled: boolean;
   minutesUsed: number;
   minutesIncluded: number;
   usagePercent: number;
@@ -43,6 +46,7 @@ export function usePlan(): PlanState {
     outboundEnabled: b?.outboundEnabled ?? false,
     analyticsEnabled: plan === 'scale' || plan === 'business' || plan === 'enterprise',
     multiLocationEnabled: plan === 'scale' || plan === 'business' || plan === 'enterprise',
+    kbEnabled: planAllowsKb(plan),
     minutesUsed: b?.minutesUsed ?? 0,
     minutesIncluded: b?.minutesIncluded ?? 0,
     usagePercent: b?.usagePercent ?? 0,

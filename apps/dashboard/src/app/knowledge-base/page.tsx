@@ -59,7 +59,7 @@ const FAQ = [
   },
   {
     q: 'How many documents can I upload?',
-    a: 'Trial: 2 docs / 2 MB. Growth: 25 docs / 100 MB. Scale, Business, and Enterprise: 500 docs / 2 GB (soft cap).',
+    a: 'Knowledge Base uploads are included on the Business plan (and Enterprise): 500 docs / 2 GB. Lower plans use Curate-My-Agent / business context instead.',
   },
 ];
 
@@ -104,10 +104,10 @@ export default function KnowledgeBaseLandingPage() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/signup?plan=trial"
+              href="/signup?plan=business"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition-colors"
             >
-              Try Free <ArrowRight size={16} />
+              Start on Business <ArrowRight size={16} />
             </Link>
             <Link
               href="/pricing"
@@ -215,16 +215,16 @@ export default function KnowledgeBaseLandingPage() {
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Pricing</p>
           <h2 className="font-serif text-4xl text-cream-900 tracking-tight mb-3">
-            Bundled with every plan.
+            Included on Business.
           </h2>
           <p className="text-cream-600 mb-10">
-            No per-document fees. Document limits scale with your plan.
+            Full PDF/DOCX Knowledge Base is a Business-plan feature. Growth and Scale use Curate-My-Agent.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { plan: 'Trial', docs: '2 docs', size: '2 MB' },
-              { plan: 'Growth', docs: '25 docs', size: '100 MB' },
-              { plan: 'Scale', docs: '500 docs', size: '2 GB' },
+              { plan: 'Trial', docs: '—', size: 'Not included' },
+              { plan: 'Growth', docs: '—', size: 'Not included' },
+              { plan: 'Scale', docs: '—', size: 'Not included' },
               { plan: 'Business+', docs: '500 docs', size: '2 GB' },
             ].map((tier) => (
               <div key={tier.plan} className="bg-white rounded-xl border border-cream-200 p-5">
@@ -271,13 +271,13 @@ export default function KnowledgeBaseLandingPage() {
             <span className="gradient-text">what you teach it.</span>
           </h2>
           <p className="text-cream-400 text-lg mb-10 max-w-xl mx-auto">
-            Start the trial, upload your fee schedule, place a test call. See the difference in 90 seconds.
+            Business plan includes Knowledge Base. Upload your fee schedule, place a test call, see the difference.
           </p>
             <Link
-              href="/signup?plan=trial"
+              href="/signup?plan=business"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition-colors"
             >
-              Try Free <ArrowRight size={16} />
+              Start on Business <ArrowRight size={16} />
             </Link>
           <div className="flex items-center justify-center gap-2 mt-8 text-xs text-cream-500">
             <Shield size={12} />

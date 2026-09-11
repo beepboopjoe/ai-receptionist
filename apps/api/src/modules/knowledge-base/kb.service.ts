@@ -12,9 +12,10 @@
 //                             Called only from kb-process.job.
 //   retrieveRelevantChunks — top-K cosine similarity at call-start.
 //
-// All public functions enforce tenant scoping. Plan-quota enforced
-// in uploadDocument via getUsage(); graceful-fail patterns mirror
-// lead-billing.service (return {ok,reason} rather than throwing).
+// All public functions enforce tenant scoping. Uploads + reprocess
+// require Business / enterprise via assertKbAllowed(). Quota for
+// other plans is 0/0. retrieveRelevantChunks is NOT plan-gated —
+// it returns [] when empty so lower-plan calls still work.
 // ============================================================
 import { db } from '../../db/client.js';
 import { kbDocuments, kbChunks, tenants } from '../../db/schema.js';
@@ -25,31 +26,22 @@ import { sniffMime, parseDocument, SUPPORTED_MIME } from './document-parsers.js'
 import { chunkText } from './chunker.js';
 import { embedTexts, embedQuery } from './openai-embeddings.client.js';
 import { sanitizeKbErrorMessage, KB_PROCESSING_UNAVAILABLE } from './kb-error.js';
+import { assertKbAllowed, getQuotaForPlan, planAllowsKb, type KbQuota } from './kb-plan.js';
 import { kbQueue } from '../../queue/queues.js';
 import pino from 'pino';
 
 const logger = pino({ name: 'kb-service' });
 
-// ---- Plan quotas ------------------------------------------------
+export type { KbQuota };
+export { getQuotaForPlan, planAllowsKb };
 
-export interface KbQuota { docs: number; bytes: number }
-
-export function getQuotaForPlan(plan: string): KbQuota {
-  switch (plan) {
-    case 'enterprise':
-      // Enterprise re-uses the Scale quota by default; lift via per-tenant
-      // override in production if needed.
-      return { docs: config.KB_DOC_LIMIT_SCALE, bytes: config.KB_BYTES_LIMIT_SCALE };
-    case 'business':
-      return { docs: config.KB_DOC_LIMIT_SCALE, bytes: config.KB_BYTES_LIMIT_SCALE };
-    case 'scale':
-      return { docs: config.KB_DOC_LIMIT_SCALE, bytes: config.KB_BYTES_LIMIT_SCALE };
-    case 'growth':
-      return { docs: config.KB_DOC_LIMIT_GROWTH, bytes: config.KB_BYTES_LIMIT_GROWTH };
-    case 'trial':
-    default:
-      return { docs: config.KB_DOC_LIMIT_TRIAL, bytes: config.KB_BYTES_LIMIT_TRIAL };
-  }
+async function loadTenantPlan(tenantId: string): Promise<string> {
+  const [tenantRow] = await db
+    .select({ plan: tenants.plan })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1);
+  return tenantRow?.plan ?? 'trial';
 }
 
 // ---- Public API -------------------------------------------------
@@ -74,6 +66,9 @@ export async function uploadDocument(
   input: UploadInput,
   uploadedBy: string | null = null
 ): Promise<UploadedDocument> {
+  const plan = await loadTenantPlan(tenantId);
+  assertKbAllowed(plan);
+
   const mime = sniffMime(input.filename, input.mimetype);
   if (!SUPPORTED_MIME.has(mime)) {
     throw new ValidationError(`Unsupported file type "${mime}". Use PDF, DOCX, TXT, or MD.`);
@@ -186,6 +181,8 @@ export async function deleteDocument(tenantId: string, docId: string): Promise<v
 }
 
 export async function reprocessDocument(tenantId: string, docId: string): Promise<void> {
+  const plan = await loadTenantPlan(tenantId);
+  assertKbAllowed(plan);
   // Verify ownership + existence.
   await getDocument(tenantId, docId);
   // Wipe any prior chunks; FK cascade handles delete.
@@ -201,6 +198,8 @@ export interface UsageSummary {
   docCount: number;
   totalBytes: number;
   limits: KbQuota;
+  available: boolean;
+  plan: string;
 }
 
 export async function getUsage(tenantId: string): Promise<UsageSummary> {
@@ -212,17 +211,13 @@ export async function getUsage(tenantId: string): Promise<UsageSummary> {
     .from(kbDocuments)
     .where(eq(kbDocuments.tenantId, tenantId));
 
-  const [tenantRow] = await db
-    .select({ plan: tenants.plan })
-    .from(tenants)
-    .where(eq(tenants.id, tenantId))
-    .limit(1);
-
-  const plan = tenantRow?.plan ?? 'trial';
+  const plan = await loadTenantPlan(tenantId);
   return {
     docCount: Number(agg?.docCount ?? 0),
     totalBytes: Number(agg?.totalBytes ?? 0),
     limits: getQuotaForPlan(plan),
+    available: planAllowsKb(plan),
+    plan,
   };
 }
 

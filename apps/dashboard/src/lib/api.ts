@@ -516,10 +516,12 @@ export interface KbUsage {
   docCount: number;
   totalBytes: number;
   limits: { docs: number; bytes: number };
+  available: boolean;
+  plan: string;
 }
 
 export const kbApi = {
-  list: () => apiFetch<{ documents: KbDocument[] }>('/kb/documents'),
+  list: () => apiFetch<{ documents: KbDocument[]; available: boolean }>('/kb/documents'),
   get: (id: string) => apiFetch<KbDocument>(`/kb/documents/${id}`),
   usage: () => apiFetch<KbUsage>('/kb/usage'),
   delete: (id: string) => apiFetch(`/kb/documents/${id}`, { method: 'DELETE' }),
@@ -538,6 +540,15 @@ export const kbApi = {
     });
     if (!res.ok) {
       const body = await res.text();
+      try {
+        const parsed = JSON.parse(body) as { message?: string };
+        if (parsed.message) throw new Error(parsed.message);
+      } catch (err) {
+        if (err instanceof SyntaxError) {
+          throw new Error(`Upload failed (${res.status}): ${body.slice(0, 200)}`);
+        }
+        throw err;
+      }
       throw new Error(`Upload failed (${res.status}): ${body.slice(0, 200)}`);
     }
     return res.json() as Promise<KbDocument>;
