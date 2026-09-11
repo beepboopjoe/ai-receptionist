@@ -100,7 +100,7 @@ const PLAN_COLORS: Record<string, string> = {
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { plan, usagePercent, minutesUsed, minutesIncluded, loading } = usePlan();
+  const { plan, usagePercent, minutesUsed, minutesIncluded, loading, kbEnabled } = usePlan();
   const { has } = useFeatureFlags();
   const analyticsEnabled = has('analytics');
   const goLive = useGoLive();
@@ -167,6 +167,8 @@ export function Sidebar() {
   function renderSettingsLink({ href, label, icon }: { href: string; label: string; icon: string | null }) {
     const isCompliance = icon === 'shield';
     const isSupport = icon === 'lifebuoy';
+    const isKb = href === '/settings/knowledge-base';
+    const kbLocked = isKb && !loading && !kbEnabled;
     const NavIcon = isCompliance ? Shield : isSupport ? LifeBuoy : Settings;
     const showBadge = isCompliance && showComplianceBadge;
     return (
@@ -180,9 +182,11 @@ export function Sidebar() {
             ? 'bg-brand-50 text-brand-700'
             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
         )}
+        title={kbLocked ? 'Knowledge Base — available on the Business plan' : undefined}
       >
         <NavIcon size={16} className="opacity-60 shrink-0" />
         <span className="flex-1">{label}</span>
+        {kbLocked && <Lock size={13} className="opacity-40 shrink-0" />}
         {showBadge && (
           <span
             className="w-2 h-2 rounded-full bg-amber-500 shrink-0"

@@ -13,7 +13,8 @@ export type UpgradeReason =
   | 'sms_locked'
   | 'second_number'
   | 'pro_analytics'
-  | 'multi_location';
+  | 'multi_location'
+  | 'knowledge_base';
 
 interface UpgradeModalProps {
   open: boolean;
@@ -96,6 +97,18 @@ const MODAL_CONTENT: Record<
     ],
     cta: 'Upgrade to Scale · $399/mo',
     targetPlan: 'Scale',
+  },
+  knowledge_base: {
+    icon: '📚',
+    title: 'Knowledge Base is available on the Business plan',
+    description: 'Upload PDFs and Word docs so the AI answers from your fee schedules, FAQs, and policies. Most teams start with Curate-My-Agent — full document search is a Business feature.',
+    features: [
+      'Upload PDF, DOCX, TXT, and Markdown',
+      '500 documents / 2 GB storage',
+      'AI grounds every call in your docs',
+    ],
+    cta: 'Upgrade to Business · $599/mo',
+    targetPlan: 'Business',
   },
 };
 

@@ -181,6 +181,7 @@ export const PLANS: readonly Plan[] = [
       '10 local phone numbers included',
       'Busy periods covered — usage billed in AI minutes',
       'Everything in Scale',
+      'Knowledge Base — upload PDFs the AI answers from',
       'A dedicated person who knows your account',
       'Priority phone + email support',
       'Custom connections built on request',
@@ -249,6 +250,18 @@ export const MINUTE_PACKS = [
  */
 export function getPlan(key: string): Plan | undefined {
   return PLANS.find((p) => p.key === key);
+}
+
+/**
+ * Knowledge Base (PDF/DOCX RAG uploads) is a Business+ feature.
+ * Trial / Growth / Scale / starter / unknown plans do not get uploads.
+ * Voice retrieval still no-ops to [] when a tenant has no chunks.
+ */
+export const KB_PLAN_REQUIRED_MESSAGE =
+  'Knowledge Base is available on the Business plan.';
+
+export function planAllowsKb(plan: string): boolean {
+  return plan === 'business' || plan === 'enterprise';
 }
 
 /**

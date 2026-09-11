@@ -18,6 +18,8 @@ import {
 import { kbApi, type KbDocument, type KbUsage } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { SectionAgent } from '@/components/dashboard/section-agent';
+import { usePlan } from '@/lib/usePlan';
+import { LockedFeature } from '@/components/ui/locked-feature';
 
 function sanitizeKbError(raw: string): string {
   const leaked =
@@ -49,6 +51,7 @@ function formatBytes(n: number): string {
 
 export default function KnowledgeBasePage() {
   const toast = useToast();
+  const { kbEnabled, loading: planLoading } = usePlan();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -64,7 +67,7 @@ export default function KnowledgeBasePage() {
       },
     }
   );
-  const { data: usage } = useSWR<KbUsage>('kb.usage', () => kbApi.usage());
+  const { data: usage } = useSWR<KbUsage>(kbEnabled ? 'kb.usage' : null, () => kbApi.usage());
 
   const docs = list?.documents ?? [];
   const quotaPercent = usage ? Math.min(100, Math.round((usage.totalBytes / Math.max(1, usage.limits.bytes)) * 100)) : 0;
@@ -125,6 +128,28 @@ export default function KnowledgeBasePage() {
         </p>
       </div>
 
+      {!planLoading && !kbEnabled && (
+        <LockedFeature
+          requiredPlan="business"
+          reason="knowledge_base"
+          label="Knowledge Base is available on the Business plan"
+        >
+          <KbLockedStub />
+        </LockedFeature>
+      )}
+
+      {/* Leftover docs on a locked plan can still be deleted (no reprocess). */}
+      {!kbEnabled && !planLoading && docs.length > 0 && (
+        <KbDocumentList
+          docs={docs}
+          isLoading={isLoading}
+          allowReprocess={false}
+          onDelete={handleDelete}
+        />
+      )}
+
+      {kbEnabled && (
+      <>
       {/* ── Usage bar ── */}
       {usage && (
         <div className="card p-5 space-y-3">
@@ -207,56 +232,94 @@ export default function KnowledgeBasePage() {
         />
       </div>
 
-      {/* ── Document list ── */}
-      <div>
-        <h2 className="font-semibold text-gray-900 mb-3">Your documents</h2>
-        {isLoading ? (
-          <p className="text-sm text-gray-500">Loading…</p>
-        ) : docs.length === 0 ? (
-          <div className="card p-10 text-center">
-            <FileText size={28} className="mx-auto text-cream-400 mb-3" />
-            <p className="text-gray-500 text-sm">
-              No documents yet. Upload a PDF or DOCX to give your AI receptionist context about your business.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {docs.map((doc) => (
-              <div key={doc.id} className="card p-4 flex items-center gap-4">
-                <FileText size={20} className="text-cream-500 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 truncate">{doc.filename}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {formatBytes(doc.sizeBytes)} · {doc.chunkCount > 0 ? `${doc.chunkCount} chunks` : 'not yet processed'} · {new Date(doc.createdAt).toLocaleDateString()}
+      <KbDocumentList
+        docs={docs}
+        isLoading={isLoading}
+        allowReprocess
+        onDelete={handleDelete}
+        onReprocess={handleReprocess}
+      />
+      </>
+      )}
+    </div>
+  );
+}
+
+function KbDocumentList({
+  docs,
+  isLoading,
+  allowReprocess,
+  onDelete,
+  onReprocess,
+}: {
+  docs: KbDocument[];
+  isLoading: boolean;
+  allowReprocess: boolean;
+  onDelete: (doc: KbDocument) => void;
+  onReprocess?: (doc: KbDocument) => void;
+}) {
+  return (
+    <div>
+      <h2 className="font-semibold text-gray-900 mb-3">Your documents</h2>
+      {isLoading ? (
+        <p className="text-sm text-gray-500">Loading…</p>
+      ) : docs.length === 0 ? (
+        <div className="card p-10 text-center">
+          <FileText size={28} className="mx-auto text-cream-400 mb-3" />
+          <p className="text-gray-500 text-sm">
+            No documents yet. Upload a PDF or DOCX to give your AI receptionist context about your business.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {docs.map((doc) => (
+            <div key={doc.id} className="card p-4 flex items-center gap-4">
+              <FileText size={20} className="text-cream-500 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900 truncate">{doc.filename}</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {formatBytes(doc.sizeBytes)} · {doc.chunkCount > 0 ? `${doc.chunkCount} chunks` : 'not yet processed'} · {new Date(doc.createdAt).toLocaleDateString()}
+                </p>
+                {doc.errorMessage && (
+                  <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1 mt-1">
+                    ⚠️ {sanitizeKbError(doc.errorMessage)}
                   </p>
-                  {doc.errorMessage && (
-                    <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1 mt-1">
-                      ⚠️ {sanitizeKbError(doc.errorMessage)}
-                    </p>
-                  )}
-                </div>
-                <StatusBadge status={doc.status} />
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {(doc.status === 'failed' || doc.status === 'ready') && (
-                    <button
-                      onClick={() => handleReprocess(doc)}
-                      className="btn-secondary text-xs flex items-center gap-1"
-                      title="Re-parse + re-embed this document"
-                    >
-                      <RefreshCw size={12} /> Reprocess
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDelete(doc)}
-                    className="btn-danger text-xs flex items-center gap-1"
-                  >
-                    <Trash2 size={12} /> Delete
-                  </button>
-                </div>
+                )}
               </div>
-            ))}
-          </div>
-        )}
+              <StatusBadge status={doc.status} />
+              <div className="flex items-center gap-1.5 shrink-0">
+                {allowReprocess && onReprocess && (doc.status === 'failed' || doc.status === 'ready') && (
+                  <button
+                    onClick={() => onReprocess(doc)}
+                    className="btn-secondary text-xs flex items-center gap-1"
+                    title="Re-parse + re-embed this document"
+                  >
+                    <RefreshCw size={12} /> Reprocess
+                  </button>
+                )}
+                <button
+                  onClick={() => onDelete(doc)}
+                  className="btn-danger text-xs flex items-center gap-1"
+                >
+                  <Trash2 size={12} /> Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function KbLockedStub() {
+  return (
+    <div className="card border-2 border-dashed border-cream-300 p-10 text-center space-y-3">
+      <Upload size={32} className="mx-auto text-cream-400" />
+      <p className="font-medium text-gray-700">Drop files here or click to choose</p>
+      <p className="text-xs text-gray-500">PDF · DOCX · TXT · MD · 10 MB max per file</p>
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden max-w-sm mx-auto">
+        <div className="h-full w-1/3 bg-brand-600 rounded-full" />
       </div>
     </div>
   );

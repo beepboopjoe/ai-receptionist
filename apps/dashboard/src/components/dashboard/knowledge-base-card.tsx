@@ -9,7 +9,8 @@
 // ============================================================
 'use client';
 import Link from 'next/link';
-import { BookOpen, ArrowRight } from 'lucide-react';
+import { BookOpen, ArrowRight, Lock } from 'lucide-react';
+import { usePlan } from '@/lib/usePlan';
 
 interface KnowledgeBaseCardProps {
   eyebrow?: string;
@@ -26,6 +27,9 @@ export function KnowledgeBaseCard({
   cta = 'Upload your docs',
   compact = false,
 }: KnowledgeBaseCardProps) {
+  const { kbEnabled, loading } = usePlan();
+  const locked = !loading && !kbEnabled;
+  const resolvedCta = locked ? 'Available on Business' : cta;
   return (
     <Link
       href="/settings/knowledge-base"
@@ -57,7 +61,8 @@ export function KnowledgeBaseCard({
           </p>
         </div>
         <span className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 text-white text-sm font-semibold px-4 py-2 hover:bg-brand-700 transition-colors whitespace-nowrap">
-          {cta} <ArrowRight size={13} />
+          {locked ? <Lock size={13} /> : null}
+          {resolvedCta} <ArrowRight size={13} />
         </span>
       </div>
     </Link>

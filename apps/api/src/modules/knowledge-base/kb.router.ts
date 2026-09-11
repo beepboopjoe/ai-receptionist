@@ -19,6 +19,7 @@ import {
   getUsage,
 } from './kb.service.js';
 import { ValidationError } from '../../lib/errors.js';
+import { assertKbAllowed } from './kb-plan.js';
 
 export async function kbRoutes(
   app: FastifyInstance,
@@ -30,6 +31,8 @@ export async function kbRoutes(
     { onRequest: [app.requireRole('admin', 'owner')] },
     async (request, reply) => {
       const { tenantId, userId } = request.user as { tenantId: string; userId?: string };
+      const usage = await getUsage(tenantId);
+      assertKbAllowed(usage.plan);
 
       // Single-file upload (multipart). If multiple files are sent, use the first only.
       const parts = request.parts();
@@ -65,8 +68,9 @@ export async function kbRoutes(
     { onRequest: [app.authenticate] },
     async (request) => {
       const { tenantId } = request.user as { tenantId: string };
+      const usage = await getUsage(tenantId);
       const docs = await listDocuments(tenantId);
-      return { documents: docs };
+      return { documents: docs, available: usage.available };
     }
   );
 
@@ -98,6 +102,8 @@ export async function kbRoutes(
     { onRequest: [app.requireRole('admin', 'owner')] },
     async (request) => {
       const { tenantId } = request.user as { tenantId: string };
+      const usage = await getUsage(tenantId);
+      assertKbAllowed(usage.plan);
       await reprocessDocument(tenantId, request.params.id);
       return { ok: true };
     }

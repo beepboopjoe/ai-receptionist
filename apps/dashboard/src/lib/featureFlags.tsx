@@ -29,7 +29,8 @@ export type FeatureFlag =
   | 'custom_voice'
   | 'sso'
   | 'priority_support'
-  | 'crm_integrations';
+  | 'crm_integrations'
+  | 'knowledge_base';
 
 /** Lowest plan tier required for each flag. Anything above also gets it.
  *  Phase 23: Starter is removed; everything that used to gate at 'starter'
@@ -45,6 +46,7 @@ const PLAN_REQUIREMENT: Record<FeatureFlag, PlanTier> = {
   sso:                 'enterprise',
   priority_support:    'business',
   crm_integrations:    'growth',
+  knowledge_base:      'business',
 };
 
 /** Tier ordering — higher index = more capable plan. */
@@ -68,6 +70,7 @@ export const FLAG_LABELS: Record<FeatureFlag, string> = {
   sso:                'SAML / SSO',
   priority_support:   'Priority support',
   crm_integrations:   'CRM integrations',
+  knowledge_base:     'Knowledge Base',
 };
 
 export interface FeatureFlagApi {

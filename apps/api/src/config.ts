@@ -212,16 +212,18 @@ const envSchema = z.object({
   // Endpoints respond 503 with setup instructions when OPENAI_API_KEY unset.
   OPENAI_API_KEY: z.string().default(''),
   OPENAI_EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
-  /** Per-tenant document count + total byte limits by plan tier. */
-  KB_DOC_LIMIT_STARTER: z.coerce.number().int().min(0).default(5),
-  KB_DOC_LIMIT_GROWTH:  z.coerce.number().int().min(0).default(25),
+  /** Per-tenant document count + total byte limits by plan tier.
+   *  KB uploads are Business+ only (`planAllowsKb`). Lower-plan
+   *  defaults are 0 so quota is a second fence. SCALE values are
+   *  the Business / enterprise quota (500 docs / 2 GB). */
+  KB_DOC_LIMIT_STARTER: z.coerce.number().int().min(0).default(0),
+  KB_DOC_LIMIT_GROWTH:  z.coerce.number().int().min(0).default(0),
   KB_DOC_LIMIT_SCALE:   z.coerce.number().int().min(0).default(500),
-  KB_BYTES_LIMIT_STARTER: z.coerce.number().int().min(0).default(10_485_760),       // 10 MB
-  KB_BYTES_LIMIT_GROWTH:  z.coerce.number().int().min(0).default(104_857_600),      // 100 MB
+  KB_BYTES_LIMIT_STARTER: z.coerce.number().int().min(0).default(0),
+  KB_BYTES_LIMIT_GROWTH:  z.coerce.number().int().min(0).default(0),
   KB_BYTES_LIMIT_SCALE:   z.coerce.number().int().min(0).default(2_147_483_648),    // 2 GB
-  /** Trial tenants get the Starter quota by default. */
-  KB_DOC_LIMIT_TRIAL: z.coerce.number().int().min(0).default(2),
-  KB_BYTES_LIMIT_TRIAL: z.coerce.number().int().min(0).default(2_097_152),          // 2 MB
+  KB_DOC_LIMIT_TRIAL: z.coerce.number().int().min(0).default(0),
+  KB_BYTES_LIMIT_TRIAL: z.coerce.number().int().min(0).default(0),
 });
 
 /** False when required env is missing — /health still binds; /health/ready is degraded. */
