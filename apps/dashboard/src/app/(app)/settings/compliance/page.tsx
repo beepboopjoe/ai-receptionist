@@ -537,12 +537,10 @@ export default function CompliancePage() {
           </p>
           <p className="text-xs text-gray-400">
             Questions about our compliance posture or a countersigned BAA?{' '}
-            <a
-              href={`mailto:${BRAND_SUPPORT_EMAIL}`}
-              className="text-brand-600 hover:underline"
-            >
-              Contact {BRAND_SUPPORT_EMAIL}
-            </a>
+            <Link href="/support" className="text-brand-600 hover:underline">
+              Submit a support ticket
+            </Link>
+            {' '}or email {BRAND_SUPPORT_EMAIL}.
           </p>
         </div>
       </section>

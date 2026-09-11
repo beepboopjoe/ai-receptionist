@@ -84,10 +84,10 @@ export default function SupportPage() {
           <LifeBuoy size={22} className="text-white" />
         </div>
         <div>
-          <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Help &amp; Support</h1>
+          <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Contact support</h1>
           <p className="text-cream-600 mt-1 max-w-2xl">
-            Tell us what&apos;s going on — bugs, billing questions, feature ideas, anything. We read every message
-            and reply directly to your account email, usually within 1 business day.
+            Submit a ticket — bugs, billing questions, feature ideas, or a client situation you need
+            help with. We read every message and reply to your account email, usually within 1 business day.
           </p>
         </div>
       </div>
@@ -96,7 +96,7 @@ export default function SupportPage() {
         {/* ── Submit form ──────────────────────────────────── */}
         <div className="lg:col-span-3">
           <form onSubmit={handleSubmit} className="card p-6 space-y-5">
-            <h2 className="font-semibold text-gray-900 text-base">Send us a message</h2>
+            <h2 className="font-semibold text-gray-900 text-base">Submit a ticket</h2>
 
             {/* Category picker */}
             <div>
@@ -162,7 +162,7 @@ export default function SupportPage() {
               {submitting ? (
                 <><Loader2 size={15} className="animate-spin" /> Sending…</>
               ) : (
-                <><Send size={15} /> Send message</>
+                <><Send size={15} /> Submit ticket</>
               )}
             </button>
 
@@ -177,8 +177,8 @@ export default function SupportPage() {
         <div className="lg:col-span-2">
           <div className="card">
             <div className="px-5 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-900 text-sm">Your messages</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Tickets you&apos;ve sent — newest first</p>
+              <h2 className="font-semibold text-gray-900 text-sm">Your tickets</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Newest first — we reply by email</p>
             </div>
 
             {tickets.length === 0 ? (

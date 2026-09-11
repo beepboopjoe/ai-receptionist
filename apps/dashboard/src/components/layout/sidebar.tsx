@@ -19,7 +19,7 @@ import {
   Shield,
   Sparkles,
   LifeBuoy,
-  Mic,
+  PhoneOutgoing,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { logout } from '@/lib/auth';
@@ -46,11 +46,12 @@ function buildNav(contactsLabel: string, appointmentsLabel: string) {
     { href: '/dashboard', label: 'Home', icon: LayoutDashboard, requires: undefined as undefined | 'two_way_sms' },
     { href: '/workflows', label: 'Workflows', icon: Sparkles, requires: undefined as undefined | 'two_way_sms' },
     { href: '/calls', label: 'Calls', icon: Phone, requires: undefined as undefined | 'two_way_sms' },
-    { href: '/voice-demo', label: 'Try your AI', icon: Mic, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/test-call', label: 'Test call', icon: PhoneOutgoing, requires: undefined as undefined | 'two_way_sms' },
     { href: '/appointments', label: appointmentsLabel, icon: Calendar, requires: undefined as undefined | 'two_way_sms' },
     { href: '/contacts', label: contactsLabel, icon: Users, requires: undefined as undefined | 'two_way_sms' },
     { href: '/messages', label: 'Messages', icon: MessageSquare, requires: 'two_way_sms' as const },
     { href: '/billing', label: 'Billing', icon: CreditCard, requires: undefined as undefined | 'two_way_sms' },
+    { href: '/support', label: 'Help', icon: LifeBuoy, requires: undefined as undefined | 'two_way_sms' },
   ];
 }
 
@@ -77,7 +78,6 @@ const settingsNavEssentials = [
   { href: '/settings/office-hours', label: 'Office Hours', icon: null },
   { href: '/settings/notifications', label: 'Notifications', icon: null },
   { href: '/settings/team', label: 'Team', icon: null },
-  { href: '/support', label: 'Help & Support', icon: 'lifebuoy' as const },
 ];
 
 const settingsNavAdvanced = [
@@ -154,6 +154,12 @@ export function Sidebar() {
   // Show Platform Admin whenever this email is in ADMIN_EMAILS. Beta
   // founders need the clients list before their own tenant is live.
   const isPlatformAdmin = platformAdmin?.ok === true;
+  const { data: openTickets } = useSWR(
+    isPlatformAdmin ? ['platform-tickets', 'open'] : null,
+    () => platformApi.listTickets({ status: 'open' }),
+    { revalidateOnFocus: true, refreshInterval: 60_000 }
+  );
+  const openTicketCount = openTickets?.data?.length ?? 0;
 
   const isHighUsage = usagePercent >= 80;
   const showUpgradeCta = !loading && plan === 'trial';
@@ -166,10 +172,9 @@ export function Sidebar() {
   // Shared renderer for both Essentials + Advanced settings groups.
   function renderSettingsLink({ href, label, icon }: { href: string; label: string; icon: string | null }) {
     const isCompliance = icon === 'shield';
-    const isSupport = icon === 'lifebuoy';
     const isKb = href === '/settings/knowledge-base';
     const kbLocked = isKb && !loading && !kbEnabled;
-    const NavIcon = isCompliance ? Shield : isSupport ? LifeBuoy : Settings;
+    const NavIcon = isCompliance ? Shield : Settings;
     const showBadge = isCompliance && showComplianceBadge;
     return (
       <Link
@@ -296,20 +301,43 @@ export function Sidebar() {
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {/* Platform-admin — ADMIN_EMAILS. Visible on first-run so the clients list is reachable. */}
           {isPlatformAdmin && (
-            <Link
-              href="/platform"
-              onClick={() => setMobileOpen(false)}
-              className={clsx(
-                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors mb-2 border',
-                pathname === '/platform' || pathname.startsWith('/platform/')
-                  ? 'bg-gradient-to-r from-indigo-50 to-violet-50 text-indigo-700 border-indigo-200'
-                  : 'bg-gradient-to-r from-indigo-50/40 to-violet-50/40 text-indigo-700 border-indigo-100 hover:from-indigo-50 hover:to-violet-50'
-              )}
-            >
-              <Shield size={18} />
-              <span className="flex-1">Platform Admin</span>
-              <Sparkles size={12} className="text-indigo-400" />
-            </Link>
+            <div className="mb-2 space-y-0.5">
+              <Link
+                href="/platform"
+                onClick={() => setMobileOpen(false)}
+                className={clsx(
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors border',
+                  pathname === '/platform' || pathname.startsWith('/platform/affiliates')
+                    ? 'bg-gradient-to-r from-indigo-50 to-violet-50 text-indigo-700 border-indigo-200'
+                    : 'bg-gradient-to-r from-indigo-50/40 to-violet-50/40 text-indigo-700 border-indigo-100 hover:from-indigo-50 hover:to-violet-50'
+                )}
+              >
+                <Shield size={18} />
+                <span className="flex-1">Platform Admin</span>
+                <Sparkles size={12} className="text-indigo-400" />
+              </Link>
+              <Link
+                href="/platform/support"
+                onClick={() => setMobileOpen(false)}
+                className={clsx(
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors border',
+                  pathname === '/platform/support' || pathname.startsWith('/platform/support/')
+                    ? 'bg-gradient-to-r from-indigo-50 to-violet-50 text-indigo-700 border-indigo-200'
+                    : 'bg-gradient-to-r from-indigo-50/40 to-violet-50/40 text-indigo-700 border-indigo-100 hover:from-indigo-50 hover:to-violet-50'
+                )}
+              >
+                <LifeBuoy size={18} />
+                <span className="flex-1">Tickets</span>
+                {openTicketCount > 0 && (
+                  <span
+                    className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-indigo-600 text-white text-[10px] font-bold tabular-nums flex items-center justify-center"
+                    title={`${openTicketCount} open ticket${openTicketCount === 1 ? '' : 's'}`}
+                  >
+                    {openTicketCount}
+                  </span>
+                )}
+              </Link>
+            </div>
           )}
           {nav.map(({ href, label, icon: Icon, requires }) => {
             const locked = requires && !has(requires);

@@ -77,11 +77,16 @@ describe('upgrade modal + demo UI (source)', () => {
 });
 
 describe('paid go-live gates (source)', () => {
-  it('blocks unpaid demo activate and phone purchase with 402, still provisions on paid activate', () => {
+  it('blocks unpaid demo activate, phone purchase, and test-call with 402, still provisions on paid activate', () => {
     const admin = readFileSync(join(srcRoot, 'modules/admin/router.ts'), 'utf8');
     expect(admin).toContain('getTenantDemoFlags');
     expect(admin).toContain("error: 'upgrade_required'");
     expect(admin).toMatch(/ensureInboundDid\(tenantId, \{\s*forceRetry:\s*true\s*\}\)/);
+    expect(admin).toContain("'/calls/test-call'");
+    const testCallIdx = admin.indexOf("'/calls/test-call'");
+    const testCallSlice = admin.slice(testCallIdx, testCallIdx + 900);
+    expect(testCallSlice).toContain('getTenantDemoFlags');
+    expect(testCallSlice).toContain("error: 'upgrade_required'");
 
     const phones = readFileSync(join(srcRoot, 'modules/phone-numbers/phone.router.ts'), 'utf8');
     expect(phones).toContain('getTenantDemoFlags');

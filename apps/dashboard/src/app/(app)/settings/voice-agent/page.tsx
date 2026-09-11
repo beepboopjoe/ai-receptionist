@@ -8,6 +8,7 @@ import { VERTICALS } from '@/lib/verticals';
 import { useToast } from '@/components/ui/toast';
 import { useRouter } from 'next/navigation';
 import { useTenant } from '@/lib/TenantProvider';
+import { usePlan } from '@/lib/usePlan';
 import { VerticalSwitchConfirm } from '@/components/settings/vertical-switch-confirm';
 import { KnowledgeBaseCard } from '@/components/dashboard/knowledge-base-card';
 import {
@@ -141,8 +142,14 @@ export default function VoiceAgentPage() {
   const toast = useToast();
   const router = useRouter();
   const { refresh } = useTenant();
+  const { isDemoAccount } = usePlan();
 
   async function placeTestCall() {
+    if (isDemoAccount) {
+      toast.error('Upgrade to go live before placing a test call.');
+      router.push('/billing');
+      return;
+    }
     if (!transferNumber) {
       toast.error('Save a Staff Transfer Number first.');
       return;
@@ -364,13 +371,19 @@ export default function VoiceAgentPage() {
             />
             <button
               type="button"
-              onClick={placeTestCall}
-              disabled={!transferNumber || placingTestCall}
-              title={transferNumber ? 'Place a test call — your AI will ring your number' : 'Enter a number first'}
+              onClick={isDemoAccount ? () => router.push('/test-call') : placeTestCall}
+              disabled={!isDemoAccount && (!transferNumber || placingTestCall)}
+              title={
+                isDemoAccount
+                  ? 'Test calls go live after upgrade'
+                  : transferNumber
+                    ? 'Place a test call — your AI will ring your number'
+                    : 'Enter a number first'
+              }
               className="inline-flex items-center gap-1.5 px-3 rounded-lg bg-cream-900 text-white text-xs font-semibold hover:bg-cream-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               {placingTestCall ? <Loader2 size={13} className="animate-spin" /> : <Phone size={13} />}
-              Test it now
+              {isDemoAccount ? 'Test call' : 'Test it now'}
             </button>
           </div>
           <p className="text-xs text-gray-400 mt-1">

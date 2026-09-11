@@ -1,16 +1,14 @@
 'use client';
 // ============================================================
-// /workflows — Phase 28a. The Workflows gallery: the centerpiece
-// of the "AI front desk" dashboard.
+// /workflows — gallery of ready-to-run automations.
 //
-// A menu of ready-to-run, comms-native automations grouped into
-// three categories. Each card is a packaging + deep-link layer
-// over a feature that already exists — clicking "Set up" jumps to
-// the surface that powers it. This page has no execution logic and
-// no API calls; it renders buildWorkflowCatalog(vertical).
+// Packaging + deep-link layer over features that already exist.
+// Layout is a calm list with progressive disclosure: inbound
+// workflows stay open; outreach and follow-through start collapsed.
 // ============================================================
+import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import { useVertical } from '@/lib/useVertical';
 import {
   buildWorkflowCatalog,
@@ -24,6 +22,11 @@ import {
 import { useGoLive } from '@/lib/useGoLive';
 
 const CATEGORY_ORDER: WorkflowCategory[] = ['reactive', 'proactive', 'admin'];
+const DEFAULT_OPEN: Record<WorkflowCategory, boolean> = {
+  reactive: true,
+  proactive: false,
+  admin: false,
+};
 
 function resolveWorkflowStatus(
   workflow: WorkflowDef,
@@ -53,17 +56,17 @@ export default function WorkflowsPage() {
 
   const liveCount = catalog.filter((w) => w.status === 'live').length;
   const setupCount = catalog.filter((w) => w.status === 'setup').length;
+  const nextSetup = catalog.find((w) => w.status === 'setup' && w.setupHref);
 
   return (
-    <div className="space-y-8 max-w-6xl">
-      {/* Header */}
+    <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Workflows</h1>
-        <p className="text-gray-500 mt-1 max-w-2xl">
-          Your AI front desk, one menu. Each workflow is a ready-to-run automation — turn it on and
-          it answers, books, reminds, and follows up on its own.
+        <p className="text-gray-500 mt-1">
+          Ready-made automations for your front desk. Start with answering the phone — open the
+          rest when you need them.
         </p>
-        <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-gray-500">
           <span className="inline-flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500" /> {liveCount} live
           </span>
@@ -71,83 +74,114 @@ export default function WorkflowsPage() {
             <span className="w-2 h-2 rounded-full bg-brand-500" /> {setupCount} ready to set up
           </span>
         </div>
+        {nextSetup?.setupHref && (
+          <Link
+            href={nextSetup.setupHref}
+            className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold text-brand-700 hover:text-brand-800"
+          >
+            Next: {nextSetup.name} <ArrowRight size={14} />
+          </Link>
+        )}
       </div>
 
-      {/* Category sections */}
       {CATEGORY_ORDER.map((cat) => {
         const items = catalog.filter((w) => w.category === cat && w.status !== 'coming_soon');
         if (items.length === 0) return null;
-        const meta = CATEGORY_META[cat];
-        return (
-          <section key={cat} className="space-y-4">
-            <div className="border-b border-cream-200 pb-2">
-              <h2 className="font-serif text-xl text-cream-900">{meta.label}</h2>
-              <p className="text-sm text-gray-500 mt-0.5">{meta.tagline}</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {items.map((w) => (
-                <WorkflowCard key={w.id} workflow={w} />
-              ))}
-            </div>
-          </section>
-        );
+        return <WorkflowGroup key={cat} category={cat} items={items} />;
       })}
     </div>
   );
 }
 
-function WorkflowCard({ workflow }: { workflow: WorkflowDef }) {
+function WorkflowGroup({
+  category,
+  items,
+}: {
+  category: WorkflowCategory;
+  items: WorkflowDef[];
+}) {
+  const [open, setOpen] = useState(DEFAULT_OPEN[category]);
+  const meta = CATEGORY_META[category];
+  const setupInGroup = items.filter((w) => w.status === 'setup').length;
+
+  return (
+    <section className="rounded-2xl border border-cream-200 bg-white overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-cream-50/80 transition-colors"
+      >
+        <div className="flex-1 min-w-0">
+          <h2 className="font-semibold text-cream-900">{meta.label}</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{meta.tagline}</p>
+        </div>
+        <span className="text-xs text-gray-400 tabular-nums shrink-0">
+          {items.length}
+          {setupInGroup > 0 ? ` · ${setupInGroup} to set up` : ''}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {open && (
+        <ul className="divide-y divide-cream-100 border-t border-cream-100">
+          {items.map((w) => (
+            <li key={w.id}>
+              <WorkflowRow workflow={w} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function WorkflowRow({ workflow }: { workflow: WorkflowDef }) {
   const Icon = workflow.icon;
   const status = STATUS_META[workflow.status];
   const channel = CHANNEL_META[workflow.channel];
-  const isComingSoon = workflow.status === 'coming_soon';
+  const href = workflow.setupHref;
 
-  const badgeClass =
+  const statusClass =
     workflow.status === 'live'
-      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      ? 'text-emerald-700'
       : workflow.status === 'setup'
-        ? 'bg-brand-50 text-brand-700 border-brand-200'
-        : 'bg-gray-100 text-gray-500 border-gray-200';
+        ? 'text-brand-700'
+        : 'text-gray-400';
 
-  const card = (
-    <div
-      className={`h-full rounded-2xl border bg-white p-5 flex flex-col transition-all ${
-        isComingSoon
-          ? 'border-cream-200 opacity-70'
-          : 'border-cream-200 hover:border-brand-300 hover:shadow-sm'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="w-10 h-10 rounded-xl bg-cream-100 flex items-center justify-center shrink-0">
-          <Icon size={18} className="text-brand-600" />
+  const inner = (
+    <div className="flex items-start gap-3 px-5 py-3.5">
+      <div className="w-8 h-8 rounded-lg bg-cream-100 flex items-center justify-center shrink-0 mt-0.5">
+        <Icon size={15} className="text-brand-600" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="font-medium text-sm text-cream-900">{workflow.name}</h3>
+          <span className={`text-[11px] font-semibold ${statusClass}`}>{status.label}</span>
         </div>
-        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${badgeClass}`}>
-          {status.label}
-        </span>
-      </div>
-      <h3 className="font-semibold text-cream-900 text-sm mb-1">{workflow.name}</h3>
-      <p className="text-xs text-gray-600 leading-relaxed flex-1">{workflow.description}</p>
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-cream-100">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+        <p className="text-xs text-gray-500 leading-relaxed mt-0.5 line-clamp-2">
+          {workflow.description}
+        </p>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mt-1.5">
           {channel.label}
-        </span>
-        {isComingSoon ? (
-          <span className="text-xs font-semibold text-gray-400">Coming soon</span>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 group-hover:gap-1.5 transition-all">
-            {status.cta} <ArrowRight size={12} />
-          </span>
-        )}
+        </p>
       </div>
+      {href && (
+        <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 shrink-0 mt-1 group-hover:gap-1.5 transition-all">
+          {status.cta} <ArrowRight size={12} />
+        </span>
+      )}
     </div>
   );
 
-  if (isComingSoon || !workflow.setupHref) {
-    return <div className="group cursor-default">{card}</div>;
+  if (!href) {
+    return inner;
   }
   return (
-    <Link href={workflow.setupHref} className="group block">
-      {card}
+    <Link href={href} className="group block hover:bg-cream-50/70 transition-colors">
+      {inner}
     </Link>
   );
 }

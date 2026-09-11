@@ -60,16 +60,16 @@ export const CATEGORY_META: Record<
   { label: string; tagline: string }
 > = {
   reactive: {
-    label: 'The front desk picks up',
-    tagline: 'Inbound — your AI answers, books, triages, and never sends a caller to voicemail.',
+    label: 'When someone calls',
+    tagline: 'Answer, book, and triage inbound calls.',
   },
   proactive: {
-    label: 'The outreach you never get to',
-    tagline: 'Outbound — your AI calls and messages on its own to win back, remind, and grow.',
+    label: 'Outreach',
+    tagline: 'Reminders and follow-ups you can turn on when you are ready.',
   },
   admin: {
-    label: 'Keeping the desk tidy',
-    tagline: 'The follow-through that keeps leads warm and the books clean.',
+    label: 'Follow-through',
+    tagline: 'Intake and templates that keep the desk tidy.',
   },
 };
 
