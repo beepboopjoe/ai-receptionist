@@ -14,7 +14,6 @@ import { eq } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '../../lib/errors.js';
 import { createCheckoutSession, createPortalSession, ensureStripeCustomer } from './billing.service.js';
 import { getCurrentUsage } from './usage.service.js';
-import { getUsageLedgerSnapshot } from './usage-ledger.service.js';
 import { getStripe } from './stripe.client.js';
 import { PLANS, getPlan, type PlanKey, type BillingCycle } from '@ai-receptionist/shared';
 import { config } from '../../config.js';
@@ -67,11 +66,11 @@ export async function billingPlugin(app: FastifyInstance): Promise<void> {
   // Returns minutes used vs included for the active billing window,
   // with overage and pct_used precomputed so the dashboard can
   // render the progress bar without doing math.
+  // Internal COGS / carrier estimates stay on Platform Admin — never here.
   app.get('/billing/usage', { onRequest: [app.requireRole('staff')] }, async (request, reply) => {
     const usage = await getCurrentUsage(request.user!.tenantId);
     if (!usage) throw new NotFoundError('Tenant', request.user!.tenantId);
-    const ledger = await getUsageLedgerSnapshot(request.user!.tenantId);
-    return reply.send({ ...usage, ledger });
+    return reply.send(usage);
   });
 
   // ── Voice Clone Add-on Checkout ($49/mo) ───────────────────

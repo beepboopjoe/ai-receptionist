@@ -65,6 +65,13 @@ describe('no vendor names in tenant-facing copy', () => {
     expect(prompt).toContain('Never name infrastructure vendors');
   });
 
+  it('tenant Billing has no vendor names or COGS copy', () => {
+    const billing = readFileSync(join(dashboardRoot, 'app/(app)/billing/page.tsx'), 'utf8');
+    expect(extractCopy(billing).join('\n')).not.toMatch(VENDOR_RE);
+    expect(billing).not.toMatch(/COGS/i);
+    expect(billing).not.toMatch(/Internal ledger/);
+  });
+
   it('tenant-facing phone errors stay vendor-neutral', () => {
     const phones = readFileSync(join(srcRoot, 'modules/phone-numbers/phone.router.ts'), 'utf8');
     expect(phones).toContain("error: 'phone_not_configured'");
