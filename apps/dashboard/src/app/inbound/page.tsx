@@ -113,7 +113,7 @@ export default function InboundPage() {
               href="/signup?plan=trial"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              Try Free — 10 min →
+              Try Free →
             </Link>
             <Link
               href="/pricing"
@@ -347,7 +347,7 @@ export default function InboundPage() {
             href="/signup?plan=trial"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition-colors"
           >
-            Try Free — 10 min →
+            Try Free →
           </Link>
         </div>
       </section>
@@ -372,14 +372,14 @@ export default function InboundPage() {
             Inbound answering on every plan. SMS on paid plans.
           </h2>
           <p className="text-cream-300 mt-4 max-w-xl mx-auto">
-            Free trial is 10 inbound minutes. Growth ($199/mo) adds outbound campaigns, SMS, and 380 minutes. Scale ($399/mo) is 780 minutes; Business ($599/mo) is 1,100. Bilingual + transcripts on all of them.
+            Free explores the dashboard. Growth ($199/mo) adds outbound campaigns, SMS, and 380 minutes. Scale ($399/mo) is 780 minutes; Business ($599/mo) is 1,100. Bilingual + transcripts on all of them.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/signup?plan=trial"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              <Phone size={15} /> Try Free — 10 min
+              <Phone size={15} /> Try Free
             </Link>
             <Link
               href="/pricing#compare"

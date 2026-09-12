@@ -138,7 +138,7 @@ export function OutboundRoi() {
               Try Free →
             </Link>
             <p className="text-[11px] text-cream-500 text-center mt-3">
-              10 inbound minutes · no credit card
+              Free · no credit card · upgrade to go live
             </p>
           </div>
         </div>

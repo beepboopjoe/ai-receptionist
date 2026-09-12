@@ -112,7 +112,7 @@ export default function OutboundPage() {
               href="/signup?plan=trial"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              Try Free — 10 min →
+              Try Free →
             </Link>
             <Link
               href="/pricing"
@@ -329,7 +329,7 @@ export default function OutboundPage() {
             href="/signup?plan=trial"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition-colors"
           >
-            Try Free — 10 min →
+            Try Free →
           </Link>
         </div>
       </section>
@@ -360,7 +360,7 @@ export default function OutboundPage() {
               href="/signup?plan=trial"
               className="glow-btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
             >
-              <Phone size={15} /> Try Free — 10 min
+              <Phone size={15} /> Try Free
             </Link>
             <Link
               href="/pricing#compare"

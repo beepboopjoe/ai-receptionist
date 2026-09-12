@@ -52,15 +52,15 @@ const FAQS = [
   },
   {
     q: 'What phone number do I get?',
-    a: 'Growth includes 2 local numbers, Scale 5, and Business 10. You can also port your existing business line to us for free, or buy additional local numbers at $5/mo each on any paid plan. Trial is bring-your-own (forward your existing line).',
+    a: 'Growth includes 2 local numbers, Scale 5, and Business 10. You can also port your existing business line to us for free, or buy additional local numbers at $5/mo each on any paid plan. Free explores the dashboard — upgrade to go live with a dedicated number.',
   },
   {
     q: 'Can I change plans or cancel at any time?',
     a: 'Yes. Upgrades are prorated and effective immediately. Downgrades apply at the next billing cycle. Monthly plans cancel any time — no fees, no minimums. Annual plans are paid up front but you can cancel auto-renew any time.',
   },
   {
-    q: 'Is there a free trial?',
-    a: 'Yes — sign up free and bring your own number (free porting). You get 10 AI minutes to test the voice and flows with no credit card required. Upgrade to a paid plan for full SMS, outbound campaigns, and more minutes.',
+    q: 'Can I try it free?',
+    a: 'Yes — sign up Free with no credit card. Explore the dashboard and sample the AI. Upgrade to go live with a dedicated number, SMS, outbound campaigns, and included minutes. Growth is $199/mo, Scale $399, Business $599.',
   },
   {
     q: 'Is my data secure? What about HIPAA?',
@@ -331,7 +331,7 @@ export default function PricingPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="font-serif text-4xl text-white mb-3">Ready to stop missing calls?</h2>
           <p className="text-cream-300 mb-10 max-w-xl mx-auto">
-            Try Free with 10 inbound minutes, then pick a paid plan when you&apos;re ready.
+            Sign up Free to explore the dashboard, then upgrade when you&apos;re ready to go live.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link

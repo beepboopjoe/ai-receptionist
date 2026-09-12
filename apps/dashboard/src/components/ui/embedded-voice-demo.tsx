@@ -461,7 +461,7 @@ export function EmbeddedVoiceDemo({ vertical: verticalProp = 'dental' }: { verti
               href="/signup"
               className="block w-full py-2.5 px-4 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold transition-colors"
             >
-              Start free trial →
+              Try Free →
             </Link>
           </div>
         </div>
@@ -566,7 +566,7 @@ export function EmbeddedVoiceDemo({ vertical: verticalProp = 'dental' }: { verti
           href="/signup"
           className="inline-flex items-center gap-2 px-7 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold transition-colors"
         >
-          Start free trial — setup in 10 minutes →
+          Try Free — explore the dashboard →
         </Link>
       </div>
     </div>

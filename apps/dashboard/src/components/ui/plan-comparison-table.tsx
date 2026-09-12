@@ -40,7 +40,7 @@ const SECTIONS: {
   {
     title: 'Core',
     rows: [
-      { label: 'AI voice minutes / month',                cells: ['10 total', '380', '780', '1,100', 'Unlimited'] },
+      { label: 'AI voice minutes / month',                cells: ['Explore', '380', '780', '1,100', 'Unlimited'] },
       { label: '🌐 7 languages (EN ES IT AR FA HY RU)',   cells: [true, true, true, true, true] },
       { label: '24/7 inbound answering',                  cells: [true, true, true, true, true] },
       { label: 'Busy periods covered (billed in AI minutes)', cells: [true, true, true, true, true] },
@@ -61,7 +61,7 @@ const SECTIONS: {
   {
     title: 'Phone numbers',
     rows: [
-      { label: 'Included local phone numbers',                cells: ['BYO', '2', '5', '10', 'Custom'] },
+      { label: 'Included local phone numbers',                cells: ['Upgrade to go live', '2', '5', '10', 'Custom'] },
       { label: 'Bring your own number (free porting)',        cells: [true, true, true, true, true] },
       { label: 'Buy add-on local number ($5/mo each)',        cells: [false, true, true, true, true] },
       { label: 'Toll-free number add-on ($10/mo)',            cells: [false, true, true, true, true] },

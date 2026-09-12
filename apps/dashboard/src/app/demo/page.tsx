@@ -120,7 +120,7 @@ export default function DemoPage() {
             Ready to put your AI receptionist on the line?
           </h2>
           <p className="text-cream-300 mt-4 max-w-xl mx-auto">
-            10 free inbound minutes. No credit card. Set up takes under 10 minutes.
+            Free. No credit card. Explore the dashboard, then upgrade to go live.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
