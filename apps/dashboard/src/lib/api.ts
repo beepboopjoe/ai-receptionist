@@ -705,37 +705,8 @@ export const billingApi = {
       overageChargedCents: number;
       pctUsed: number;
       warningSent: boolean;
-      ledger?: UsageLedgerSnapshot | null;
     }>('/billing/usage'),
 };
-
-export interface UsageLedgerSnapshot {
-  periodStart: string;
-  periodEnd: string;
-  aiMinutes: number;
-  telnyxInboundCents: number;
-  telnyxOutboundCents: number;
-  telnyxSmsCents: number;
-  telnyxSmsCount: number;
-  grokEstimateCents: number;
-  numberMonthlyCents: number;
-  estimatedCogsCents: number;
-  planPriceCents: number;
-  ratesAreEstimates: true;
-  rates: {
-    telnyxInboundCentsPerMin: number;
-    telnyxOutboundCentsPerMin: number;
-    telnyxSmsCents: number;
-    grokCentsPerMin: number;
-  };
-  days: Array<{
-    day: string;
-    aiMinutes: number;
-    telnyxCents: number;
-    grokEstimateCents: number;
-    smsCount: number;
-  }>;
-}
 
 // ---- Phone numbers (Telnyx-backed) ----
 export interface OwnedNumber {
