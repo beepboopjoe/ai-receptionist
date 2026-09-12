@@ -33,3 +33,12 @@ export const POOL_GROWTH_MIN_TOTAL_DIALS_PER_DAY = 150;
  *  The sweep resets each number's rolling dial counter, so the
  *  daily thresholds above are prorated by this factor. */
 export const POOL_SCALING_SWEEPS_PER_DAY = 4;
+
+/** Consecutive dial/provision failures before the CLI cools off. */
+export const POOL_COOLING_AFTER_FAILURES = 1;
+
+/** Consecutive failures before the CLI is excluded until re-enable. */
+export const POOL_BAD_AFTER_FAILURES = 3;
+
+/** How long a cooling CLI stays out of rotation. */
+export const POOL_COOLING_MS = 30 * 60 * 1000;

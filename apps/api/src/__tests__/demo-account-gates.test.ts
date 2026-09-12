@@ -93,5 +93,12 @@ describe('paid go-live gates (source)', () => {
     expect(phones).toContain("error: 'upgrade_required'");
     expect(phones).toContain('purchaseTenantNumber');
     expect(phones).toContain('ensureInboundDid');
+
+    const pool = readFileSync(join(srcRoot, 'modules/outbound-pool/pool.router.ts'), 'utf8');
+    expect(pool).toContain('getTenantDemoFlags');
+    expect(pool).toContain("error: 'upgrade_required'");
+    expect(pool).toContain('/outbound-pool/retry');
+    expect(pool).toContain('/outbound-pool/numbers/:id/reenable');
+    expect(pool).toContain('UPGRADE_TO_GO_LIVE_MESSAGE');
   });
 });

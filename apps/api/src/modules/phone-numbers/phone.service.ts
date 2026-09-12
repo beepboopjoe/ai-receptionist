@@ -128,7 +128,7 @@ export interface OwnedNumber {
 
 export async function listTenantNumbers(tenantId: string): Promise<OwnedNumber[]> {
   // Excludes auto-managed outbound-pool numbers — those have their own
-  // read-only endpoint (/outbound-pool/numbers) and must never appear in
+  // endpoint (/outbound-pool/numbers) and must never appear in
   // the tenant-managed buy/release list.
   const rows = await db
     .select()

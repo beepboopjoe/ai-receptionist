@@ -140,10 +140,10 @@ export default function NewCampaignPage() {
             />
           </div>
           <div className="rounded-lg bg-cream-50 border border-cream-200 px-4 py-3">
-            <p className="text-xs font-semibold text-cream-800 mb-0.5">Caller ID — handled for you</p>
+            <p className="text-xs font-semibold text-cream-800 mb-0.5">Outbound lines (managed)</p>
             <p className="text-xs text-cream-700 leading-relaxed">
-              Calls are placed from your account&apos;s rotating outbound number pool. We provision
-              and rotate the numbers automatically so none of them get spam-flagged — no setup needed.
+              You do not pick a caller ID. Campaigns rotate healthy outbound lines from your
+              managed pool. Your public inbound number stays off this path.
             </p>
           </div>
         </div>

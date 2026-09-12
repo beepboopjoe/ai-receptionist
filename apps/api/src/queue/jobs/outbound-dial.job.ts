@@ -189,8 +189,29 @@ export async function processOutboundDial(job: Job<OutboundDialJobData>): Promis
       callId,                   // ← critical: persists through call lifecycle via client_state
     });
     callSid = result.callSid;
+    if (!campaign.fromNumber) {
+      const { recordPoolDialOutcome } = await import('../../modules/outbound-pool/pool.service.js');
+      await recordPoolDialOutcome({
+        tenantId,
+        phoneE164: fromNumber,
+        outcome: 'success',
+      }).catch((healthErr) => {
+        logger.warn({ err: healthErr, fromNumber }, 'Pool health success write failed');
+      });
+    }
   } catch (err) {
     logger.error({ err, campaignContactId }, 'Telnyx dial failed');
+    if (!campaign.fromNumber) {
+      const { recordPoolDialOutcome } = await import('../../modules/outbound-pool/pool.service.js');
+      await recordPoolDialOutcome({
+        tenantId,
+        phoneE164: fromNumber,
+        outcome: 'failure',
+        reason: 'dial_error',
+      }).catch((healthErr) => {
+        logger.warn({ err: healthErr, fromNumber }, 'Pool health failure write failed');
+      });
+    }
     await db
       .update(campaignContacts)
       .set({ status: 'failed', outcome: 'dial_error', updatedAt: new Date() })
