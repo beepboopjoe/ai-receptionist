@@ -28,7 +28,7 @@ const CallMeWidget = dynamic(
 const FAQS = [
   {
     q: 'Do I need to change my phone system?',
-    a: 'No. Forward calls to your AI line, or we provision a new number. Works with any landline, VoIP, or cell. Setup takes under 10 minutes.',
+    a: 'No. Forward calls to your AI line, or we provision a new number. Works with any landline, VoIP, or cell. Explore the dashboard free; upgrade to go live.',
   },
   {
     q: 'What if a caller has an urgent situation?',
@@ -52,7 +52,7 @@ const FAQS = [
   },
   {
     q: 'Does SMS come included?',
-    a: 'Two-way SMS, appointment reminders (24h + 2h), and missed-call text-backs are included on paid plans (Growth, Scale, Business, Enterprise). The free trial is inbound voice only and does not include SMS. Texts send from your provisioned business number.',
+    a: 'Two-way SMS, appointment reminders (24h + 2h), and missed-call text-backs are included on paid plans (Growth, Scale, Business, Enterprise). Free accounts explore the dashboard and do not include SMS. Texts send from your provisioned business number on a paid plan.',
   },
 ];
 
@@ -293,7 +293,7 @@ export default function LandingPage() {
               {
                 n: '1',
                 title: 'Connect your number',
-                desc: 'Forward your existing line or we provision a new AI number. Works with any phone system in under 10 minutes.',
+                desc: 'Forward your existing line or we provision a new AI number. Works with any phone system. Upgrade to go live.',
               },
               {
                 n: '2',
@@ -501,11 +501,11 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-xs font-bold text-cream-400 uppercase tracking-[0.2em] mb-6">Get started today</p>
           <h2 className="font-serif text-4xl md:text-6xl tracking-tight mb-5 leading-tight">
-            Start in 10 minutes.<br />
-            <span className="gradient-text">No contracts.</span>
+            Explore the dashboard.<br />
+            <span className="gradient-text">Upgrade to go live.</span>
           </h2>
           <p className="text-cream-400 text-lg mb-10 max-w-xl mx-auto">
-            Try the receptionist free, then pick Growth, Scale, Business, or Enterprise when you&apos;re ready.
+            Sign up Free with no card, then pick Growth, Scale, Business, or Enterprise when you&apos;re ready.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -521,7 +521,7 @@ export default function LandingPage() {
               See pricing
             </Link>
           </div>
-          <p className="mt-6 text-sm text-cream-500">Pay monthly or annual · Cancel anytime · Setup under 10 minutes</p>
+          <p className="mt-6 text-sm text-cream-500">Pay monthly or annual · Cancel anytime · Free to explore</p>
         </div>
       </section>
 

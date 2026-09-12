@@ -145,17 +145,19 @@ export function PricingCards({ plans }: PricingCardsProps) {
                 }`}>
                   <div className="flex-1">
                     <p className="text-lg font-black text-cream-900">
-                      {plan.monthlyMinutes === -1 ? '∞' : plan.monthlyMinutes.toLocaleString()}
+                      {isFree ? 'Explore' : plan.monthlyMinutes === -1 ? '∞' : plan.monthlyMinutes.toLocaleString()}
                     </p>
-                    <p className="text-[10px] text-cream-500 font-medium uppercase tracking-wide">AI minutes</p>
+                    <p className="text-[10px] text-cream-500 font-medium uppercase tracking-wide">
+                      {isFree ? 'Dashboard' : 'AI minutes'}
+                    </p>
                   </div>
                   <div className="w-px bg-cream-200" />
                   <div className="flex-1">
                     <p className="text-lg font-black text-cream-900">
-                      {plan.includedPhoneNumbers === -1 ? '∞' : plan.includedPhoneNumbers}
+                      {isFree ? '—' : plan.includedPhoneNumbers === -1 ? '∞' : plan.includedPhoneNumbers}
                     </p>
                     <p className="text-[10px] text-cream-500 font-medium uppercase tracking-wide">
-                      {plan.includedPhoneNumbers === 1 ? 'phone #' : 'phone #s'}
+                      {isFree ? 'Upgrade to go live' : plan.includedPhoneNumbers === 1 ? 'phone #' : 'phone #s'}
                     </p>
                   </div>
                 </div>

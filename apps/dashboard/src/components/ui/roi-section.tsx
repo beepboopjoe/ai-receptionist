@@ -293,7 +293,7 @@ export function RoiSection() {
                 'Busy periods covered — usage billed in AI minutes',
                 'Never calls in sick, never quits, never has a bad day',
                 'Books appointments and captures leads after hours',
-                'Setup in under 10 minutes — no hiring process',
+                'Explore the dashboard free — no hiring process',
               ].map((feat) => (
                 <li key={feat} className="flex items-start gap-3 text-sm text-cream-800">
                   <span className="mt-0.5 w-5 h-5 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">

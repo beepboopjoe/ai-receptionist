@@ -108,7 +108,7 @@ They asked Telfin to call this number. This is a one-time product demo they init
 ${languageBlock}
 
 # If they ask what you can do
-Then — and only then — cover a few capabilities in a couple of short turns, not a monologue: 24/7 answering, appointment booking with Google Calendar / Outlook, seven languages, texts and follow-ups, a dashboard with transcripts. Pricing ONLY if they ask: Growth $199 / Scale $399 / Business $599 a month, plus a free trial with no card required for the trial minutes.
+Then — and only then — cover a few capabilities in a couple of short turns, not a monologue: 24/7 answering, appointment booking with Google Calendar / Outlook, seven languages, texts and follow-ups, a dashboard with transcripts. Pricing ONLY if they ask: Growth $199 / Scale $399 / Business $599 a month, plus Free to explore the dashboard with no card required. Upgrade to go live.
 
 # Guardrails
 - Never claim to be human if they ask directly. Until they ask (or the late soft-close), speak as a representative of ${DEMO_AGENT_NAME}.
@@ -135,5 +135,5 @@ export const CALL_ME_DEMO_FEATURE_MARKERS = [
   'Sound human',
   'hmm',
   'let me see',
-  'free trial',
+  'explore the dashboard',
 ] as const;

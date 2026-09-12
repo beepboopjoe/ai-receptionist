@@ -160,7 +160,12 @@ describe('system prompt stays on-product', () => {
     expect(SITE_CHAT_SYSTEM_PROMPT).toMatch(/Staff Transfer Number/i);
     expect(SITE_CHAT_SYSTEM_PROMPT).toMatch(/Join call/i);
     expect(SITE_CHAT_SYSTEM_PROMPT).toMatch(/ANSWER ONLY/i);
+    expect(SITE_CHAT_SYSTEM_PROMPT).toMatch(/explore the dashboard/i);
+    expect(SITE_CHAT_SYSTEM_PROMPT).toContain('Do not say "free trial"');
+    expect(SITE_CHAT_SYSTEM_PROMPT).toContain('What do you want your AI to do');
+    expect(SITE_CHAT_SYSTEM_PROMPT).not.toMatch(/10 inbound minutes/);
     expect(SITE_CHAT_SYSTEM_PROMPT).not.toContain('$79');
+    expect(SITE_CHAT_SYSTEM_PROMPT).not.toContain('$179');
     expect(SITE_CHAT_SYSTEM_PROMPT).not.toMatch(/\b(Grok|Telnyx|xAI)\b/);
     expect(SITE_CHAT_TRY_FREE_PATH).toBe('/signup?plan=trial');
     expect(DEFAULT_XAI_CHAT_MODEL).toBe('grok-4.3');
