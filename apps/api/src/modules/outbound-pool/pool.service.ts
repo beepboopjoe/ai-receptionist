@@ -21,7 +21,7 @@ import {
   purchaseNumber as telnyxPurchase,
 } from '../phone-numbers/telnyx.client.js';
 import { config } from '../../config.js';
-import { IntegrationError } from '../../lib/errors.js';
+import { IntegrationError, NotFoundError } from '../../lib/errors.js';
 import {
   POOL_GROWTH_INCREMENT,
   POOL_MAX_SIZE,
@@ -30,6 +30,15 @@ import {
   POOL_SCALING_SWEEPS_PER_DAY,
 } from './pool.constants.js';
 import { targetPoolSizeForPlan } from './pool-size.js';
+import { getTenantDemoFlags } from '../billing/demo-account.js';
+import { isUnpaidDemoAccount } from '@ai-receptionist/shared';
+import {
+  coolingUntilAfterFailure,
+  isHealthyForRotation,
+  nextHealthAfterFailure,
+  reenableHealthPatch,
+  type PoolHealth,
+} from './pool-health.js';
 
 export interface PoolNumber {
   id: string;
@@ -40,6 +49,9 @@ export interface PoolNumber {
   totalDials: number;
   provisionStatus: 'provisioning' | 'active' | 'failed';
   provisionError: string | null;
+  healthStatus: PoolHealth;
+  consecutiveFailures: number;
+  coolingUntil: string | null;
 }
 
 /** Active (non-released) pool rows for a tenant. */
@@ -128,6 +140,9 @@ async function provisionPoolNumber(tenantId: string): Promise<PoolNumber> {
     totalDials: 0,
     provisionStatus: 'active',
     provisionError: null,
+    healthStatus: 'active',
+    consecutiveFailures: 0,
+    coolingUntil: null,
   };
 }
 
@@ -137,6 +152,10 @@ async function provisionPoolNumber(tenantId: string): Promise<PoolNumber> {
  * Called from campaign creation and go-live. Not a marketed seat.
  */
 export async function ensureOutboundPool(tenantId: string): Promise<PoolNumber[]> {
+  const demo = await getTenantDemoFlags(tenantId);
+  // Free / dashboard-demo accounts do not get a live pool (#43).
+  if (demo.isDemo) return listOutboundPoolNumbers(tenantId);
+
   const [tenant] = await db
     .select({ plan: tenants.plan })
     .from(tenants)
@@ -146,13 +165,7 @@ export async function ensureOutboundPool(tenantId: string): Promise<PoolNumber[]
   if (target === 0) return listOutboundPoolNumbers(tenantId);
 
   for (let guard = 0; guard < target; guard++) {
-    const rows = await db
-      .select({ value: sql<number>`COUNT(*)` })
-      .from(tenantPhoneNumbers)
-      .where(
-        and(activePoolWhere(tenantId), eq(tenantPhoneNumbers.provisionStatus, 'active'))
-      );
-    const count = Number(rows[0]?.value ?? 0);
+    const count = await countHealthyPoolNumbers(tenantId);
     if (count >= target) break;
     try {
       await provisionPoolNumber(tenantId);
@@ -164,30 +177,101 @@ export async function ensureOutboundPool(tenantId: string): Promise<PoolNumber[]
   return listOutboundPoolNumbers(tenantId);
 }
 
+async function countHealthyPoolNumbers(tenantId: string, now: Date = new Date()): Promise<number> {
+  const rows = await db
+    .select({
+      provisionStatus: tenantPhoneNumbers.provisionStatus,
+      healthStatus: outboundPoolNumberStats.healthStatus,
+      coolingUntil: outboundPoolNumberStats.coolingUntil,
+    })
+    .from(tenantPhoneNumbers)
+    .leftJoin(
+      outboundPoolNumberStats,
+      eq(outboundPoolNumberStats.phoneNumberId, tenantPhoneNumbers.id)
+    )
+    .where(and(activePoolWhere(tenantId), eq(tenantPhoneNumbers.provisionStatus, 'active')));
+
+  return rows.filter((r) =>
+    isHealthyForRotation({
+      provisionStatus: r.provisionStatus,
+      healthStatus: r.healthStatus,
+      coolingUntil: r.coolingUntil,
+      now,
+    })
+  ).length;
+}
+
+async function loadHealthyPoolCandidates(
+  tenantId: string,
+  now: Date
+): Promise<Array<{ id: string; phoneE164: string; healthStatus: PoolHealth; coolingUntil: Date | null }>> {
+  const rows = await db
+    .select({
+      id: tenantPhoneNumbers.id,
+      phoneE164: tenantPhoneNumbers.phoneE164,
+      provisionStatus: tenantPhoneNumbers.provisionStatus,
+      healthStatus: outboundPoolNumberStats.healthStatus,
+      coolingUntil: outboundPoolNumberStats.coolingUntil,
+    })
+    .from(tenantPhoneNumbers)
+    .leftJoin(
+      outboundPoolNumberStats,
+      eq(outboundPoolNumberStats.phoneNumberId, tenantPhoneNumbers.id)
+    )
+    .where(and(activePoolWhere(tenantId), eq(tenantPhoneNumbers.provisionStatus, 'active')));
+
+  return rows
+    .filter((r) =>
+      isHealthyForRotation({
+        provisionStatus: r.provisionStatus,
+        healthStatus: r.healthStatus,
+        coolingUntil: r.coolingUntil,
+        now,
+      })
+    )
+    .map((r) => ({
+      id: r.id,
+      phoneE164: r.phoneE164,
+      healthStatus: ((r.healthStatus ?? 'active') as PoolHealth),
+      coolingUntil: r.coolingUntil ?? null,
+    }));
+}
+
 /**
- * Per-call rotation: pick the least-recently-dialed active pool
- * number and bump its counters atomically. Uses FOR UPDATE SKIP
- * LOCKED so concurrent dial jobs never pick the same "least
- * recent" row in a race; if every stats row is momentarily locked
- * (more concurrent dials than pool numbers), falls back to sharing
- * the least-recent number rather than failing the dial.
+ * Per-call rotation: pick the least-recently-dialed healthy pool
+ * CLI (active, or cooling whose window expired) and bump counters
+ * atomically. Uses FOR UPDATE SKIP LOCKED so concurrent dial jobs
+ * never pick the same "least recent" row in a race; if every stats
+ * row is momentarily locked, falls back to sharing the first
+ * healthy number rather than failing the dial.
  */
 export async function selectPoolNumberForDial(tenantId: string): Promise<string> {
-  const active = await db
-    .select({ id: tenantPhoneNumbers.id, phoneE164: tenantPhoneNumbers.phoneE164 })
-    .from(tenantPhoneNumbers)
-    .where(
-      and(activePoolWhere(tenantId), eq(tenantPhoneNumbers.provisionStatus, 'active'))
-    );
+  const demo = await getTenantDemoFlags(tenantId);
+  if (demo.isDemo) {
+    throw new IntegrationError('telnyx', 'Outbound pool is not available until you upgrade');
+  }
 
-  if (active.length === 0) {
-    // Defensive — pool should exist from campaign creation.
+  const now = new Date();
+  const candidates = await loadHealthyPoolCandidates(tenantId, now);
+
+  if (candidates.length === 0) {
+    // Defensive — pool should exist from campaign creation. Top up
+    // healthy CLIs (bad/cooling do not count toward the floor).
     const pool = await ensureOutboundPool(tenantId);
-    const first = pool[0];
+    const first = pool.find((n) =>
+      isHealthyForRotation({
+        provisionStatus: n.provisionStatus,
+        healthStatus: n.healthStatus,
+        coolingUntil: n.coolingUntil ? new Date(n.coolingUntil) : null,
+        now,
+      })
+    );
     if (!first) throw new IntegrationError('telnyx', 'Outbound pool is empty and could not be provisioned');
     await bumpDialStats(first.id);
     return first.phoneE164;
   }
+
+  const active = candidates;
 
   const byId = new Map(active.map((a) => [a.id, a.phoneE164]));
   const ids = active.map((a) => a.id);
@@ -202,13 +286,20 @@ export async function selectPoolNumberForDial(tenantId: string): Promise<string>
       .for('update', { skipLocked: true });
     if (!stats) return null;
 
+    const pickedRow = active.find((a) => a.id === stats.phoneNumberId);
+    const expireCooling =
+      pickedRow?.healthStatus === 'cooling' &&
+      pickedRow.coolingUntil != null &&
+      pickedRow.coolingUntil <= now;
+
     await trx
       .update(outboundPoolNumberStats)
       .set({
-        lastDialedAt: new Date(),
+        lastDialedAt: now,
         dialsLast24h: sql`${outboundPoolNumberStats.dialsLast24h} + 1`,
         totalDials: sql`${outboundPoolNumberStats.totalDials} + 1`,
-        updatedAt: new Date(),
+        updatedAt: now,
+        ...(expireCooling ? { healthStatus: 'active', coolingUntil: null } : {}),
       })
       .where(eq(outboundPoolNumberStats.id, stats.id));
 
@@ -275,6 +366,13 @@ export async function runPoolScalingSweep(): Promise<{ tenantsScaled: number; nu
   let numbersAdded = 0;
 
   for (const w of tenantWindows) {
+    const [tenant] = await db
+      .select({ plan: tenants.plan, promoTrial: tenants.promoTrial })
+      .from(tenants)
+      .where(eq(tenants.id, w.tenantId))
+      .limit(1);
+    if (isUnpaidDemoAccount(tenant?.plan, tenant?.promoTrial)) continue;
+
     const activeCount = Number(w.activeCount);
     const windowDials = Number(w.windowDials);
     const perNumber = activeCount > 0 ? windowDials / activeCount : 0;
@@ -324,6 +422,9 @@ export async function listOutboundPoolNumbers(tenantId: string): Promise<PoolNum
       totalDials: outboundPoolNumberStats.totalDials,
       provisionStatus: tenantPhoneNumbers.provisionStatus,
       provisionError: tenantPhoneNumbers.provisionError,
+      healthStatus: outboundPoolNumberStats.healthStatus,
+      consecutiveFailures: outboundPoolNumberStats.consecutiveFailures,
+      coolingUntil: outboundPoolNumberStats.coolingUntil,
     })
     .from(tenantPhoneNumbers)
     .leftJoin(
@@ -342,6 +443,9 @@ export async function listOutboundPoolNumbers(tenantId: string): Promise<PoolNum
     totalDials: r.totalDials ?? 0,
     provisionStatus: (r.provisionStatus as PoolNumber['provisionStatus']) ?? 'active',
     provisionError: r.provisionError,
+    healthStatus: ((r.healthStatus ?? 'active') as PoolHealth),
+    consecutiveFailures: r.consecutiveFailures ?? 0,
+    coolingUntil: r.coolingUntil ? r.coolingUntil.toISOString() : null,
   }));
 }
 
@@ -367,4 +471,94 @@ export async function retryOutboundPool(tenantId: string): Promise<PoolNumber[]>
   }
 
   return ensureOutboundPool(tenantId);
+}
+
+/**
+ * Record a successful or failed outbound dial against the CLI that
+ * was used. Failures cool then exclude the number; a later success
+ * (Telnyx accepted the dial) resets the streak.
+ */
+export async function recordPoolDialOutcome(params: {
+  tenantId: string;
+  phoneE164: string;
+  outcome: 'success' | 'failure';
+  reason?: string;
+}): Promise<void> {
+  const [row] = await db
+    .select({
+      phoneNumberId: tenantPhoneNumbers.id,
+      consecutiveFailures: outboundPoolNumberStats.consecutiveFailures,
+    })
+    .from(tenantPhoneNumbers)
+    .innerJoin(
+      outboundPoolNumberStats,
+      eq(outboundPoolNumberStats.phoneNumberId, tenantPhoneNumbers.id)
+    )
+    .where(
+      and(
+        eq(tenantPhoneNumbers.tenantId, params.tenantId),
+        eq(tenantPhoneNumbers.phoneE164, params.phoneE164),
+        eq(tenantPhoneNumbers.purpose, 'outbound_pool'),
+        isNull(tenantPhoneNumbers.releasedAt)
+      )
+    )
+    .limit(1);
+
+  if (!row) return;
+
+  const now = new Date();
+  if (params.outcome === 'success') {
+    await db
+      .update(outboundPoolNumberStats)
+      .set({
+        consecutiveFailures: 0,
+        healthStatus: 'active',
+        coolingUntil: null,
+        lastFailureReason: null,
+        updatedAt: now,
+      })
+      .where(eq(outboundPoolNumberStats.phoneNumberId, row.phoneNumberId));
+    return;
+  }
+
+  const consecutiveFailures = (row.consecutiveFailures ?? 0) + 1;
+  const healthStatus = nextHealthAfterFailure(consecutiveFailures);
+  await db
+    .update(outboundPoolNumberStats)
+    .set({
+      consecutiveFailures,
+      healthStatus,
+      coolingUntil: coolingUntilAfterFailure(healthStatus, now),
+      lastFailureAt: now,
+      lastFailureReason: params.reason ?? 'dial_error',
+      updatedAt: now,
+    })
+    .where(eq(outboundPoolNumberStats.phoneNumberId, row.phoneNumberId));
+}
+
+/** Manual re-enable — puts a bad/cooling CLI back into rotation. */
+export async function reenablePoolNumber(tenantId: string, phoneNumberId: string): Promise<PoolNumber> {
+  const [owned] = await db
+    .select({ id: tenantPhoneNumbers.id })
+    .from(tenantPhoneNumbers)
+    .where(
+      and(
+        eq(tenantPhoneNumbers.id, phoneNumberId),
+        eq(tenantPhoneNumbers.tenantId, tenantId),
+        eq(tenantPhoneNumbers.purpose, 'outbound_pool'),
+        isNull(tenantPhoneNumbers.releasedAt)
+      )
+    )
+    .limit(1);
+  if (!owned) throw new NotFoundError('Outbound line');
+
+  await db
+    .update(outboundPoolNumberStats)
+    .set(reenableHealthPatch())
+    .where(eq(outboundPoolNumberStats.phoneNumberId, phoneNumberId));
+
+  const listed = await listOutboundPoolNumbers(tenantId);
+  const found = listed.find((n) => n.id === phoneNumberId);
+  if (!found) throw new NotFoundError('Outbound line');
+  return found;
 }

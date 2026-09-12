@@ -118,14 +118,14 @@ export default function CampaignsPage() {
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-indigo-900">
-              Caller ID during your promo trial
+              Outbound lines during your promo trial
             </p>
             <p className="text-sm text-indigo-800 mt-1 leading-relaxed">
-              Your outbound calls go out from the trial number you provisioned in
-              Settings → Phone Numbers — not your existing business line. The
-              prospect&apos;s screen will show <strong>just the number</strong>, with no
-              business name. Some carriers may label brand-new numbers as
-              &ldquo;Spam Likely&rdquo; until they build call history.
+              Campaigns dial from managed outbound lines — not your public inbound
+              number and not your existing business line. The prospect&apos;s screen
+              will show <strong>just the number</strong>, with no business name.
+              Some carriers may label brand-new numbers as &ldquo;Spam Likely&rdquo;
+              until they build call history.
             </p>
             <p className="text-sm text-indigo-800 mt-2 leading-relaxed">
               The AI introduces itself with your business name within 2 seconds of

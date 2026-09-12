@@ -247,6 +247,15 @@ export const outboundPoolNumberStats = pgTable(
     lastDialedAt: timestamp('last_dialed_at', { withTimezone: true }),
     dialsLast24h: integer('dials_last_24h').notNull().default(0),
     totalDials: integer('total_dials').notNull().default(0),
+    /**
+     * Rotation health: 'active' | 'cooling' | 'bad'.
+     * Cooling expires at coolingUntil; bad stays out until re-enable.
+     */
+    healthStatus: text('health_status').notNull().default('active'),
+    consecutiveFailures: integer('consecutive_failures').notNull().default(0),
+    coolingUntil: timestamp('cooling_until', { withTimezone: true }),
+    lastFailureAt: timestamp('last_failure_at', { withTimezone: true }),
+    lastFailureReason: text('last_failure_reason'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

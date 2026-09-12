@@ -109,6 +109,16 @@ export async function campaignsPlugin(app: FastifyInstance) {
     async handler(request, reply) {
       const { tenantId } = request.authUser;
       const { id } = request.params as { id: string };
+      const { getTenantDemoFlags, UPGRADE_TO_GO_LIVE_MESSAGE } = await import(
+        '../billing/demo-account.js'
+      );
+      const demo = await getTenantDemoFlags(tenantId);
+      if (demo.isDemo) {
+        return reply.status(402).send({
+          error: 'upgrade_required',
+          message: UPGRADE_TO_GO_LIVE_MESSAGE,
+        });
+      }
       try {
         const campaign = await startCampaign(id, tenantId);
         reply.send(campaign);

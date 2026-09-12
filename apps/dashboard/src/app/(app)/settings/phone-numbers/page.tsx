@@ -37,6 +37,28 @@ function dollarsShort(cents: number): string {
   return cents % 100 === 0 ? `$${cents / 100}` : dollars(cents);
 }
 
+function HealthBadge({ status }: { status: 'active' | 'cooling' | 'bad' }) {
+  if (status === 'bad') {
+    return (
+      <span className="inline-flex items-center text-xs font-medium text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded-full">
+        Excluded
+      </span>
+    );
+  }
+  if (status === 'cooling') {
+    return (
+      <span className="inline-flex items-center text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">
+        Cooling
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded-full">
+      Active
+    </span>
+  );
+}
+
 function ProvisionBadge({ status }: { status: 'provisioning' | 'active' | 'failed' }) {
   if (status === 'failed') {
     return (
@@ -110,6 +132,7 @@ export default function PhoneNumbersPage() {
   const [autoProvisioning, setAutoProvisioning] = useState(false);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [retryingPool, setRetryingPool] = useState(false);
+  const [reenableId, setReenableId] = useState<string | null>(null);
 
   // Port-in flow
   const { data: portsData } = useSWR('phone-port-requests', () => phoneNumbersApi.listPortRequests());
@@ -284,15 +307,30 @@ export default function PhoneNumbersPage() {
   }
 
   async function handleRetryPool() {
+    if (isDemoAccount) return;
     setRetryingPool(true);
     try {
       await outboundPoolApi.retry();
-      toast.success('Outbound pool refreshed');
+      toast.success('Outbound lines refreshed');
       await mutate('outbound-pool-numbers');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Pool retry failed');
+      toast.error(err instanceof Error ? err.message : 'Could not refresh outbound lines');
     } finally {
       setRetryingPool(false);
+    }
+  }
+
+  async function handleReenable(id: string) {
+    if (isDemoAccount) return;
+    setReenableId(id);
+    try {
+      await outboundPoolApi.reenable(id);
+      toast.success('Outbound line re-enabled');
+      await mutate('outbound-pool-numbers');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not re-enable line');
+    } finally {
+      setReenableId(null);
     }
   }
 
@@ -300,10 +338,13 @@ export default function PhoneNumbersPage() {
     <div className="space-y-6 max-w-3xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Your numbers</h1>
+          <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Phone numbers</h1>
           <p className="text-gray-500 mt-1 text-sm">
-            Paid go-live auto-assigns a {BRAND_NAME} inbound DID. Forward your existing business
-            line to it. {allotmentLabel} Outbound campaign numbers stay auto-managed.
+            <strong className="font-semibold text-gray-700">Your public number</strong> is the
+            stable inbound DID callers dial (or that you forward to).{' '}
+            <strong className="font-semibold text-gray-700">Outbound lines (managed)</strong> are
+            rotated for you on campaigns — you do not pick a working number.{' '}
+            {allotmentLabel}
           </p>
         </div>
         {!isDemoAccount && (
@@ -334,7 +375,15 @@ export default function PhoneNumbersPage() {
           {nextIsIncluded
             ? `Your next number is included on ${planName} — no extra charge.`
             : `Your next number is an extra (${dollars(localCents)} local / ${dollars(tollFreeCents)} toll-free per month).`}
-          {' '}Outbound campaign numbers are auto-managed and do not use these slots.
+          {' '}Outbound lines (managed) do not use these slots.
+        </p>
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold text-gray-900">Your public number</h2>
+        <p className="text-xs text-gray-500 mt-0.5">
+          One stable inbound DID per line. Callers and forwarding stay on this identity — it is
+          never rotated for outbound campaigns.
         </p>
       </div>
 
@@ -410,8 +459,8 @@ export default function PhoneNumbersPage() {
               {
                 icon: Shield,
                 title: 'Your main number stays protected',
-                body: 'Outbound campaigns never dial from your inbound number. The platform automatically provisions and rotates a separate pool of campaign numbers (see below), so your primary number stays clean and trusted with carriers.',
-                highlight: 'Campaign numbers are auto-managed — free',
+                body: 'Outbound campaigns never dial from your public number. Outbound lines (managed) are provisioned and rotated separately so your inbound identity stays stable.',
+                highlight: 'Outbound lines are managed — no extra fee',
               },
               {
                 icon: MapPin,
@@ -526,7 +575,7 @@ export default function PhoneNumbersPage() {
       ) : owned.length === 0 ? (
         <EmptyState
           icon={Phone}
-          label="No numbers yet"
+          label="No public number yet"
           hint={
             isDemoAccount
               ? 'Explore the dashboard for now. Upgrade to go live — paid plans auto-assign an included inbound DID.'
@@ -560,7 +609,7 @@ export default function PhoneNumbersPage() {
                 <ProvisionBadge status={n.provisionStatus ?? 'active'} />
                 {n.isPrimary && n.provisionStatus !== 'failed' && (
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-700 bg-brand-50 border border-brand-100 px-2 py-1 rounded-full">
-                    <Star size={11} /> Primary
+                    <Star size={11} /> Public number
                   </span>
                 )}
                 {n.provisionStatus === 'failed' && (
@@ -609,42 +658,51 @@ export default function PhoneNumbersPage() {
         )}
       </div>
 
-      {/* ── Outbound campaign number pool (auto-managed, read-only) ── */}
+      {/* ── Outbound lines (managed) ── */}
       <div className="card overflow-hidden">
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Shield size={14} className="text-brand-600 shrink-0" />
-              <h2 className="text-sm font-semibold text-gray-900">Outbound campaign numbers</h2>
+              <h2 className="text-sm font-semibold text-gray-900">Outbound lines (managed)</h2>
             </div>
+            {!isDemoAccount && (
             <button
               type="button"
               onClick={handleRetryPool}
               disabled={retryingPool}
               className="text-xs font-semibold text-brand-700 hover:text-brand-900 disabled:opacity-50"
             >
-              {retryingPool ? 'Retrying…' : 'Retry pool'}
+              {retryingPool ? 'Retrying…' : 'Retry lines'}
             </button>
+            )}
           </div>
           <p className="text-xs text-gray-500 mt-0.5">
-            Automatically provisioned and rotated by the platform so your campaigns never
-            get spam-flagged. Sized automatically, then grown with dial volume (pool max 15).
-            Billed through per-minute usage — no separate monthly fee.
+            We pick the next healthy outbound line for each campaign dial. Repeated
+            failures cool a line, then exclude it until you re-enable. Your public
+            number is never used as a campaign caller ID.
           </p>
         </div>
-        {poolLoading ? (
+        {isDemoAccount ? (
+          <p className="px-4 py-5 text-sm text-gray-500">
+            Upgrade to a paid plan to provision outbound lines. Free accounts explore
+            the dashboard and do not get a live pool.
+          </p>
+        ) : poolLoading ? (
           <div className="p-4 space-y-3">
             <UiSkeleton width="w-full" height="h-10" />
             <UiSkeleton width="w-full" height="h-10" />
           </div>
         ) : poolNumbers.length === 0 ? (
           <p className="px-4 py-5 text-sm text-gray-500">
-            No campaigns have run yet — numbers are provisioned automatically when you create
-            your first outbound campaign.
+            Lines are provisioned automatically when you create your first outbound
+            campaign — you do not pick a working number.
           </p>
         ) : (
           <div className="divide-y divide-gray-100">
-            {poolNumbers.map((n) => (
+            {poolNumbers.map((n) => {
+              const health = n.healthStatus ?? 'active';
+              return (
               <div key={n.id} className="p-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0">
@@ -664,13 +722,28 @@ export default function PhoneNumbersPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <ProvisionBadge status={n.provisionStatus ?? 'active'} />
+                  {n.provisionStatus === 'failed' ? (
+                    <ProvisionBadge status="failed" />
+                  ) : (
+                    <HealthBadge status={health} />
+                  )}
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 px-2 py-1 rounded-full">
-                    <Zap size={11} /> Auto-managed
+                    <Zap size={11} /> Managed
                   </span>
+                  {health === 'bad' && (
+                    <button
+                      type="button"
+                      onClick={() => handleReenable(n.id)}
+                      disabled={reenableId === n.id}
+                      className="text-xs font-semibold text-brand-700 hover:text-brand-900 px-2 py-1 rounded-lg hover:bg-brand-50 disabled:opacity-50"
+                    >
+                      {reenableId === n.id ? 'Re-enabling…' : 'Re-enable'}
+                    </button>
+                  )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

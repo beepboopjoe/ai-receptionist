@@ -812,7 +812,8 @@ export const phoneNumbersApi = {
     }>(`/phone-numbers/${id}/retry`, { method: 'POST' }),
 };
 
-// ---- Outbound number pool (auto-managed, read-only) ----
+// ---- Outbound number pool (auto-managed; re-enable is the only tenant mutation) ----
+export type PoolHealth = 'active' | 'cooling' | 'bad';
 export interface PoolNumber {
   id: string;
   phoneE164: string;
@@ -822,10 +823,15 @@ export interface PoolNumber {
   totalDials: number;
   provisionStatus?: 'provisioning' | 'active' | 'failed';
   provisionError?: string | null;
+  healthStatus?: PoolHealth;
+  consecutiveFailures?: number;
+  coolingUntil?: string | null;
 }
 export const outboundPoolApi = {
   list: () => apiFetch<{ data: PoolNumber[] }>('/outbound-pool/numbers'),
   retry: () => apiFetch<{ data: PoolNumber[] }>('/outbound-pool/retry', { method: 'POST' }),
+  reenable: (id: string) =>
+    apiFetch<{ data: PoolNumber }>(`/outbound-pool/numbers/${id}/reenable`, { method: 'POST' }),
 };
 
 // ---- Campaigns ----
