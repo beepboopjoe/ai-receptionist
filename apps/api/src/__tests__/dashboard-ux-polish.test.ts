@@ -35,6 +35,7 @@ describe('test call replaces Try your AI', () => {
     expect(sidebar).toContain('href="/platform/support"');
     expect(sidebar).not.toMatch(/Try your AI/);
     expect(sidebar).not.toContain("href: '/voice-demo'");
+    expect(sidebar).toContain('openDashboardChat');
   });
 
   it('test-call page reuses TestCallCard and DemoUpgradeCard', () => {

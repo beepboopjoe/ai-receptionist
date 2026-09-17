@@ -88,6 +88,12 @@ describe('paid go-live gates (source)', () => {
     expect(testCallSlice).toContain('getTenantDemoFlags');
     expect(testCallSlice).toContain("error: 'upgrade_required'");
 
+    const aiTaskIdx = admin.indexOf("'/calls/ai-task'");
+    const aiTaskSlice = admin.slice(aiTaskIdx, aiTaskIdx + 1200);
+    expect(aiTaskSlice).toContain('getTenantDemoFlags');
+    expect(aiTaskSlice).toContain("error: 'upgrade_required'");
+    expect(aiTaskSlice).toContain('placeAiTaskCall');
+
     const phones = readFileSync(join(srcRoot, 'modules/phone-numbers/phone.router.ts'), 'utf8');
     expect(phones).toContain('getTenantDemoFlags');
     expect(phones).toContain("error: 'upgrade_required'");

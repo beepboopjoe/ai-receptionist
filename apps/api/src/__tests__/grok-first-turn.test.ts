@@ -47,6 +47,15 @@ describe('first-turn greeting text', () => {
       leadFirstName: 'Sam',
     })).toBe('Hi, may I please speak with Sam?');
   });
+
+  it('uses a short opener for dashboard-chat / Ask-your-AI tasks', () => {
+    expect(firstTurnGreetingText({
+      isDemo: false,
+      isOutbound: false,
+      practiceName: 'Acme Dental',
+      adHocTask: 'Following up about the quote',
+    })).toBe('Hi, this is Acme Dental calling.');
+  });
 });
 
 describe('force_message greeting', () => {

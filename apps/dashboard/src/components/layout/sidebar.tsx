@@ -20,6 +20,7 @@ import {
   Sparkles,
   LifeBuoy,
   PhoneOutgoing,
+  MessageCircle,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { logout } from '@/lib/auth';
@@ -35,6 +36,7 @@ import useSWR from 'swr';
 import { UpgradeModal } from '@/components/ui/upgrade-modal';
 import type { UpgradeReason } from '@/components/ui/upgrade-modal';
 import { useLiveCalls } from '@/lib/useLiveCalls';
+import { openDashboardChat } from '@/lib/dashboard-chat';
 
 // Phase 29a — simplified nav for non-technical owners. 8 items, plain
 // words. Pages removed from the nav stay fully routable: Missed Calls
@@ -294,6 +296,17 @@ export function Sidebar() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             <span className="flex-1 text-left">Search…</span>
             <kbd className="hidden sm:inline text-[10px] font-mono bg-white border border-gray-200 rounded px-1.5 py-0.5">⌘K</kbd>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMobileOpen(false);
+              openDashboardChat();
+            }}
+            className="mt-1.5 w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 bg-white hover:bg-cream-50 rounded-lg border border-cream-200 transition-colors"
+          >
+            <MessageCircle size={14} className="text-brand-600 shrink-0" />
+            <span className="flex-1 text-left">Ask {BRAND_NAME}</span>
           </button>
         </div>
 
