@@ -10,11 +10,13 @@ describe('normalizeInboundRoutingMode', () => {
   it('keeps known modes and defaults everything else to ai_always', () => {
     expect(normalizeInboundRoutingMode('after_hours_ai')).toBe('after_hours_ai');
     expect(normalizeInboundRoutingMode('overflow_ai')).toBe('overflow_ai');
+    expect(normalizeInboundRoutingMode('staff_first')).toBe('staff_first');
     expect(normalizeInboundRoutingMode('ai_always')).toBe('ai_always');
     expect(normalizeInboundRoutingMode('')).toBe('ai_always');
     expect(normalizeInboundRoutingMode(null)).toBe('ai_always');
     expect(normalizeInboundRoutingMode('transfer')).toBe('ai_always');
     expect(isInboundRoutingMode('overflow_ai')).toBe(true);
+    expect(isInboundRoutingMode('staff_first')).toBe(true);
     expect(isInboundRoutingMode('voicemail')).toBe(false);
   });
 });
@@ -62,6 +64,18 @@ describe('resolveInboundRoutingAction', () => {
     ).toBe('overflow_try_staff');
     expect(
       resolveInboundRoutingAction({ mode: 'overflow_ai', isAfterHours: false, staffNumber: null }),
+    ).toBe('ai');
+  });
+
+  it('staff_first rings the team during hours and lets Telfin answer after hours', () => {
+    expect(
+      resolveInboundRoutingAction({ mode: 'staff_first', isAfterHours: false, staffNumber: staff }),
+    ).toBe('overflow_try_staff');
+    expect(
+      resolveInboundRoutingAction({ mode: 'staff_first', isAfterHours: true, staffNumber: staff }),
+    ).toBe('ai');
+    expect(
+      resolveInboundRoutingAction({ mode: 'staff_first', isAfterHours: false, staffNumber: '' }),
     ).toBe('ai');
   });
 });

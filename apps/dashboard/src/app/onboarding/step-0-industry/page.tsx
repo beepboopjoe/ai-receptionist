@@ -36,7 +36,7 @@ export default function Step0IndustryPage() {
         </p>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">What kind of business are you?</h1>
         <p className="text-cream-600 mt-2 text-sm">
-          We&apos;ll tailor your AI receptionist to your industry.
+          Optional — skip this if you just want a general receptionist.
         </p>
       </div>
 
@@ -58,7 +58,20 @@ export default function Step0IndustryPage() {
         ))}
       </div>
 
-      <div className="flex justify-end pt-2">
+      <div className="flex justify-end items-center gap-4 pt-2">
+        <button
+          type="button"
+          onClick={async () => {
+            setSaving(true);
+            try {
+              await onboardingApi.completeStep(0);
+            } catch { /* still let them continue */ }
+            router.push('/onboarding/step-1-phone');
+          }}
+          className="text-sm text-gray-500 hover:text-gray-800"
+        >
+          Skip — I&apos;m not in a listed industry
+        </button>
         <button
           onClick={handleContinue}
           disabled={!selected || saving}

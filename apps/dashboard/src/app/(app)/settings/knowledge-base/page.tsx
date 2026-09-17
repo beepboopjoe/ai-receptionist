@@ -20,6 +20,7 @@ import { useToast } from '@/components/ui/toast';
 import { SectionAgent } from '@/components/dashboard/section-agent';
 import { usePlan } from '@/lib/usePlan';
 import { LockedFeature } from '@/components/ui/locked-feature';
+import { WebsiteImportCard } from '@/components/setup/website-import-card';
 
 function sanitizeKbError(raw: string): string {
   const leaked =
@@ -124,9 +125,11 @@ export default function KnowledgeBasePage() {
       <div>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Knowledge Base</h1>
         <p className="text-gray-500 mt-1">
-          Upload your docs — fee schedules, intake forms, FAQs — and the AI grounds every call in them.
+          Start with your website, or upload docs. Telfin uses this on every call.
         </p>
       </div>
+
+      <WebsiteImportCard />
 
       {!planLoading && !kbEnabled && (
         <LockedFeature

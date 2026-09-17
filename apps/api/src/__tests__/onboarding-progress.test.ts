@@ -71,7 +71,7 @@ describe('inbound DID plan gate (source)', () => {
       'utf8'
     );
     expect(step1).not.toMatch(/shared platform number/);
-    expect(step1).toMatch(/Dedicated inbound number comes with a paid plan/);
+    expect(step1).toMatch(/Your public number comes with a paid plan/);
   });
 
   it('does not enable DEMO_SKIP_COOLDOWN', () => {

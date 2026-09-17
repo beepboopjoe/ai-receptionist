@@ -6,8 +6,6 @@ import useSWR, { mutate } from 'swr';
 import { integrationsApi, onboardingApi, phoneNumbersApi } from '@/lib/api';
 import { usePlan } from '@/lib/usePlan';
 import { CheckCircle, ArrowRight, Info, AlertCircle } from 'lucide-react';
-import { useVertical } from '@/lib/useVertical';
-
 function formatDid(e164: string): string {
   const m = /^\+(\d{1,3})(\d{3})(\d{3})(\d{4})$/.exec(e164);
   if (!m) return e164;
@@ -23,7 +21,6 @@ export default function Step1PhonePage() {
 }
 
 function Step1PhoneInner() {
-  const vertical = useVertical();
   const router = useRouter();
   const searchParams = useSearchParams();
   const justSubscribed = searchParams.get('subscribed') === '1';
@@ -113,9 +110,9 @@ function Step1PhoneInner() {
   return (
     <div className="space-y-6">
       <div className="card p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 2 of 6 — Set Up Your AI Phone Line</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 2 of 6 — Your public number</h2>
         <p className="text-sm text-gray-500">
-          Choose how you want to connect your AI receptionist to your phone system.
+          This is the number callers dial, or the number you forward your existing line to.
         </p>
         {justSubscribed && (
           <p className="mt-3 text-sm text-brand-800 bg-brand-50 border border-brand-100 rounded-lg px-3 py-2">
@@ -134,12 +131,12 @@ function Step1PhoneInner() {
           <div className="text-3xl">📞</div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <p className="font-semibold text-gray-900">Quick Setup — Forwarding Number</p>
+              <p className="font-semibold text-gray-900">Get a public number today</p>
               <span className="badge badge-green">Recommended</span>
             </div>
             <p className="text-sm text-gray-500 mt-1">
-              We provision a phone number for your {vertical.businessNoun}. You just set your existing main line to
-              forward to it — no changes to your phone system. Works with any carrier.
+              We assign a number for your business. Keep your existing line and forward it here — no
+              phone-system project. Works with any carrier.
             </p>
             <p className="text-xs text-gray-400 mt-2">✓ Done in 60 seconds · ✓ Works with any phone system</p>
           </div>
@@ -151,11 +148,11 @@ function Step1PhoneInner() {
               <div className="rounded-xl bg-amber-50 border border-amber-200 px-5 py-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <Info size={16} className="text-amber-700 shrink-0" />
-                  <p className="text-sm font-semibold text-amber-950">Dedicated inbound number comes with a paid plan</p>
+                  <p className="text-sm font-semibold text-amber-950">Your public number comes with a paid plan</p>
                 </div>
                 <p className="text-sm text-amber-900">
-                  Free accounts do not include a Telfin inbound DID. Upgrade to go live — Growth
-                  includes 2 numbers. You can keep exploring the dashboard without setting this up now.
+                  Free accounts do not include a live number. Upgrade to go live — Growth includes 2
+                  numbers. You can keep exploring the dashboard without setting this up now.
                 </p>
                 <div className="flex flex-wrap gap-2 pt-1">
                   <Link href="/billing" className="btn-primary text-sm">
@@ -202,20 +199,20 @@ function Step1PhoneInner() {
                     : failedInbound
                       ? 'Retry my number'
                       : includesDid
-                        ? 'Get my included number'
-                        : 'Provision My Number'}
+                        ? 'Get my public number'
+                        : 'Get my public number'}
                 </button>
               </>
             ) : (
               <div className="rounded-xl bg-green-50 p-4 ring-1 ring-green-100">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle size={18} className="text-green-600" />
-                  <p className="font-semibold text-green-800">Your number is ready!</p>
+                  <p className="font-semibold text-green-800">Your public number is ready</p>
                 </div>
                 <p className="text-2xl font-bold text-green-900">{formatDid(provisioned.phoneNumber)}</p>
                 <p className="text-sm text-green-700 mt-2">
-                  Set your existing {vertical.businessNoun} phone to forward to this number.
-                  Your carrier or VoIP provider usually has a &quot;Call Forwarding&quot; or &quot;Forward When Busy&quot; option.
+                  Set your existing business phone to forward to this number.
+                  Your carrier usually has a &quot;Call Forwarding&quot; or &quot;Forward When Busy&quot; option.
                 </p>
                 <Link href="/settings/phone-numbers" className="text-sm text-green-800 underline mt-2 inline-block">
                   Same number in Settings → Phone numbers

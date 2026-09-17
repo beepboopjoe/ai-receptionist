@@ -244,7 +244,7 @@ export default function SignupPage() {
             {/* Business name */}
             <div>
               <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 mb-1">
-                Business / practice name
+                Business name
               </label>
               <input
                 id="businessName"
@@ -271,7 +271,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input"
-                placeholder="you@practice.com"
+                placeholder="you@business.com"
               />
             </div>
 

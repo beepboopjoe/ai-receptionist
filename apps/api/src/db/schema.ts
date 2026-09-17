@@ -339,7 +339,7 @@ export const tenantSettings = pgTable('tenant_settings', {
     .unique(),
   officeHours: jsonb('office_hours').notNull().default({}),
   afterHoursMode: text('after_hours_mode').notNull().default('voicemail'),
-  /** 'ai_always' | 'after_hours_ai' | 'overflow_ai' — Telnyx inbound routing. */
+  /** 'ai_always' | 'after_hours_ai' | 'overflow_ai' | 'staff_first' — inbound DID routing. */
   inboundRoutingMode: text('inbound_routing_mode').notNull().default('ai_always'),
   transferNumber: text('transfer_number'),
   maxHoldSeconds: integer('max_hold_seconds').notNull().default(30),

@@ -7,12 +7,12 @@ import { usePlan } from '@/lib/usePlan';
 import { DemoUpgradeCard } from '@/components/dashboard/demo-upgrade-card';
 
 const STEPS = [
-  { num: 1, label: 'Pick your industry', href: '/onboarding/step-0-industry' },
-  { num: 2, label: 'Set up your AI phone line', href: '/onboarding/step-1-phone' },
+  { num: 1, label: 'Pick your industry (optional)', href: '/onboarding/step-0-industry' },
+  { num: 2, label: 'Get your public number', href: '/onboarding/step-1-phone' },
   { num: 3, label: 'Connect your calendar', href: '/onboarding/step-2-calendar' },
   { num: 4, label: 'Import your contacts', href: '/onboarding/step-3-patients' },
-  { num: 5, label: 'Configure office rules', href: '/onboarding/step-4-rules' },
-  { num: 6, label: 'Activate AI receptionist', href: '/onboarding/step-5-activate' },
+  { num: 5, label: 'Hours and who answers', href: '/onboarding/step-4-rules' },
+  { num: 6, label: 'Activate Telfin', href: '/onboarding/step-5-activate' },
 ];
 
 export default function OnboardingIndexPage() {
@@ -29,6 +29,18 @@ export default function OnboardingIndexPage() {
           body="These steps are an optional preview. Phone provisioning and receptionist activation unlock after you subscribe."
         />
       )}
+      <Link
+        href="/setup"
+        className="card p-5 flex items-center justify-between hover:border-brand-200 transition-colors"
+      >
+        <div>
+          <p className="text-sm font-semibold text-gray-900">Shorter path: website, number, who answers</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Paste your site, get a public number, pick team-first or Telfin. Industry steps stay optional.
+          </p>
+        </div>
+        <ChevronRight size={16} className="text-gray-300" />
+      </Link>
       <div className="card divide-y divide-gray-50">
       {STEPS.map(({ num, label, href }) => {
         const isComplete = num < currentStep;

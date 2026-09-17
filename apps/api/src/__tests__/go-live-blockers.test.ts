@@ -156,10 +156,12 @@ describe('live-audit dashboard contracts', () => {
     expect(home).not.toContain('new Date(evt.timestamp).toLocaleTimeString');
   });
 
-  it('counts four required go-live steps and keeps calendar optional', () => {
+  it('counts required go-live steps and keeps calendar + website import optional', () => {
     const hook = readFileSync(join(dashRoot, 'lib/useGoLive.ts'), 'utf8');
-    expect(hook).toContain('requiredCount: steps.length');
+    expect(hook).toContain('requiredCount: requiredSteps.length');
+    expect(hook).toContain("s.id !== 'knowledge'");
     expect(hook).toContain("id: 'calendar'");
+    expect(hook).toContain("id: 'knowledge'");
     expect(hook).not.toContain('calendar_or_hours');
     expect(hook).not.toContain("id: 'test_call'");
     const checklist = readFileSync(join(dashRoot, 'components/dashboard/go-live-checklist.tsx'), 'utf8');

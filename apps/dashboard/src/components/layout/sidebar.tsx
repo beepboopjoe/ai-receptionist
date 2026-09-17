@@ -43,9 +43,12 @@ import { openDashboardChat } from '@/lib/dashboard-chat';
 // lives as a tab on /calls, Reminders is linked from Appointments and
 // the Workflows gallery, Campaigns is reached via Workflows cards, and
 // Escalations ("Needs Attention") surfaces as a card on Home.
-function buildNav(contactsLabel: string, appointmentsLabel: string) {
+function buildNav(contactsLabel: string, appointmentsLabel: string, showSetup: boolean) {
   return [
     { href: '/dashboard', label: 'Home', icon: LayoutDashboard, requires: undefined as undefined | 'two_way_sms' },
+    ...(showSetup
+      ? [{ href: '/setup', label: 'Get started', icon: Zap, requires: undefined as undefined | 'two_way_sms' }]
+      : []),
     { href: '/workflows', label: 'Workflows', icon: Sparkles, requires: undefined as undefined | 'two_way_sms' },
     { href: '/calls', label: 'Calls', icon: Phone, requires: undefined as undefined | 'two_way_sms' },
     { href: '/test-call', label: 'Test call', icon: PhoneOutgoing, requires: undefined as undefined | 'two_way_sms' },
@@ -114,7 +117,11 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-  const nav = buildNav(cap(vertical.contactNounPlural), cap(vertical.appointmentNounPlural));
+  const nav = buildNav(
+    cap(vertical.contactNounPlural),
+    cap(vertical.appointmentNounPlural),
+    !goLive.ready,
+  );
 
   // Live-call pulse — when one or more AI calls are in progress, the
   // Call Log link sprouts a red dot so customers can spot the action.

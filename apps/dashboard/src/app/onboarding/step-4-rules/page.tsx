@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onboardingApi, settingsApi, tenantsApi } from '@/lib/api';
 import { ArrowLeft, ArrowRight, Save } from 'lucide-react';
-import { useVertical } from '@/lib/useVertical';
+import { InboundRoutingCard } from '@/components/settings/inbound-routing-card';
 
 const DEFAULT_HOURS = {
   mon: { open: '08:00', close: '17:00' },
@@ -15,14 +15,10 @@ const DEFAULT_HOURS = {
 
 export default function Step4RulesPage() {
   const router = useRouter();
-  const vertical = useVertical();
   const [businessName, setBusinessName] = useState('');
   const [transferNumber, setTransferNumber] = useState('');
   const [afterHoursMode, setAfterHoursMode] = useState('voicemail');
   const [saving, setSaving] = useState(false);
-
-  // Capitalize first letter of businessNoun
-  const businessLabel = vertical.businessNoun.charAt(0).toUpperCase() + vertical.businessNoun.slice(1);
 
   async function handleSave() {
     setSaving(true);
@@ -45,41 +41,43 @@ export default function Step4RulesPage() {
   return (
     <div className="space-y-6">
       <div className="card p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 5 of 6 — Configure Office Rules</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Step 5 of 6 — Hours and who answers</h2>
         <p className="text-sm text-gray-500">
-          Set your office hours, after-hours behavior, and staff transfer number.
+          Tell Telfin when your team is in, and whether people or Telfin should pick up first.
         </p>
       </div>
 
+      <InboundRoutingCard />
+
       <div className="card p-6 space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{businessLabel} Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Business name</label>
           <input
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
-            placeholder={vertical.businessPlaceholder}
+            placeholder="My Business"
             className="input"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            After-Hours Mode
+            After hours — what Telfin says
           </label>
           <select
             value={afterHoursMode}
             onChange={(e) => setAfterHoursMode(e.target.value)}
             className="input"
           >
-            <option value="voicemail">Voicemail — AI takes a message</option>
-            <option value="transfer">Transfer to staff</option>
+            <option value="voicemail">Take a message</option>
+            <option value="transfer">Try to reach someone on the team</option>
             <option value="callback_promise">Promise a callback</option>
           </select>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Staff Number (for escalations &amp; transfers)
+            Team phone number
           </label>
           <input
             value={transferNumber}
