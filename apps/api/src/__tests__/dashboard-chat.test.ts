@@ -18,12 +18,15 @@ describe('dashboard chat shortcut', () => {
       join(dashboardRoot, 'components/dashboard/dashboard-chat-widget.tsx'),
       'utf8',
     );
-    expect(widget).toContain('parseCallIntent');
+    expect(widget).toContain('parseDashboardIntent');
     expect(widget).toContain('callsApi.aiTask');
+    expect(widget).toContain('smsApi.send');
+    expect(widget).toContain("source: 'ai_task'");
     expect(widget).toContain('DemoUpgradeCard');
     expect(widget).toContain('isDemoAccount');
     expect(widget).toContain('useSpeechDictation');
     expect(widget).toContain('/calls/');
+    expect(widget).toContain('/messages/');
     expect(widget).toContain('/contacts/');
     expect(widget).not.toMatch(/\b(Grok|Telnyx|xAI)\b/);
   });

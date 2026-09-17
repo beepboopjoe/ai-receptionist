@@ -4,16 +4,16 @@
 // Lists all threads grouped by external phone number, sorted by
 // most-recent message. Clicking a thread opens the chat view.
 // ============================================================
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import useSWR, { mutate } from 'swr';
 import { MessageSquare, Phone, RefreshCw } from 'lucide-react';
 import { smsApi, type SmsConversation } from '@/lib/api';
 import { Skeleton as UiSkeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
-import { useToast } from '@/components/ui/toast';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { LockedFeature } from '@/components/ui/locked-feature';
 import { SectionAgent } from '@/components/dashboard/section-agent';
+import { useSmsLiveSync } from '@/lib/use-sms-live-sync';
 
 // ── Relative time formatter ───────────────────────────────────────────────────
 function relativeTime(iso: string): string {
@@ -82,26 +82,14 @@ function ConversationRow({ conv }: { conv: SmsConversation }) {
 export default function MessagesPage() {
   const { has, loading: flagsLoading } = useFeatureFlags();
   const entitled = has('two_way_sms');
-  const [conversations, setConversations] = useState<SmsConversation[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const toast = useToast();
-
-  async function load(silent = false) {
-    if (!silent) setLoading(true);
-    else setRefreshing(true);
-    try {
-      const res = await smsApi.listConversations();
-      setConversations(res.data);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load messages');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }
-
-  useEffect(() => { if (entitled) void load(); }, [entitled]); // eslint-disable-line react-hooks/exhaustive-deps
+  useSmsLiveSync();
+  const { data, isLoading, isValidating } = useSWR(
+    entitled ? 'sms-conversations' : null,
+    () => smsApi.listConversations(),
+    { refreshInterval: 15_000 },
+  );
+  const conversations = data?.data ?? null;
+  const loading = isLoading;
 
   if (!flagsLoading && !entitled) {
     return (
@@ -130,11 +118,11 @@ export default function MessagesPage() {
           <p className="text-gray-500 mt-1">Two-way SMS conversations with your contacts</p>
         </div>
         <button
-          onClick={() => load(true)}
-          disabled={refreshing}
+          onClick={() => void mutate('sms-conversations')}
+          disabled={isValidating}
           className="btn-secondary inline-flex items-center gap-2 disabled:opacity-60"
         >
-          <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+          <RefreshCw size={14} className={isValidating ? 'animate-spin' : ''} />
           Refresh
         </button>
       </div>

@@ -121,7 +121,7 @@ export const MCP_TOOLS: McpToolDef[] = [
   {
     name: 'telfin_send_sms',
     description:
-      'Send an SMS from this tenant’s provisioned number. Fails with a clear “not enabled” error when the plan, DID, or SMS carrier is not configured. Requires a write-scope API key. Do not use this for bulk/spam outreach.',
+      'Send one SMS from this tenant’s provisioned business number. Fails when the account is a free dashboard demo, no number is provisioned, the destination opted out, or the carrier rejects the send (US A2P/10DLC registration may be required — this tool does not register a campaign). Requires a write-scope API key. Do not use this for bulk/spam outreach.',
     scope: 'write',
     inputSchema: {
       type: 'object',

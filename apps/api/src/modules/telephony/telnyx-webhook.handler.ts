@@ -49,6 +49,9 @@ import { getTenantFromNumber } from '../sms/tenant-from-number.js';
 import { lookupTenantByDid } from '../phone-numbers/inbound-did.js';
 import { extractTelnyxRecordingMp3Url, persistRecordingUrl } from './recording.js';
 import { pushActivity } from '../activity/activity.service.js';
+import { emitWebhook } from '../webhooks/webhook.service.js';
+import { handleInboundSmsAgent } from '../sms/sms-agent.service.js';
+import { ensureSmsContact } from '../sms/sms-contact.js';
 import { config } from '../../config.js';
 import { telnyxMediaStreamUrl } from '../../lib/public-url.js';
 import {
@@ -901,7 +904,7 @@ async function sendMissedCallTextBack(
 
 // ── Inbound SMS handler (message.received) ─────────────────────────────────
 // Identifies tenant by the `to` number → tenant_phone_numbers lookup.
-// Stores the message in sms_messages for the two-way inbox.
+// Stores the message, updates Contacts, then runs the lean SMS agent.
 async function onMessageReceived(event: TelnyxMessageEventData): Promise<void> {
   const p = event.payload;
   const fromPhone = p.from?.phone_number ?? '';
@@ -914,7 +917,6 @@ async function onMessageReceived(event: TelnyxMessageEventData): Promise<void> {
     return;
   }
 
-  // Resolve tenant from the destination (tenant's Telnyx number)
   const resolved = await lookupTenantByDid(toPhone);
   const tenantId = resolved?.tenantId ?? '';
 
@@ -923,12 +925,19 @@ async function onMessageReceived(event: TelnyxMessageEventData): Promise<void> {
     return;
   }
 
-  // Match contact by phone number
-  const [contact] = await db
-    .select({ id: contacts.id })
-    .from(contacts)
-    .where(and(eq(contacts.tenantId, tenantId), eq(contacts.phoneE164, fromPhone)))
-    .limit(1);
+  if (msgId) {
+    const [dup] = await db
+      .select({ id: smsMessages.id })
+      .from(smsMessages)
+      .where(and(eq(smsMessages.tenantId, tenantId), eq(smsMessages.telnyxMessageId, msgId)))
+      .limit(1);
+    if (dup) {
+      logger.info({ tenantId, msgId }, 'Inbound SMS duplicate — skipping');
+      return;
+    }
+  }
+
+  const contact = await ensureSmsContact({ tenantId, phoneE164: fromPhone });
 
   void import('../billing/usage-ledger.service.js').then(({ recordSmsUsage }) =>
     recordSmsUsage(tenantId, 'inbound')
@@ -942,10 +951,31 @@ async function onMessageReceived(event: TelnyxMessageEventData): Promise<void> {
     body,
     telnyxMessageId: msgId,
     status:          'delivered',
-    contactId:       contact?.id ?? null,
+    contactId:       contact.id,
   });
 
-  logger.info({ tenantId, fromPhone, toPhone, contactId: contact?.id }, 'Inbound SMS stored');
+  pushActivity(tenantId, 'sms_received', {
+    fromNumber: fromPhone,
+    toNumber: toPhone,
+    contactId: contact.id,
+    preview: body.slice(0, 120),
+  });
+  void emitWebhook(tenantId, 'sms.received', {
+    fromNumber: fromPhone,
+    toNumber: toPhone,
+    contactId: contact.id,
+    bodyPreview: body.slice(0, 160),
+  });
+
+  logger.info({ tenantId, fromPhone, toPhone, contactId: contact.id }, 'Inbound SMS stored');
+
+  void handleInboundSmsAgent({
+    tenantId,
+    fromPhone,
+    toPhone,
+    body,
+    contactId: contact.id,
+  });
 }
 
 async function handleNoAnswer(

@@ -27,6 +27,8 @@ const EVENT_STYLES: Record<string, EventStyle> = {
   appointment_cancelled:   { color: 'text-red-700 bg-red-50',         dot: 'bg-red-500' },
   escalation_created:      { color: 'text-amber-700 bg-amber-50',     dot: 'bg-amber-500' },
   campaign_lead_connected: { color: 'text-purple-700 bg-purple-50',   dot: 'bg-purple-500' },
+  sms_received:            { color: 'text-indigo-700 bg-indigo-50',   dot: 'bg-indigo-500' },
+  sms_sent:                { color: 'text-indigo-700 bg-indigo-50',   dot: 'bg-indigo-500' },
 };
 
 /**
@@ -43,6 +45,8 @@ function buildEventLabels(apptNoun: string): Record<string, string> {
     appointment_cancelled:   `${Appt} cancelled`,
     escalation_created:      'Escalation created',
     campaign_lead_connected: 'Lead connected',
+    sms_received:            'Text received',
+    sms_sent:                'Text sent',
   };
 }
 

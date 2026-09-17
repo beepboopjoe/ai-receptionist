@@ -18,3 +18,4 @@ export * from './types/vertical.types.js';
 export * from './types/webhook.types.js';
 export * from './types/billing.types.js';
 export * from './parse-call-intent.js';
+export * from './parse-sms-intent.js';

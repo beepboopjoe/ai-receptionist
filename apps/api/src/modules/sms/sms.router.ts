@@ -129,18 +129,31 @@ async function smsRouterPlugin(app: FastifyInstance) {
 
   // ── POST /sms/send ────────────────────────────────────────────────────────
   // Send an outbound SMS and record it in sms_messages.
-  // Plan-gated: Growth and above only.
+  // Free / demo → 402 upgrade_required. Rate-limited 10/hour.
   app.post(
     '/sms/send',
-    { onRequest: [app.requireRole('staff')] },
+    {
+      onRequest: [app.requireRole('staff')],
+      config: { rateLimit: { max: 10, timeWindow: '1 hour' } },
+    },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const { tenantId } = request.authUser;
-      const { to, body } = request.body as { to?: string; body?: string };
+      const { tenantId, id: actorId } = request.authUser;
+      const { to, body, firstName, lastName, source } = (request.body ?? {}) as {
+        to?: string;
+        body?: string;
+        firstName?: string;
+        lastName?: string;
+        source?: 'inbox' | 'ai_task';
+      };
 
       const result = await sendTenantSms({
         tenantId,
         to: to ?? '',
         body: body ?? '',
+        actorId,
+        source: source === 'ai_task' ? 'ai_task' : 'inbox',
+        ...(firstName ? { firstName } : {}),
+        ...(lastName ? { lastName } : {}),
       });
       if (!result.ok) {
         return reply.code(result.httpStatus).send({
@@ -149,7 +162,13 @@ async function smsRouterPlugin(app: FastifyInstance) {
           message: result.message,
         });
       }
-      return { ok: true, messageId: result.messageId };
+      return {
+        ok: true,
+        messageId: result.messageId,
+        contactId: result.contactId,
+        contactCreated: result.contactCreated,
+        toNumber: result.toNumber,
+      };
     }
   );
 }
