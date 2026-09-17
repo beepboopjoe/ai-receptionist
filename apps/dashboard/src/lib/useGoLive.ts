@@ -193,7 +193,7 @@ export function useGoLive(): GoLiveStatus {
     {
       id: 'transfer',
       title: 'Add your team phone number',
-      desc: 'We ring this when the team should answer first, when you join a live call, and for your own test call.',
+      desc: 'We ring this Staff Transfer Number when the team should answer first, for Join call, and for your own test call.',
       href: '/settings/voice-agent',
       cta: 'Add team number',
       done: hasTransfer,
