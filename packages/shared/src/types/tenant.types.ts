@@ -9,8 +9,13 @@ export type TenantPlan = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise
 
 export type AfterHoursMode = 'voicemail' | 'callback' | 'transfer';
 
-/** How inbound Telnyx DIDs are answered before the AI greets. */
-export type InboundRoutingMode = 'ai_always' | 'after_hours_ai' | 'overflow_ai';
+/** How inbound DIDs are answered before the AI greets. */
+export type InboundRoutingMode =
+  | 'ai_always'
+  | 'after_hours_ai'
+  | 'overflow_ai'
+  /** During hours: try staff first, AI on no-answer. After hours: AI answers. */
+  | 'staff_first';
 
 export type IntegrationProvider =
   | 'ringcentral'

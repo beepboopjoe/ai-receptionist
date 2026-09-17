@@ -1381,7 +1381,9 @@ export async function adminPlugin(app: FastifyInstance) {
       if (body.inboundRoutingMode !== undefined) {
         const { isInboundRoutingMode } = await import('../telephony/inbound-routing.js');
         if (!isInboundRoutingMode(body.inboundRoutingMode)) {
-          throw new ValidationError('inboundRoutingMode must be ai_always, after_hours_ai, or overflow_ai');
+          throw new ValidationError(
+            'inboundRoutingMode must be ai_always, after_hours_ai, overflow_ai, or staff_first',
+          );
         }
       }
       const updated = await updateSettings(tenantId, body);

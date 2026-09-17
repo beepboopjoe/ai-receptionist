@@ -4,14 +4,20 @@
 // Modes (tenant_settings.inbound_routing_mode):
 //   ai_always       — AI answers every inbound call (default, new paid)
 //   after_hours_ai  — during office hours ring/forward staff; after hours AI
-//   overflow_ai     — try staff first; AI on no-answer / busy / dial failure
+//   overflow_ai     — try staff first any time; AI on no-answer / busy / dial failure
+//   staff_first     — during hours try staff first (overflow); after hours AI
 //
 // Staff destination is the existing Staff Transfer Number (E.164).
 // Missing / invalid dest falls back to AI so callers are never dropped.
 // ============================================================
 import type { InboundRoutingMode } from '@ai-receptionist/shared';
 
-export const INBOUND_ROUTING_MODES = ['ai_always', 'after_hours_ai', 'overflow_ai'] as const;
+export const INBOUND_ROUTING_MODES = [
+  'ai_always',
+  'after_hours_ai',
+  'overflow_ai',
+  'staff_first',
+] as const;
 export type { InboundRoutingMode };
 export type InboundRoutingAction = 'ai' | 'forward_staff' | 'overflow_try_staff';
 
@@ -45,6 +51,11 @@ export function resolveInboundRoutingAction(opts: {
   }
 
   if (mode === 'overflow_ai') {
+    return hasDest ? 'overflow_try_staff' : 'ai';
+  }
+
+  if (mode === 'staff_first') {
+    if (opts.isAfterHours) return 'ai';
     return hasDest ? 'overflow_try_staff' : 'ai';
   }
 

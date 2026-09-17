@@ -8,6 +8,7 @@ import { useGoLive, type GoLiveStep } from '@/lib/useGoLive';
 import { usePlan } from '@/lib/usePlan';
 import { DemoUpgradeCard } from '@/components/dashboard/demo-upgrade-card';
 import { ForwardYourLineCard } from '@/components/settings/forward-your-line-card';
+import { WebsiteImportCard } from '@/components/setup/website-import-card';
 import useSWR from 'swr';
 
 export function GoLiveChecklist() {
@@ -20,7 +21,24 @@ export function GoLiveChecklist() {
     )?.phoneE164 ?? null;
   if (goLive.loading || planLoading) return null;
   if (isDemoAccount) {
-    return <DemoUpgradeCard />;
+    return (
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 to-amber-50/40 p-6 space-y-3">
+          <h2 className="font-serif text-xl text-cream-900">Explore setup — go live after upgrade</h2>
+          <p className="text-sm text-cream-700">
+            Paste your website and pick who answers first. A live public number still needs a paid plan.
+          </p>
+          <Link href="/setup" className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700">
+            Open setup <ArrowRight size={14} />
+          </Link>
+        </div>
+        <WebsiteImportCard />
+        <DemoUpgradeCard
+          title="Upgrade to get your public number"
+          body="You can keep exploring the dashboard. Live number provisioning unlocks on Growth, Scale, or Business."
+        />
+      </div>
+    );
   }
   if (goLive.ready) {
     return (

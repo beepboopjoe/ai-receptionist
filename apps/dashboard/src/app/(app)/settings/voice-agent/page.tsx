@@ -11,6 +11,8 @@ import { useTenant } from '@/lib/TenantProvider';
 import { usePlan } from '@/lib/usePlan';
 import { VerticalSwitchConfirm } from '@/components/settings/vertical-switch-confirm';
 import { KnowledgeBaseCard } from '@/components/dashboard/knowledge-base-card';
+import { WebsiteImportCard } from '@/components/setup/website-import-card';
+import { InboundRoutingCard } from '@/components/settings/inbound-routing-card';
 import {
   LEGAL_PRACTICE_AREAS,
   applyPracticeAreaToContext,
@@ -282,16 +284,21 @@ export default function VoiceAgentPage() {
             <option value="callback_promise">Callback Promise — AI promises to call back</option>
           </select>
           <p className="text-xs text-gray-400 mt-1">
-            What the AI says after it answers. To ring staff vs AI on the DID, use Inbound routing
-            on Phone Numbers.
+            What Telfin says after it answers. Who rings first is set just below.
           </p>
         </div>
+
+        <InboundRoutingCard />
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Business context for the AI
             <span className="text-gray-400 font-normal ml-1.5">(optional)</span>
           </label>
+
+          <div className="mb-3">
+            <WebsiteImportCard />
+          </div>
 
           {/* Curation Wizard CTA — guided alternative to free-text entry */}
           <Link
@@ -342,7 +349,7 @@ export default function VoiceAgentPage() {
           <textarea
             value={businessContext}
             onChange={(e) => setBusinessContext(e.target.value.slice(0, 4000))}
-            placeholder="Tell the AI about your business so it can answer caller questions accurately. Example: We're a family dental practice in Pasadena. We accept all major PPOs except Delta. New patients should arrive 15 minutes early. Same-day emergency slots are reserved for existing patients."
+            placeholder="Tell Telfin about your business so it can answer callers accurately. Example: We are a local shop in Pasadena. We are closed Sundays. Mention the weekend sale if they ask about pricing."
             rows={6}
             className="input font-normal"
           />
@@ -387,9 +394,8 @@ export default function VoiceAgentPage() {
             </button>
           </div>
           <p className="text-xs text-gray-400 mt-1">
-            E.164 staff / business-line dest for escalations, Join call, test call, and inbound
-            routing (after-hours / overflow). Click <strong>Test it now</strong> to hear your AI.
-            Ringing vs AI is set on <a href="/settings/phone-numbers" className="underline">Phone Numbers</a>.
+            Your team phone. Used when the team answers first, when you join a live call, and for
+            your test call. Click <strong>Test it now</strong> to hear Telfin.
           </p>
         </div>
 

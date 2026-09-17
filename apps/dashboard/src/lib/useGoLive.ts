@@ -5,6 +5,7 @@ import {
   settingsApi,
   phoneNumbersApi,
   integrationsApi,
+  setupApi,
   type PortRequestRow,
 } from './api';
 import { usePlan } from './usePlan';
@@ -17,7 +18,9 @@ import {
 export const GROK_VOICE_IDS = ALL_GROK_VOICES;
 
 export type GoLiveStepId =
+  | 'knowledge'
   | 'phone'
+  | 'answering'
   | 'voice'
   | 'hours'
   | 'transfer'
@@ -84,11 +87,19 @@ export function useGoLive(): GoLiveStatus {
     'integrations',
     () => integrationsApi.list()
   );
+  const { data: setupStatus, isLoading: setupLoading } = useSWR('setup-status', () =>
+    setupApi.status(),
+  );
   const { plan } = usePlan();
   const isTrial = plan === 'trial';
 
   const loading =
-    settingsLoading || phonesLoading || portsLoading || hoursLoading || integrationsLoading;
+    settingsLoading ||
+    phonesLoading ||
+    portsLoading ||
+    hoursLoading ||
+    integrationsLoading ||
+    setupLoading;
 
   const settings = (settingsPayload as { settings?: Record<string, unknown> } | undefined)?.settings;
   const numbers = (phonesPayload as { data?: Array<{ phoneE164?: string; provisionStatus?: string }> } | undefined)?.data ?? [];
@@ -121,20 +132,47 @@ export function useGoLive(): GoLiveStatus {
       (i.provider === 'google_calendar' || i.provider === 'microsoft_calendar')
   );
 
+  const inboundMode = String(settings?.inboundRoutingMode ?? setupStatus?.inboundRoutingMode ?? 'ai_always');
+  const hasKnowledge = Boolean(setupStatus?.hasWebsiteImport || setupStatus?.hasBusinessContext);
+  const answeringDone = inboundMode === 'ai_always' || hasTransfer;
+
   const steps: GoLiveStep[] = [
     {
+      id: 'knowledge',
+      title: 'Tell Telfin about your business',
+      desc: hasKnowledge
+        ? 'Telfin already has notes to answer with. Add more any time.'
+        : 'Paste your website — we pull services, hours, and FAQs. Or type a few facts. You can skip.',
+      href: '/setup',
+      cta: hasKnowledge ? 'Review what we know' : 'Paste your website',
+      done: hasKnowledge,
+    },
+    {
       id: 'phone',
-      title: 'Get a Telfin inbound number',
+      title: 'Get your public number',
       desc: hasPhone
-        ? 'Forward your existing business line to this DID. Porting is optional later.'
+        ? 'This is the number callers dial. Forward your existing line to it if you already have one.'
         : hasPendingPort
-          ? 'A port is in progress, but go-live uses the auto-assigned Telfin DID — forwarding works today.'
+          ? 'A port is in progress, but go-live uses the number we assign today — forwarding works now.'
           : isTrial
-            ? 'Free does not include a dedicated inbound DID. Upgrade (Growth includes 2 numbers) to receive calls.'
-            : 'We’ll auto-assign a US inbound DID on paid go-live. Forward your existing line to it.',
-      href: hasPhone ? '/settings/phone-numbers' : isTrial ? '/billing' : '/settings/phone-numbers',
-      cta: hasPhone ? 'Forwarding instructions' : isTrial ? 'Upgrade to get a number' : 'Get a number',
+            ? 'Free does not include a public number. Upgrade (Growth includes 2) when you are ready to go live.'
+            : 'Paid plans assign a public number the same day. Forward your existing line to it.',
+      href: hasPhone ? '/settings/phone-numbers' : isTrial ? '/billing' : '/setup',
+      cta: hasPhone ? 'See forwarding steps' : isTrial ? 'Upgrade to get a number' : 'Get your public number',
       done: phoneReady,
+    },
+    {
+      id: 'answering',
+      title: 'Who answers first?',
+      desc:
+        inboundMode === 'staff_first' || inboundMode === 'overflow_ai'
+          ? 'Your team first, then Telfin if nobody picks up.'
+          : inboundMode === 'after_hours_ai'
+            ? 'Your team during hours; Telfin after hours.'
+            : 'Telfin answers everything. Switch to team-first any time.',
+      href: '/setup',
+      cta: 'Choose who answers',
+      done: answeringDone,
     },
     {
       id: 'voice',
@@ -154,10 +192,10 @@ export function useGoLive(): GoLiveStatus {
     },
     {
       id: 'transfer',
-      title: 'Add a staff transfer number',
-      desc: 'Required for escalations, Join call (you ring in on a live AI call), and your own test call.',
+      title: 'Add your team phone number',
+      desc: 'We ring this when the team should answer first, when you join a live call, and for your own test call.',
       href: '/settings/voice-agent',
-      cta: 'Add transfer number',
+      cta: 'Add team number',
       done: hasTransfer,
     },
   ];
@@ -174,7 +212,8 @@ export function useGoLive(): GoLiveStatus {
   };
 
   const hardReady = phoneReady && hasGrokVoice && hasOpenHours && hasTransfer;
-  const completedCount = steps.filter((s) => s.done).length;
+  const requiredSteps = steps.filter((s) => s.id !== 'knowledge');
+  const completedCount = requiredSteps.filter((s) => s.done).length;
 
   return {
     loading,
@@ -190,6 +229,6 @@ export function useGoLive(): GoLiveStatus {
     steps,
     optionalStep,
     completedCount,
-    requiredCount: steps.length,
+    requiredCount: requiredSteps.length,
   };
 }

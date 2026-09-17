@@ -6,33 +6,44 @@ import { settingsApi } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { PhoneCall } from 'lucide-react';
 
-export type InboundRoutingMode = 'ai_always' | 'after_hours_ai' | 'overflow_ai';
+export type InboundRoutingMode = 'ai_always' | 'after_hours_ai' | 'overflow_ai' | 'staff_first';
 
-const MODES: Array<{ id: InboundRoutingMode; title: string; body: string }> = [
+const HEADLINE: Array<{ id: InboundRoutingMode; title: string; body: string }> = [
+  {
+    id: 'staff_first',
+    title: 'Your team first, then Telfin',
+    body: 'During your hours we ring your team. If nobody picks up, or it is after hours, Telfin answers.',
+  },
   {
     id: 'ai_always',
-    title: 'AI always answers',
-    body: 'Every inbound call on your Telfin DID goes to the AI. Default for new paid accounts — simplest day-one setup.',
-  },
-  {
-    id: 'after_hours_ai',
-    title: 'Staff during hours · AI after hours',
-    body: 'While you are open, we forward to your Staff Transfer Number (your business line). Outside office hours the AI answers.',
-  },
-  {
-    id: 'overflow_ai',
-    title: 'Try staff first · AI on no-answer',
-    body: 'We ring your Staff Transfer Number first. If no one picks up or the line is busy, the AI takes over. Best-effort if staff does not answer.',
+    title: 'Telfin answers everything',
+    body: 'Every call on your public number goes to Telfin. Your team can still join or take over a live call.',
   },
 ];
 
-export function InboundRoutingCard() {
+const MORE: Array<{ id: InboundRoutingMode; title: string; body: string }> = [
+  {
+    id: 'after_hours_ai',
+    title: 'Team during hours only',
+    body: 'While you are open we send the call to your team line. After hours Telfin answers. No overflow if they miss it.',
+  },
+  {
+    id: 'overflow_ai',
+    title: 'Try the team first, any time',
+    body: 'We ring your team even after hours. Telfin steps in if nobody picks up.',
+  },
+];
+
+export function InboundRoutingCard({ compact = false }: { compact?: boolean }) {
   const toast = useToast();
   const { data } = useSWR('settings', () => settingsApi.get());
   const settings = (data as { settings?: Record<string, unknown> } | undefined)?.settings;
   const current = (settings?.inboundRoutingMode as InboundRoutingMode | undefined) ?? 'ai_always';
   const transferNumber = String(settings?.transferNumber ?? '').trim();
   const [saving, setSaving] = useState<InboundRoutingMode | null>(null);
+  const [showMore, setShowMore] = useState(
+    current === 'after_hours_ai' || current === 'overflow_ai',
+  );
 
   async function select(mode: InboundRoutingMode) {
     if (mode === current) return;
@@ -40,33 +51,36 @@ export function InboundRoutingCard() {
     try {
       await settingsApi.update({ inboundRoutingMode: mode });
       await mutate('settings');
-      toast.success('Inbound routing saved');
+      await mutate('setup-status');
+      toast.success('Call answering saved');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not save routing');
+      toast.error(err instanceof Error ? err.message : 'Could not save who answers');
     } finally {
       setSaving(null);
     }
   }
 
-  const needsStaff = current === 'after_hours_ai' || current === 'overflow_ai';
+  const needsStaff = current !== 'ai_always';
+  const options = showMore ? [...HEADLINE, ...MORE] : HEADLINE;
 
   return (
-    <div className="card p-5 space-y-4">
-      <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-          <PhoneCall size={16} className="text-brand-600" />
+    <div className={compact ? 'space-y-3' : 'card p-5 space-y-4'}>
+      {!compact && (
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+            <PhoneCall size={16} className="text-brand-600" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Who answers first?</h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Uses your office hours and team phone number. You can change this any time.
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-sm font-semibold text-gray-900">Inbound routing</h2>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Who answers the Telfin DID. Uses your office hours and Staff Transfer Number.
-            Distinct from Voice Agent after-hours script (what the AI says once it answers).
-          </p>
-        </div>
-      </div>
+      )}
 
       <div className="space-y-2">
-        {MODES.map((m) => {
+        {options.map((m) => {
           const selected = current === m.id;
           return (
             <button
@@ -90,10 +104,19 @@ export function InboundRoutingCard() {
         })}
       </div>
 
+      {!showMore && (
+        <button
+          type="button"
+          onClick={() => setShowMore(true)}
+          className="text-xs font-medium text-brand-700 hover:underline"
+        >
+          More ways to answer
+        </button>
+      )}
+
       {needsStaff && !transferNumber && (
         <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          Add a Staff Transfer Number on Voice Agent — without it we fall back to the AI so
-          callers are never dropped.
+          Add your team phone number below — without it Telfin answers so callers are never dropped.
         </p>
       )}
     </div>

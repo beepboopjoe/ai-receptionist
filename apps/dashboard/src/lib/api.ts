@@ -646,6 +646,55 @@ export const onboardingApi = {
     ),
 };
 
+export type WebsiteFacts = {
+  businessName: string;
+  services: string;
+  hours: string;
+  location: string;
+  faqs: string;
+  notes: string;
+  sourceUrl: string;
+};
+
+export type SetupWebsiteResult =
+  | {
+      ok: true;
+      skipped: false;
+      facts: WebsiteFacts;
+      businessContext: string;
+      hoursApplied: boolean;
+      kbDocumentId: string | null;
+      pagesUsed: number;
+    }
+  | {
+      ok: false;
+      skipped: true;
+      canSkip: true;
+      reason: 'invalid_url' | 'scrape_failed' | 'empty_site';
+      message: string;
+    };
+
+export type SetupStatus = {
+  hasWebsiteImport: boolean;
+  hasBusinessContext: boolean;
+  inboundRoutingMode: string;
+  transferNumber: string | null;
+};
+
+export const setupApi = {
+  status: () => apiFetch<SetupStatus>('/setup/status'),
+  importWebsite: (url: string) =>
+    apiFetch<SetupWebsiteResult>('/setup/website', {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    }),
+  saveFacts: (facts: Partial<WebsiteFacts>) =>
+    apiFetch<SetupWebsiteResult>('/setup/facts', {
+      method: 'POST',
+      body: JSON.stringify(facts),
+    }),
+};
+
 // ---- Notifications ----
 export const notificationsApi = {
   list: () => apiFetch<{ data: unknown[] }>('/notifications'),
