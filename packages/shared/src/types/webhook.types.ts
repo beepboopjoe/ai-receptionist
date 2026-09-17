@@ -18,6 +18,8 @@ export const WEBHOOK_EVENT_TYPES = [
   'campaign.lead_qualified',
   'campaign.lead_booked',
   'campaign.completed',
+  'sms.received',
+  'sms.sent',
 ] as const;
 
 export type WebhookEventType = typeof WEBHOOK_EVENT_TYPES[number];

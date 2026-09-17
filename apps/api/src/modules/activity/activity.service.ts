@@ -32,7 +32,9 @@ export type ActivityEventType =
   | 'call_caller_said'
   | 'call_agent_said'
   | 'call_live_ended'
-  | 'call_taken_over';
+  | 'call_taken_over'
+  | 'sms_received'
+  | 'sms_sent';
 
 export interface ActivityEvent {
   type: ActivityEventType;

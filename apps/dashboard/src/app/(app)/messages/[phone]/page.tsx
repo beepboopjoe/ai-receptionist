@@ -7,12 +7,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import useSWR, { mutate } from 'swr';
 import { ArrowLeft, MessageSquare, Send, Phone } from 'lucide-react';
-import { smsApi, type SmsMessage, type SmsThread } from '@/lib/api';
+import { smsApi, type SmsMessage } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useFeatureFlags } from '@/lib/featureFlags';
 import { LockedFeature } from '@/components/ui/locked-feature';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useSmsLiveSync } from '@/lib/use-sms-live-sync';
 
 // ── Relative time formatter ───────────────────────────────────────────────────
 function fmtTime(iso: string): string {
@@ -76,34 +78,17 @@ export default function ThreadPage() {
 
   const { has, loading: flagsLoading } = useFeatureFlags();
   const entitled = has('two_way_sms');
-  const [thread, setThread] = useState<SmsThread | null>(null);
-  const [loading, setLoading] = useState(true);
+  useSmsLiveSync(phone);
+  const { data: thread, isLoading: loading } = useSWR(
+    entitled ? ['sms-thread', phone] : null,
+    () => smsApi.getThread(phone),
+    { refreshInterval: 10_000 },
+  );
   const [sending, setSending] = useState(false);
   const [draft, setDraft] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
 
-  async function loadThread(silent = false) {
-    if (!silent) setLoading(true);
-    try {
-      const data = await smsApi.getThread(phone);
-      setThread(data);
-    } catch (err) {
-      if (!silent) toast.error(err instanceof Error ? err.message : 'Failed to load thread');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Initial load + 10-second poll for new messages
-  useEffect(() => {
-    if (!entitled) return;
-    void loadThread();
-    const interval = setInterval(() => void loadThread(true), 10_000);
-    return () => clearInterval(interval);
-  }, [phone, entitled]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Scroll to bottom whenever messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [thread?.messages.length]);
@@ -112,9 +97,10 @@ export default function ThreadPage() {
     if (!draft.trim() || sending) return;
     setSending(true);
     try {
-      await smsApi.send(phone, draft.trim());
+      await smsApi.send({ to: phone, body: draft.trim() });
       setDraft('');
-      await loadThread(true);
+      await mutate(['sms-thread', phone]);
+      await mutate('sms-conversations');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to send message');
     } finally {
@@ -165,7 +151,7 @@ export default function ThreadPage() {
           <p className="font-semibold text-gray-900 truncate">{displayName}</p>
           {thread?.contactId && (
             <Link
-              href={`/contacts`}
+              href={`/contacts/${thread.contactId}`}
               className="text-xs text-brand-600 hover:underline"
             >
               {phone}

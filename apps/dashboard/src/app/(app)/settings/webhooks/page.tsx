@@ -30,6 +30,8 @@ const AVAILABLE_EVENTS = [
   'campaign.lead_qualified',
   'campaign.lead_booked',
   'campaign.completed',
+  'sms.received',
+  'sms.sent',
 ];
 
 export default function WebhooksPage() {

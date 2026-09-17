@@ -1065,11 +1065,25 @@ export const smsApi = {
   getThread: (phone: string) =>
     apiFetch<SmsThread>(`/sms/conversations/${encodeURIComponent(phone)}`),
 
-  /** Send an outbound SMS from the dashboard. */
-  send: (to: string, body: string) =>
-    apiFetch<{ ok: boolean; messageId: string }>('/sms/send', {
+  /** Send an outbound SMS from the dashboard or Ask Telfin. */
+  send: (params: {
+    to: string;
+    body: string;
+    firstName?: string;
+    lastName?: string;
+    source?: 'inbox' | 'ai_task';
+  }) =>
+    apiFetch<{
+      ok: boolean;
+      messageId?: string;
+      contactId?: string;
+      contactCreated?: boolean;
+      toNumber?: string;
+      error?: string;
+      message?: string;
+    }>('/sms/send', {
       method: 'POST',
-      body: JSON.stringify({ to, body }),
+      body: JSON.stringify(params),
     }),
 };
 

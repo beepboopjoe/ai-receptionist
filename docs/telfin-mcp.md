@@ -93,7 +93,7 @@ curl -sS http://localhost:3001/mcp \
 | `telfin_list_calls` | read | Recent calls (duration, direction, summary) |
 | `telfin_get_call` | read | One call + transcript excerpt (same tenant only) |
 | `telfin_list_numbers` | read | Tenant DIDs + provision status |
-| `telfin_send_sms` | write | Send SMS if two-way SMS is already enabled for the tenant; otherwise a clear “not enabled” error |
+| `telfin_send_sms` | write | Send one SMS from the tenant DID if two-way SMS is enabled; free/demo returns upgrade required; carrier A2P/10DLC rejection is returned honestly (not treated as “registered”) |
 
 Leads are **CRM contacts** for the authenticated tenant. Platform-wide `demo_leads` (homepage call-me / marketing widget) are **not** exposed — that table is not tenant-scoped.
 
@@ -110,7 +110,7 @@ v1 will reject unknown tool names rather than dial.
 - Tenant id comes **only** from the hashed API key. Clients cannot pass another tenant.
 - Read keys cannot call write tools.
 - No session map: each POST authenticates independently (no cross-tenant session reuse).
-- SMS uses the same plan + DID + Telnyx path as the dashboard inbox. If that path is not configured, the tool errors; it does not invent a from-number.
+- SMS uses the same plan + DID + carrier path as the dashboard inbox. If that path is not configured, the tool errors; it does not invent a from-number. US A2P/10DLC (campaign registration) is **not** completed by Telfin v1 — a carrier reject is returned as a send failure, not as a compliance certification.
 - Do not set `DEMO_SKIP_COOLDOWN`. Demo call-me is unchanged.
 
 ## Implementation map

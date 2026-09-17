@@ -1,22 +1,22 @@
 'use client';
 // ============================================================
-// DashboardChatWidget — in-app shortcut to place one outbound call.
+// DashboardChatWidget — Ask Telfin shortcut for one call or text.
 //
-// "Call +1… and tell them I’m following up about X." Parse → confirm
-// → POST /calls/ai-task (pool CLI, contact upsert, Calls list).
+// "Call +1… and tell them X" or "Text +1… and tell them Y / goal Z."
+// Parse → confirm → POST /calls/ai-task or /sms/send.
 // Dictation via Web Speech API; type if the mic isn't supported.
-// Free / demo accounts confirm then see DemoUpgradeCard (no live dial).
+// Free / demo accounts confirm then see DemoUpgradeCard (no live send).
 // ============================================================
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
-import { MessageCircle, X, Send, Mic, MicOff, PhoneOutgoing, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, Mic, MicOff, PhoneOutgoing, MessageSquare, Loader2 } from 'lucide-react';
 import { mutate } from 'swr';
 import {
   formatNanpDisplay,
-  parseCallIntent,
-  type CallIntentParse,
+  parseDashboardIntent,
+  type DashboardIntentParse,
 } from '@ai-receptionist/shared';
-import { ApiError, callsApi } from '@/lib/api';
+import { ApiError, callsApi, smsApi } from '@/lib/api';
 import { BRAND_NAME } from '@/lib/brand';
 import { usePlan } from '@/lib/usePlan';
 import { useToast } from '@/components/ui/toast';
@@ -24,21 +24,37 @@ import { DemoUpgradeCard } from '@/components/dashboard/demo-upgrade-card';
 import { DASHBOARD_CHAT_OPEN_EVENT } from '@/lib/dashboard-chat';
 import { useSpeechDictation } from '@/lib/use-speech-dictation';
 
-type ParsedOk = Extract<CallIntentParse, { ok: true }>;
+type ParsedOk = Extract<DashboardIntentParse, { ok: true }>;
 
 type ChatMessage = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   intent?: ParsedOk;
-  placed?: { callId: string; toNumber: string; contactId?: string };
+  placed?: { kind: 'call' | 'sms'; callId?: string; toNumber: string; contactId?: string };
   upgrade?: boolean;
 };
 
-const WELCOME = `Hi — I can place a call for you. Try: “Call +1 555-123-4567 and tell them I’m following up about the quote.” I’ll confirm before we dial.`;
+const WELCOME = `Hi — I can call or text from your business number. Try: “Call +1 555-123-4567 and tell them I’m following up about the quote,” or “Text +1 555-123-4567 and tell them the same.” I’ll confirm before we send.`;
 
 function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function revalidateSurfaces(kind: 'call' | 'sms') {
+  void mutate(
+    (key) =>
+      typeof key === 'string'
+        ? key === 'sms-conversations' ||
+          key === 'contacts' ||
+          key === 'calls' ||
+          (kind === 'call' && key === 'calls')
+        : Array.isArray(key) &&
+          (key[0] === 'calls' ||
+            key[0] === 'contacts' ||
+            key[0] === 'sms-conversations' ||
+            key[0] === 'sms-thread'),
+  );
 }
 
 export function DashboardChatWidget() {
@@ -89,7 +105,10 @@ export function DashboardChatWidget() {
         {
           id: newId(),
           role: 'assistant',
-          content: 'Live outbound calls unlock after you upgrade. Explore the dashboard now — we’ll dial from here once you’re on a paid plan.',
+          content:
+            intent.kind === 'sms'
+              ? 'Live SMS unlocks after you upgrade. Explore the dashboard now — we’ll text from your business number once you’re on a paid plan.'
+              : 'Live outbound calls unlock after you upgrade. Explore the dashboard now — we’ll dial from here once you’re on a paid plan.',
           upgrade: true,
         },
       ]);
@@ -97,6 +116,38 @@ export function DashboardChatWidget() {
     }
     setPlacing(true);
     try {
+      if (intent.kind === 'sms') {
+        const res = await smsApi.send({
+          to: intent.to,
+          body: intent.task,
+          source: 'ai_task',
+          ...(intent.firstName ? { firstName: intent.firstName } : {}),
+        });
+        if (!res.ok) {
+          throw new Error(res.message ?? 'Could not send the text.');
+        }
+        const toNumber = res.toNumber ?? intent.to;
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: newId(),
+            role: 'assistant',
+            content: `Text sent to ${formatNanpDisplay(toNumber)}. It shows up in Messages, and we’ll keep the contact in sync.`,
+            placed: {
+              kind: 'sms',
+              toNumber,
+              ...(res.contactId ? { contactId: res.contactId } : {}),
+            },
+          },
+        ]);
+        toast.success(`Text sent to ${formatNanpDisplay(toNumber)}`, {
+          href: `/messages/${encodeURIComponent(toNumber)}`,
+          hrefLabel: 'Open messages',
+        });
+        revalidateSurfaces('sms');
+        return;
+      }
+
       const res = await callsApi.aiTask({
         to: intent.to,
         task: intent.task,
@@ -114,6 +165,7 @@ export function DashboardChatWidget() {
           role: 'assistant',
           content: `Calling ${formatNanpDisplay(toNumber)} now. The live call shows up in Calls, and we’ll keep the contact in sync.`,
           placed: {
+            kind: 'call',
             callId,
             toNumber,
             ...(res.contactId ? { contactId: res.contactId } : {}),
@@ -124,7 +176,7 @@ export function DashboardChatWidget() {
         href: `/calls/${callId}`,
         hrefLabel: 'Open call',
       });
-      void mutate((key) => Array.isArray(key) && (key[0] === 'calls' || key[0] === 'contacts'));
+      revalidateSurfaces('call');
     } catch (err) {
       if (err instanceof ApiError && err.statusCode === 402) {
         setMessages((prev) => [
@@ -132,13 +184,21 @@ export function DashboardChatWidget() {
           {
             id: newId(),
             role: 'assistant',
-            content: 'Live outbound calls unlock after you upgrade.',
+            content:
+              intent.kind === 'sms'
+                ? 'Live SMS unlocks after you upgrade.'
+                : 'Live outbound calls unlock after you upgrade.',
             upgrade: true,
           },
         ]);
         return;
       }
-      const message = err instanceof Error ? err.message : 'Could not place the call.';
+      const message =
+        err instanceof Error
+          ? err.message
+          : intent.kind === 'sms'
+            ? 'Could not send the text.'
+            : 'Could not place the call.';
       setMessages((prev) => [...prev, { id: newId(), role: 'assistant', content: message }]);
       toast.error(message);
     } finally {
@@ -152,7 +212,7 @@ export function DashboardChatWidget() {
     setSending(true);
     setInput('');
     const userMsg: ChatMessage = { id: newId(), role: 'user', content };
-    const parsed = parseCallIntent(content);
+    const parsed = parseDashboardIntent(content);
     const assistant: ChatMessage = parsed.ok
       ? {
           id: newId(),
@@ -181,7 +241,7 @@ export function DashboardChatWidget() {
               <h2 id={titleId} className="font-serif text-base text-cream-900">
                 Ask {BRAND_NAME}
               </h2>
-              <p className="text-[11px] text-cream-600">Place a call in your own words</p>
+              <p className="text-[11px] text-cream-600">Call or text in your own words</p>
             </div>
             <button
               type="button"
@@ -247,7 +307,7 @@ export function DashboardChatWidget() {
                     submitText(input);
                   }
                 }}
-                placeholder="Call +1… and tell them…"
+                placeholder="Call or text +1… and tell them…"
                 maxLength={500}
                 rows={2}
                 disabled={sending || placing || planLoading}
@@ -297,6 +357,9 @@ function intentConfirmCopy(intent: ParsedOk): string {
   const who = intent.firstName
     ? `${intent.firstName} at ${formatNanpDisplay(intent.to)}`
     : formatNanpDisplay(intent.to);
+  if (intent.kind === 'sms') {
+    return `I’ll text ${who}: “${intent.task}”. Send this text?`;
+  }
   return `I’ll call ${who} and say: “${intent.task}”. Place this call?`;
 }
 
@@ -312,6 +375,7 @@ function Bubble({
   onCancel: () => void;
 }) {
   const mine = message.role === 'user';
+  const sms = message.intent?.kind === 'sms';
   return (
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
       <div
@@ -328,8 +392,14 @@ function Bubble({
               disabled={placing}
               className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
             >
-              {placing ? <Loader2 size={12} className="animate-spin" /> : <PhoneOutgoing size={12} />}
-              Place call
+              {placing ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : sms ? (
+                <MessageSquare size={12} />
+              ) : (
+                <PhoneOutgoing size={12} />
+              )}
+              {sms ? 'Send text' : 'Place call'}
             </button>
             <button
               type="button"
@@ -343,9 +413,18 @@ function Bubble({
         )}
         {message.placed && (
           <p className="text-xs">
-            <Link href={`/calls/${message.placed.callId}`} className="font-semibold text-brand-700 hover:underline">
-              Open call
-            </Link>
+            {message.placed.kind === 'sms' ? (
+              <Link
+                href={`/messages/${encodeURIComponent(message.placed.toNumber)}`}
+                className="font-semibold text-brand-700 hover:underline"
+              >
+                Open messages
+              </Link>
+            ) : message.placed.callId ? (
+              <Link href={`/calls/${message.placed.callId}`} className="font-semibold text-brand-700 hover:underline">
+                Open call
+              </Link>
+            ) : null}
             {message.placed.contactId ? (
               <>
                 {' · '}
@@ -362,8 +441,8 @@ function Bubble({
         {message.upgrade && (
           <div className="pt-1">
             <DemoUpgradeCard
-              title="Live calls after upgrade"
-              body="Browse the dashboard now. After you upgrade, this chat places a real outbound call and updates Calls and Contacts."
+              title={sms || message.content.toLowerCase().includes('sms') ? 'Live texts after upgrade' : 'Live calls after upgrade'}
+              body="Browse the dashboard now. After you upgrade, this chat can place a real call or send a text from your business number and update Calls, Messages, and Contacts."
             />
           </div>
         )}
