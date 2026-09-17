@@ -13,6 +13,7 @@
 // ============================================================
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import Link from 'next/link';
 
 type ToastTone = 'success' | 'error' | 'info';
 
@@ -20,10 +21,14 @@ interface Toast {
   id: number;
   tone: ToastTone;
   message: string;
+  href?: string;
+  hrefLabel?: string;
 }
 
+type ToastAction = { href: string; hrefLabel: string };
+
 interface ToastContextValue {
-  success: (message: string) => void;
+  success: (message: string, action?: ToastAction) => void;
   error: (message: string) => void;
   info: (message: string) => void;
 }
@@ -39,13 +44,13 @@ const TONE_STYLES: Record<ToastTone, { bg: string; text: string; icon: typeof Ch
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const push = useCallback((tone: ToastTone, message: string) => {
+  const push = useCallback((tone: ToastTone, message: string, action?: ToastAction) => {
     const id = Date.now() + Math.random();
-    setToasts((prev) => [...prev, { id, tone, message }]);
+    setToasts((prev) => [...prev, { id, tone, message, ...(action ?? {}) }]);
     // Auto-dismiss
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
+    }, 6000);
   }, []);
 
   const dismiss = useCallback((id: number) => {
@@ -53,7 +58,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value: ToastContextValue = {
-    success: (m) => push('success', m),
+    success: (m, action) => (action ? push('success', m, action) : push('success', m)),
     error:   (m) => push('error', m),
     info:    (m) => push('info', m),
   };
@@ -63,7 +68,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {/* Stack bottom-right, above everything */}
       <div
-        className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"
+        className="fixed bottom-24 right-4 z-50 flex flex-col gap-2 pointer-events-none"
         role="region"
         aria-label="Notifications"
         aria-live="polite"
@@ -78,7 +83,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               role="status"
             >
               <Icon size={18} className="shrink-0 mt-0.5" />
-              <p className="text-sm flex-1">{t.message}</p>
+              <div className="text-sm flex-1 space-y-1">
+                <p>{t.message}</p>
+                {t.href && t.hrefLabel && (
+                  <Link href={t.href} className="font-semibold underline underline-offset-2">
+                    {t.hrefLabel}
+                  </Link>
+                )}
+              </div>
               <button
                 onClick={() => dismiss(t.id)}
                 className="shrink-0 opacity-50 hover:opacity-100 transition-opacity"

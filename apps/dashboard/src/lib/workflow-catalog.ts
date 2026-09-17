@@ -155,7 +155,7 @@ export function buildWorkflowCatalog(v: VerticalConfig): WorkflowDef[] {
     {
       id: 'ask-your-ai',
       name: 'Ask Your AI to Make a Call',
-      description: `Type a request in plain words — "call and confirm tomorrow's 2pm" — and your AI dials, handles the conversation, and shows you the transcript.`,
+      description: `Type or dictate in Ask Telfin — "call and confirm tomorrow's 2pm" — and your AI dials, handles the conversation, and shows you the transcript in Calls.`,
       category: 'proactive',
       channel: 'voice',
       status: 'live',

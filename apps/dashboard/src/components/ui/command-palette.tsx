@@ -17,6 +17,8 @@ import { useRouter } from 'next/navigation';
 import { Search, Users, Phone, Calendar, AlertCircle, X, ArrowRight } from 'lucide-react';
 import { searchApi, type SearchHits } from '@/lib/api';
 import { useVertical } from '@/lib/useVertical';
+import { openDashboardChat } from '@/lib/dashboard-chat';
+import { BRAND_NAME } from '@/lib/brand';
 
 interface FlatHit {
   type: 'contact' | 'call' | 'appointment' | 'escalation' | 'page';
@@ -29,6 +31,7 @@ interface FlatHit {
 const PAGE_SHORTCUTS: { id: string; title: string; subtitle: string; href: string; keywords: string[] }[] = [
   { id: 'help', title: 'Contact support', subtitle: 'Submit a ticket — we reply by email', href: '/support', keywords: ['help', 'support', 'ticket', 'contact'] },
   { id: 'test-call', title: 'Test call', subtitle: 'Hear your AI receptionist on the phone', href: '/test-call', keywords: ['test', 'call', 'try', 'demo', 'practice'] },
+  { id: 'ask-telfin', title: `Ask ${BRAND_NAME}`, subtitle: 'Call someone in your own words', href: '#ask-telfin', keywords: ['ask', 'chat', 'call', 'dictate', 'assistant', 'telfin'] },
   { id: 'workflows', title: 'Workflows', subtitle: 'Front-desk automations', href: '/workflows', keywords: ['workflow', 'automation', 'front desk'] },
 ];
 
@@ -161,6 +164,10 @@ export function CommandPalette() {
 
   function go(hit: FlatHit) {
     setOpen(false);
+    if (hit.id === 'ask-telfin') {
+      openDashboardChat();
+      return;
+    }
     router.push(hit.href);
   }
 

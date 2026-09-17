@@ -115,4 +115,15 @@ describe('buildSystemPrompt', () => {
     expect(paying).not.toMatch(/Speak Spanish from the VERY FIRST word/);
     expect(paying).not.toMatch(/Detect the caller's language from their speech/);
   });
+
+  it('injects an Ask-your-AI / dashboard-chat task as the call brief', () => {
+    const prompt = buildSystemPrompt({
+      ...BASE_CTX,
+      vertical: 'dental',
+      adHocTask: 'Tell them we are following up about the quote',
+    });
+    expect(prompt).toMatch(/Your Task This Call/i);
+    expect(prompt).toContain('Tell them we are following up about the quote');
+    expect(prompt).toMatch(/YOU called THEM/i);
+  });
 });

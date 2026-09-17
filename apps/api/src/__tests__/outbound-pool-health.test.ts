@@ -116,6 +116,13 @@ describe('Free accounts do not get a live pool', () => {
     expect(job).toContain("outcome: 'failure'");
     expect(job).toContain('campaign.fromNumber');
   });
+
+  it('dashboard chat / Ask-your-AI dials from the pool, not a client-picked CLI', () => {
+    const svc = readFileSync(join(srcRoot, 'modules/assistant/place-ai-task.ts'), 'utf8');
+    expect(svc).toContain('selectPoolNumberForDial');
+    expect(svc).toContain('recordPoolDialOutcome');
+    expect(svc).not.toMatch(/fromNumberForDial/);
+  });
 });
 
 describe('inbound public number vs outbound managed lines (UI)', () => {

@@ -156,10 +156,17 @@ export const callsApi = {
       `/calls/test-call`,
       { method: 'POST' }
     ),
-  /** Phase 29b — Ask your AI: single-task outbound call from a plain-English
-   *  instruction. Rate-limited 5/hour server-side. */
-  aiTask: (params: { to?: string; contactId?: string; task: string }) =>
-    apiFetch<{ ok: boolean; callId?: string; toNumber?: string; error?: string; message?: string }>(
+  /** Single-task outbound call from dashboard chat / Ask your AI. Rate-limited 5/hour. */
+  aiTask: (params: { to?: string; contactId?: string; task: string; firstName?: string; lastName?: string }) =>
+    apiFetch<{
+      ok: boolean;
+      callId?: string;
+      contactId?: string;
+      contactCreated?: boolean;
+      toNumber?: string;
+      error?: string;
+      message?: string;
+    }>(
       `/calls/ai-task`,
       { method: 'POST', body: JSON.stringify(params) }
     ),

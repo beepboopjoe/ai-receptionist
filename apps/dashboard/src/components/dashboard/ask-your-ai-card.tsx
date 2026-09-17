@@ -12,8 +12,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { PhoneOutgoing, Sparkles, Loader2 } from 'lucide-react';
-import { callsApi } from '@/lib/api';
+import { callsApi, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { usePlan } from '@/lib/usePlan';
+import { DemoUpgradeCard } from '@/components/dashboard/demo-upgrade-card';
+import { openDashboardChat } from '@/lib/dashboard-chat';
+import { BRAND_NAME } from '@/lib/brand';
 
 /** Normalize common US/CA inputs ("555-123-4567", "(555) 123 4567") to E164. */
 function toE164(raw: string): string | null {
@@ -32,10 +36,21 @@ const EXAMPLES = [
 
 export function AskYourAiCard() {
   const toast = useToast();
+  const { isDemoAccount } = usePlan();
   const [phone, setPhone] = useState('');
   const [task, setTask] = useState('');
   const [placing, setPlacing] = useState(false);
   const [placedTo, setPlacedTo] = useState<string | null>(null);
+  const [placedCallId, setPlacedCallId] = useState<string | null>(null);
+
+  if (isDemoAccount) {
+    return (
+      <DemoUpgradeCard
+        title="Ask your AI after upgrade"
+        body={`Type or dictate a call in Ask ${BRAND_NAME} (corner of the dashboard) once you’re on a paid plan. Free accounts can explore the rest of the dashboard now.`}
+      />
+    );
+  }
 
   async function handleCall() {
     const e164 = toE164(phone.trim());
@@ -50,14 +65,22 @@ export function AskYourAiCard() {
     setPlacing(true);
     try {
       const res = await callsApi.aiTask({ to: e164, task: task.trim() });
-      if (res.ok) {
+      if (res.ok && res.callId) {
         setPlacedTo(res.toNumber ?? e164);
+        setPlacedCallId(res.callId);
         setTask('');
-        toast.success('Your AI is calling now. The result will appear in Calls with a transcript.');
+        toast.success('Your AI is calling now.', {
+          href: `/calls/${res.callId}`,
+          hrefLabel: 'Open call',
+        });
       } else {
         toast.error(res.message ?? 'Could not place the call.');
       }
     } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 402) {
+        toast.error('Upgrade to place live outbound calls.');
+        return;
+      }
       toast.error(err instanceof Error ? err.message : 'Could not place the call.');
     } finally {
       setPlacing(false);
@@ -112,12 +135,24 @@ export function AskYourAiCard() {
 
       {placedTo && (
         <p className="text-xs text-indigo-700 mt-3">
-          ✓ Calling {placedTo} now — check <Link href="/calls" className="font-semibold hover:underline">Calls</Link> in a couple of minutes for the transcript.
+          ✓ Calling {placedTo} now —{' '}
+          {placedCallId ? (
+            <Link href={`/calls/${placedCallId}`} className="font-semibold hover:underline">
+              open the call
+            </Link>
+          ) : (
+            <Link href="/calls" className="font-semibold hover:underline">Calls</Link>
+          )}
+          {' '}for the transcript.
         </p>
       )}
       <p className="text-[11px] text-gray-500 mt-3">
         One number per request · counts toward your monthly minutes · up to 5 calls per hour.
-        Need to call a whole list? Use a{' '}
+        Or use{' '}
+        <button type="button" onClick={openDashboardChat} className="text-indigo-700 font-medium hover:underline">
+          Ask {BRAND_NAME}
+        </button>{' '}
+        in the corner to type or dictate. Need a whole list? Use a{' '}
         <Link href="/workflows" className="text-indigo-700 font-medium hover:underline">Workflow</Link> instead.
       </p>
     </div>
