@@ -121,7 +121,7 @@ export function DashboardChatWidget() {
           id: newId(),
           role: 'assistant',
           content:
-            'Live outbound dials start on Growth. Starter covers inbound answering and SMS — upgrade when you want the AI to place calls for you.',
+            'Live outbound calls unlock after you upgrade. Explore the dashboard now — we’ll dial from here once you’re on a paid plan.',
           upgrade: true,
         },
       ]);

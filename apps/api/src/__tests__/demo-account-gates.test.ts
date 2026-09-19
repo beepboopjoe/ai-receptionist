@@ -37,7 +37,7 @@ describe('catalog prices for upgrade CTAs', () => {
     expect(getPlan('business')!.monthlyPrice).toBe(599);
     expect(getPlan('starter')!.monthlyPrice).toBe(20);
     expect(getPlan('starter')!.monthlyMinutes).toBe(50);
-    expect(getPlan('starter')!.outbound).toBe(false);
+    expect(getPlan('starter')!.outbound).toBe(true);
     expect(getPlan('trial')!.name).toBe('Free');
   });
 });

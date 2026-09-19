@@ -55,7 +55,7 @@ export default function WebhooksPage() {
 
   if (!has('webhooks')) {
     return (
-      <LockedFeature requiredPlan="growth" reason="outbound_locked" label="Outbound webhooks">
+      <LockedFeature requiredPlan="starter" reason="outbound_locked" label="Outbound webhooks">
         <div className="space-y-6 max-w-3xl opacity-50 pointer-events-none">
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Webhooks</h1>
           <p className="text-gray-500">Send signed event notifications to your URL when calls and appointments happen.</p>

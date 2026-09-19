@@ -73,7 +73,7 @@ const PLAN_OPTIONS: {
     numbers: '1',
     badge: 'Go live',
     popular: false,
-    note: 'Inbound receptionist + SMS',
+    note: 'Activates immediately after payment',
     paid: true,
   },
   {
@@ -112,9 +112,9 @@ const PLAN_OPTIONS: {
 ];
 
 // Derive aiUseCase for the register API from the plan chosen.
-// Free + Starter are inbound-only; Growth and above unlock outbound too.
+// Free stays inbound-only; every paid tier (including Starter) unlocks outbound.
 function aiUseCaseForPlan(plan: SignupPlanKey): 'inbound' | 'both' {
-  return plan === 'trial' || plan === 'starter' ? 'inbound' : 'both';
+  return plan === 'trial' ? 'inbound' : 'both';
 }
 
 export default function SignupPage() {

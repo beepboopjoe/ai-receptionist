@@ -122,7 +122,7 @@ export default function ThreadPage() {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Messages</h1>
-        <LockedFeature requiredPlan="growth" reason="sms_locked" label="Requires a paid plan">
+        <LockedFeature requiredPlan="starter" reason="sms_locked" label="Requires a paid plan">
           <div className="card p-12 min-h-[260px] flex items-center justify-center">
             <EmptyState icon={MessageSquare} label="Two-way SMS preview" hint="Upgrade to Growth to send and receive messages." />
           </div>

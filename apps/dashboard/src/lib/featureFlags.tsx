@@ -33,19 +33,19 @@ export type FeatureFlag =
   | 'knowledge_base';
 
 /** Lowest plan tier required for each flag. Anything above also gets it.
- *  Starter = inbound receptionist + basic SMS. Outbound / campaigns /
- *  Ask Telfin live dials stay Growth+. */
+ *  Starter is a full paid plan — same product as Growth, smaller
+ *  minute pack. Only Free/demo is gated. Scale+ extras stay Scale+. */
 const PLAN_REQUIREMENT: Record<FeatureFlag, PlanTier> = {
-  outbound_campaigns:  'growth',
+  outbound_campaigns:  'starter',
   two_way_sms:         'starter',
   analytics:           'scale',
   multi_location:      'scale',
-  webhooks:            'growth',
+  webhooks:            'starter',
   api_access:          'scale',
   custom_voice:        'scale',
   sso:                 'enterprise',
   priority_support:    'business',
-  crm_integrations:    'growth',
+  crm_integrations:    'starter',
   knowledge_base:      'business',
 };
 

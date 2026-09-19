@@ -206,7 +206,7 @@ export default function DashboardPage() {
         {outboundEnabled ? (
           <StatCard label="Active Campaigns" value={activeCampaigns} icon={Megaphone} color="bg-purple-500" />
         ) : (
-          <LockedFeature requiredPlan="growth" reason="outbound_locked" label="Outbound campaigns">
+          <LockedFeature requiredPlan="starter" reason="outbound_locked" label="Outbound campaigns">
             <LockedStatCard label="Active Campaigns" />
           </LockedFeature>
         )}
@@ -378,7 +378,7 @@ export default function DashboardPage() {
             )}
           </div>
         ) : (
-          <LockedFeature requiredPlan="growth" reason="outbound_locked" label="Outbound campaign pipeline">
+          <LockedFeature requiredPlan="starter" reason="outbound_locked" label="Outbound campaign pipeline">
             {/* Placeholder skeleton visible blurred behind the overlay */}
             <div className="card divide-y divide-gray-50">
               {[

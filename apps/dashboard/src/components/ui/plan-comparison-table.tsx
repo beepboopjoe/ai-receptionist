@@ -30,7 +30,7 @@ const PLAN_COLS: { key: PlanCol; name: string; price: string; popular?: boolean 
 type Cell = boolean | string;
 
 // Cell tuples are 6-wide: [trial, starter, growth, scale, business, enterprise].
-// Free = dashboard demo. Starter = inbound + SMS, no outbound campaigns.
+// Free = dashboard demo. Starter = full paid product, smaller minute pack.
 const SECTIONS: {
   title: string;
   rows: { label: string; cells: [Cell, Cell, Cell, Cell, Cell, Cell] }[];
@@ -69,17 +69,17 @@ const SECTIONS: {
     title: 'Outbound',
     rows: [
       { label: 'Outbound test calls',                       cells: [false, true, true, true, true, true] },
-      { label: 'Outbound calling campaigns',                cells: [false, false, true, true, true, true] },
-      { label: 'Leaves voicemails when nobody answers',     cells: [false, false, true, true, true, true] },
+      { label: 'Outbound calling campaigns',                cells: [false, true, true, true, true, true] },
+      { label: 'Leaves voicemails when nobody answers',     cells: [false, true, true, true, true, true] },
       { label: 'Advanced campaign retries',                 cells: [false, false, false, true, true, true] },
     ],
   },
   {
     title: 'Integrations',
     rows: [
-      { label: 'Webhooks',                                         cells: [false, false, true, true, true, true] },
-      { label: 'CRM event sync (calls/appointments/escalations)',  cells: [false, false, true, true, true, true] },
-      { label: 'CRMs supported (HubSpot + Salesforce + Zoho + Clio + Filevine)', cells: [false, false, true, true, true, true] },
+      { label: 'Webhooks',                                         cells: [false, true, true, true, true, true] },
+      { label: 'CRM event sync (calls/appointments/escalations)',  cells: [false, true, true, true, true, true] },
+      { label: 'CRMs supported (HubSpot + Salesforce + Zoho + Clio + Filevine)', cells: [false, true, true, true, true, true] },
       { label: 'Knowledge Base — documents',                       cells: [false, false, false, false, '500 docs', '500 docs'] },
       { label: 'Knowledge Base — storage',                         cells: [false, false, false, false, '2 GB', '2 GB'] },
       { label: 'Public REST API access',                           cells: [false, false, false, true, true, true] },

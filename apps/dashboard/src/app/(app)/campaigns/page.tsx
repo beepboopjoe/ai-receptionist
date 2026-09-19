@@ -30,7 +30,7 @@ export default function CampaignsPage() {
   const campaigns = ((data as any)?.data ?? []) as any[];
   const [actionId, setActionId] = useState<string | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
-  // Feature flags resolve from plan tier — Growth+ unlocks outbound campaigns.
+  // Feature flags resolve from plan tier — any paid plan unlocks outbound campaigns.
   const { has, loading: flagsLoading } = useFeatureFlags();
   const outboundEnabled = flagsLoading ? true : has('outbound_campaigns');
   // Promo-trial tenants see a separate caller-ID notice because their

@@ -37,7 +37,7 @@ stripe prices create \
 
 | Product | Monthly price | Annual (effective /mo) | Description |
 |---|---|---|---|
-| **Starter** | $20 USD / month | $17/mo ($204/yr) | 50 AI minutes, 1 phone number, inbound + SMS |
+| **Starter** | $20 USD / month | $17/mo ($204/yr) | 50 AI minutes, 1 phone number, full product |
 | **Growth**  | $199 USD / month | $169/mo | 380 AI minutes, 2 phone numbers, outbound |
 | **Scale**   | $399 USD / month | $339/mo | 780 AI minutes, 5 phone numbers |
 | **Business** | $599 USD / month | $509/mo | 1,100 AI minutes, 10 phone numbers |

@@ -55,8 +55,8 @@ export function AskYourAiCard() {
   if (!outboundEnabled) {
     return (
       <DemoUpgradeCard
-        title="Ask your AI on Growth"
-        body="Live outbound dials start on Growth. Starter covers inbound answering and SMS — upgrade when you want the AI to place calls for you."
+        title="Ask your AI after upgrade"
+        body={`Type or dictate a call in Ask ${BRAND_NAME} once you’re on a paid plan. Free accounts can explore the rest of the dashboard now.`}
       />
     );
   }

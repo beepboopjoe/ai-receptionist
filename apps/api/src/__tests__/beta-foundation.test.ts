@@ -63,7 +63,7 @@ describe('plan catalog sells minutes + numbers, not concurrent seats', () => {
     expect(getPlan('starter')!.monthlyPrice).toBe(20);
     expect(getPlan('starter')!.monthlyMinutes).toBe(50);
     expect(getPlan('starter')!.includedPhoneNumbers).toBe(1);
-    expect(getPlan('starter')!.outbound).toBe(false);
+    expect(getPlan('starter')!.outbound).toBe(true);
     expect(getPlan('growth')!.monthlyPrice).toBe(199);
     expect(getPlan('scale')!.monthlyPrice).toBe(399);
     expect(getPlan('business')!.monthlyPrice).toBe(599);
@@ -79,7 +79,7 @@ describe('plan catalog sells minutes + numbers, not concurrent seats', () => {
 describe('plan-aware pool sizing', () => {
   it('starts outbound pools from concurrentOutbound, capped at 15', () => {
     expect(targetPoolSizeForPlan('trial')).toBe(0);
-    expect(targetPoolSizeForPlan('starter')).toBe(0);
+    expect(targetPoolSizeForPlan('starter')).toBe(3);
     expect(targetPoolSizeForPlan('growth')).toBe(3);
     expect(targetPoolSizeForPlan('scale')).toBe(8);
     expect(targetPoolSizeForPlan('business')).toBe(15);

@@ -20,7 +20,7 @@ const srcRoot = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const dashboardRoot = join(srcRoot, '../../dashboard/src');
 
 describe('Starter catalog', () => {
-  it('is $20/mo with 50 minutes, 1 DID, inbound-only, PAYG overage', () => {
+  it('is $20/mo with 50 minutes, 1 DID, full product, PAYG overage', () => {
     const starter = getPlan('starter')!;
     expect(starter.name).toBe('Starter');
     expect(starter.monthlyPrice).toBe(20);
@@ -28,8 +28,8 @@ describe('Starter catalog', () => {
     expect(starter.monthlyMinutes).toBe(50);
     expect(starter.overagePerMin).toBe(0.39);
     expect(starter.includedPhoneNumbers).toBe(1);
-    expect(starter.outbound).toBe(false);
-    expect(starter.concurrentOutbound).toBe(0);
+    expect(starter.outbound).toBe(true);
+    expect(starter.concurrentOutbound).toBe(3);
     expect(resolvePlanLimits(starter, {})).toEqual({ minutes: 50, overagePerMin: 0.39 });
   });
 
@@ -43,11 +43,11 @@ describe('Starter catalog', () => {
     expect(getPlan('trial')!.name).toBe('Free');
   });
 
-  it('is paid go-live: SMS yes, outbound/KB no', () => {
+  it('is paid go-live: SMS + outbound yes, KB still Business+', () => {
     expect(isPaidPlanKey('starter')).toBe(true);
     expect(isUnpaidDemoAccount('starter', false)).toBe(false);
     expect(planAllowsSms('starter')).toBe(true);
-    expect(planAllowsOutbound('starter')).toBe(false);
+    expect(planAllowsOutbound('starter')).toBe(true);
     expect(planAllowsKb('starter')).toBe(false);
     expect(planAllowsOutbound('growth')).toBe(true);
     expect(planAllowsSms('trial')).toBe(false);
@@ -88,6 +88,18 @@ describe('Starter checkout + env wiring (source)', () => {
 });
 
 describe('Starter UI (source)', () => {
+  it('does not feature-gate Starter below Growth for outbound / SMS / CRM', () => {
+    const flags = readFileSync(join(dashboardRoot, 'lib/featureFlags.tsx'), 'utf8');
+    expect(flags).toMatch(/outbound_campaigns:\s*'starter'/);
+    expect(flags).toMatch(/two_way_sms:\s*'starter'/);
+    expect(flags).toMatch(/webhooks:\s*'starter'/);
+    expect(flags).toMatch(/crm_integrations:\s*'starter'/);
+
+    const compare = readFileSync(join(dashboardRoot, 'components/ui/plan-comparison-table.tsx'), 'utf8');
+    expect(compare).toContain("{ label: 'Outbound calling campaigns'");
+    expect(compare).toMatch(/Outbound calling campaigns.*\[false, true, true, true, true, true\]/);
+  });
+
   it('shows Starter on pricing, billing compare, signup, and UpgradeModal', () => {
     const pricing = readFileSync(join(dashboardRoot, 'app/pricing/page.tsx'), 'utf8');
     expect(pricing).toContain('Starter ($20/mo)');

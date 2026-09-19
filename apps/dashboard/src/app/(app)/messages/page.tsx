@@ -98,7 +98,7 @@ export default function MessagesPage() {
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Messages</h1>
           <p className="text-gray-500 mt-1">Two-way SMS conversations with your contacts</p>
         </div>
-        <LockedFeature requiredPlan="growth" reason="sms_locked" label="Requires a paid plan">
+        <LockedFeature requiredPlan="starter" reason="sms_locked" label="Requires a paid plan">
           <div className="card p-12 min-h-[260px] flex items-center justify-center">
             <EmptyState icon={MessageSquare} label="Two-way SMS preview" hint="Upgrade to Growth to send and receive messages." />
           </div>

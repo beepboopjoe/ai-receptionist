@@ -52,15 +52,15 @@ const MODAL_CONTENT: Record<
   },
   outbound_locked: {
     icon: '📣',
-    title: `Outbound campaigns require ${growth.name}`,
-    description: 'AI calling campaigns — dial lead lists, qualify prospects, and book appointments automatically — are available on paid plans.',
+    title: 'Outbound campaigns require a paid plan',
+    description: `AI calling campaigns — dial lead lists, qualify prospects, and book appointments automatically — unlock on ${starter.name} and every plan above it.`,
     features: [
       'Upload leads via CSV',
       'AI dials and qualifies automatically',
       'Books appointments from cold leads',
     ],
-    cta: `Upgrade to ${growth.name} · ${usdMo(growth.monthlyPrice)}`,
-    targetPlan: growth.name,
+    cta: `Upgrade to ${starter.name} · ${usdMo(starter.monthlyPrice)}`,
+    targetPlan: starter.name,
   },
   sms_locked: {
     icon: '💬',
@@ -129,7 +129,7 @@ const MODAL_CONTENT: Record<
     features: [
       `${starter.includedPhoneNumbers} local phone number included`,
       `${starter.monthlyMinutes.toLocaleString()} AI call minutes every month`,
-      'Activate your receptionist and forward your existing line',
+      'Inbound answering, outbound campaigns, and two-way SMS',
     ],
     cta: `Upgrade to ${starter.name} · ${usdMo(starter.monthlyPrice)}`,
     targetPlan: starter.name,

@@ -40,7 +40,7 @@ const FAQS = [
   },
   {
     q: 'Does it handle both inbound and outbound calls?',
-    a: 'Yes. Answering your phone 24/7 is on Starter and every plan above it. Outbound campaigns — reminders, follow-ups, win-backs, leaving a voicemail if nobody answers — start on Growth. Starter is inbound receptionist + SMS so you can go live without paying for dialer campaigns.',
+    a: 'Yes. Answering your phone 24/7 and calling out — reminders, follow-ups, win-backs, leaving a voicemail if nobody answers — are on every paid plan, including Starter. Free explores the dashboard; upgrade to go live.',
   },
   {
     q: 'Does SMS come included?',
@@ -60,7 +60,7 @@ const FAQS = [
   },
   {
     q: 'Can I try it free?',
-    a: 'Yes — sign up Free with no credit card. Explore the dashboard and sample the AI. Upgrade to Starter ($20/mo) to go live with a dedicated number, inbound answering, and SMS. Growth is $199/mo, Scale $399, Business $599 — those add outbound campaigns and more minutes.',
+    a: 'Yes — sign up Free with no credit card. Explore the dashboard and sample the AI. Upgrade to Starter ($20/mo) to go live with a dedicated number, SMS, outbound campaigns, and 50 included minutes. Growth is $199/mo, Scale $399, Business $599 — more included minutes and numbers.',
   },
   {
     q: 'Is my data secure? What about HIPAA?',
@@ -160,8 +160,8 @@ export default function PricingPage() {
             What&apos;s included in each plan.
           </h2>
           <p className="text-cream-600 mt-3 max-w-2xl mx-auto">
-            SMS, transcripts, and 7 languages are on every paid plan. Outbound campaigns start on Growth.
-            Starter is the inbound go-live tier; Growth, Scale, and Business add minutes, numbers, and outbound. Busy-period volume is billed in minutes — not concurrent seats.
+            SMS, transcripts, outbound campaigns, and 7 languages are on every paid plan, including Starter.
+            The difference between Starter, Growth, Scale, and Business is included AI minutes and included phone numbers. Busy-period volume is billed in minutes — not concurrent seats.
           </p>
         </div>
         <PlanComparisonTable />

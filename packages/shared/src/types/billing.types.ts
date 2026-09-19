@@ -23,16 +23,13 @@
 //     Scale:    ($399 - $59.60)  / $399 ≈ 85.1%   (780 min, 5 numbers)
 //     Business: ($599 - $87.00)  / $599 ≈ 85.5%   (1,100 min, 10 numbers)
 //
-//   Starter is the foot-in-door paid go-live (inbound receptionist +
-//   basic SMS + 1 DID). 50 min is the documented allotment: inside the
-//   ~40–75 requested band, ~13% of Growth minutes vs ~10% of Growth
-//   price, ~12–25 typical inbound calls (2–4 min). Margin is an
-//   intentional on-ramp exception vs the 85% floor on Growth/Scale/
-//   Business. Overage matches PAYG ($0.39/min) so extra usage does
-//   not undercut the PAYG strip.
-//
-//   Starter has outbound: false — no campaign pool, no Ask-Telfin
-//   live dials. Free remains the dashboard demo (no live DID).
+//   Starter is the foot-in-door paid go-live. Same product as Growth
+//   (inbound + outbound pool + Ask Telfin + SMS + CRM). Differentiates
+//   only by price, 50 included minutes, 1 DID, and PAYG overage.
+//   50 min is the documented allotment: inside the ~40–75 band, ~13%
+//   of Growth minutes vs ~10% of Growth price. Margin is an intentional
+//   on-ramp exception vs the 85% floor on Growth/Scale/Business.
+//   Free remains the only gated dashboard-demo tier.
 //
 //   Legacy pricing block (kept as defensive infrastructure for
 //   future grandfathering — no rows fire it today since no subs
@@ -117,24 +114,26 @@ export const PLANS: readonly Plan[] = [
     key: 'starter',
     name: 'Starter',
     badge: 'Go live',
-    tagline: 'Your own number. AI answers every inbound call.',
-    description: 'Paid go-live for inbound answering: one local number, a small monthly minute allotment, and basic two-way SMS. Upgrade to Growth when you want outbound campaigns.',
+    tagline: 'Go live with a number — same AI, smaller minute pack.',
+    description: 'Full Telfin on a small monthly minute allotment: inbound answering, outbound campaigns, SMS, and one local number. Upgrade to Growth when you need more included minutes.',
     monthlyPrice: 20,
     annualMonthlyPrice: 17,
     monthlyMinutes: 50,
     overagePerMin: 0.39,
     includedPhoneNumbers: 1,
-    outbound: false,
+    outbound: true,
     concurrentInbound: 50,
-    concurrentOutbound: 0,
+    concurrentOutbound: 3,
     features: [
       '🌐 Speaks 7 languages, switches automatically',
       '50 AI call minutes every month',
       '1 local phone number included',
-      '24/7 inbound answering',
+      'Busy periods covered — usage billed in AI minutes',
+      'Calls your customer lists for you',
+      'Leaves voicemails when nobody answers',
       'Books appointments into your calendar',
       'Texts customers back and forth',
-      'Upgrade to Growth for outbound campaigns',
+      'Connects to the tools you already use',
     ],
   },
   {
