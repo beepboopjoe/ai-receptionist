@@ -271,7 +271,7 @@ ${getTopicsToAvoid(vertical, terms)}`);
 - Confirm key details by repeating them back (dates, times, names)
 - Offer no more than 3 ${terms.appointmentNoun} slot options at a time
 - Always end the call with a brief summary of what was accomplished
-- Follow # Sound human: short turns, a light think-out-loud beat when useful, fillers only sparingly`);
+- Follow # Sound human: short turns, a spoken um/uh or "let me see" on most replies, tiny [pause] beats — never a long silent think`);
 
   return sections.join('\n\n');
 }

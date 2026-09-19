@@ -11,6 +11,7 @@ import { DemoUpgradeCard } from '@/components/dashboard/demo-upgrade-card';
 import { WebsiteImportCard } from '@/components/setup/website-import-card';
 import { InboundRoutingCard } from '@/components/settings/inbound-routing-card';
 import { ForwardYourLineCard } from '@/components/settings/forward-your-line-card';
+import { ShareBookingPageCard } from '@/components/settings/share-booking-page-card';
 
 const STEPS = [
   { id: 'knowledge', label: 'Your business' },
@@ -226,6 +227,8 @@ export default function SetupPage() {
           Back to Home
         </Link>
       </div>
+
+      <ShareBookingPageCard />
     </div>
   );
 }

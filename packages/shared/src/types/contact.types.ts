@@ -3,7 +3,7 @@
 // ============================================================
 
 export type ContactType = 'new' | 'existing';
-export type ContactSource = 'manual' | 'csv_import' | 'call' | 'crm_sync' | 'sms';
+export type ContactSource = 'manual' | 'csv_import' | 'call' | 'crm_sync' | 'sms' | 'web_booking';
 
 export interface Contact {
   id: string;

@@ -17,7 +17,8 @@ export type UpgradeReason =
   | 'pro_analytics'
   | 'multi_location'
   | 'knowledge_base'
-  | 'go_live';
+  | 'go_live'
+  | 'public_booking';
 
 interface UpgradeModalProps {
   open: boolean;
@@ -133,6 +134,18 @@ const MODAL_CONTENT: Record<
     ],
     cta: `Upgrade to ${starter.name} · ${usdMo(starter.monthlyPrice)}`,
     targetPlan: starter.name,
+  },
+  public_booking: {
+    icon: '📅',
+    title: 'Upgrade to take online bookings',
+    description: `Your booking page is ready to share after upgrade. ${growth.name} is $${growth.monthlyPrice}/mo, ${scale.name} $${scale.monthlyPrice}, ${business.name} $${business.monthlyPrice}. Phone, text, and web write to the same calendar.`,
+    features: [
+      'Public booking page for your customers',
+      'Same calendar the AI uses on the phone',
+      `${growth.includedPhoneNumbers} local phone numbers included`,
+    ],
+    cta: `Upgrade to ${growth.name} · ${usdMo(growth.monthlyPrice)}`,
+    targetPlan: growth.name,
   },
 };
 
