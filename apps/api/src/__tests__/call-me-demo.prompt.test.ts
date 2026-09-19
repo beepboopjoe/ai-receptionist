@@ -52,7 +52,7 @@ describe('buildCallMeDemoPrompt', () => {
     expect(DEMO_OPENING_EN).not.toMatch(/receptionist/i);
   });
 
-  it('uses the shared human-rhythm style (short turns, sparse fillers)', () => {
+  it('uses the shared human-rhythm style (short turns, spoken um/uh, short pauses)', () => {
     const prompt = buildCallMeDemoPrompt();
     for (const marker of SOUND_HUMAN_MARKERS) {
       expect(prompt, `missing human-rhythm marker: ${marker}`).toContain(marker);

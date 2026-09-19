@@ -83,6 +83,8 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toMatch(/Do NOT say you are AI/);
     expect(prompt).not.toMatch(/https:\/\//);
     expect(prompt).toMatch(/Sound human/);
+    expect(prompt).toMatch(/"um"/);
+    expect(prompt).toMatch(/"uh"/);
     expect(prompt).toMatch(/hmm/);
     expect(prompt).not.toMatch(/\bAria\b/);
   });
