@@ -35,12 +35,12 @@ export default function DemoPage() {
             See it before you sign up
           </div>
           <h1 className="font-serif text-[2.15rem] leading-[1.1] sm:text-5xl md:text-7xl text-cream-900 tracking-tight sm:leading-[1.05] break-words">
-            Hear the voices. Try a live call.
+            Hear it live. I&apos;m actually AI.
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
-            Aurora, Castor, Cosmo, and Zenith — the same Telfin voices your callers hear.
-            Enter your number and we&apos;ll call you. English or Spanish — pick Español
-            for a Spanish opener, or speak Spanish and it follows. No sign-up required.
+            The first line is honest — then Telfin talks like a receptionist.
+            Enter your number and we&apos;ll call you. English or Spanish. No sign-up.
+            Voice clips below are timbre samples, not the live opener.
           </p>
           <p className="text-xs font-semibold text-cream-500 mt-4 tracking-wide">
             {BRAND_STACK_LINE}
