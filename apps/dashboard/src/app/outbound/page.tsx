@@ -350,10 +350,10 @@ export default function OutboundPage() {
       <section className="bg-cream-900 text-white py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="font-serif text-4xl md:text-5xl tracking-tight">
-            Outbound is included on Growth.
+            Outbound is included on Starter.
           </h2>
           <p className="text-cream-300 mt-4 max-w-xl mx-auto">
-            Growth ($199/mo) covers inbound, outbound, and SMS on one number. Scale ($399/mo) adds multi-location, advanced analytics, and a dedicated success manager.
+            Starter ($20/mo) covers inbound, outbound, and SMS on one number. Growth ($199/mo) adds more minutes; Scale ($399/mo) adds multi-location and advanced analytics; Business is $599/mo.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link

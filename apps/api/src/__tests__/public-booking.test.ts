@@ -188,7 +188,7 @@ describe('public booking wiring (source)', () => {
       'utf8',
     );
     expect(card).toContain('Share your booking page');
-    expect(card).toContain('Growth $199 / Scale $399 / Business $599');
+    expect(card).toContain('Starter $20 / Growth $199 / Scale $399 / Business $599');
     expect(card).toContain("reason=\"public_booking\"");
     expect(card).not.toMatch(/\b(Grok|Telnyx|xAI)\b/);
 

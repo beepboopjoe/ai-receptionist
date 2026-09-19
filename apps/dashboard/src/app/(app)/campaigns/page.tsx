@@ -101,9 +101,9 @@ export default function CampaignsPage() {
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-start gap-3">
           <Megaphone size={18} className="text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-amber-800">Outbound campaigns require Growth plan</p>
+            <p className="text-sm font-semibold text-amber-800">Outbound campaigns require a paid plan</p>
             <p className="text-sm text-amber-700 mt-0.5">
-              Upgrade to Growth ($299/mo) to unlock AI calling campaigns.{' '}
+              Upgrade to Starter ($20/mo) to unlock AI calling campaigns.{' '}
               <button onClick={() => setShowUpgrade(true)} className="underline font-medium">See what&apos;s included →</button>
             </p>
           </div>

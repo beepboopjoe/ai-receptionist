@@ -35,7 +35,7 @@ export function GoLiveChecklist() {
         <WebsiteImportCard />
         <DemoUpgradeCard
           title="Upgrade to get your public number"
-          body="You can keep exploring the dashboard. Live number provisioning unlocks on Growth, Scale, or Business."
+          body="You can keep exploring the dashboard. Live number provisioning unlocks on Starter ($20/mo), Growth, Scale, or Business."
         />
       </div>
     );

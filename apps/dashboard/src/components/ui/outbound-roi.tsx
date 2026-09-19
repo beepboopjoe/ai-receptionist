@@ -22,7 +22,7 @@ export function OutboundRoi() {
   }, [inactive, avgVisit, reactivationPct]);
 
   const annualRevenue = monthlyRevenue * 12;
-  const planCost = 399; // Growth plan covers outbound
+  const planCost = 20; // Starter includes outbound; higher tiers add minutes
   const annualNet = annualRevenue - planCost * 12;
 
   return (
@@ -122,7 +122,7 @@ export function OutboundRoi() {
                 <span className="font-semibold text-cream-900">{formatMoney(annualRevenue)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-cream-600">Less Growth plan ({formatMoney(planCost)}/mo)</span>
+                <span className="text-cream-600">Less Starter plan ({formatMoney(planCost)}/mo)</span>
                 <span className="text-cream-700">−{formatMoney(planCost * 12)}</span>
               </div>
               <div className="flex items-center justify-between text-sm pt-3 border-t border-cream-200">

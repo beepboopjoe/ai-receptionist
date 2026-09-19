@@ -10,6 +10,7 @@ import { Clock, MessageSquare, Calendar, Zap, Users, Sparkles, X, Check, DollarS
 
 // ── Plan options for the calculator ─────────────────────────
 const PLAN_OPTIONS = [
+  { key: 'starter',  label: 'Starter',  price: 20 },
   { key: 'growth',   label: 'Growth',   price: 199 },
   { key: 'scale',    label: 'Scale',    price: 399 },
   { key: 'business', label: 'Business', price: 599 },
@@ -149,7 +150,7 @@ function RoiCalculator() {
             {/* Plan selector */}
             <div>
               <label className="text-sm font-medium text-cream-700 block mb-3">Telfin plan</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {PLAN_OPTIONS.map(p => (
                   <button
                     key={p.key}
@@ -214,7 +215,7 @@ export function RoiSection() {
             <br />
             <span className="text-red-500 line-through decoration-2 opacity-80">$3,800–$4,800/mo</span>
             <span className="text-cream-400">{'  '}</span>
-            <span className="gradient-text">We start at $199.</span>
+            <span className="gradient-text">We start at $20.</span>
           </h2>
           <p className="text-cream-600 text-lg mt-6 max-w-2xl mx-auto leading-relaxed">
             And the AI works nights, weekends, and holidays — without overtime, sick days, or benefits.
@@ -280,7 +281,7 @@ export function RoiSection() {
               </div>
 
               <div className="flex items-end gap-2">
-                <span className="font-serif text-5xl text-cream-900 tracking-tight">$199</span>
+                <span className="font-serif text-5xl text-cream-900 tracking-tight">$20</span>
                 <span className="text-cream-500 mb-1.5 text-sm">– $599<span className="text-cream-400">/mo</span></span>
               </div>
               <p className="text-xs text-cream-500 mt-1">Flat monthly rate — no surprises, no overhead</p>

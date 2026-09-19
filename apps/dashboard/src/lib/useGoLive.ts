@@ -155,7 +155,7 @@ export function useGoLive(): GoLiveStatus {
         : hasPendingPort
           ? 'A port is in progress, but go-live uses the number we assign today — forwarding works now.'
           : isTrial
-            ? 'Free does not include a public number. Upgrade (Growth includes 2) when you are ready to go live.'
+            ? 'Free does not include a public number. Upgrade (Starter includes 1) when you are ready to go live.'
             : 'Paid plans assign a public number the same day. Forward your existing line to it.',
       href: hasPhone ? '/settings/phone-numbers' : isTrial ? '/billing' : '/setup',
       cta: hasPhone ? 'See forwarding steps' : isTrial ? 'Upgrade to get a number' : 'Get your public number',

@@ -12,7 +12,7 @@ export const UPGRADE_TO_GO_LIVE_MESSAGE =
   'Upgrade to a paid plan to provision a phone number and activate your AI receptionist.';
 
 export const OUTBOUND_UPGRADE_MESSAGE =
-  'Outbound campaigns and live dials are available on the Growth plan.';
+  'Outbound campaigns and live dials are available on Starter and every paid plan.';
 
 export async function getTenantDemoFlags(tenantId: string): Promise<{
   plan: string | null;

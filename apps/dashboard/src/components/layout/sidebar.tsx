@@ -368,7 +368,7 @@ export function Sidebar() {
                   type="button"
                   onClick={() => setUpgradeReason('sms_locked')}
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-50 w-full text-left transition-colors"
-                  title={`${label} — requires Growth plan`}
+                  title={`${label} — requires a paid plan`}
                 >
                   <Icon size={18} className="opacity-50" />
                   <span className="flex-1">{label}</span>

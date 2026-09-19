@@ -275,7 +275,7 @@ export default function PhoneNumbersPage() {
       if (result.status === 'active' && result.number) {
         toast.success(`Your number is ready: ${formatNumber(result.number.phoneE164)}`);
       } else if (result.status === 'skipped') {
-        toast.info('This plan does not include a dedicated inbound number. Subscribe to Growth or higher, or buy a number below.');
+        toast.info('This plan does not include a dedicated inbound number. Subscribe to Starter or higher, or buy a number below.');
       } else {
         toast.error(result.reason ?? 'Number order failed — tap Retry');
       }
@@ -398,7 +398,7 @@ export default function PhoneNumbersPage() {
       {isDemoAccount && (
         <DemoUpgradeCard
           title="Upgrade to get a number"
-          body="Phone provisioning unlocks on a paid plan. Growth includes 2 local numbers. You can keep exploring the rest of the dashboard."
+          body="Phone provisioning unlocks on a paid plan. Starter includes 1 local number. You can keep exploring the rest of the dashboard."
         />
       )}
 

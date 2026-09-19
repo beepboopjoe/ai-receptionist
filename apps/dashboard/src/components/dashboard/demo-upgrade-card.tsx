@@ -7,6 +7,7 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 import { getPlan } from '@ai-receptionist/shared';
 import { UpgradeModal } from '@/components/ui/upgrade-modal';
 
+const starter = getPlan('starter')!;
 const growth = getPlan('growth')!;
 const scale = getPlan('scale')!;
 const business = getPlan('business')!;
@@ -34,8 +35,8 @@ export function DemoUpgradeCard({
           </div>
         </div>
         <p className="text-xs text-cream-600">
-          {growth.name} ${growth.monthlyPrice}/mo · {scale.name} ${scale.monthlyPrice}/mo ·{' '}
-          {business.name} ${business.monthlyPrice}/mo
+          {starter.name} ${starter.monthlyPrice}/mo · {growth.name} ${growth.monthlyPrice}/mo ·{' '}
+          {scale.name} ${scale.monthlyPrice}/mo · {business.name} ${business.monthlyPrice}/mo
         </p>
         <div className="flex flex-wrap gap-2">
           <button

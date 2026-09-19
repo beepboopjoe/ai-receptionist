@@ -218,13 +218,13 @@ export default function KnowledgeBaseLandingPage() {
             Included on Business.
           </h2>
           <p className="text-cream-600 mb-10">
-            Full PDF/DOCX Knowledge Base is a Business-plan feature. Growth and Scale use Curate-My-Agent.
+            Full PDF/DOCX Knowledge Base is a Business-plan feature. Starter, Growth, and Scale use Curate-My-Agent.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { plan: 'Trial', docs: '—', size: 'Not included' },
-              { plan: 'Growth', docs: '—', size: 'Not included' },
-              { plan: 'Scale', docs: '—', size: 'Not included' },
+              { plan: 'Free', docs: '—', size: 'Not included' },
+              { plan: 'Starter', docs: '—', size: 'Not included' },
+              { plan: 'Growth / Scale', docs: '—', size: 'Not included' },
               { plan: 'Business+', docs: '500 docs', size: '2 GB' },
             ].map((tier) => (
               <div key={tier.plan} className="bg-white rounded-xl border border-cream-200 p-5">

@@ -117,6 +117,17 @@ describe('Starter UI (source)', () => {
 
     const modal = readFileSync(join(dashboardRoot, 'components/ui/upgrade-modal.tsx'), 'utf8');
     expect(modal).toContain("getPlan('starter')");
+    expect(modal).toMatch(/public_booking:[\s\S]*targetPlan: starter\.name/);
+
+    const upgradeCard = readFileSync(join(dashboardRoot, 'components/dashboard/demo-upgrade-card.tsx'), 'utf8');
+    expect(upgradeCard).toContain("getPlan('starter')");
+
+    const booking = readFileSync(join(dashboardRoot, 'components/settings/share-booking-page-card.tsx'), 'utf8');
+    expect(booking).toContain('Starter $20 / Growth $199 / Scale $399 / Business $599');
+
+    const campaigns = readFileSync(join(dashboardRoot, 'app/(app)/campaigns/page.tsx'), 'utf8');
+    expect(campaigns).toContain('Starter ($20/mo)');
+    expect(campaigns).not.toMatch(/\$299/);
   });
 
   it('does not flip DEMO_SKIP_COOLDOWN', () => {

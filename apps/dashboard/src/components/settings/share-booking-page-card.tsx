@@ -75,7 +75,7 @@ export function ShareBookingPageCard() {
             onClick={() => setUpgradeOpen(true)}
             className="text-xs font-semibold text-brand-700 mt-1 hover:underline"
           >
-            See Growth $199 / Scale $399 / Business $599 →
+            See Starter $20 / Growth $199 / Scale $399 / Business $599 →
           </button>
         </div>
       )}
