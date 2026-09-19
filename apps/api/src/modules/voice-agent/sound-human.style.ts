@@ -10,7 +10,8 @@
 // lever. Documented Voice Agent / TTS tags ([pause], [sigh])
 // are optional silent cues — NEVER [long-pause] (that recreates
 // the #37 first-audio silence). First greeting stays
-// force_message / no filler so TTFA stays fast.
+// force_message (TTS only). Scripted um/uh in that text is fine;
+// do not add a model think loop before first audio.
 // ============================================================
 
 /** Exact section inserted into demo + default inbound receptionist prompts. */

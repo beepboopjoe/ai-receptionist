@@ -7,7 +7,10 @@
 // before any TTS. Scripted greetings use force_message (TTS only,
 // no model loop). Session update sets reasoning.effort=none.
 // ============================================================
-import { DEMO_OPENING_EN } from '../voice-agent/call-me-demo.prompt.js';
+import {
+  buildDemoOpeningEn,
+  DEMO_OPENING_EN,
+} from '../voice-agent/call-me-demo.prompt.js';
 
 export const GROK_REASONING_NONE = { effort: 'none' as const };
 
@@ -55,8 +58,10 @@ export function firstTurnGreetingText(params: {
   leadFirstName?: string | null;
   isAfterHours?: boolean;
   adHocTask?: string;
+  /** Homepage demo spoken name. Empty / placeholder → Telfin. */
+  agentName?: string | null;
 }): string {
-  if (params.isDemo) return DEMO_OPENING_EN;
+  if (params.isDemo) return buildDemoOpeningEn(params.agentName);
 
   if (params.adHocTask) {
     return `Hi, this is ${params.practiceName} calling.`;

@@ -73,14 +73,14 @@ describe('buildSystemPrompt', () => {
       workflowHint: 'after_hours',
       isDemo: true,
     });
-    expect(prompt).toMatch(/representative of Telfin/i);
+    expect(prompt).toMatch(/future AI agent representative/i);
     expect(prompt).toMatch(/product demo/i);
     expect(prompt).not.toMatch(/dental practice/i);
     expect(prompt).not.toMatch(/The office is currently closed/i);
     expect(prompt).toMatch(/Never say you are closed/i);
     expect(prompt).toMatch(/2 minutes/);
     expect(prompt).toMatch(/try it free on our site/);
-    expect(prompt).toMatch(/Do NOT say you are AI/);
+    expect(prompt).toMatch(/I'm actually AI/);
     expect(prompt).not.toMatch(/https:\/\//);
     expect(prompt).toMatch(/Sound human/);
     expect(prompt).toMatch(/"um"/);

@@ -35,7 +35,7 @@ export const CALL_ME_LANG_NATIVE: Record<CallMeLangCode, string> = {
  * start with a close natural variant — not a robotic recitation.
  */
 export const CALL_ME_LANG_GREETING: Record<CallMeLangCode, string> = {
-  en: 'Hey, this is a representative of Telfin.',
+  en: 'Hey, this is Telfin, your future agent representative. Umm, I know this might sound crazy and I may sound real, but umm, I\'m actually AI.',
   es: 'Hola, soy un representante de Telfin.',
   it: 'Ciao, sono un rappresentante di Telfin.',
   ar: 'مرحباً، أنا ممثل من تلفين.',
@@ -102,8 +102,7 @@ export function isAutoCallMeLanguage(input: unknown): boolean {
  * Default live-demo language instructions: open in English, then match
  * whatever the caller actually speaks. No UI picker is involved.
  */
-export function callMeAutoDetectPromptBlock(): string {
-  const greeting = CALL_ME_LANG_GREETING.en;
+export function callMeAutoDetectPromptBlock(greeting = CALL_ME_LANG_GREETING.en): string {
   return `# Spoken language
 No language was pre-selected. Detect the caller's language from their speech.
 - Open in English as the safe fallback (first greeting).
@@ -115,9 +114,9 @@ Sample opening (vary the wording so it does not sound scripted):
 "${greeting}"`;
 }
 
-export function callMeLanguagePromptBlock(lang: CallMeLangCode): string {
+export function callMeLanguagePromptBlock(lang: CallMeLangCode, greetingOverride?: string): string {
   const label = CALL_ME_LANG_LABEL[lang];
-  const greeting = CALL_ME_LANG_GREETING[lang];
+  const greeting = greetingOverride ?? CALL_ME_LANG_GREETING[lang];
   if (lang === 'en') {
     return `# Spoken language
 Open in English as the fallback.
