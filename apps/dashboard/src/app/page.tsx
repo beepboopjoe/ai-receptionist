@@ -12,12 +12,9 @@ import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { PricingVsAnswering } from '@/components/ui/pricing-vs-answering';
+import { HomepageSampleCall } from '@/components/ui/homepage-sample-call';
 import { PLANS } from '@ai-receptionist/shared';
 
-const HomepageSampleCall = dynamic(
-  () => import('@/components/ui/homepage-sample-call').then((m) => m.HomepageSampleCall),
-  { ssr: false }
-);
 const DashboardTeaser = dynamic(
   () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
   { ssr: false }
