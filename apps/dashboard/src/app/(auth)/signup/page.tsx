@@ -248,7 +248,11 @@ export default function SignupPage() {
             TF
           </div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">{BRAND_NAME}</h1>
-          <p className="text-cream-600 mt-1">Create a Free account — explore the dashboard, no card needed</p>
+          <p className="text-cream-600 mt-1">
+            {fromPricingPage && planInfo.paid
+              ? `Create your account — then subscribe to ${planInfo.name}`
+              : 'Create a Free account — explore the dashboard, no card needed'}
+          </p>
         </div>
 
         <div className="card p-8">
