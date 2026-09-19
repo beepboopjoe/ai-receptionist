@@ -21,7 +21,7 @@
 // ============================================================
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../../db/client.js';
-import { calls, tenants, tenantSettings, campaignContacts, outboundCampaigns, contacts, smsMessages, notifications } from '../../db/schema.js';
+import { calls, tenants, tenantSettings, campaignContacts, outboundCampaigns, smsMessages } from '../../db/schema.js';
 import { and, eq, sql } from 'drizzle-orm';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
@@ -44,9 +44,8 @@ import { resolveInboundRoutingAction, type InboundRoutingAction } from './inboun
 dayjs.extend(utc);
 dayjs.extend(timezone);
 import { outboundDialerQueue } from '../../queue/queues.js';
-import { sendSms } from '../notifications/adapters/telnyx-sms.adapter.js';
-import { getTenantFromNumber } from '../sms/tenant-from-number.js';
 import { lookupTenantByDid } from '../phone-numbers/inbound-did.js';
+import { scheduleMissedCallTextBackOnHangup } from '../sms/missed-call-textback.js';
 import { extractTelnyxRecordingMp3Url, persistRecordingUrl } from './recording.js';
 import { pushActivity } from '../activity/activity.service.js';
 import { emitWebhook } from '../webhooks/webhook.service.js';
@@ -564,20 +563,16 @@ async function onCallHangup(
   }
 
   // ── Missed-call text-back ─────────────────────────────────────────────────
-  // Fire for inbound calls that ended quickly (< 15 s from creation), indicating
-  // the caller hung up before the AI could help. Best-effort — never throws.
-  // The text-back routes through the tenant's own provisioned number; the helper
-  // skips if no number is provisioned.
-  if (
-    !state.isOutbound &&
-    state.routing !== 'forward' &&
-    state.routing !== 'overflow' &&
-    state.callId &&
-    state.tenantId &&
-    state.fromNumber &&
-    config.TELNYX_API_KEY
-  ) {
-    void sendMissedCallTextBack(state.callId, state.tenantId, state.fromNumber).catch((err) => {
+  // Inbound hangup: staff-first / overflow no-answer, after-hours miss, or
+  // early hang-up before Telfin talks. Deduped per call id with the
+  // call.missed hook. Best-effort — never throws.
+  if (!state.isOutbound && state.callId && state.tenantId && state.fromNumber) {
+    void scheduleMissedCallTextBackOnHangup({
+      callId: state.callId,
+      tenantId: state.tenantId,
+      callerPhone: state.fromNumber,
+      routing: state.routing,
+    }).catch((err) => {
       logger.warn({ err, callControlId }, 'Missed-call text-back failed');
     });
   }
@@ -823,83 +818,6 @@ async function handleMachineDetected(
       logger.warn({ err, callControlId }, 'Could not hang up voicemail call');
     }
   }
-}
-
-// ── Missed-call text-back ──────────────────────────────────────────────────
-// Checks whether the call was truly short (< 15 s) and, if so, sends
-// a text to the caller so they know we'll follow up.
-async function sendMissedCallTextBack(
-  callId: string,
-  tenantId: string,
-  callerPhone: string
-): Promise<void> {
-  // Retrieve call record to check duration
-  const [call] = await db
-    .select({ startedAt: calls.startedAt })
-    .from(calls)
-    .where(eq(calls.id, callId))
-    .limit(1);
-
-  if (!call?.startedAt) return; // no start time — can't determine duration
-
-  const durationMs = Date.now() - call.startedAt.getTime();
-  if (durationMs >= 15_000) return; // call lasted long enough — not a missed call
-
-  // Look up tenant name for the message
-  const [tenant] = await db
-    .select({ name: tenants.name })
-    .from(tenants)
-    .where(eq(tenants.id, tenantId))
-    .limit(1);
-
-  // Resolve the tenant's own provisioned number — required to send and to
-  // attribute the outbound thread to the right tenant inbox.
-  const fromNumber = await getTenantFromNumber(tenantId);
-  if (!fromNumber) {
-    logger.info({ tenantId, callId }, 'Missed-call text-back skipped — tenant has no phone number');
-    return;
-  }
-
-  const businessName = tenant?.name ?? 'our team';
-  const body = `Hi! We missed your call at ${businessName}. How can we help? Reply here or call us back anytime.`;
-
-  const msgId = await sendSms(callerPhone, body, fromNumber);
-  void import('../billing/usage-ledger.service.js').then(({ recordSmsUsage }) =>
-    recordSmsUsage(tenantId, 'outbound')
-  );
-  logger.info({ tenantId, callerPhone, callId }, 'Missed-call text-back sent');
-
-  // Match contact for the thread
-  const [contact] = await db
-    .select({ id: contacts.id })
-    .from(contacts)
-    .where(and(eq(contacts.tenantId, tenantId), eq(contacts.phoneE164, callerPhone)))
-    .limit(1);
-
-  await db.insert(smsMessages).values({
-    tenantId,
-    direction:       'outbound',
-    fromNumber,
-    toNumber:        callerPhone,
-    body,
-    telnyxMessageId: msgId,
-    status:          'delivered',
-    contactId:       contact?.id ?? null,
-  });
-
-  await db.insert(notifications).values({
-    tenantId,
-    callId,
-    contactId:  contact?.id ?? null,
-    type:       'missed_call_sms',
-    channel:    'sms',
-    toAddress:  callerPhone,
-    status:     'sent',
-    templateId: 'missed-call-text-back',
-    body,
-    providerMsgId: msgId,
-    sentAt:     new Date(),
-  });
 }
 
 // ── Inbound SMS handler (message.received) ─────────────────────────────────
