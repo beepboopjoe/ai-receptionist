@@ -5,14 +5,24 @@ import { PhoneMissed, Phone } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListRowSkeleton } from '@/components/ui/skeleton';
 import { SectionAgent } from '@/components/dashboard/section-agent';
+import { useDemoSample } from '@/lib/useDemoSample';
+import { SampleDataBanner } from '@/components/dashboard/sample-data-banner';
 
 export default function MissedCallsPage() {
+  const { sample, fill } = useDemoSample();
   const { data, isLoading } = useSWR('missed-calls', () => callsApi.getMissed());
-  const missed = (data as any)?.data ?? [];
+  const filled = fill(
+    (data as any)?.data,
+    sample.calls.filter((c) => c.status === 'missed'),
+    { listLoading: isLoading, realTotal: (data as any)?.total },
+  );
+  const missed = filled.items;
+  const showingSample = filled.isSample;
 
   return (
     <div className="space-y-6">
       <SectionAgent section="missed-calls" />
+      {showingSample && <SampleDataBanner noun="missed calls" />}
 
       <div>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Missed Calls</h1>

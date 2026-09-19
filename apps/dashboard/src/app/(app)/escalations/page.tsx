@@ -7,15 +7,22 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 import { SectionAgent } from '@/components/dashboard/section-agent';
+import { useDemoSample, useDemoReadOnlyGuard } from '@/lib/useDemoSample';
+import { SampleDataBanner } from '@/components/dashboard/sample-data-banner';
 
 export default function EscalationsPage() {
+  const { sample, fill } = useDemoSample();
+  const blockSampleWrite = useDemoReadOnlyGuard();
   const { data } = useSWR('escalations', () => escalationsApi.list());
-  const escalations = (data as any)?.data ?? [];
+  const filled = fill((data as any)?.data, sample.escalations);
+  const escalations = filled.items;
+  const showingSample = filled.isSample;
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const toast = useToast();
 
   async function handleResolve(id: string) {
+    if (blockSampleWrite(id)) return;
     if (!note.trim()) return;
     setResolvingId(id);
     try {
@@ -36,6 +43,7 @@ export default function EscalationsPage() {
   return (
     <div className="space-y-6">
       <SectionAgent section="escalations" />
+      {showingSample && <SampleDataBanner noun="escalations" />}
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>

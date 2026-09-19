@@ -19,7 +19,7 @@ const DISMISS_KEY = 'onboarding-banner-dismissed-at';
 const DEMO_DISMISS_KEY = 'demo-upgrade-banner-dismissed-at';
 const DISMISS_TTL_MS = 24 * 3600 * 1000; // 24h
 
-const growth = getPlan('growth')!;
+const starter = getPlan('starter')!;
 
 interface OnboardingStatus {
   currentStep: number;
@@ -63,7 +63,7 @@ export function OnboardingBanner() {
           <div className="flex-1 min-w-0 flex items-center gap-3 text-sm">
             <span className="font-medium">You&apos;re exploring the dashboard</span>
             <span className="hidden sm:inline opacity-75">
-              Upgrade to go live — {growth.name} ${growth.monthlyPrice}/mo
+              Sample office data is prefilled — upgrade to go live. Starter ${starter.monthlyPrice}/mo
             </span>
           </div>
           <Link

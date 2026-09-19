@@ -10,6 +10,9 @@ import { useRef, useState } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RecurringCampaignModal } from '@/components/campaigns/recurring-campaign-modal';
+import { useDemoSample } from '@/lib/useDemoSample';
+import { SampleDataBanner } from '@/components/dashboard/sample-data-banner';
+import { isDemoSampleId } from '@/lib/demo-sample-data';
 
 const STATUSES = ['all', 'pending', 'dialing', 'connected', 'qualified', 'not_qualified', 'booked', 'voicemail', 'no_answer', 'failed', 'do_not_call'];
 
@@ -254,15 +257,20 @@ function LeadPanel({
 // ---- Main page ----
 export default function CampaignDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
-  const { data: campaign, isLoading } = useSWR(`campaign-${id}`, () => campaignsApi.get(id));
-  const { data: stats } = useSWR(`campaign-stats-${id}`, () => campaignsApi.getStats(id));
+  const { sample } = useDemoSample();
+  const demoCampaign = isDemoSampleId(id) ? sample.campaigns.find((row) => row.id === id) : undefined;
+  const { data: campaign, isLoading } = useSWR(
+    demoCampaign ? null : `campaign-${id}`,
+    () => campaignsApi.get(id)
+  );
+  const { data: stats } = useSWR(demoCampaign ? null : `campaign-stats-${id}`, () => campaignsApi.getStats(id));
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(0);
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
 
   const contactsKey = `campaign-contacts-${id}-${statusFilter}-${page}`;
   const { data: contactsData } = useSWR(
-    contactsKey,
+    demoCampaign ? null : contactsKey,
     () => campaignsApi.getContacts(id, {
       limit: 50,
       offset: page * 50,
@@ -275,6 +283,39 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
   const [uploadResult, setUploadResult] = useState<{ inserted: number; skipped: number; errors: string[] } | null>(null);
   const [recurringModalOpen, setRecurringModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  if (demoCampaign) {
+    return (
+      <div className="space-y-6 max-w-3xl">
+        <SampleDataBanner noun="this campaign" />
+        <div className="flex items-center gap-3">
+          <Link href="/campaigns" className="btn-secondary">
+            <ArrowLeft size={16} /> Back
+          </Link>
+          <h1 className="font-serif text-3xl text-cream-900 tracking-tight">{demoCampaign.name}</h1>
+          <span className={`badge ${CAMPAIGN_STATUS_BADGE[demoCampaign.status] ?? 'badge-gray'}`}>
+            {demoCampaign.status}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Leads', value: demoCampaign.totalLeads },
+            { label: 'Dialed', value: demoCampaign.dialedCount },
+            { label: 'Connected', value: demoCampaign.connectedCount },
+            { label: 'Booked', value: demoCampaign.bookedCount },
+          ].map((stat) => (
+            <div key={stat.label} className="card p-4">
+              <p className="text-xs text-gray-500">{stat.label}</p>
+              <p className="font-serif text-2xl text-cream-900 mt-1">{stat.value}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-sm text-cream-600">
+          Sample campaign — start, pause, and live dials unlock on Starter ($20/mo).
+        </p>
+      </div>
+    );
+  }
 
   const c = campaign as any;
   const s = stats as any;

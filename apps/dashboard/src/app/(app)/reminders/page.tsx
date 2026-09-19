@@ -6,13 +6,20 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ListRowSkeleton } from '@/components/ui/skeleton';
 import { useVertical } from '@/lib/useVertical';
 import { SectionAgent } from '@/components/dashboard/section-agent';
+import { useDemoSample, useDemoReadOnlyGuard } from '@/lib/useDemoSample';
+import { SampleDataBanner } from '@/components/dashboard/sample-data-banner';
 
 export default function RemindersPage() {
   const vertical = useVertical();
+  const { sample, fill } = useDemoSample();
+  const blockSampleWrite = useDemoReadOnlyGuard();
   const { data, isLoading, mutate } = useSWR('notifications', () => notificationsApi.list());
-  const notifications = (data as any)?.data ?? [];
+  const filled = fill((data as any)?.data, sample.notifications, { listLoading: isLoading });
+  const notifications = filled.items;
+  const showingSample = filled.isSample;
 
   async function handleResend(id: string) {
+    if (blockSampleWrite(id)) return;
     await notificationsApi.resend(id);
     await mutate();
   }
@@ -20,6 +27,7 @@ export default function RemindersPage() {
   return (
     <div className="space-y-6">
       <SectionAgent section="reminders" />
+      {showingSample && <SampleDataBanner noun="reminders" />}
 
       <div>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Reminders</h1>

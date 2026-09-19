@@ -9,10 +9,14 @@ import { useToast } from '@/components/ui/toast';
 import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 import { SectionAgent } from '@/components/dashboard/section-agent';
 import { usePlan } from '@/lib/usePlan';
+import { useDemoSample, useDemoReadOnlyGuard } from '@/lib/useDemoSample';
+import { SampleDataBanner } from '@/components/dashboard/sample-data-banner';
 import { ShareBookingPageCard } from '@/components/settings/share-booking-page-card';
 
 export default function AppointmentsPage() {
   const { isDemoAccount } = usePlan();
+  const { sample, fill } = useDemoSample();
+  const blockSampleWrite = useDemoReadOnlyGuard();
   const vertical = useVertical();
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const heading = cap(vertical.appointmentNounPlural);
@@ -20,9 +24,12 @@ export default function AppointmentsPage() {
   const { data, isLoading } = useSWR('appointments', () =>
     appointmentsApi.list({ limit: 100 })
   );
-  const appointments = (data as any)?.data ?? [];
+  const filled = fill((data as any)?.data, sample.appointments, { listLoading: isLoading });
+  const appointments = filled.items;
+  const showingSample = filled.isSample;
 
   async function handleStatusChange(id: string, status: string) {
+    if (blockSampleWrite(id)) return;
     try {
       await appointmentsApi.update(id, { status });
       await mutate('appointments');
@@ -32,16 +39,18 @@ export default function AppointmentsPage() {
     }
   }
 
+  const apptStart = (a: any) => a.startsAt ?? a.startTime;
   const upcoming = appointments.filter((a: any) =>
-    a.status === 'confirmed' && new Date(a.startTime) >= new Date()
+    a.status === 'confirmed' && new Date(apptStart(a)) >= new Date()
   );
   const past = appointments.filter((a: any) =>
-    a.status === 'completed' || new Date(a.startTime) < new Date()
+    a.status === 'completed' || new Date(apptStart(a)) < new Date()
   );
 
   return (
     <div className="space-y-6">
       <SectionAgent section="appointments" />
+      {showingSample && <SampleDataBanner noun={vertical.appointmentNounPlural} />}
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
@@ -91,16 +100,16 @@ export default function AppointmentsPage() {
               <div key={appt.id} className="px-6 py-4 flex items-center gap-4">
                 <div className="w-12 text-center shrink-0">
                   <p className="text-lg font-bold text-gray-900">
-                    {new Date(appt.startTime).getDate()}
+                    {new Date(apptStart(appt)).getDate()}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {new Date(appt.startTime).toLocaleString('en', { month: 'short' })}
+                    {new Date(apptStart(appt)).toLocaleString('en', { month: 'short' })}
                   </p>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">{appt.appointmentType}</p>
                   <p className="text-xs text-gray-500">
-                    {new Date(appt.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    {new Date(apptStart(appt)).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                     {' · '}{appt.durationMinutes}min
                     {appt.providerName ? ` · ${appt.providerName}` : ''}
                   </p>

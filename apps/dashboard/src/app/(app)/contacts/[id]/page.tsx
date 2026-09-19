@@ -9,6 +9,9 @@ import { useVertical } from '@/lib/useVertical';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
+import { useDemoSample, useDemoReadOnlyGuard } from '@/lib/useDemoSample';
+import { SampleDataBanner } from '@/components/dashboard/sample-data-banner';
+import { isDemoSampleId } from '@/lib/demo-sample-data';
 
 export default function ContactDetailPage({ params }: { params: { id: string } }) {
   const vertical = useVertical();
@@ -19,11 +22,21 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
     : vertical.id === 'real_estate' ? 'Buyer / Seller'
     : vertical.id === 'home_services' ? 'Service Plan'
     : 'Account / Reference';
-  const { data: contact } = useSWR(`contact-${params.id}`, () => contactsApi.get(params.id));
-  const { data: calls } = useSWR(`contact-calls-${params.id}`, () =>
-    callsApi.list({ limit: 20 })
+  const { sample, fill } = useDemoSample();
+  const blockSampleWrite = useDemoReadOnlyGuard();
+  const demoContact = isDemoSampleId(params.id)
+    ? sample.contacts.find((row) => row.id === params.id)
+    : undefined;
+  const { data: contact } = useSWR(
+    demoContact ? null : `contact-${params.id}`,
+    () => contactsApi.get(params.id)
   );
-  const c = contact as any;
+  const { data: calls } = useSWR(
+    demoContact ? null : `contact-calls-${params.id}`,
+    () => callsApi.list({ limit: 20 })
+  );
+  const c = (demoContact ?? contact) as any;
+  const showingSample = Boolean(demoContact);
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
@@ -47,6 +60,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
 
   async function handleErase() {
     const name = `${c?.firstName ?? ''} ${c?.lastName ?? ''}`.trim() || 'this contact';
+    if (blockSampleWrite(params.id)) return;
     if (!confirm(
       `Erase ALL data for ${name}? This permanently deletes the contact and every linked call (with transcripts), SMS, and appointment. Used to fulfill a data-deletion request. This cannot be undone.`
     )) return;
@@ -62,6 +76,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
   }
 
   async function handleSave() {
+    if (blockSampleWrite(params.id)) return;
     setSaving(true);
     try {
       await contactsApi.update(params.id, form);
@@ -85,10 +100,15 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
     );
   }
 
-  const contactCalls = ((calls as any)?.data ?? []) as any[];
+  const filledCalls = fill(
+    (calls as any)?.data,
+    sample.calls.filter((call) => call.contactId === params.id),
+  );
+  const contactCalls = filledCalls.items as any[];
 
   return (
     <div className="space-y-6 max-w-3xl">
+      {showingSample && <SampleDataBanner noun="this contact" />}
       <div className="flex items-center gap-3">
         <Link href="/contacts" className="btn-secondary">
           <ArrowLeft size={16} /> Back

@@ -17,6 +17,8 @@ import { GoLiveChecklist } from '@/components/dashboard/go-live-checklist';
 import { useGoLive } from '@/lib/useGoLive';
 import { formatMinutesLimit } from '@/lib/plan-display';
 import { formatTimeOrDash } from '@/lib/dates';
+import { useDemoSample } from '@/lib/useDemoSample';
+import { SampleDataBanner } from '@/components/dashboard/sample-data-banner';
 
 interface EventStyle { color: string; dot: string }
 
@@ -105,6 +107,7 @@ export default function DashboardPage() {
   const { events, connected } = useActivityFeed({ maxEvents: 20 });
   // Plan provides usage data (minutes, percent) — feature gating goes through useFeatureFlags.
   const { isHighUsage, usagePercent, minutesUsed, minutesIncluded, isDemoAccount } = usePlan();
+  const { sample, fill, planLoading } = useDemoSample();
   const { has } = useFeatureFlags();
   const outboundEnabled = has('outbound_campaigns');
   const smsEnabled = has('two_way_sms');
@@ -118,22 +121,34 @@ export default function DashboardPage() {
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const eventLabels = buildEventLabels(vertical.appointmentNoun);
 
-  const totalCalls = (calls as any)?.total ?? 0;
-  const openEscalations = ((escalations as any)?.data ?? []).filter(
-    (e: any) => e.status === 'open'
-  ).length;
-  const upcomingAppts = ((appointments as any)?.data ?? []).length;
-  const missedCount = (missed as any)?.total ?? ((missed as any)?.data ?? []).length;
-  const activeCampaigns = ((campaigns as any)?.data ?? []).filter(
-    (c: any) => c.status === 'running'
-  ).length;
-  const unreadMessages = ((smsConvs as any)?.data ?? []).reduce(
+  const filledCalls = fill((calls as any)?.data, sample.calls, {
+    realTotal: (calls as any)?.total,
+  });
+  const filledAppts = fill(
+    (appointments as any)?.data,
+    sample.appointments.filter((a) => a.status === 'confirmed' && new Date(a.startsAt) >= new Date()),
+  );
+  const filledEscalations = fill((escalations as any)?.data, sample.escalations);
+  const filledMissed = fill((missed as any)?.data, sample.calls.filter((c) => c.status === 'missed'), {
+    realTotal: (missed as any)?.total,
+  });
+  const filledCampaigns = fill((campaigns as any)?.data, sample.campaigns);
+  const filledSms = fill((smsConvs as any)?.data, sample.conversations);
+  const showingSample = filledCalls.isSample && !planLoading;
+
+  const totalCalls = filledCalls.total;
+  const openEscalations = filledEscalations.items.filter((e: any) => e.status === 'open').length;
+  const upcomingAppts = filledAppts.items.length;
+  const missedCount = filledMissed.total;
+  const activeCampaigns = filledCampaigns.items.filter((c: any) => c.status === 'running').length;
+  const unreadMessages = filledSms.items.reduce(
     (sum: number, c: any) => sum + (c.inboundCount ?? 0),
     0
   );
 
-  const recentCalls = ((calls as any)?.data ?? []).filter(Boolean).slice(0, 8);
-  const recentCampaigns = ((campaigns as any)?.data ?? []).slice(0, 5);
+  const recentCalls = filledCalls.items.filter(Boolean).slice(0, 8);
+  const recentCampaigns = filledCampaigns.items.slice(0, 5);
+  const activityEvents = events.length > 0 ? events : showingSample ? sample.activity : events;
 
   return (
     <div className="space-y-8">
@@ -171,6 +186,8 @@ export default function DashboardPage() {
 
       <GoLiveChecklist />
 
+      {showingSample && <SampleDataBanner noun="Home, calls, contacts, and the rest of this dashboard" />}
+
       {/* Ask-your-AI is outbound-shaped — keep it off the first-run checklist. */}
       {goLive.ready && <AskYourAiCard />}
 
@@ -191,8 +208,8 @@ export default function DashboardPage() {
           <StatCard label="Missed Calls" value={missedCount} icon={PhoneMissed} color="bg-red-500" />
         </Link>
 
-        {/* Messages stat — locked on Free / unpaid demo */}
-        {smsEnabled ? (
+        {/* Messages — demo accounts see sample counts; live send stays gated. */}
+        {smsEnabled || showingSample ? (
           <Link href="/messages" className="block">
             <StatCard label="Unread Messages" value={unreadMessages} icon={MessageSquare} color="bg-indigo-500" />
           </Link>
@@ -202,9 +219,11 @@ export default function DashboardPage() {
           </LockedFeature>
         )}
 
-        {/* Campaign stat or locked */}
-        {outboundEnabled ? (
-          <StatCard label="Active Campaigns" value={activeCampaigns} icon={Megaphone} color="bg-purple-500" />
+        {/* Campaign stat — sample preview on Free, live on paid. */}
+        {outboundEnabled || showingSample ? (
+          <Link href="/campaigns" className="block">
+            <StatCard label="Active Campaigns" value={activeCampaigns} icon={Megaphone} color="bg-purple-500" />
+          </Link>
         ) : (
           <LockedFeature requiredPlan="starter" reason="outbound_locked" label="Outbound campaigns">
             <LockedStatCard label="Active Campaigns" />
@@ -245,7 +264,11 @@ export default function DashboardPage() {
               />
             ) : (
               recentCalls.map((call: any) => (
-                <div key={call.id} className="px-6 py-4 flex items-center gap-4">
+                <Link
+                  key={call.id}
+                  href={`/calls/${call.id}`}
+                  className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors"
+                >
                   <div
                     className={`w-2 h-2 rounded-full shrink-0 ${
                       call.status === 'completed'
@@ -279,7 +302,7 @@ export default function DashboardPage() {
                       {call.startedAt ? new Date(call.startedAt).toLocaleDateString() : '—'}
                     </p>
                   </div>
-                </div>
+                </Link>
               ))
             )}
           </div>
@@ -292,7 +315,7 @@ export default function DashboardPage() {
             <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
           </div>
           <div className="flex-1 overflow-y-auto divide-y divide-gray-50 max-h-96">
-            {events.length === 0 ? (
+            {activityEvents.length === 0 ? (
               connected ? (
                 <EmptyState
                   label="Waiting for activity…"
@@ -303,7 +326,7 @@ export default function DashboardPage() {
                 <EmptyState label="Connecting…" compact />
               )
             ) : (
-              events.map((evt: ActivityEvent, i) => {
+              activityEvents.map((evt: ActivityEvent, i) => {
                 const style = EVENT_STYLES[evt.type] ?? { color: 'text-gray-700 bg-gray-50', dot: 'bg-gray-400' };
                 const label = eventLabels[evt.type] ?? evt.type;
                 const meta = { ...style, label };
@@ -343,7 +366,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {outboundEnabled ? (
+        {outboundEnabled || showingSample ? (
           <div className="card">
             {recentCampaigns.length === 0 ? (
               <EmptyState
