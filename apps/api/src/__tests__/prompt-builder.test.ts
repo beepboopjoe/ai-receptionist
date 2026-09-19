@@ -110,10 +110,11 @@ describe('buildSystemPrompt', () => {
 
     const demoEs = buildSystemPrompt({ ...BASE_CTX, isDemo: true, demoLanguage: 'es' });
     expect(demoEs).toMatch(/Speak Spanish \(es\) from the VERY FIRST word/);
-    expect(demoEs).toContain('representante de Telfin');
+    expect(demoEs).toMatch(/en realidad soy IA/);
 
     const paying = buildSystemPrompt({ ...BASE_CTX, vertical: 'dental', demoLanguage: 'es' });
     expect(paying).toMatch(/dental practice/i);
+    expect(paying).toMatch(/English is the primary language/);
     expect(paying).not.toMatch(/Speak Spanish from the VERY FIRST word/);
     expect(paying).not.toMatch(/Detect the caller's language from their speech/);
   });

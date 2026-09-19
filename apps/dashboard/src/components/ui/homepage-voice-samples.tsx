@@ -187,7 +187,7 @@ export function HomepageVoiceSamples() {
         </div>
 
         <p className="text-center text-xs text-cream-400 mt-6">
-          One-line intros in seven languages. Live calls detect language automatically — switch voices any time in settings.
+          Sample intros in several languages. Live calls are English and Spanish — pick a language in Voice Agent settings.
         </p>
       </div>
     </section>

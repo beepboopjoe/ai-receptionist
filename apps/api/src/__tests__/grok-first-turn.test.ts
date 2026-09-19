@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEMO_OPENING_EN } from '../modules/voice-agent/call-me-demo.prompt.js';
+import { DEMO_OPENING_EN, DEMO_OPENING_ES } from '../modules/voice-agent/call-me-demo.prompt.js';
 import {
   alreadySpokenPromptSection,
   buildGrokForceMessage,
@@ -33,6 +33,12 @@ describe('first-turn greeting text', () => {
     expect(DEMO_OPENING_EN).toBe(
       'Hey, this is Telfin, your future agent representative. Umm, I know this might sound crazy and I may sound real, but umm, I\'m actually AI.',
     );
+    expect(firstTurnGreetingText({
+      isDemo: true,
+      isOutbound: false,
+      practiceName: 'Acme Dental',
+      language: 'es',
+    })).toBe(DEMO_OPENING_ES);
   });
 
   it('uses a short inbound opener and names known callers', () => {

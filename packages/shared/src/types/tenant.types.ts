@@ -17,6 +17,36 @@ export type InboundRoutingMode =
   /** During hours: try staff first, AI on no-answer. After hours: AI answers. */
   | 'staff_first';
 
+/**
+ * Spoken language for the AI receptionist.
+ * English is primary. Spanish is the one extra language done well.
+ * `auto` = bilingual EN/ES (English greeting, switch when they speak Spanish).
+ */
+export const SPOKEN_LANGUAGE_VALUES = ['en', 'es', 'auto'] as const;
+export type SpokenLanguage = (typeof SPOKEN_LANGUAGE_VALUES)[number];
+
+export function isSpokenLanguage(value: unknown): value is SpokenLanguage {
+  return typeof value === 'string' && (SPOKEN_LANGUAGE_VALUES as readonly string[]).includes(value);
+}
+
+/** Unknown / missing → English. */
+export function normalizeSpokenLanguage(input: unknown): SpokenLanguage {
+  if (isSpokenLanguage(input)) return input;
+  const raw = String(input ?? '').trim().toLowerCase();
+  if (!raw) return 'en';
+  if (raw === 'spanish' || raw === 'espanol' || raw === 'español' || raw === 'spa') return 'es';
+  if (
+    raw === 'bilingual' ||
+    raw === 'both' ||
+    raw === 'en-es' ||
+    raw === 'enes' ||
+    raw === 'en_es'
+  ) {
+    return 'auto';
+  }
+  return 'en';
+}
+
 export type IntegrationProvider =
   | 'ringcentral'
   | 'google_calendar'
@@ -51,6 +81,8 @@ export interface TenantSettings {
   voiceName: string;
   appointmentTypes: AppointmentType[];
   recallIntervalMonths: number;
+  /** English (default) / Spanish / bilingual EN+ES auto-detect. */
+  spokenLanguage: SpokenLanguage;
 }
 
 export interface Integration {

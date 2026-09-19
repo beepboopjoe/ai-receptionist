@@ -43,13 +43,14 @@ describe('normalizeCallMeLanguage', () => {
     }
   });
 
-  it('English sample opening is the AI-reveal line; other languages stay unchanged', async () => {
-    const { DEMO_OPENING_EN } = await import('../modules/voice-agent/call-me-demo.prompt.js');
+  it('English and Spanish sample openings are the AI-reveal line', async () => {
+    const { DEMO_OPENING_EN, DEMO_OPENING_ES } = await import('../modules/voice-agent/call-me-demo.prompt.js');
     expect(CALL_ME_LANG_GREETING.en).toBe(DEMO_OPENING_EN);
     expect(CALL_ME_LANG_GREETING.en).toMatch(/your future agent representative/i);
     expect(CALL_ME_LANG_GREETING.en).toMatch(/\bAI\b/);
     expect(CALL_ME_LANG_GREETING.en).not.toMatch(/receptionist/i);
-    expect(CALL_ME_LANG_GREETING.es).toBe('Hola, soy un representante de Telfin.');
+    expect(CALL_ME_LANG_GREETING.es).toBe(DEMO_OPENING_ES);
+    expect(CALL_ME_LANG_GREETING.es).toMatch(/en realidad soy IA/);
     expect(CALL_ME_LANG_GREETING.it).toBe('Ciao, sono un rappresentante di Telfin.');
     expect(CALL_ME_LANG_GREETING.ar).toBe('مرحباً، أنا ممثل من تلفين.');
     expect(CALL_ME_LANG_GREETING.fa).toBe('سلام، من نماینده تلفین هستم.');
@@ -72,17 +73,19 @@ describe('call-me auto-detect', () => {
     const block = callMeAutoDetectPromptBlock();
     expect(block).toMatch(/Detect the caller's language from their speech/);
     expect(block).toContain(CALL_ME_LANG_GREETING.en);
+    expect(block).toMatch(/speak Spanish/);
+    expect(block).not.toMatch(/Italian, Arabic/);
     expect(block).not.toMatch(/chose English/);
     expect(block).not.toMatch(/call-me form/);
   });
 });
 
 describe('call-me language is wired through the public dial path', () => {
-  it('POST /public/call-me dials demo without a pre-selected language', () => {
+  it('POST /public/call-me defaults to auto and can force Spanish', () => {
     const src = readFileSync(join(srcRoot, 'public-api/public-demo.router.ts'), 'utf8');
     expect(src).toContain('normalizeCallMeLanguage');
     expect(src).toMatch(/mode:\s*'demo'/);
-    expect(src).toMatch(/language:\s*'auto'/);
-    expect(src).not.toMatch(/language,\s*\n\s*voice/);
+    expect(src).toContain("language === 'es'");
+    expect(src).toContain("language: 'es'");
   });
 });

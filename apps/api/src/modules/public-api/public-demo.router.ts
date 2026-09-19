@@ -8,7 +8,7 @@
 //   • Global daily cap via DEMO_DAILY_CALL_LIMIT
 //   • DEMO_SKIP_COOLDOWN skips the per-number Redis check/set (ops/testing)
 //   • Voice is pinned to aurora (callers cannot pick a voice)
-//   • Spoken language is detected on pickup (English fallback); no UI picker
+//   • Spoken language: auto (English open, detect Spanish) or es (Spanish AI-reveal)
 //   • Every valid phone submit is stubbed into demo_leads (platform admin)
 //   • 503 when DEMO_TENANT_ID / DEMO_FROM_NUMBER are unset — no crash
 //   • 503 when DEMO_TENANT_ID is set but that tenants row is missing
@@ -70,7 +70,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
             language: {
               type: 'string',
               description:
-                'Optional leftover field. Live call-me ignores this and detects language from speech (English fallback). Accepted values: auto, en, es, it, ar, fa, hy, ru.',
+                'Optional. Live call-me defaults to auto (English open, detect Spanish). Pass es for the Spanish AI-reveal opener. Leftover codes still accepted.',
             },
           },
         },
@@ -85,14 +85,19 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
       if (isJunkDemoNumber(phone)) {
         throw new ValidationError('That number looks invalid. Try a real US or Canada mobile.');
       }
-      // Live widget does not send a language. Persist English as the lead
-      // fallback; the call prompt auto-detects from speech on pickup.
-      const language = normalizeCallMeLanguage(body.language);
+      // Widget may send es for the Spanish AI-reveal open. Missing / auto
+      // → detect on pickup (English fallback). Persist a concrete code on
+      // the lead row (auto → en).
+      const requestedLang = String(body.language ?? '').trim().toLowerCase();
+      const language = requestedLang === '' || requestedLang === 'auto'
+        ? 'auto'
+        : normalizeCallMeLanguage(body.language);
+      const leadLanguage = language === 'auto' ? 'en' : language;
       const voice = DEMO_DEFAULT_VOICE;
 
       // Persist the visitor as soon as the phone is valid — even if the
       // dial later 429s / 502s / 503s. Platform admin must see every submit.
-      stubDemoLead({ phoneE164: phone, language, voice, log: request.log });
+      stubDemoLead({ phoneE164: phone, language: leadLanguage, voice, log: request.log });
 
       const demoTenantId = config.DEMO_TENANT_ID?.trim();
       const demoFromNumber = config.DEMO_FROM_NUMBER?.trim();
@@ -157,7 +162,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
       }
 
       const callId = callRecord.id;
-      stubDemoLead({ phoneE164: phone, language, voice, callId, log: request.log });
+      stubDemoLead({ phoneE164: phone, language: leadLanguage, voice, callId, log: request.log });
 
       const { dialDirect } = await import('../campaigns/telnyx-dialer.service.js');
       let callSid: string;
@@ -170,6 +175,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
           fromNumber: phone,
           mode: 'demo',
           voice,
+          ...(language === 'es' ? { language: 'es' } : {}),
         });
         callSid = result.callSid;
       } catch (err) {
@@ -226,7 +232,7 @@ export async function publicDemoPlugin(app: FastifyInstance): Promise<void> {
         action: 'call.demo_call_placed',
         entityType: 'call',
         entityId: callId,
-        metadata: { toNumber: phone, fromNumber: demoFromNumber, callSid, language: 'auto', voice },
+        metadata: { toNumber: phone, fromNumber: demoFromNumber, callSid, language, voice },
       });
 
       return reply.send({

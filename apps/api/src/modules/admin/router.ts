@@ -1393,6 +1393,12 @@ export async function adminPlugin(app: FastifyInstance) {
           );
         }
       }
+      if (body.spokenLanguage !== undefined) {
+        const { isSpokenLanguage } = await import('@ai-receptionist/shared');
+        if (!isSpokenLanguage(body.spokenLanguage)) {
+          throw new ValidationError('spokenLanguage must be en, es, or auto');
+        }
+      }
       const updated = await updateSettings(tenantId, body);
       return reply.send(updated);
     }

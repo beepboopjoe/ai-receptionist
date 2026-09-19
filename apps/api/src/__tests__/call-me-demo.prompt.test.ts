@@ -12,6 +12,7 @@ import {
   CALL_ME_DEMO_FEATURE_MARKERS,
   DEMO_AGENT_NAME,
   DEMO_OPENING_EN,
+  DEMO_OPENING_ES,
   resolveDemoAgentName,
 } from '../modules/voice-agent/call-me-demo.prompt.js';
 import { SOUND_HUMAN_MARKERS } from '../modules/voice-agent/sound-human.style.js';
@@ -81,8 +82,11 @@ describe('buildCallMeDemoPrompt', () => {
 
     const es = buildCallMeDemoPrompt({ language: 'es' });
     expect(es).toMatch(/Speak Spanish \(es\) from the VERY FIRST word/);
-    expect(es).toContain('representante de Telfin');
+    expect(es).toContain(DEMO_OPENING_ES);
+    expect(es).toMatch(/Spanish opener via force_message/);
     expect(es).not.toMatch(/Detect the caller's language from their speech/);
+    expect(es).toMatch(/English and Spanish/);
+    expect(es).not.toMatch(/seven languages/);
   });
 
   it('interpolates a spoken name and falls back to Telfin', () => {

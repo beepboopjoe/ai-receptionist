@@ -36,7 +36,7 @@ export const CALL_ME_LANG_NATIVE: Record<CallMeLangCode, string> = {
  */
 export const CALL_ME_LANG_GREETING: Record<CallMeLangCode, string> = {
   en: 'Hey, this is Telfin, your future agent representative. Umm, I know this might sound crazy and I may sound real, but umm, I\'m actually AI.',
-  es: 'Hola, soy un representante de Telfin.',
+  es: 'Hola, soy Telfin, tu futuro representante. Umm, sé que esto puede sonar loco y tal vez sueno de verdad, pero umm, en realidad soy IA.',
   it: 'Ciao, sono un rappresentante di Telfin.',
   ar: 'مرحباً، أنا ممثل من تلفين.',
   fa: 'سلام، من نماینده تلفین هستم.',
@@ -106,9 +106,10 @@ export function callMeAutoDetectPromptBlock(greeting = CALL_ME_LANG_GREETING.en)
   return `# Spoken language
 No language was pre-selected. Detect the caller's language from their speech.
 - Open in English as the safe fallback (first greeting).
-- As soon as you hear them speak Spanish, Italian, Arabic, Farsi, Armenian, or Russian, switch to that language from the next turn — do not ask "is this language OK?"
+- As soon as you hear them speak Spanish, switch to Spanish from the next turn — do not ask "is this language OK?"
 - Do not announce that you detected their language unless they ask.
 - If you cannot tell, stay in English.
+- English and Spanish are the product languages. Do not switch into other languages.
 
 Sample opening (vary the wording so it does not sound scripted):
 "${greeting}"`;
@@ -120,7 +121,8 @@ export function callMeLanguagePromptBlock(lang: CallMeLangCode, greetingOverride
   if (lang === 'en') {
     return `# Spoken language
 Open in English as the fallback.
-If they switch to Spanish, Italian, Arabic, Farsi, Armenian, or Russian, follow them automatically — that auto-switch is a product feature.
+If they switch to Spanish, follow them automatically — that auto-switch is a product feature.
+English and Spanish are the product languages. Do not switch into other languages.
 
 Sample opening (vary the wording so it does not sound scripted):
 "${greeting}"`;
@@ -129,7 +131,7 @@ Sample opening (vary the wording so it does not sound scripted):
 Speak ${label} (${lang}) from the VERY FIRST word of the greeting. Do not start in English.
 - Do not ask if ${label} is OK.
 - Do not apologize for your ${label}. Do not switch to English to "explain better" unless they ask or they start speaking English.
-- If they switch to English or another of the seven languages (English, Spanish, Italian, Arabic, Farsi, Armenian, Russian), follow them automatically — that auto-switch is a product feature.
+- If they switch to English or Spanish, follow them automatically — that auto-switch is a product feature.
 
 Sample opening in ${label} (use a close natural variant, not a robotic recitation):
 "${greeting}"`;

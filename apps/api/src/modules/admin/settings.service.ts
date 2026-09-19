@@ -4,8 +4,15 @@
 import { db } from '../../db/client.js';
 import { tenantPhoneNumbers, tenantSettings, tenants } from '../../db/schema.js';
 import { and, asc, eq, isNull } from 'drizzle-orm';
-import type { OfficeHours, AppointmentType, InboundRoutingMode } from '@ai-receptionist/shared';
-import { VERTICAL_VALUES as _VERTICAL_VALUES, isVertical as _isVertical } from '@ai-receptionist/shared';
+import {
+  type OfficeHours,
+  type AppointmentType,
+  type InboundRoutingMode,
+  type SpokenLanguage,
+  normalizeSpokenLanguage,
+  VERTICAL_VALUES as _VERTICAL_VALUES,
+  isVertical as _isVertical,
+} from '@ai-receptionist/shared';
 import { ValidationError, NotFoundError } from '../../lib/errors.js';
 import { coerceVoiceSettings } from './voice-coerce.js';
 import { planIncludesInboundDid } from '../outbound-pool/pool-size.js';
@@ -31,7 +38,11 @@ export async function getSettings(tenantId: string) {
     throw new NotFoundError('Settings not found for this tenant');
   }
   const coerced = coerceVoiceSettings(settings);
-  return { ...settings, ...coerced };
+  return {
+    ...settings,
+    ...coerced,
+    spokenLanguage: normalizeSpokenLanguage(settings.spokenLanguage),
+  };
 }
 
 export async function getTenantInfo(tenantId: string) {
@@ -67,6 +78,8 @@ export interface UpdateSettingsInput {
   /** Free-text business description injected into the AI's system prompt on every call.
    *  Max 4000 chars (validated in the PATCH /settings route). */
   businessContext?: string | null;
+  /** English / Spanish / bilingual EN+ES. */
+  spokenLanguage?: SpokenLanguage;
 }
 
 export async function updateSettings(tenantId: string, input: UpdateSettingsInput) {
@@ -78,6 +91,9 @@ export async function updateSettings(tenantId: string, input: UpdateSettingsInpu
     });
     payload.voiceName = coerced.voiceName;
     payload.voiceProvider = coerced.voiceProvider;
+  }
+  if (input.spokenLanguage !== undefined) {
+    payload.spokenLanguage = normalizeSpokenLanguage(input.spokenLanguage);
   }
 
   const [existing] = await db

@@ -365,6 +365,8 @@ export const tenantSettings = pgTable('tenant_settings', {
    *  on every call. Owner-edited from Settings → Voice Agent. Max 4000 chars
    *  enforced at the API layer (validation in the /settings PATCH route). */
   businessContext: text('business_context'),
+  /** 'en' | 'es' | 'auto' — English (default), Spanish, or bilingual EN/ES. */
+  spokenLanguage: text('spoken_language').notNull().default('en'),
   // 0001 attached update_updated_at() but omitted this column. Heal UPDATE
   // (DEMO_ENSURE_TENANT) and Settings saves fail until migration 0040.
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

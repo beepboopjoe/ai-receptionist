@@ -39,8 +39,8 @@ export default function DemoPage() {
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
             Aurora, Castor, Cosmo, and Zenith — the same Telfin voices your callers hear.
-            Enter your number and we&apos;ll call you. Language is detected automatically
-            when you pick up. No sign-up required.
+            Enter your number and we&apos;ll call you. English or Spanish — pick Español
+            for a Spanish opener, or speak Spanish and it follows. No sign-up required.
           </p>
           <p className="text-xs font-semibold text-cream-500 mt-4 tracking-wide">
             {BRAND_STACK_LINE}

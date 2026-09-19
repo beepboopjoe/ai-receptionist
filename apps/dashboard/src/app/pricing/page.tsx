@@ -48,7 +48,7 @@ const FAQS = [
   },
   {
     q: 'What languages does the AI speak?',
-    a: 'Every plan ships with seven languages: English, Spanish, Italian, Arabic, Farsi, Armenian, and Russian. Your AI greets callers in your primary language and switches automatically when the caller does. No configuration, no upgrade fee.',
+    a: 'English is primary. Spanish is the extra language — pick English, Spanish, or Both in Settings → Voice Agent. Both opens in English and switches to Spanish when the caller does. No upgrade fee.',
   },
   {
     q: 'What phone number do I get?',
@@ -160,7 +160,7 @@ export default function PricingPage() {
             What&apos;s included in each plan.
           </h2>
           <p className="text-cream-600 mt-3 max-w-2xl mx-auto">
-            SMS, transcripts, outbound campaigns, and 7 languages are on every paid plan, including Starter.
+            SMS, transcripts, outbound campaigns, and English + Spanish are on every paid plan, including Starter.
             The difference between Starter, Growth, Scale, and Business is included AI minutes and included phone numbers. Busy-period volume is billed in minutes — not concurrent seats.
           </p>
         </div>

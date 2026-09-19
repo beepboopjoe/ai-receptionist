@@ -90,6 +90,7 @@ describe('SMS agent prompt', () => {
     expect(prompt).toMatch(/"action":"reply"|"escalate"|"lead"|"hold"/);
     expect(prompt).not.toMatch(/Grok|Telnyx|xAI/);
     expect(afterHoursHoldReply('Bright Smile')).toMatch(/closed/i);
+    expect(prompt).toMatch(/Reply in English/);
   });
 
   it('parses model JSON even with markdown fences', () => {
