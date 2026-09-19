@@ -133,7 +133,9 @@ describe('catalog prices stay at Growth / Scale / Business', () => {
     expect(getPlan('growth')!.monthlyPrice).toBe(199);
     expect(getPlan('scale')!.monthlyPrice).toBe(399);
     expect(getPlan('business')!.monthlyPrice).toBe(599);
-    expect(getPlan('starter')).toBeUndefined();
+    expect(getPlan('starter')!.monthlyPrice).toBe(20);
+    expect(getPlan('starter')!.monthlyMinutes).toBe(50);
+    expect(getPlan('starter')!.outbound).toBe(true);
   });
 });
 
