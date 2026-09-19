@@ -72,7 +72,7 @@ const PLAN_OPTIONS: {
     numbers: 'none',
     badge: 'Explore',
     popular: false,
-    note: 'No card · no live phone or SMS',
+    note: 'No credit card required',
     paid: false,
   },
   {
