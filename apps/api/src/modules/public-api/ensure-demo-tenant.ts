@@ -112,7 +112,7 @@ You are a representative of Telfin. Callers requested this one-time demo. Open c
 
 Always open 24/7. Never say you are closed or take an after-hours message.
 
-If they are not ready to try free, thank them — we still save them as a follow-up lead. Pricing only if they ask: Growth $199, Scale $399, Business $599 per month.`;
+If they are not ready to try free, thank them — we still save them as a follow-up lead. Pricing only if they ask: Starter $20, Growth $199, Scale $399, Business $599 per month.`;
 
 export const DEMO_VOICE_NAME = 'aurora';
 export const DEMO_VOICE_PROVIDER = 'grok';

@@ -7,9 +7,7 @@
 // concurrent seats. concurrentInbound/Outbound stay runtime-only.
 // Responsive: <md collapses to per-plan stacked cards.
 //
-// Phase 23 (2026-05-30): Starter removed, Business added.
-// Columns are now: [Free Trial, Growth, Scale, Business, Enterprise]
-// — same 5 columns, different lineup.
+// Columns: [Free, Starter, Growth, Scale, Business, Enterprise]
 // ============================================================
 import { Fragment, useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -17,11 +15,12 @@ import { Check, Minus } from 'lucide-react';
 import { billingApi } from '@/lib/api';
 import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
-type PlanCol = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise';
+type PlanCol = 'trial' | 'starter' | 'growth' | 'scale' | 'business' | 'enterprise';
 
 // Trial is the leftmost column — visitors see "free" before any paid price.
 const PLAN_COLS: { key: PlanCol; name: string; price: string; popular?: boolean }[] = [
-  { key: 'trial',      name: 'Free', price: 'Free'    },
+  { key: 'trial',      name: 'Free',       price: 'Free'     },
+  { key: 'starter',    name: 'Starter',    price: '$20/mo'   },
   { key: 'growth',     name: 'Growth',     price: '$199/mo', popular: true },
   { key: 'scale',      name: 'Scale',      price: '$399/mo' },
   { key: 'business',   name: 'Business',   price: '$599/mo' },
@@ -30,75 +29,74 @@ const PLAN_COLS: { key: PlanCol; name: string; price: string; popular?: boolean 
 
 type Cell = boolean | string;
 
-// Cell tuples are 5-wide: [trial, growth, scale, business, enterprise].
-// Trial is inbound-only — every Messaging / Outbound / Integrations /
-// Operations row is `false`.
+// Cell tuples are 6-wide: [trial, starter, growth, scale, business, enterprise].
+// Free = dashboard demo. Starter = full paid product, smaller minute pack.
 const SECTIONS: {
   title: string;
-  rows: { label: string; cells: [Cell, Cell, Cell, Cell, Cell] }[];
+  rows: { label: string; cells: [Cell, Cell, Cell, Cell, Cell, Cell] }[];
 }[] = [
   {
     title: 'Core',
     rows: [
-      { label: 'AI voice minutes / month',                cells: ['Explore', '380', '780', '1,100', 'Unlimited'] },
-      { label: '🌐 7 languages (EN ES IT AR FA HY RU)',   cells: [true, true, true, true, true] },
-      { label: '24/7 inbound answering',                  cells: [true, true, true, true, true] },
-      { label: 'Busy periods covered (billed in AI minutes)', cells: [true, true, true, true, true] },
-      { label: 'Extra minutes (overage)',                 cells: ['—', '$0.35/min', '$0.29/min', '$0.25/min', 'Custom'] },
-      { label: 'Call transcripts + summaries',            cells: [true, true, true, true, true] },
-      { label: 'Calendar sync (Google / Outlook)',        cells: [true, true, true, true, true] },
+      { label: 'AI voice minutes / month',                cells: ['Explore', '50', '380', '780', '1,100', 'Unlimited'] },
+      { label: '🌐 7 languages (EN ES IT AR FA HY RU)',   cells: [true, true, true, true, true, true] },
+      { label: '24/7 inbound answering',                  cells: [true, true, true, true, true, true] },
+      { label: 'Busy periods covered (billed in AI minutes)', cells: [true, true, true, true, true, true] },
+      { label: 'Extra minutes (overage)',                 cells: ['—', '$0.39/min', '$0.35/min', '$0.29/min', '$0.25/min', 'Custom'] },
+      { label: 'Call transcripts + summaries',            cells: [true, true, true, true, true, true] },
+      { label: 'Calendar sync (Google / Outlook)',        cells: [true, true, true, true, true, true] },
     ],
   },
   {
     title: 'Messaging — included on every paid plan',
     rows: [
-      { label: 'Missed-call text-back SMS',                cells: [false, true, true, true, true] },
-      { label: 'Two-way SMS inbox',                        cells: [false, true, true, true, true] },
-      { label: 'Appointment reminder SMS (24h + 2h)',      cells: [false, true, true, true, true] },
-      { label: 'Reply CONFIRM / CANCEL handling',          cells: [false, true, true, true, true] },
+      { label: 'Missed-call text-back SMS',                cells: [false, true, true, true, true, true] },
+      { label: 'Two-way SMS inbox',                        cells: [false, true, true, true, true, true] },
+      { label: 'Appointment reminder SMS (24h + 2h)',      cells: [false, true, true, true, true, true] },
+      { label: 'Reply CONFIRM / CANCEL handling',          cells: [false, true, true, true, true, true] },
     ],
   },
   {
     title: 'Phone numbers',
     rows: [
-      { label: 'Included local phone numbers',                cells: ['Upgrade to go live', '2', '5', '10', 'Custom'] },
-      { label: 'Bring your own number (free porting)',        cells: [true, true, true, true, true] },
-      { label: 'Buy add-on local number ($5/mo each)',        cells: [false, true, true, true, true] },
-      { label: 'Toll-free number add-on ($10/mo)',            cells: [false, true, true, true, true] },
+      { label: 'Included local phone numbers',                cells: ['Upgrade to go live', '1', '2', '5', '10', 'Custom'] },
+      { label: 'Bring your own number (free porting)',        cells: [true, true, true, true, true, true] },
+      { label: 'Buy add-on local number ($5/mo each)',        cells: [false, true, true, true, true, true] },
+      { label: 'Toll-free number add-on ($10/mo)',            cells: [false, true, true, true, true, true] },
     ],
   },
   {
     title: 'Outbound',
     rows: [
-      { label: 'Outbound test calls',                       cells: [false, true, true, true, true] },
-      { label: 'Outbound calling campaigns',                cells: [false, true, true, true, true] },
-      { label: 'Leaves voicemails when nobody answers',     cells: [false, true, true, true, true] },
-      { label: 'Advanced campaign retries',                 cells: [false, false, true, true, true] },
+      { label: 'Outbound test calls',                       cells: [false, true, true, true, true, true] },
+      { label: 'Outbound calling campaigns',                cells: [false, true, true, true, true, true] },
+      { label: 'Leaves voicemails when nobody answers',     cells: [false, true, true, true, true, true] },
+      { label: 'Advanced campaign retries',                 cells: [false, false, false, true, true, true] },
     ],
   },
   {
     title: 'Integrations',
     rows: [
-      { label: 'Webhooks',                                         cells: [false, true, true, true, true] },
-      { label: 'CRM event sync (calls/appointments/escalations)',  cells: [false, true, true, true, true] },
-      { label: 'CRMs supported (HubSpot + Salesforce + Zoho + Clio + Filevine)', cells: [false, true, true, true, true] },
-      { label: 'Knowledge Base — documents',                       cells: [false, false, false, '500 docs', '500 docs'] },
-      { label: 'Knowledge Base — storage',                         cells: [false, false, false, '2 GB', '2 GB'] },
-      { label: 'Public REST API access',                           cells: [false, false, true, true, true] },
-      { label: 'Custom integrations',                              cells: [false, false, false, true, true] },
+      { label: 'Webhooks',                                         cells: [false, true, true, true, true, true] },
+      { label: 'CRM event sync (calls/appointments/escalations)',  cells: [false, true, true, true, true, true] },
+      { label: 'CRMs supported (HubSpot + Salesforce + Zoho + Clio + Filevine)', cells: [false, true, true, true, true, true] },
+      { label: 'Knowledge Base — documents',                       cells: [false, false, false, false, '500 docs', '500 docs'] },
+      { label: 'Knowledge Base — storage',                         cells: [false, false, false, false, '2 GB', '2 GB'] },
+      { label: 'Public REST API access',                           cells: [false, false, false, true, true, true] },
+      { label: 'Custom integrations',                              cells: [false, false, false, false, true, true] },
     ],
   },
   {
     title: 'Operations',
     rows: [
-      { label: 'Multi-location support',      cells: [false, false, true, true, true] },
-      { label: 'Advanced analytics',          cells: [false, false, true, true, true] },
-      { label: 'Priority support',            cells: [false, false, false, true, true] },
-      { label: 'Dedicated account manager',   cells: [false, false, false, true, true] },
-      { label: 'BAA available (not a certification)', cells: [false, false, false, false, true] },
-      { label: 'White-label',                 cells: [false, false, false, false, true] },
-      { label: 'Dedicated onboarding',        cells: [false, false, false, false, true] },
-      { label: 'SLA-backed uptime',           cells: [false, false, false, false, true] },
+      { label: 'Multi-location support',      cells: [false, false, false, true, true, true] },
+      { label: 'Advanced analytics',          cells: [false, false, false, true, true, true] },
+      { label: 'Priority support',            cells: [false, false, false, false, true, true] },
+      { label: 'Dedicated account manager',   cells: [false, false, false, false, true, true] },
+      { label: 'BAA available (not a certification)', cells: [false, false, false, false, false, true] },
+      { label: 'White-label',                 cells: [false, false, false, false, false, true] },
+      { label: 'Dedicated onboarding',        cells: [false, false, false, false, false, true] },
+      { label: 'SLA-backed uptime',           cells: [false, false, false, false, false, true] },
     ],
   },
 ];
@@ -210,7 +208,7 @@ export function PlanComparisonTable() {
             {SECTIONS.map((section) => (
               <Fragment key={section.title}>
                 <tr className="bg-cream-50/60 border-y border-cream-200">
-                  <th colSpan={6} scope="rowgroup" className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wider text-brand-600">
+                  <th colSpan={7} scope="rowgroup" className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wider text-brand-600">
                     {section.title}
                   </th>
                 </tr>

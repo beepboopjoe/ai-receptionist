@@ -9,7 +9,7 @@ import useSWR from 'swr';
 import { isUnpaidDemoAccount, planAllowsKb } from '@ai-receptionist/shared';
 import { billingApi } from './api';
 
-export type PlanTier = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise';
+export type PlanTier = 'trial' | 'starter' | 'growth' | 'scale' | 'business' | 'enterprise';
 
 export interface PlanState {
   plan: PlanTier;

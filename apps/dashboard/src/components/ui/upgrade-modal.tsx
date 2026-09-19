@@ -26,6 +26,7 @@ interface UpgradeModalProps {
   reason?: UpgradeReason;
 }
 
+const starter = getPlan('starter')!;
 const growth = getPlan('growth')!;
 const scale = getPlan('scale')!;
 const business = getPlan('business')!;
@@ -52,27 +53,27 @@ const MODAL_CONTENT: Record<
   },
   outbound_locked: {
     icon: '📣',
-    title: `Outbound campaigns require ${growth.name}`,
-    description: 'AI calling campaigns — dial lead lists, qualify prospects, and book appointments automatically — are available on paid plans.',
+    title: 'Outbound campaigns require a paid plan',
+    description: `AI calling campaigns — dial lead lists, qualify prospects, and book appointments automatically — unlock on ${starter.name} and every plan above it.`,
     features: [
       'Upload leads via CSV',
       'AI dials and qualifies automatically',
       'Books appointments from cold leads',
     ],
-    cta: `Upgrade to ${growth.name} · ${usdMo(growth.monthlyPrice)}`,
-    targetPlan: growth.name,
+    cta: `Upgrade to ${starter.name} · ${usdMo(starter.monthlyPrice)}`,
+    targetPlan: starter.name,
   },
   sms_locked: {
     icon: '💬',
     title: 'Two-way SMS requires a paid plan',
-    description: `Upgrade to ${growth.name} (or any paid plan) to send and receive SMS with your contacts, plus automated 24h + 2h appointment reminders.`,
+    description: `Upgrade to ${starter.name} (or any paid plan) to send and receive SMS with your contacts, plus automated 24h + 2h appointment reminders.`,
     features: [
       'Two-way SMS inbox with your contacts',
       'Automated appointment reminders (24h + 2h)',
       'Missed-call text-back replies under 10s',
     ],
-    cta: `Upgrade to ${growth.name} · ${usdMo(growth.monthlyPrice)}`,
-    targetPlan: growth.name,
+    cta: `Upgrade to ${starter.name} · ${usdMo(starter.monthlyPrice)}`,
+    targetPlan: starter.name,
   },
   second_number: {
     icon: '📱',
@@ -125,14 +126,14 @@ const MODAL_CONTENT: Record<
   go_live: {
     icon: '📞',
     title: 'Upgrade to go live',
-    description: `You're exploring the dashboard. A dedicated inbound number and AI receptionist activation unlock on ${growth.name} and above.`,
+    description: `You're exploring the dashboard. A dedicated inbound number and AI receptionist activation unlock on ${starter.name} and above.`,
     features: [
-      `${growth.includedPhoneNumbers} local phone numbers included`,
-      `${growth.monthlyMinutes.toLocaleString()} AI call minutes every month`,
-      'Activate your receptionist and forward your existing line',
+      `${starter.includedPhoneNumbers} local phone number included`,
+      `${starter.monthlyMinutes.toLocaleString()} AI call minutes every month`,
+      'Inbound answering, outbound campaigns, and two-way SMS',
     ],
-    cta: `Upgrade to ${growth.name} · ${usdMo(growth.monthlyPrice)}`,
-    targetPlan: growth.name,
+    cta: `Upgrade to ${starter.name} · ${usdMo(starter.monthlyPrice)}`,
+    targetPlan: starter.name,
   },
   public_booking: {
     icon: '📅',

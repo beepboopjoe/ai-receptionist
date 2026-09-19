@@ -27,7 +27,7 @@ function StashUrlParams({
     // Pricing-page plan/cycle — signals the user wants to buy immediately
     const plan = params.get('plan');
     const cycle = params.get('cycle');
-    if (plan && (plan === 'growth' || plan === 'scale' || plan === 'business')) {
+    if (plan && (plan === 'starter' || plan === 'growth' || plan === 'scale' || plan === 'business')) {
       const validCycle: BillingCycle = cycle === 'annual' ? 'annual' : 'monthly';
       onPricingParams(plan, validCycle);
       try {
@@ -41,7 +41,7 @@ function StashUrlParams({
 }
 
 // ── Plan options shown in the picker ──────────────────────────
-type SignupPlanKey = 'trial' | 'growth' | 'scale' | 'business';
+type SignupPlanKey = 'trial' | 'starter' | 'growth' | 'scale' | 'business';
 
 const PLAN_OPTIONS: {
   key: SignupPlanKey;
@@ -64,6 +64,17 @@ const PLAN_OPTIONS: {
     popular: false,
     note: 'No credit card required',
     paid: false,
+  },
+  {
+    key: 'starter',
+    name: 'Starter',
+    priceDisplay: '$20/mo',
+    minutes: '50',
+    numbers: '1',
+    badge: 'Go live',
+    popular: false,
+    note: 'Activates immediately after payment',
+    paid: true,
   },
   {
     key: 'growth',
@@ -101,7 +112,7 @@ const PLAN_OPTIONS: {
 ];
 
 // Derive aiUseCase for the register API from the plan chosen.
-// Trial users start inbound-only; every paid tier unlocks outbound too.
+// Free stays inbound-only; every paid tier (including Starter) unlocks outbound.
 function aiUseCaseForPlan(plan: SignupPlanKey): 'inbound' | 'both' {
   return plan === 'trial' ? 'inbound' : 'both';
 }

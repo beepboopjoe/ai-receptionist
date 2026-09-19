@@ -191,13 +191,13 @@ export default function DashboardPage() {
           <StatCard label="Missed Calls" value={missedCount} icon={PhoneMissed} color="bg-red-500" />
         </Link>
 
-        {/* Messages stat — locked on Starter/Trial */}
+        {/* Messages stat — locked on Free / unpaid demo */}
         {smsEnabled ? (
           <Link href="/messages" className="block">
             <StatCard label="Unread Messages" value={unreadMessages} icon={MessageSquare} color="bg-indigo-500" />
           </Link>
         ) : (
-          <LockedFeature requiredPlan="growth" reason="sms_locked" label="Two-way SMS">
+          <LockedFeature requiredPlan="starter" reason="sms_locked" label="Two-way SMS">
             <LockedStatCard label="Unread Messages" />
           </LockedFeature>
         )}
@@ -206,7 +206,7 @@ export default function DashboardPage() {
         {outboundEnabled ? (
           <StatCard label="Active Campaigns" value={activeCampaigns} icon={Megaphone} color="bg-purple-500" />
         ) : (
-          <LockedFeature requiredPlan="growth" reason="outbound_locked" label="Outbound campaigns">
+          <LockedFeature requiredPlan="starter" reason="outbound_locked" label="Outbound campaigns">
             <LockedStatCard label="Active Campaigns" />
           </LockedFeature>
         )}
@@ -378,7 +378,7 @@ export default function DashboardPage() {
             )}
           </div>
         ) : (
-          <LockedFeature requiredPlan="growth" reason="outbound_locked" label="Outbound campaign pipeline">
+          <LockedFeature requiredPlan="starter" reason="outbound_locked" label="Outbound campaign pipeline">
             {/* Placeholder skeleton visible blurred behind the overlay */}
             <div className="card divide-y divide-gray-50">
               {[

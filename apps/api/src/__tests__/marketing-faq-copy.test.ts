@@ -92,6 +92,7 @@ describe('marketing FAQ and public CTAs match current product', () => {
       join(fileURLToPath(new URL('.', import.meta.url)), '../modules/public-api/site-chat.prompt.ts'),
       'utf8',
     );
+    expect(chatPrompt).toContain('Starter $20');
     expect(chatPrompt).toContain('Growth $199');
     expect(chatPrompt).toContain('Scale $399');
     expect(chatPrompt).toContain('Business $599');

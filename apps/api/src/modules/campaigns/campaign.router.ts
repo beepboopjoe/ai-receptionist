@@ -27,6 +27,7 @@ import { eq } from 'drizzle-orm';
 import { cacheGet, cacheSet, cacheDel } from '../../db/redis.js';
 import type { Vertical } from '../voice-agent/prompt-builder.js';
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
+import { planAllowsOutbound } from '@ai-receptionist/shared';
 
 export async function campaignsPlugin(app: FastifyInstance) {
   // ---- List campaigns ----
@@ -59,6 +60,17 @@ export async function campaignsPlugin(app: FastifyInstance) {
 
       if (!body.name) {
         throw new ValidationError('name is required');
+      }
+
+      const { getTenantDemoFlags, OUTBOUND_UPGRADE_MESSAGE } = await import(
+        '../billing/demo-account.js'
+      );
+      const demo = await getTenantDemoFlags(tenantId);
+      if (demo.isDemo || !planAllowsOutbound(demo.plan)) {
+        return reply.status(402).send({
+          error: 'upgrade_required',
+          message: OUTBOUND_UPGRADE_MESSAGE,
+        });
       }
 
       const campaign = await createCampaign({ tenantId, ...body });
@@ -109,14 +121,14 @@ export async function campaignsPlugin(app: FastifyInstance) {
     async handler(request, reply) {
       const { tenantId } = request.authUser;
       const { id } = request.params as { id: string };
-      const { getTenantDemoFlags, UPGRADE_TO_GO_LIVE_MESSAGE } = await import(
+      const { getTenantDemoFlags, OUTBOUND_UPGRADE_MESSAGE } = await import(
         '../billing/demo-account.js'
       );
       const demo = await getTenantDemoFlags(tenantId);
-      if (demo.isDemo) {
+      if (demo.isDemo || !planAllowsOutbound(demo.plan)) {
         return reply.status(402).send({
           error: 'upgrade_required',
-          message: UPGRADE_TO_GO_LIVE_MESSAGE,
+          message: OUTBOUND_UPGRADE_MESSAGE,
         });
       }
       try {
@@ -247,6 +259,17 @@ export async function campaignsPlugin(app: FastifyInstance) {
     preHandler: [app.requireRole('admin')],
     async handler(request, reply) {
       const { tenantId } = request.authUser;
+      const { getTenantDemoFlags, OUTBOUND_UPGRADE_MESSAGE } = await import(
+        '../billing/demo-account.js'
+      );
+      const demo = await getTenantDemoFlags(tenantId);
+      if (demo.isDemo || !planAllowsOutbound(demo.plan)) {
+        return reply.status(402).send({
+          error: 'upgrade_required',
+          message: OUTBOUND_UPGRADE_MESSAGE,
+        });
+      }
+
       const body = request.body as { goal?: string };
       if (!body.goal) {
         throw new ValidationError('goal is required');

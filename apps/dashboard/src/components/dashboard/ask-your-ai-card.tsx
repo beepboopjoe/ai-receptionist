@@ -36,7 +36,7 @@ const EXAMPLES = [
 
 export function AskYourAiCard() {
   const toast = useToast();
-  const { isDemoAccount } = usePlan();
+  const { isDemoAccount, outboundEnabled } = usePlan();
   const [phone, setPhone] = useState('');
   const [task, setTask] = useState('');
   const [placing, setPlacing] = useState(false);
@@ -48,6 +48,15 @@ export function AskYourAiCard() {
       <DemoUpgradeCard
         title="Ask your AI after upgrade"
         body={`Type or dictate a call in Ask ${BRAND_NAME} (corner of the dashboard) once you’re on a paid plan. Free accounts can explore the rest of the dashboard now.`}
+      />
+    );
+  }
+
+  if (!outboundEnabled) {
+    return (
+      <DemoUpgradeCard
+        title="Ask your AI after upgrade"
+        body={`Type or dictate a call in Ask ${BRAND_NAME} once you’re on a paid plan. Free accounts can explore the rest of the dashboard now.`}
       />
     );
   }

@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 /**
- * Creates (or looks up existing) Stripe products + recurring prices for all three
- * paid plans at the prices shown in the UI.  Run once; safe to re-run — it uses
+ * Creates (or looks up existing) Stripe products + recurring prices for all
+ * paid self-serve plans at the prices shown in the UI.  Run once; safe to re-run — it uses
  * metadata to find existing objects instead of creating duplicates.
  *
  * Usage:
@@ -21,8 +21,8 @@ if (!KEY) {
 const stripe = new Stripe(KEY, { apiVersion: '2025-04-30.basil' });
 
 // ── Target prices (must match billing.types.ts) ────────────────────────────
-// Phase 23 (2026-05-30): Starter removed; Business added as new top tier.
 const PLANS = [
+  { key: 'starter',  name: 'Starter',  monthly: 20_00,  annual: 17_00  },
   { key: 'growth',   name: 'Growth',   monthly: 199_00, annual: 169_00 },
   { key: 'scale',    name: 'Scale',    monthly: 399_00, annual: 339_00 },
   { key: 'business', name: 'Business', monthly: 599_00, annual: 509_00 },

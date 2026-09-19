@@ -33,29 +33,30 @@ export type FeatureFlag =
   | 'knowledge_base';
 
 /** Lowest plan tier required for each flag. Anything above also gets it.
- *  Phase 23: Starter is removed; everything that used to gate at 'starter'
- *  (e.g. two_way_sms) now gates at 'growth' — the new entry-level paid tier. */
+ *  Starter is a full paid plan — same product as Growth, smaller
+ *  minute pack. Only Free/demo is gated. Scale+ extras stay Scale+. */
 const PLAN_REQUIREMENT: Record<FeatureFlag, PlanTier> = {
-  outbound_campaigns:  'growth',
-  two_way_sms:         'growth',
+  outbound_campaigns:  'starter',
+  two_way_sms:         'starter',
   analytics:           'scale',
   multi_location:      'scale',
-  webhooks:            'growth',
+  webhooks:            'starter',
   api_access:          'scale',
   custom_voice:        'scale',
   sso:                 'enterprise',
   priority_support:    'business',
-  crm_integrations:    'growth',
+  crm_integrations:    'starter',
   knowledge_base:      'business',
 };
 
 /** Tier ordering — higher index = more capable plan. */
 const TIER_RANK: Record<PlanTier, number> = {
   trial: 0,
-  growth: 1,
-  scale: 2,
-  business: 3,
-  enterprise: 4,
+  starter: 1,
+  growth: 2,
+  scale: 3,
+  business: 4,
+  enterprise: 5,
 };
 
 /** Human-readable labels for upgrade modals/locked feature CTAs. */

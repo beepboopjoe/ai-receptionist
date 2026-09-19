@@ -25,7 +25,9 @@ const PLAN_DISPLAY: Record<string, { label: string; color: string; price: number
             ? 'purple'
             : p.key === 'business'
               ? 'amber'
-              : 'blue',
+              : p.key === 'starter'
+                ? 'emerald'
+                : 'blue',
         price: p.monthlyPrice,
         minutes: p.monthlyMinutes === -1 ? 99999 : p.monthlyMinutes,
         overagePerMin: p.overagePerMin,
@@ -51,11 +53,12 @@ interface BillingData {
 
 // ── Plan badge color map ────────────────────────────────────────────────────
 const BADGE_COLORS: Record<string, string> = {
-  gray:   'bg-gray-100 text-gray-700',
-  blue:   'bg-blue-100 text-blue-700',
-  indigo: 'bg-brand-100 text-brand-700',
-  purple: 'bg-purple-100 text-purple-700',
-  amber:  'bg-amber-100 text-amber-700',
+  gray:    'bg-gray-100 text-gray-700',
+  blue:    'bg-blue-100 text-blue-700',
+  indigo:  'bg-brand-100 text-brand-700',
+  purple:  'bg-purple-100 text-purple-700',
+  amber:   'bg-amber-100 text-amber-700',
+  emerald: 'bg-emerald-100 text-emerald-700',
 };
 
 // ── Loading skeleton — uses the shared UI primitive ────────────────────────
@@ -109,7 +112,7 @@ function PlanComparisonCards({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
       {sellable.map((plan) => {
         const isCurrentPlan = currentPlan === plan.key;
         const isPending = pendingKey === plan.key;
@@ -213,15 +216,17 @@ export default function BillingPage() {
   const planConfig = billing
     ? (PLAN_DISPLAY[billing.plan] ?? PLAN_DISPLAY['trial'])
     : null;
-  // Suggest the next-tier upgrade — Trial → Growth → Scale → Business.
+  // Suggest the next-tier upgrade — Trial → Starter → Growth → Scale → Business.
   const nextUpgrade =
     billing?.plan === 'trial'
-      ? { key: 'growth', label: 'Growth' }
-      : billing?.plan === 'growth'
-        ? { key: 'scale', label: 'Scale' }
-        : billing?.plan === 'scale'
-          ? { key: 'business', label: 'Business' }
-          : null;
+      ? { key: 'starter', label: 'Starter' }
+      : billing?.plan === 'starter'
+        ? { key: 'growth', label: 'Growth' }
+        : billing?.plan === 'growth'
+          ? { key: 'scale', label: 'Scale' }
+          : billing?.plan === 'scale'
+            ? { key: 'business', label: 'Business' }
+            : null;
   const [portalLoading, setPortalLoading] = useState(false);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
 

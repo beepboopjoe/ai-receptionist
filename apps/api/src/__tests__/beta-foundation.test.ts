@@ -45,6 +45,7 @@ describe('plan catalog sells minutes + numbers, not concurrent seats', () => {
   });
 
   it('uses a high inbound safety ceiling on paid plans (not marketed seats)', () => {
+    expect(getPlan('starter')!.concurrentInbound).toBeGreaterThanOrEqual(25);
     expect(getPlan('growth')!.concurrentInbound).toBeGreaterThanOrEqual(25);
     expect(getPlan('scale')!.concurrentInbound).toBeGreaterThanOrEqual(50);
     expect(getPlan('business')!.concurrentInbound).toBeGreaterThanOrEqual(50);
@@ -59,6 +60,10 @@ describe('plan catalog sells minutes + numbers, not concurrent seats', () => {
   });
 
   it('does not change list prices, minute packs, or included numbers', () => {
+    expect(getPlan('starter')!.monthlyPrice).toBe(20);
+    expect(getPlan('starter')!.monthlyMinutes).toBe(50);
+    expect(getPlan('starter')!.includedPhoneNumbers).toBe(1);
+    expect(getPlan('starter')!.outbound).toBe(true);
     expect(getPlan('growth')!.monthlyPrice).toBe(199);
     expect(getPlan('scale')!.monthlyPrice).toBe(399);
     expect(getPlan('business')!.monthlyPrice).toBe(599);
@@ -74,6 +79,7 @@ describe('plan catalog sells minutes + numbers, not concurrent seats', () => {
 describe('plan-aware pool sizing', () => {
   it('starts outbound pools from concurrentOutbound, capped at 15', () => {
     expect(targetPoolSizeForPlan('trial')).toBe(0);
+    expect(targetPoolSizeForPlan('starter')).toBe(3);
     expect(targetPoolSizeForPlan('growth')).toBe(3);
     expect(targetPoolSizeForPlan('scale')).toBe(8);
     expect(targetPoolSizeForPlan('business')).toBe(15);
@@ -89,6 +95,7 @@ describe('plan-aware pool sizing', () => {
 
   it('only paid plans include a dedicated inbound DID', () => {
     expect(planIncludesInboundDid('trial')).toBe(false);
+    expect(planIncludesInboundDid('starter')).toBe(true);
     expect(planIncludesInboundDid('growth')).toBe(true);
     expect(planIncludesInboundDid('scale')).toBe(true);
   });

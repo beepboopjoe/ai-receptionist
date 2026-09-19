@@ -3,7 +3,7 @@
 
 const PLAN_LABELS: Record<string, string> = {
   trial: 'Free',
-  starter: 'Free',
+  starter: 'Starter',
   growth: 'Growth',
   scale: 'Scale',
   business: 'Business',
