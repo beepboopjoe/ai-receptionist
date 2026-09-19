@@ -28,10 +28,10 @@ describe('first-turn greeting text', () => {
       practiceName: 'Telfin Demo',
       agentName: 'Alex',
     })).toBe(
-      'Hey, this is Alex, your future agent representative. Umm, I know this might sound crazy and I may sound real, but umm, I\'m actually AI.',
+      'Hey, this is a representative of Alex.',
     );
     expect(DEMO_OPENING_EN).toBe(
-      'Hey, this is Telfin, your future agent representative. Umm, I know this might sound crazy and I may sound real, but umm, I\'m actually AI.',
+      'Hey, this is a representative of Telfin.',
     );
     expect(firstTurnGreetingText({
       isDemo: true,

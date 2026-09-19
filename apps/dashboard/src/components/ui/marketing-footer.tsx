@@ -17,7 +17,7 @@ import { openCookieSettings } from '@/lib/cookie-consent';
 
 const FOOTER_LINKS = [
   ['Home',           '/'],
-  ['How it works',   '/#how-it-works'],
+  ['How it works',   '/how-it-works'],
   ['Inbound',        '/inbound'],
   ['Outbound',       '/outbound'],
   ['Pricing',        '/pricing'],

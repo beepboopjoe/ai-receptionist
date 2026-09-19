@@ -73,14 +73,15 @@ describe('buildSystemPrompt', () => {
       workflowHint: 'after_hours',
       isDemo: true,
     });
-    expect(prompt).toMatch(/future AI agent representative/i);
+    expect(prompt).toMatch(/representative of Telfin/i);
     expect(prompt).toMatch(/product demo/i);
     expect(prompt).not.toMatch(/dental practice/i);
     expect(prompt).not.toMatch(/The office is currently closed/i);
     expect(prompt).toMatch(/Never say you are closed/i);
     expect(prompt).toMatch(/2 minutes/);
     expect(prompt).toMatch(/try it free on our site/);
-    expect(prompt).toMatch(/I'm actually AI/);
+    expect(prompt).toMatch(/Do NOT say you are AI/);
+    expect(prompt).not.toMatch(/I'm actually AI/);
     expect(prompt).not.toMatch(/https:\/\//);
     expect(prompt).toMatch(/Sound human/);
     expect(prompt).toMatch(/"um"/);
@@ -110,7 +111,8 @@ describe('buildSystemPrompt', () => {
 
     const demoEs = buildSystemPrompt({ ...BASE_CTX, isDemo: true, demoLanguage: 'es' });
     expect(demoEs).toMatch(/Speak Spanish \(es\) from the VERY FIRST word/);
-    expect(demoEs).toMatch(/en realidad soy IA/);
+    expect(demoEs).toMatch(/Hola, soy un representante de Telfin/);
+    expect(demoEs).not.toMatch(/en realidad soy IA/);
 
     const paying = buildSystemPrompt({ ...BASE_CTX, vertical: 'dental', demoLanguage: 'es' });
     expect(paying).toMatch(/dental practice/i);

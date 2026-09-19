@@ -14,6 +14,7 @@ const dashboardRoot = join(fileURLToPath(new URL('.', import.meta.url)), '../../
 const MARKETING_FILES = [
   'app/page.tsx',
   'app/pricing/page.tsx',
+  'app/how-it-works/page.tsx',
   'app/inbound/page.tsx',
   'app/outbound/page.tsx',
   'app/demo/page.tsx',
@@ -29,9 +30,8 @@ const MARKETING_FILES = [
   'components/ui/upgrade-modal.tsx',
   'components/dashboard/demo-upgrade-card.tsx',
   'components/settings/share-booking-page-card.tsx',
-  'lib/demo-opener.ts',
-  'components/ui/homepage-sample-call.tsx',
-  'components/ui/pricing-vs-answering.tsx',
+  'components/ui/homepage-voice-samples.tsx',
+  'components/ui/call-me-widget.tsx',
 ];
 
 function stripComments(src: string): string {
@@ -99,9 +99,8 @@ describe('marketing FAQ and public CTAs match current product', () => {
     expect(home).toMatch(/Upgrade to go live/);
     expect(home).toMatch(/Starter/);
     expect(home).toMatch(/Try Free/);
-    expect(home).toMatch(/\$29 answering service/);
-    expect(readMarketing('app/page.tsx')).toContain('DEMO_OPENING_EN');
-    expect(readMarketing('lib/demo-opener.ts')).toContain("I'm actually AI");
+    expect(home).not.toMatch(/\$29 answering service/);
+    expect(readMarketing('app/page.tsx')).not.toMatch(/I'm actually AI|I&apos;m actually AI|en realidad soy IA/);
     expect(home).toMatch(/Can I try it free\?/);
     expect(home).toMatch(/Explore free/);
     expect(home).toMatch(/Create a Free account/);

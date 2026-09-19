@@ -1,11 +1,13 @@
 // ============================================================
-// Homepage sample-call + pricing story polish.
-// Live opener must match #56. $29 is a competitor answering
-// service, not a Telfin plan. Free stays the demo signup.
-// No fake MP3s. No DEMO_SKIP_COOLDOWN. No Stripe key edits.
+// Homepage demos stay voice MP3s + live call-me.
+// No #60 sample-call script, no $29 answering-service framing,
+// no #56 AI-reveal copy on marketing surfaces.
+// Live English opener is the pre-#56 representative line.
+// Free stays the demo signup. Starter stays $20.
+// No DEMO_SKIP_COOLDOWN. No Stripe key edits.
 // ============================================================
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEMO_OPENING_EN, DEMO_OPENING_ES } from '../modules/voice-agent/call-me-demo.prompt.js';
@@ -23,32 +25,42 @@ function src(rel: string): string {
   return readFileSync(join(apiRoot, rel), 'utf8');
 }
 
-describe('homepage sample call matches the live AI-reveal opener', () => {
-  it('dashboard opener copy stays locked to the spoken demo lines', () => {
-    const opener = dash('lib/demo-opener.ts');
-    expect(opener).toContain(DEMO_OPENING_EN);
-    expect(opener).toContain(DEMO_OPENING_ES);
-    expect(DEMO_OPENING_EN).toMatch(/I'm actually AI/);
-    expect(DEMO_OPENING_ES).toMatch(/en realidad soy IA/);
-    expect(opener).not.toMatch(/\b(Grok|Telnyx|xAI)\b/);
-  });
+const REVEAL_COPY = /I'm actually AI|I&apos;m actually AI|en realidad soy IA|umm I'm actually AI/i;
+const VS_ANSWERING = /\$29 answering service|Versus a \$29/i;
 
-  it('homepage leads with call-me + script, not leftover voice MP3s', () => {
+describe('homepage voice samples + live call-me', () => {
+  it('puts the multi-voice MP3 grid back on the homepage with call-me', () => {
     const home = dash('app/page.tsx');
-    const sample = dash('components/ui/homepage-sample-call.tsx');
-    expect(home).toContain('HomepageSampleCall');
+    const samples = dash('components/ui/homepage-voice-samples.tsx');
+    expect(home).toContain('HomepageVoiceSamples');
     expect(home).toContain('CallMeWidget');
     expect(home).toContain('id="call-me"');
-    expect(home).not.toContain('HomepageVoiceSamples');
-    expect(sample).toContain('Script · not audio');
-    expect(sample).toContain('#call-me');
-    expect(sample).not.toMatch(/\.mp3/);
-    expect(sample).not.toContain('SampleLanguageChips');
-    expect(dash('components/ui/call-me-widget.tsx')).toMatch(/actually AI/);
+    expect(home).not.toContain('HomepageSampleCall');
+    expect(home).not.toContain('PricingVsAnswering');
+    expect(home).not.toContain('demo-opener');
+    expect(samples).toContain('SampleLanguageChips');
+    expect(samples).toContain('voiceSampleSrc');
+    expect(samples).toMatch(/\.mp3/);
+    expect(existsSync(join(dashboardRoot, 'components/ui/homepage-sample-call.tsx'))).toBe(false);
+    expect(existsSync(join(dashboardRoot, 'lib/demo-opener.ts'))).toBe(false);
+  });
+
+  it('does not show the #56 AI-reveal script on marketing surfaces', () => {
+    expect(dash('app/page.tsx')).not.toMatch(REVEAL_COPY);
+    expect(dash('app/pricing/page.tsx')).not.toMatch(REVEAL_COPY);
+    expect(dash('app/demo/page.tsx')).not.toMatch(REVEAL_COPY);
+    expect(dash('components/ui/call-me-widget.tsx')).not.toMatch(REVEAL_COPY);
+    expect(dash('components/ui/voice-language-demo.tsx')).not.toMatch(REVEAL_COPY);
+    expect(dash('app/how-it-works/page.tsx')).not.toMatch(REVEAL_COPY);
+    expect(dash('components/ui/marketing-header.tsx')).toContain("href: '/how-it-works'");
+    expect(DEMO_OPENING_EN).toBe('Hey, this is a representative of Telfin.');
+    expect(DEMO_OPENING_ES).toBe('Hola, soy un representante de Telfin.');
+    expect(DEMO_OPENING_EN).not.toMatch(/actually AI/i);
+    expect(DEMO_OPENING_ES).not.toMatch(/en realidad soy IA/i);
   });
 });
 
-describe('pricing story vs a $29 answering service', () => {
+describe('no $29 answering-service framing', () => {
   it('does not invent a $29 Telfin plan or edit Stripe price IDs', () => {
     expect(getPlan('starter')!.monthlyPrice).toBe(20);
     expect(getPlan('growth')!.monthlyPrice).toBe(199);
@@ -66,27 +78,20 @@ describe('pricing story vs a $29 answering service', () => {
     expect(config).not.toMatch(/STRIPE_PRICE_STARTER_MONTHLY:.*price_/);
   });
 
-  it('marketing copy contrasts $29 answering services with Starter $20 / Growth $199+', () => {
-    const vs = dash('components/ui/pricing-vs-answering.tsx');
-    expect(vs).toMatch(/\$29 answering service/);
-    expect(vs).toContain('Starter $20');
-    expect(vs).toContain('Growth $199+');
-    expect(vs).toContain('Ask Telfin');
-    expect(vs).toContain('Booking page');
-    expect(vs).toContain('Outbound');
-    expect(vs).toContain('SMS');
-    expect(vs).toContain('/signup?plan=trial');
-    expect(vs).not.toMatch(/\b(Grok|Telnyx|xAI)\b/);
-
-    const pricing = dash('app/pricing/page.tsx');
-    expect(pricing).toContain('Why not just use a $29 answering service?');
-    expect(pricing).toContain('Hear it on your phone');
-    expect(pricing).not.toContain('Listen to sample calls');
-    expect(pricing).toContain('Try Free');
-
-    const compare = dash('components/ui/plan-comparison-table.tsx');
-    expect(compare).toContain('Ask Telfin (one call or text from chat)');
-    expect(compare).toContain('Public booking page');
+  it('removes the versus-$29 section and FAQ from homepage and pricing', () => {
+    expect(existsSync(join(dashboardRoot, 'components/ui/pricing-vs-answering.tsx'))).toBe(false);
+    expect(dash('app/page.tsx')).not.toMatch(VS_ANSWERING);
+    expect(dash('app/pricing/page.tsx')).not.toMatch(VS_ANSWERING);
+    expect(dash('app/pricing/page.tsx')).toContain('Listen to sample calls');
+    expect(dash('app/pricing/page.tsx')).toContain('Try Free');
+    expect(dash('app/pricing/page.tsx')).not.toContain('RoiCalculator');
+    expect(dash('app/pricing/page.tsx')).not.toContain('RoiSection');
+    expect(dash('app/pricing/page.tsx')).not.toContain('Every missed call is a missed appointment');
+    expect(dash('app/pricing/page.tsx')).not.toContain('Become a partner');
+    expect(dash('app/how-it-works/page.tsx')).toContain('First ring to booked appointment');
+    expect(dash('app/how-it-works/page.tsx')).not.toMatch(REVEAL_COPY);
+    expect(src('modules/public-api/site-chat.prompt.ts')).not.toMatch(VS_ANSWERING);
+    expect(src('modules/public-api/site-chat.prompt.ts')).not.toMatch(REVEAL_COPY);
   });
 
   it('keeps Free as the demo signup and does not skip the call-me cooldown', () => {
@@ -94,6 +99,7 @@ describe('pricing story vs a $29 answering service', () => {
     expect(home).toContain('/signup?plan=trial');
     expect(home).toMatch(/Try Free/);
     expect(home).toMatch(/Explore the dashboard/);
+    expect(home).toMatch(/\['trial', 'starter', 'growth', 'scale', 'business'\]/);
 
     const demoHelpers = src('modules/public-api/public-demo.helpers.ts');
     expect(demoHelpers).not.toMatch(/DEMO_SKIP_COOLDOWN\s*=\s*true/);

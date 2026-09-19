@@ -1,5 +1,5 @@
 // ============================================================
-// Homepage call-me product-demo prompt — English AI-reveal open,
+// Homepage call-me product-demo prompt — representative open,
 // no spelled URL, ≤2 minutes.
 // ============================================================
 import { describe, it, expect } from 'vitest';
@@ -31,12 +31,12 @@ describe('buildCallMeDemoPrompt', () => {
     const prompt = buildCallMeDemoPrompt();
     expect(DEMO_AGENT_NAME).toBe('Telfin');
     expect(DEMO_OPENING_EN).toBe(
-      'Hey, this is Telfin, your future agent representative. Umm, I know this might sound crazy and I may sound real, but umm, I\'m actually AI.',
+      'Hey, this is a representative of Telfin.',
     );
     expect(DEMO_OPENING_EN).not.toMatch(/receptionist/i);
-    expect(DEMO_OPENING_EN).toMatch(/\bAI\b/);
+    expect(DEMO_OPENING_EN).not.toMatch(/\bAI\b/);
     expect(prompt).toContain(DEMO_OPENING_EN);
-    expect(prompt).toMatch(/future AI agent representative/);
+    expect(prompt).toMatch(/representative of Telfin/);
     expect(prompt).toMatch(/one-time product demo/i);
     expect(prompt).toMatch(/Never say you are closed/);
     expect(prompt).toMatch(/2 minutes/);
@@ -46,12 +46,12 @@ describe('buildCallMeDemoPrompt', () => {
     expect(prompt).toMatch(/ONLY if they ask/);
   });
 
-  it('reveals AI in the English opener and never spells a URL or vendor brand', () => {
+  it('opens as a human representative and never spells a URL or vendor brand', () => {
     const prompt = buildCallMeDemoPrompt({
       signupUrl: 'https://telfin.ai/signup?plan=trial',
     });
-    expect(prompt).toMatch(/I'm actually AI/);
-    expect(prompt).toMatch(/already said you are AI/);
+    expect(prompt).toMatch(/Do NOT say you are AI/);
+    expect(prompt).not.toMatch(/I'm actually AI/);
     expect(prompt).toMatch(/Do not spell any URL/);
     expect(prompt).toMatch(/try it free on our site/);
     expect(prompt).not.toMatch(/https:\/\//);
@@ -96,7 +96,7 @@ describe('buildCallMeDemoPrompt', () => {
     expect(resolveDemoAgentName('Telfin Demo')).toBe('Telfin');
     expect(resolveDemoAgentName('Alex')).toBe('Alex');
     expect(buildDemoOpeningEn('Alex')).toBe(
-      'Hey, this is Alex, your future agent representative. Umm, I know this might sound crazy and I may sound real, but umm, I\'m actually AI.',
+      'Hey, this is a representative of Alex.',
     );
     const named = buildCallMeDemoPrompt({ agentName: 'Alex' });
     expect(named).toContain(buildDemoOpeningEn('Alex'));
