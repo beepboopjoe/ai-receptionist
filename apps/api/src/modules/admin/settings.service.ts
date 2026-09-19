@@ -81,10 +81,21 @@ export async function updateSettings(tenantId: string, input: UpdateSettingsInpu
   }
 
   const [existing] = await db
-    .select({ id: tenantSettings.id })
+    .select({
+      id: tenantSettings.id,
+      notificationPreferences: tenantSettings.notificationPreferences,
+    })
     .from(tenantSettings)
     .where(eq(tenantSettings.tenantId, tenantId))
     .limit(1);
+
+  if (input.notificationPreferences) {
+    const prior =
+      existing?.notificationPreferences && typeof existing.notificationPreferences === 'object'
+        ? (existing.notificationPreferences as Record<string, boolean>)
+        : {};
+    payload.notificationPreferences = { ...prior, ...input.notificationPreferences };
+  }
 
   if (!existing) {
     // Auto-create if missing (first call after account creation)

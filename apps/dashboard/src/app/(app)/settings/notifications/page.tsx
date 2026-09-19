@@ -18,7 +18,8 @@ type PrefKey =
   | 'recallReminder'
   | 'escalationAlerts'
   | 'dailyDigest'
-  | 'emailOnEveryCall';
+  | 'emailOnEveryCall'
+  | 'missedCallTextBack';
 
 type Preferences = Record<PrefKey, boolean>;
 
@@ -30,6 +31,7 @@ const DEFAULT_PREFS: Preferences = {
   escalationAlerts: true,
   dailyDigest: false,
   emailOnEveryCall: false,
+  missedCallTextBack: true,
 };
 
 export default function NotificationsSettingsPage() {
@@ -118,6 +120,13 @@ export default function NotificationsSettingsPage() {
       key: 'emailOnEveryCall',
       label: 'Email me after every call',
       detail: 'Caller, duration, outcome, summary, and a link to the recording — pushed to your inbox the moment a call ends',
+      show: true,
+    },
+    {
+      key: 'missedCallTextBack',
+      label: 'Text callers back when you miss a call',
+      detail:
+        'Sends a short text from your public number if nobody answers, they hang up, or they reach Telfin after hours and do not get through. Paid plans only. Callers can reply STOP.',
       show: true,
     },
   ];

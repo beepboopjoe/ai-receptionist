@@ -356,7 +356,8 @@ export const tenantSettings = pgTable('tenant_settings', {
   provisionedNumberSid: text('twilio_number_sid'), // ditto
   appointmentTypes: jsonb('appointment_types').notNull().default([]),
   recallIntervalMonths: integer('recall_interval_months').notNull().default(6),
-  /** JSON map of notification toggles (see dashboard /settings/notifications). */
+  /** JSON map of notification toggles (see dashboard /settings/notifications).
+   *  missedCallTextBack defaults ON when omitted (missed-call SMS text-back). */
   notificationPreferences: jsonb('notification_preferences').default({}),
   /** Address that receives per-call summary emails when emailOnEveryCall is on. */
   callSummaryEmail: text('call_summary_email'),

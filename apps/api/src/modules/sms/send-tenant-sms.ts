@@ -1,7 +1,8 @@
 // ============================================================
 // Tenant-scoped outbound SMS. Shared by the dashboard inbox,
-// Ask Telfin text shortcut, inbound AI replies, and MCP
-// `telfin_send_sms` so plan / DID / carrier checks stay in one place.
+// Ask Telfin text shortcut, inbound AI replies, missed-call
+// text-back, and MCP `telfin_send_sms` so plan / DID / carrier
+// checks stay in one place.
 // ============================================================
 import { db } from '../../db/client.js';
 import { smsMessages } from '../../db/schema.js';
@@ -45,7 +46,7 @@ export async function sendTenantSms(params: {
   firstName?: string;
   lastName?: string;
   actorId?: string;
-  source?: 'inbox' | 'mcp' | 'ai_inbound' | 'ai_task';
+  source?: 'inbox' | 'mcp' | 'ai_inbound' | 'ai_task' | 'missed_call_textback';
   /** Only for the one-time STOP acknowledgement. */
   ignoreOptOut?: boolean;
 }): Promise<SendTenantSmsResult> {

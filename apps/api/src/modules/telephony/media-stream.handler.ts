@@ -670,6 +670,18 @@ export async function handleMediaStream(
         callId, callSid, fromNumber, vertical,
       });
       pushActivity(tenantId, 'call_missed', { callId, fromNumber });
+      if (!isOutbound && fromNumber) {
+        void import('../sms/missed-call-textback.js')
+          .then(({ maybeSendMissedCallTextBack }) =>
+            maybeSendMissedCallTextBack({
+              callId,
+              tenantId,
+              callerPhone: fromNumber,
+              reason: 'missed',
+            }),
+          )
+          .catch((err) => logger.warn({ err, callId }, 'Missed-call text-back failed'));
+      }
     } else {
       void emitWebhook(tenantId, 'call.completed', {
         callId,

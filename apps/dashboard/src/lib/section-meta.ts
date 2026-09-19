@@ -95,7 +95,7 @@ export const SECTION_META: Record<SectionKey, SectionMeta> = {
       `Calls that ended without booking or escalation. These are your highest-priority callbacks — every missed ${contactPlural === 'leads' ? 'lead' : contactPlural.slice(0, -1)} is a recoverable opportunity.`,
     actions: ({ contactPlural }) => [
       { label: `Launch callback campaign`, href: '/campaigns' },
-      { label: 'Set up missed-call SMS', href: '/settings/notifications' },
+      { label: 'Set up missed-call SMS', href: '/settings/phone-numbers' },
       { label: `View all ${contactPlural}`, href: '/contacts' },
     ],
     relevantSuggestionTypes: ['missed_call_callback'],
