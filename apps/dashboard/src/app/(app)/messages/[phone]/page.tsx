@@ -15,6 +15,8 @@ import { useFeatureFlags } from '@/lib/featureFlags';
 import { LockedFeature } from '@/components/ui/locked-feature';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useSmsLiveSync } from '@/lib/use-sms-live-sync';
+import { useDemoSample, useDemoReadOnlyGuard } from '@/lib/useDemoSample';
+import { SampleDataBanner } from '@/components/dashboard/sample-data-banner';
 
 // ── Relative time formatter ───────────────────────────────────────────────────
 function fmtTime(iso: string): string {
@@ -78,12 +80,19 @@ export default function ThreadPage() {
 
   const { has, loading: flagsLoading } = useFeatureFlags();
   const entitled = has('two_way_sms');
+  const { isDemoAccount, sample, planLoading } = useDemoSample();
+  const blockSampleWrite = useDemoReadOnlyGuard();
+  const demoThread = sample.threads[phone];
   useSmsLiveSync(phone);
-  const { data: thread, isLoading: loading } = useSWR(
+  const { data: liveThread, isLoading: loading } = useSWR(
     entitled ? ['sms-thread', phone] : null,
     () => smsApi.getThread(phone),
     { refreshInterval: 10_000 },
   );
+  const showingSample = Boolean(
+    isDemoAccount && !planLoading && (!entitled || !liveThread || liveThread.messages.length === 0) && demoThread
+  );
+  const thread = showingSample ? demoThread : liveThread;
   const [sending, setSending] = useState(false);
   const [draft, setDraft] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -94,6 +103,10 @@ export default function ThreadPage() {
   }, [thread?.messages.length]);
 
   async function handleSend() {
+    if (showingSample) {
+      blockSampleWrite(demoThread?.messages[0]?.id ?? 'demo-sms');
+      return;
+    }
     if (!draft.trim() || sending) return;
     setSending(true);
     try {
@@ -118,7 +131,7 @@ export default function ThreadPage() {
   const displayName = thread?.contactName ?? phone;
   const groups = thread ? groupByDate(thread.messages) : [];
 
-  if (!flagsLoading && !entitled) {
+  if (!flagsLoading && !entitled && !isDemoAccount) {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Messages</h1>
@@ -133,6 +146,7 @@ export default function ThreadPage() {
 
   return (
     <div className="max-w-3xl mx-auto flex flex-col h-[calc(100vh-6rem)]">
+      {showingSample && <div className="mb-3"><SampleDataBanner noun="this thread" /></div>}
       {/* Header */}
       <div className="flex items-center gap-3 pb-4 border-b border-gray-100 shrink-0">
         <button
@@ -206,13 +220,13 @@ export default function ThreadPage() {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
+            placeholder={showingSample ? 'Sample thread — upgrade to send live SMS' : 'Type a message… (Enter to send, Shift+Enter for new line)'}
             rows={2}
             className="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent placeholder-gray-400"
           />
           <button
             onClick={handleSend}
-            disabled={!draft.trim() || sending}
+            disabled={showingSample || !draft.trim() || sending}
             className="btn-primary h-11 px-4 disabled:opacity-50 shrink-0"
             aria-label="Send message"
           >

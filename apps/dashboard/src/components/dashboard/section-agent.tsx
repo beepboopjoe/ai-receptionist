@@ -22,6 +22,7 @@ import { sectionsApi, agentApi, type SectionLiveCount } from '@/lib/api';
 import { useVertical } from '@/lib/useVertical';
 import { getSectionMeta, type SectionKey, type VerticalCopyCtx } from '@/lib/section-meta';
 import { AgentSuggestionRow } from './agent-suggestion-row';
+import { useDemoSample } from '@/lib/useDemoSample';
 
 interface SectionAgentProps {
   section: SectionKey;
@@ -83,7 +84,14 @@ export function SectionAgent({ section }: SectionAgentProps) {
     { refreshInterval: 30_000 }
   );
 
-  const liveCounts = sectionData?.liveCounts ?? [];
+  const { isDemoAccount, sample, planLoading } = useDemoSample();
+  const liveApiCounts = sectionData?.liveCounts ?? [];
+  const liveCounts =
+    liveApiCounts.length > 0
+      ? liveApiCounts
+      : !planLoading && isDemoAccount
+        ? (sample.sectionCounts[section] ?? [])
+        : [];
   const pendingIds = new Set(sectionData?.pendingSuggestionIds ?? []);
   const inlineSuggestions = (agentData?.data ?? []).filter((s) => pendingIds.has(s.id));
 

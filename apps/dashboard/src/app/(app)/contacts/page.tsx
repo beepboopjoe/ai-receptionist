@@ -11,9 +11,14 @@ import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 import { useToast } from '@/components/ui/toast';
 import { SectionAgent } from '@/components/dashboard/section-agent';
 import { usePlan } from '@/lib/usePlan';
+import { useDemoSample, useDemoReadOnlyGuard } from '@/lib/useDemoSample';
+import { filterDemoContacts } from '@/lib/demo-sample-data';
+import { SampleDataBanner } from '@/components/dashboard/sample-data-banner';
 
 export default function ContactsPage() {
   const { isDemoAccount } = usePlan();
+  const { sample, fill } = useDemoSample();
+  const blockSampleWrite = useDemoReadOnlyGuard();
   const vertical = useVertical();
   const toast = useToast();
   const [search, setSearch] = useState('');
@@ -21,7 +26,13 @@ export default function ContactsPage() {
     ['contacts', search],
     () => contactsApi.list({ q: search, limit: 50 })
   );
-  const contacts = ((data as any)?.data ?? []) as Array<Record<string, any>>;
+  const sampleMatches = filterDemoContacts(sample.contacts, search);
+  const filled = fill((data as any)?.data, sampleMatches, {
+    listLoading: isLoading,
+    realTotal: (data as any)?.total,
+  });
+  const contacts = filled.items as Array<Record<string, any>>;
+  const showingSample = filled.isSample;
   const heading = vertical.contactNounPlural.charAt(0).toUpperCase() + vertical.contactNounPlural.slice(1);
 
   // ── Bulk selection state ───────────────────────────────────
@@ -63,6 +74,7 @@ export default function ContactsPage() {
 
   async function handleBulkDelete() {
     if (selectedRows.length === 0) return;
+    if (selectedRows.some((c) => blockSampleWrite(c['id'] as string))) return;
     if (!confirm(`Delete ${selectedRows.length} ${vertical.contactNounPlural}? This can't be undone.`)) return;
     setBulkBusy(true);
     try {
@@ -81,11 +93,12 @@ export default function ContactsPage() {
   return (
     <div className="space-y-6">
       <SectionAgent section="contacts" />
+      {showingSample && <SampleDataBanner noun={`${vertical.contactNounPlural} in this list`} />}
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">{heading}</h1>
-          <p className="text-gray-500 mt-1">{(data as any)?.total ?? 0} total {vertical.contactNounPlural}</p>
+          <p className="text-gray-500 mt-1">{filled.total} total {vertical.contactNounPlural}</p>
         </div>
         <DownloadCsvButton
           rows={selected.size > 0 ? selectedRows : contacts}

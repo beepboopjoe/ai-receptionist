@@ -1,16 +1,19 @@
 // ============================================================
 // /demo — Public marketing demo page. Cream theme to match
-// /inbound and /outbound. Four named Grok voices + live call-me.
-// Industry sample-call clips are intentionally not shown here.
+// /inbound and /outbound. Named voices + live call-me.
+// Logged-in visitors go to the real dashboard (sample data if Free).
 // ============================================================
 'use client';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { Phone, Sparkles, ShieldCheck } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { LayoutDashboard, Phone, Sparkles, ShieldCheck } from 'lucide-react';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { BRAND_STACK_LINE } from '@/lib/brand';
 import { CallMeWidget } from '@/components/ui/call-me-widget';
+import { isAuthenticated } from '@/lib/auth';
 
 // Heavy interactive widget — load on demand, no SSR needed.
 const DashboardTeaser = dynamic(
@@ -23,6 +26,11 @@ const VoiceLanguageDemo = dynamic(
 );
 
 export default function DemoPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (isAuthenticated()) router.replace('/dashboard');
+  }, [router]);
+
   return (
     <div className="min-h-screen bg-cream-50 text-cream-900">
       <MarketingHeader />
@@ -39,8 +47,8 @@ export default function DemoPage() {
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
             Aurora, Castor, Cosmo, and Zenith — the same Telfin voices your callers hear.
-            Enter your number and we&apos;ll call you. English or Spanish — pick Español
-            for a Spanish opener, or speak Spanish and it follows. No sign-up required.
+            Enter your number and we&apos;ll call you. Sign up Free to browse a real
+            dashboard already filled with sample calls, contacts, and appointments.
           </p>
           <p className="text-xs font-semibold text-cream-500 mt-4 tracking-wide">
             {BRAND_STACK_LINE}
@@ -53,10 +61,10 @@ export default function DemoPage() {
               <Phone size={15} /> Try Free
             </Link>
             <Link
-              href="/pricing"
+              href="#dashboard-preview"
               className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-cream-800 bg-white border border-cream-200 rounded-xl hover:bg-cream-50 transition-colors"
             >
-              See pricing
+              <LayoutDashboard size={15} /> Explore the dashboard
             </Link>
           </div>
           <div id="call-me" className="mt-8 sm:mt-10 scroll-mt-24">
@@ -71,7 +79,7 @@ export default function DemoPage() {
       </section>
 
       {/* ── Interactive dashboard preview ──────────────────── */}
-      <section className="bg-white border-t border-cream-200">
+      <section id="dashboard-preview" className="bg-white border-t border-cream-200 scroll-mt-24">
         <DashboardTeaser />
       </section>
 

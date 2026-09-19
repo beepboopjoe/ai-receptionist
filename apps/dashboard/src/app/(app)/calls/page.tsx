@@ -11,15 +11,24 @@ import { useLiveCalls } from '@/lib/useLiveCalls';
 import { LiveCallDrawer } from '@/components/dashboard/live-call-drawer';
 import { SectionAgent } from '@/components/dashboard/section-agent';
 import { usePlan } from '@/lib/usePlan';
+import { useDemoSample } from '@/lib/useDemoSample';
+import { SampleDataBanner } from '@/components/dashboard/sample-data-banner';
 
 export default function CallsPage() {
   const { isDemoAccount } = usePlan();
+  const { sample, fill } = useDemoSample();
   const [filter, setFilter] = useState<'all' | 'missed'>('all');
   const { data, isLoading, mutate } = useSWR(
     ['calls', filter],
     () => callsApi.list({ limit: 50, ...(filter === 'missed' ? { status: 'missed' } : {}) })
   );
-  const calls = (data as any)?.data ?? [];
+  const sampleCalls = filter === 'missed' ? sample.calls.filter((c) => c.status === 'missed') : sample.calls;
+  const filled = fill((data as any)?.data, sampleCalls, {
+    listLoading: isLoading,
+    realTotal: (data as any)?.total,
+  });
+  const calls = filled.items;
+  const showingSample = filled.isSample;
 
   const { activeCalls } = useLiveCalls();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -45,6 +54,7 @@ export default function CallsPage() {
   return (
     <div className="space-y-6">
       <SectionAgent section="calls" />
+      {showingSample && <SampleDataBanner noun="the call log" />}
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
@@ -126,7 +136,7 @@ export default function CallsPage() {
               </Link>
             )}
           </div>
-          <span className="text-sm text-gray-500">{(data as any)?.total ?? 0} total</span>
+          <span className="text-sm text-gray-500">{filled.total} total</span>
         </div>
         {isLoading ? (
           <ListRowSkeleton rows={6} />

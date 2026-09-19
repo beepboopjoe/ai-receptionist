@@ -14,6 +14,8 @@ import { useFeatureFlags } from '@/lib/featureFlags';
 import { LockedFeature } from '@/components/ui/locked-feature';
 import { SectionAgent } from '@/components/dashboard/section-agent';
 import { useSmsLiveSync } from '@/lib/use-sms-live-sync';
+import { useDemoSample } from '@/lib/useDemoSample';
+import { SampleDataBanner } from '@/components/dashboard/sample-data-banner';
 
 // ── Relative time formatter ───────────────────────────────────────────────────
 function relativeTime(iso: string): string {
@@ -82,16 +84,19 @@ function ConversationRow({ conv }: { conv: SmsConversation }) {
 export default function MessagesPage() {
   const { has, loading: flagsLoading } = useFeatureFlags();
   const entitled = has('two_way_sms');
+  const { isDemoAccount, sample, fill, planLoading } = useDemoSample();
   useSmsLiveSync();
   const { data, isLoading, isValidating } = useSWR(
     entitled ? 'sms-conversations' : null,
     () => smsApi.listConversations(),
     { refreshInterval: 15_000 },
   );
-  const conversations = data?.data ?? null;
-  const loading = isLoading;
+  const filled = fill(data?.data, sample.conversations, { listLoading: entitled ? isLoading : false });
+  const conversations = filled.items;
+  const showingSample = filled.isSample || (isDemoAccount && !entitled && !planLoading);
+  const loading = entitled ? isLoading : planLoading;
 
-  if (!flagsLoading && !entitled) {
+  if (!flagsLoading && !entitled && !isDemoAccount) {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
         <div>
@@ -110,6 +115,7 @@ export default function MessagesPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <SectionAgent section="messages" />
+      {showingSample && <SampleDataBanner noun="message threads" />}
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -131,7 +137,7 @@ export default function MessagesPage() {
       <div className="card overflow-hidden p-0">
         {loading ? (
           <>{[0, 1, 2, 3].map((i) => <RowSkeleton key={i} />)}</>
-        ) : !conversations || conversations.length === 0 ? (
+        ) : conversations.length === 0 ? (
           <EmptyState
             icon={MessageSquare}
             label="No messages yet"
@@ -145,7 +151,7 @@ export default function MessagesPage() {
       </div>
 
       {/* Info footer */}
-      {!loading && conversations && conversations.length > 0 && (
+      {!loading && conversations.length > 0 && (
         <p className="text-center text-xs text-gray-400 pb-2">
           <Phone size={11} className="inline mr-1" />
           SMS sent from your business number · Configure in{' '}

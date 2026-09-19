@@ -9,15 +9,26 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { CallRecordingPlayer } from '@/components/dashboard/call-recording-player';
+import { useDemoSample, useDemoReadOnlyGuard } from '@/lib/useDemoSample';
+import { SampleDataBanner } from '@/components/dashboard/sample-data-banner';
+import { isDemoSampleId } from '@/lib/demo-sample-data';
 
 export default function CallDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const toast = useToast();
-  const { data: call, isLoading } = useSWR(`call-${params.id}`, () => callsApi.get(params.id));
-  const c = call as any;
+  const { sample } = useDemoSample();
+  const blockSampleWrite = useDemoReadOnlyGuard();
+  const demoCall = isDemoSampleId(params.id) ? sample.calls.find((row) => row.id === params.id) : undefined;
+  const { data: call, isLoading } = useSWR(
+    demoCall ? null : `call-${params.id}`,
+    () => callsApi.get(params.id)
+  );
+  const c = (demoCall ?? call) as any;
+  const showingSample = Boolean(demoCall);
   const [deleting, setDeleting] = useState(false);
 
   async function handleDelete() {
+    if (blockSampleWrite(params.id)) return;
     if (!confirm('Permanently delete this call and its transcript? This cannot be undone.')) return;
     setDeleting(true);
     try {
@@ -30,7 +41,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
     }
   }
 
-  if (isLoading) {
+  if (isLoading && !demoCall) {
     return (
       <div className="space-y-6 max-w-3xl">
         <Skeleton width="w-48" height="h-8" />
@@ -52,6 +63,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="space-y-6 max-w-3xl">
+      {showingSample && <SampleDataBanner noun="this call" />}
       <div className="flex items-center gap-3">
         <Link href="/calls" className="btn-secondary">
           <ArrowLeft size={16} /> Back

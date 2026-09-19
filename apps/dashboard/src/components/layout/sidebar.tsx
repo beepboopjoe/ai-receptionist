@@ -105,7 +105,7 @@ const PLAN_COLORS: Record<string, string> = {
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { plan, usagePercent, minutesUsed, minutesIncluded, loading, kbEnabled } = usePlan();
+  const { plan, usagePercent, minutesUsed, minutesIncluded, loading, kbEnabled, isDemoAccount } = usePlan();
   const { has } = useFeatureFlags();
   const analyticsEnabled = has('analytics');
   const goLive = useGoLive();
@@ -360,7 +360,7 @@ export function Sidebar() {
             </div>
           )}
           {nav.map(({ href, label, icon: Icon, requires }) => {
-            const locked = requires && !has(requires);
+            const locked = requires && !has(requires) && !isDemoAccount;
             if (locked) {
               return (
                 <button
@@ -460,9 +460,16 @@ export function Sidebar() {
         {!loading && (
           <div className="mx-3 mb-2 rounded-xl border border-gray-100 bg-gray-50 p-3">
             <div className="flex items-center justify-between mb-2">
-              <span className={clsx('text-xs font-semibold px-2 py-0.5 rounded-full', PLAN_COLORS[plan] ?? PLAN_COLORS['trial'])}>
-                {planDisplayName(plan)}
-              </span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className={clsx('text-xs font-semibold px-2 py-0.5 rounded-full', PLAN_COLORS[plan] ?? PLAN_COLORS['trial'])}>
+                  {planDisplayName(plan)}
+                </span>
+                {isDemoAccount && (
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                    Sample
+                  </span>
+                )}
+              </div>
               {isHighUsage && (
                 <Link href="/billing" className="text-xs text-amber-600 font-medium flex items-center gap-1">
                   <Zap size={11} /> Upgrade

@@ -14,6 +14,8 @@ import { useToast } from '@/components/ui/toast';
 import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 import { CampaignGoalGallery } from '@/components/campaigns/campaign-goal-gallery';
 import { SectionAgent } from '@/components/dashboard/section-agent';
+import { useDemoSample, useDemoReadOnlyGuard } from '@/lib/useDemoSample';
+import { SampleDataBanner } from '@/components/dashboard/sample-data-banner';
 
 const STATUS_BADGE: Record<string, string> = {
   draft: 'badge-gray',
@@ -26,8 +28,12 @@ const STATUS_BADGE: Record<string, string> = {
 export default function CampaignsPage() {
   const vertical = useVertical();
   const toast = useToast();
+  const { sample, fill } = useDemoSample();
+  const blockSampleWrite = useDemoReadOnlyGuard();
   const { data, isLoading } = useSWR('campaigns', () => campaignsApi.list());
-  const campaigns = ((data as any)?.data ?? []) as any[];
+  const filled = fill((data as any)?.data, sample.campaigns, { listLoading: isLoading });
+  const campaigns = filled.items as any[];
+  const showingSample = filled.isSample;
   const [actionId, setActionId] = useState<string | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
   // Feature flags resolve from plan tier — any paid plan unlocks outbound campaigns.
@@ -39,6 +45,7 @@ export default function CampaignsPage() {
   const { promoTrial } = usePlan();
 
   async function handleAction(id: string, action: 'start' | 'pause' | 'cancel') {
+    if (blockSampleWrite(id)) return;
     setActionId(id);
     try {
       if (action === 'start') await campaignsApi.start(id);
@@ -63,6 +70,7 @@ export default function CampaignsPage() {
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} reason="outbound_locked" />
 
       <SectionAgent section="campaigns" />
+      {showingSample && <SampleDataBanner noun="campaigns" />}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
