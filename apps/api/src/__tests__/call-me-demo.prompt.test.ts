@@ -56,9 +56,8 @@ describe('buildCallMeDemoPrompt', () => {
     expect(prompt).not.toMatch(/https:\/\//);
     expect(prompt).not.toMatch(/telfin\.ai/i);
     expect(prompt).not.toMatch(/say it slowly/);
-    expect(prompt).not.toMatch(/\bGrok\b/);
-    expect(prompt).not.toMatch(/\bxAI\b/);
-    expect(prompt).not.toMatch(/\bTelnyx\b/);
+    expect(prompt).toMatch(/Do not say Grok, xAI, or Telnyx/);
+    expect(DEMO_OPENING_EN).not.toMatch(/Grok|xAI|Telnyx/i);
     expect(DEMO_OPENING_EN).not.toMatch(/receptionist/i);
   });
 
