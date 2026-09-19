@@ -69,7 +69,7 @@ describe('SOUND_HUMAN_PROMPT_SECTION', () => {
     }
   });
 
-  it('keeps paying-tenant first greeting filler-free; demo open has scripted umm only', () => {
+  it('keeps paying-tenant and demo first greetings filler-free', () => {
     const inbound = firstTurnGreetingText({
       isDemo: false,
       isOutbound: false,
@@ -83,7 +83,9 @@ describe('SOUND_HUMAN_PROMPT_SECTION', () => {
     expect(inbound.toLowerCase()).not.toMatch(/\bum\b/);
     expect(inbound.toLowerCase()).not.toMatch(/\buh\b/);
     expect(inbound).not.toContain('[pause]');
-    expect(demo).toMatch(/\bUmm\b/);
+    expect(demo).toBe('Hey, this is a representative of Telfin.');
+    expect(demo.toLowerCase()).not.toMatch(/\bum+\b/);
+    expect(demo).not.toMatch(/actually AI/i);
     expect(demo).not.toContain('[pause]');
     expect(demo).not.toContain('[long-pause]');
   });
