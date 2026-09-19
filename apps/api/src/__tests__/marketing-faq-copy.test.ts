@@ -97,9 +97,9 @@ describe('marketing FAQ and public CTAs match current product', () => {
     expect(home).toMatch(/Explore the dashboard free/);
     expect(home).toMatch(/Upgrade to go live/);
     expect(home).toMatch(/Starter/);
-    expect(home).toMatch(/DEMO_OPENING_EN|actually AI/);
     expect(home).toMatch(/Try Free/);
     expect(home).toMatch(/\$29 answering service/);
+    expect(readMarketing('app/page.tsx')).toContain('DEMO_OPENING_EN');
     expect(readMarketing('lib/demo-opener.ts')).toContain("I'm actually AI");
 
     const inbound = extractCopy(readMarketing('app/inbound/page.tsx'));
