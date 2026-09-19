@@ -8,6 +8,12 @@ import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone.js';
 import utc from 'dayjs/plugin/utc.js';
 import { VERTICAL_ESCALATION_VOCAB } from '../voice-agent/prompt-builder.js';
+import {
+  afterHoursHoldReplyEs,
+  normalizeSpokenLanguage,
+  smsLanguagePromptBlock,
+  type SpokenLanguage,
+} from '../voice-agent/spoken-language.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -35,6 +41,7 @@ export interface SmsPromptContext {
   afterHours: boolean;
   thread: Array<{ direction: 'inbound' | 'outbound'; body: string }>;
   inboundBody: string;
+  spokenLanguage?: SpokenLanguage | string;
 }
 
 export interface SmsAgentDecision {
@@ -50,7 +57,9 @@ export interface SmsAgentDecision {
 const HOLD_TEMPLATE =
   'Thanks — our office is closed right now. We’ll follow up during business hours. If this is urgent, reply URGENT.';
 
-export function afterHoursHoldReply(practiceName: string): string {
+export function afterHoursHoldReply(practiceName: string, spokenLanguage?: SpokenLanguage | string): string {
+  const mode = normalizeSpokenLanguage(spokenLanguage);
+  if (mode === 'es') return afterHoursHoldReplyEs(practiceName);
   return `Thanks for texting ${practiceName}. ${HOLD_TEMPLATE}`;
 }
 
@@ -90,6 +99,8 @@ ${vocab.map((w) => `- "${w}"`).join('\n')}
 - capture a new lead (name) when they are new
 - escalate emergencies or “speak to a person” requests
 - after hours: still reply, but say the office is closed unless it is urgent (then escalate)
+
+${smsLanguagePromptBlock(normalizeSpokenLanguage(ctx.spokenLanguage))}
 
 # Rules
 - Reply in one SMS, max 320 characters. No markdown, no emoji walls.

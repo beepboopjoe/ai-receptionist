@@ -8,6 +8,11 @@ import timezone from 'dayjs/plugin/timezone.js';
 import utc from 'dayjs/plugin/utc.js';
 import { buildCallMeDemoPrompt } from './call-me-demo.prompt.js';
 import { SOUND_HUMAN_PROMPT_SECTION } from './sound-human.style.js';
+import {
+  normalizeSpokenLanguage,
+  spokenLanguagePromptBlock,
+  type SpokenLanguage,
+} from './spoken-language.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -53,6 +58,11 @@ export interface PromptContext {
    * Only honored when isDemo is true — paying-tenant inbound never reads this.
    */
   demoLanguage?: string;
+  /**
+   * Owner language setting for paying-tenant calls.
+   * `en` (default) / `es` / `auto` (bilingual EN+ES). Ignored when isDemo.
+   */
+  spokenLanguage?: SpokenLanguage | string;
 }
 
 /**
@@ -272,6 +282,8 @@ ${getTopicsToAvoid(vertical, terms)}`);
 - Offer no more than 3 ${terms.appointmentNoun} slot options at a time
 - Always end the call with a brief summary of what was accomplished
 - Follow # Sound human: short turns, a spoken um/uh or "let me see" on most replies, tiny [pause] beats — never a long silent think`);
+
+  sections.push(spokenLanguagePromptBlock(normalizeSpokenLanguage(ctx.spokenLanguage)));
 
   return sections.join('\n\n');
 }

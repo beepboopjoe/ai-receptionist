@@ -117,6 +117,11 @@ describe('missed-call text-back copy', () => {
       publicNumber: '+14155551234',
     });
     expect(body).toContain('Sorry we missed you');
+    expect(buildMissedCallTextBackBody({
+      businessName: 'Downtown Dental',
+      publicNumber: '+14155551234',
+      language: 'es',
+    })).toMatch(/Perdón que no pudimos atenderle/);
     expect(body).toContain('Downtown Dental');
     expect(body).toContain('(415) 555-1234');
     expect(body).toMatch(/callback/i);

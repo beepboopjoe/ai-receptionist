@@ -26,6 +26,12 @@ import {
   isSmsStopKeyword,
 } from './sms-keywords.js';
 import { afterHoursHoldReply, buildSmsSystemPrompt, type SmsAgentDecision } from './sms-agent.prompt.js';
+import {
+  normalizeSpokenLanguage,
+  smsFallbackReplyEs,
+  smsHelpReplyEs,
+  usesSpanishCopy,
+} from '../voice-agent/spoken-language.js';
 import { completeSmsAgent } from './sms-agent.grok.js';
 import pino from 'pino';
 
@@ -110,7 +116,21 @@ function fallbackDecision(params: {
   urgent: boolean;
   inboundBody: string;
   newContact: boolean;
+  spokenLanguage?: string;
 }): SmsAgentDecision {
+  if (usesSpanishCopy(normalizeSpokenLanguage(params.spokenLanguage))) {
+    const action = params.urgent ? 'escalate' : params.afterHours ? 'hold' : params.newContact ? 'lead' : 'reply';
+    return {
+      reply: smsFallbackReplyEs({
+        practiceName: params.practiceName,
+        afterHours: params.afterHours,
+        urgent: params.urgent,
+        newContact: params.newContact,
+      }),
+      action,
+      ...(params.urgent ? { escalateReason: params.inboundBody.slice(0, 180), priority: 'urgent' as const } : {}),
+    };
+  }
   if (params.urgent) {
     return {
       reply: `Thanks for texting ${params.practiceName}. I’m alerting the team now and someone will follow up.`,
@@ -121,7 +141,7 @@ function fallbackDecision(params: {
   }
   if (params.afterHours) {
     return {
-      reply: afterHoursHoldReply(params.practiceName),
+      reply: afterHoursHoldReply(params.practiceName, params.spokenLanguage),
       action: 'hold',
     };
   }
@@ -184,10 +204,13 @@ export async function handleInboundSmsAgent(job: InboundSmsJob): Promise<void> {
         officeHours: tenantSettings.officeHours,
         transferNumber: tenantSettings.transferNumber,
         businessContext: tenantSettings.businessContext,
+        spokenLanguage: tenantSettings.spokenLanguage,
       })
       .from(tenantSettings)
       .where(eq(tenantSettings.tenantId, tenantId))
       .limit(1);
+
+    const spokenLanguage = normalizeSpokenLanguage(settings?.spokenLanguage);
 
     const practiceName = tenant?.name ?? 'our office';
     const tz = tenant?.timezone ?? 'America/New_York';
@@ -201,9 +224,11 @@ export async function handleInboundSmsAgent(job: InboundSmsJob): Promise<void> {
     });
 
     if (isSmsHelpKeyword(body)) {
-      const help = settings?.transferNumber
-        ? `For help, call ${settings.transferNumber} or text us during office hours.`
-        : `For help, text us during office hours and a teammate will follow up.`;
+      const help = usesSpanishCopy(spokenLanguage)
+        ? smsHelpReplyEs(settings?.transferNumber ?? null)
+        : settings?.transferNumber
+          ? `For help, call ${settings.transferNumber} or text us during office hours.`
+          : `For help, text us during office hours and a teammate will follow up.`;
       await sendTenantSms({ tenantId, to: fromPhone, body: help, source: 'ai_inbound' });
       return;
     }
@@ -238,6 +263,7 @@ export async function handleInboundSmsAgent(job: InboundSmsJob): Promise<void> {
       afterHours,
       thread,
       inboundBody: body,
+      spokenLanguage,
     });
 
     const decided =
@@ -248,12 +274,17 @@ export async function handleInboundSmsAgent(job: InboundSmsJob): Promise<void> {
         urgent,
         inboundBody: body,
         newContact: !contact,
+        spokenLanguage,
       });
 
     const action = urgent && decided.action !== 'escalate' ? 'escalate' : decided.action;
     const reply =
       decided.reply.trim() ||
-      (afterHours ? afterHoursHoldReply(practiceName) : `Thanks for texting ${practiceName}.`);
+      (afterHours
+        ? afterHoursHoldReply(practiceName, spokenLanguage)
+        : usesSpanishCopy(spokenLanguage)
+          ? `Gracias por escribirle a ${practiceName}.`
+          : `Thanks for texting ${practiceName}.`);
 
     if (action === 'lead' || (!contact && (decided.firstName || action === 'lead'))) {
       await ensureSmsContact({

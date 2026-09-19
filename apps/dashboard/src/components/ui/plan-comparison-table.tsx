@@ -39,7 +39,7 @@ const SECTIONS: {
     title: 'Core',
     rows: [
       { label: 'AI voice minutes / month',                cells: ['Explore', '50', '380', '780', '1,100', 'Unlimited'] },
-      { label: '🌐 7 languages (EN ES IT AR FA HY RU)',   cells: [true, true, true, true, true, true] },
+      { label: '🌐 English and Spanish',   cells: [true, true, true, true, true, true] },
       { label: '24/7 inbound answering',                  cells: [true, true, true, true, true, true] },
       { label: 'Busy periods covered (billed in AI minutes)', cells: [true, true, true, true, true, true] },
       { label: 'Extra minutes (overage)',                 cells: ['—', '$0.39/min', '$0.35/min', '$0.29/min', '$0.25/min', 'Custom'] },

@@ -131,6 +131,7 @@ export default function VoiceAgentPage() {
   const tenant = (data as any)?.tenant;
 
   const [voiceName, setVoiceName] = useState<string>(DEFAULT_PUBLIC_GROK_VOICE);
+  const [spokenLanguage, setSpokenLanguage] = useState<'en' | 'es' | 'auto'>('en');
   const [afterHoursMode, setAfterHoursMode] = useState('voicemail');
   const [transferNumber, setTransferNumber] = useState('');
   const [businessContext, setBusinessContext] = useState('');
@@ -185,6 +186,8 @@ export default function VoiceAgentPage() {
       setVoiceName(
         isPublicGrokVoice(raw) || isLegacyGrokVoice(raw) ? raw : DEFAULT_PUBLIC_GROK_VOICE,
       );
+      const lang = String(settings.spokenLanguage ?? 'en').toLowerCase();
+      setSpokenLanguage(lang === 'es' || lang === 'auto' ? lang : 'en');
       setAfterHoursMode(settings.afterHoursMode ?? 'voicemail');
       setTransferNumber(settings.transferNumber ?? '');
       setBusinessContext(settings.businessContext ?? '');
@@ -201,6 +204,7 @@ export default function VoiceAgentPage() {
         afterHoursMode,
         transferNumber,
         businessContext,
+        spokenLanguage,
       });
       try { localStorage.setItem('onboarding_vertical', vertical); } catch { /* ignore */ }
       await mutate('settings');
@@ -270,6 +274,39 @@ export default function VoiceAgentPage() {
               Live calls use Telfin voices: Aurora, Castor, Cosmo, and Zenith. Click ▶ to hear a short preview.
             </p>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
+          <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5" role="group" aria-label="Spoken language">
+            {(
+              [
+                { id: 'en', label: 'English' },
+                { id: 'es', label: 'Español' },
+                { id: 'auto', label: 'Both' },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setSpokenLanguage(opt.id)}
+                className={`flex-1 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
+                  spokenLanguage === opt.id
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            {spokenLanguage === 'es'
+              ? 'Telfin greets and answers in Spanish. Follows if they switch to English.'
+              : spokenLanguage === 'auto'
+                ? 'Opens in English. Switches to Spanish when the caller speaks Spanish.'
+                : 'English first. Switches to Spanish if the caller speaks Spanish.'}
+          </p>
         </div>
 
         <div>

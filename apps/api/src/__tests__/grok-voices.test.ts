@@ -178,6 +178,7 @@ describe('marketing voice sample languages', () => {
     expect(chips).toContain('toUpperCase');
     expect(callMe).not.toContain('SampleLanguageChips');
     expect(callMe).not.toContain('useSampleLanguage');
-    expect(callMe).toMatch(/Language is\s+detected when you pick up/);
+    expect(callMe).toMatch(/English or\s+Spanish/);
+    expect(callMe).toContain("setLang('es')");
   });
 });

@@ -70,9 +70,17 @@ export function formatPublicNumberForSms(e164: string | null | undefined): strin
 export function buildMissedCallTextBackBody(opts: {
   businessName: string;
   publicNumber?: string | null;
+  language?: string | null;
 }): string {
   const name = (opts.businessName || 'our team').trim() || 'our team';
   const pretty = formatPublicNumberForSms(opts.publicNumber ?? null);
+  const spanish = ['es', 'spanish', 'español'].includes(String(opts.language ?? '').trim().toLowerCase());
+  if (spanish) {
+    const callBack = pretty
+      ? ` Responda aquí o llámenos al ${pretty}.`
+      : ' Responda aquí o llámenos.';
+    return `Perdón que no pudimos atenderle — le escribe ${name}.${callBack} ¿Quiere que le devolvamos la llamada? Responda a este mensaje.`;
+  }
   const callBack = pretty
     ? ` Reply here or call back at ${pretty}.`
     : ' Reply here or call us back.';
@@ -165,7 +173,10 @@ export async function maybeSendMissedCallTextBack(params: {
   const callerPhone = normalizeNanp(params.callerPhone) ?? params.callerPhone.trim();
 
   const [settings] = await db
-    .select({ prefs: tenantSettings.notificationPreferences })
+    .select({
+      prefs: tenantSettings.notificationPreferences,
+      spokenLanguage: tenantSettings.spokenLanguage,
+    })
     .from(tenantSettings)
     .where(eq(tenantSettings.tenantId, params.tenantId))
     .limit(1);
@@ -225,6 +236,7 @@ export async function maybeSendMissedCallTextBack(params: {
   const body = buildMissedCallTextBackBody({
     businessName: tenant?.name ?? 'our team',
     publicNumber,
+    language: settings?.spokenLanguage,
   });
 
   const result = await sendTenantSms({

@@ -34,7 +34,7 @@ export const DEMO_SIGNUP_PATH = '/signup?plan=trial';
  */
 const DEMO_NAME_FALLBACKS = new Set(['our office', 'test tenant', 'telfin demo']);
 
-/** Spoken name on the English demo open. Agent name → else Telfin. */
+/** Spoken name on the English / Spanish demo open. Agent name → else Telfin. */
 export function resolveDemoAgentName(name?: string | null): string {
   const trimmed = name?.trim();
   if (!trimmed) return DEMO_AGENT_NAME;
@@ -51,8 +51,19 @@ export function buildDemoOpeningEn(name?: string | null): string {
   return `Hey, this is ${resolveDemoAgentName(name)}, your future agent representative. Umm, I know this might sound crazy and I may sound real, but umm, I'm actually AI.`;
 }
 
+/**
+ * Spanish force_message opener — same AI-reveal vibe as English.
+ * Scripted umm is intentional (human cadence).
+ */
+export function buildDemoOpeningEs(name?: string | null): string {
+  return `Hola, soy ${resolveDemoAgentName(name)}, tu futuro representante. Umm, sé que esto puede sonar loco y tal vez sueno de verdad, pero umm, en realidad soy IA.`;
+}
+
 /** Canonical English open — AI reveal, Telfin fallback name. */
 export const DEMO_OPENING_EN = buildDemoOpeningEn();
+
+/** Canonical Spanish open — AI reveal, Telfin fallback name. */
+export const DEMO_OPENING_ES = buildDemoOpeningEs();
 
 /** @deprecated Use DEMO_OPENING_EN — kept so older tests still import. */
 export const DEMO_CLOSER_OPENING_EN = DEMO_OPENING_EN;
@@ -86,10 +97,13 @@ export function buildCallMeDemoPrompt(opts: CallMeDemoPromptOpts = {}): string {
   const now = dayjs().tz(tz);
   const agentName = resolveDemoAgentName(opts.agentName);
   const openingEn = buildDemoOpeningEn(agentName);
+  const openingEs = buildDemoOpeningEs(agentName);
   const language = normalizeCallMeLanguage(opts.language);
+  const forcedSpanish = !isAutoCallMeLanguage(opts.language) && language === 'es';
+  const openingSpoken = forcedSpanish ? openingEs : openingEn;
   const languageBlock = isAutoCallMeLanguage(opts.language)
     ? callMeAutoDetectPromptBlock(openingEn)
-    : callMeLanguagePromptBlock(language, language === 'en' ? openingEn : undefined);
+    : callMeLanguagePromptBlock(language, language === 'en' ? openingEn : language === 'es' ? openingEs : undefined);
 
   return `# Role
 You are ${agentName}, the caller's future AI agent representative, on a live product demo they requested from the Telfin homepage ("Hear it on your phone"). You are not a dental front desk, not a law-firm intake bot, and not pretending to be any other business. Telfin answers phones, books appointments, follows up with leads, and sets things up for local businesses.
@@ -101,8 +115,8 @@ ${SOUND_HUMAN_PROMPT_SECTION}
 Leave a beat after your opener so they can react — that also keeps the call under 2 minutes.
 
 # Opening (first turn — CRITICAL)
-The first audio already said the English opener via force_message (TTS only — do not re-think it). That line is supposed to reveal you are AI. A close natural variant of this is the spoken open:
-"${openingEn}"
+The first audio already said the ${forcedSpanish ? 'Spanish' : 'English'} opener via force_message (TTS only — do not re-think it). That line is supposed to reveal you are AI. A close natural variant of this is the spoken open:
+"${openingSpoken}"
 Do not take it back. Do not claim to be human. Do not re-deliver the opener or tack more ums onto it. Then pause. Do not ask their name in the same breath as the opener. Do not hard-close on the first line.
 
 # What Telfin does (second beat)
@@ -139,7 +153,7 @@ They asked Telfin to call this number. This is a one-time product demo they init
 ${languageBlock}
 
 # If they ask what you can do
-Then — and only then — cover a few capabilities in a couple of short turns, not a monologue: 24/7 answering, appointment booking with Google Calendar / Outlook, seven languages, texts and follow-ups, a dashboard with transcripts. Pricing ONLY if they ask: Starter $20 / Growth $199 / Scale $399 / Business $599 a month, plus Free to explore the dashboard with no card required. Upgrade to Starter to go live.
+Then — and only then — cover a few capabilities in a couple of short turns, not a monologue: 24/7 answering, appointment booking with Google Calendar / Outlook, English and Spanish, texts and follow-ups, a dashboard with transcripts. Pricing ONLY if they ask: Starter $20 / Growth $199 / Scale $399 / Business $599 a month, plus Free to explore the dashboard with no card required. Upgrade to Starter to go live.
 
 # Guardrails
 - Never claim to be human. You already said you are AI. Speak as ${agentName}, their future AI agent representative.

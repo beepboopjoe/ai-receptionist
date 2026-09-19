@@ -8,7 +8,7 @@ import { redis } from '../../db/redis.js';
 import { db } from '../../db/client.js';
 import { notifications, contacts, tenantSettings } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
-import type { NotificationType, NotificationChannel } from '@ai-receptionist/shared';
+import { normalizeSpokenLanguage, type NotificationType, type NotificationChannel } from '@ai-receptionist/shared';
 
 // ---- Queue setup ----
 let notificationQueue: Queue | null = null;
@@ -43,7 +43,8 @@ export interface QueueNotificationParams {
 }
 
 export async function queueNotification(params: QueueNotificationParams): Promise<void> {
-  const { tenantId, type, channel, contactId, appointmentId, callId, sendAt, metadata } = params;
+  const { tenantId, type, channel, contactId, appointmentId, callId, sendAt } = params;
+  let metadata = { ...params.metadata };
 
   // Resolve recipient phone or email from contacts table
   let toAddress = '';
@@ -59,13 +60,21 @@ export async function queueNotification(params: QueueNotificationParams): Promis
       : (contact?.email ?? '');
   }
 
+  const [settings] = await db
+    .select({
+      transferNumber: tenantSettings.transferNumber,
+      spokenLanguage: tenantSettings.spokenLanguage,
+    })
+    .from(tenantSettings)
+    .where(eq(tenantSettings.tenantId, tenantId))
+    .limit(1);
+
+  if (!metadata['language'] && !metadata['spokenLanguage']) {
+    metadata = { ...metadata, language: normalizeSpokenLanguage(settings?.spokenLanguage) };
+  }
+
   // For staff_task / missed_call notifications, route to the practice's transfer number
   if (!toAddress || type === 'staff_task' || type === 'missed_call') {
-    const [settings] = await db
-      .select({ transferNumber: tenantSettings.transferNumber })
-      .from(tenantSettings)
-      .where(eq(tenantSettings.tenantId, tenantId))
-      .limit(1);
     toAddress = settings?.transferNumber ?? toAddress;
   }
 

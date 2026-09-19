@@ -17,6 +17,42 @@ function interpolate(template: string, vars: TemplateVars): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => String(vars[key] ?? ''));
 }
 
+function isSpanishVars(vars: TemplateVars): boolean {
+  const raw = String(vars['language'] ?? vars['spokenLanguage'] ?? '').trim().toLowerCase();
+  return raw === 'es' || raw === 'spanish' || raw === 'español';
+}
+
+const templatesEs: Partial<Record<SmsTemplateType, (vars: TemplateVars) => string>> = {
+  confirmation: (vars) => {
+    if (vars['isCancellation']) {
+      return interpolate(
+        'Hola {{contactName}}, su cita ha sido cancelada. Llámenos si necesita reprogramar.',
+        vars,
+      );
+    }
+    if (vars['isReschedule']) {
+      return interpolate(
+        'Hola {{contactName}}, su cita se reprogramó para el {{appointmentDate}} a las {{appointmentTime}}. Responda CANCEL para cancelar.',
+        vars,
+      );
+    }
+    return interpolate(
+      'Hola {{contactName}}, su cita de {{appointmentType}} está confirmada para el {{appointmentDate}} a las {{appointmentTime}}. Responda CANCEL para cancelar.',
+      vars,
+    );
+  },
+  reminder_24h: (vars) =>
+    interpolate(
+      'Recordatorio: {{contactName}}, tiene una cita mañana, {{appointmentDate}} a las {{appointmentTime}}. Responda CANCEL para cancelar.',
+      vars,
+    ),
+  reminder_2h: (vars) =>
+    interpolate(
+      'Recordatorio: {{contactName}}, su cita es en 2 horas a las {{appointmentTime}}. ¡Nos vemos pronto!',
+      vars,
+    ),
+};
+
 const templates: Record<SmsTemplateType, (vars: TemplateVars) => string> = {
   confirmation: (vars) => {
     if (vars['isCancellation']) {
@@ -97,7 +133,8 @@ const templates: Record<SmsTemplateType, (vars: TemplateVars) => string> = {
 };
 
 export function renderSmsTemplate(type: SmsTemplateType, vars: TemplateVars): string {
-  const tpl = templates[type];
+  const esTpl = isSpanishVars(vars) ? templatesEs[type] : undefined;
+  const tpl = esTpl ?? templates[type];
   if (!tpl) {
     return `Notification for ${vars['contactName'] ?? 'contact'}.`;
   }

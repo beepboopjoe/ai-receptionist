@@ -105,7 +105,7 @@ export const PLANS: readonly Plan[] = [
     features: [
       'Explore the dashboard (sample / empty states)',
       'Sample the AI voice in the browser',
-      '🌐 Speaks 7 languages, switches automatically',
+      '🌐 English and Spanish — switches automatically',
       'Upgrade to go live with a dedicated number',
       'No credit card required',
     ],
@@ -125,7 +125,7 @@ export const PLANS: readonly Plan[] = [
     concurrentInbound: 50,
     concurrentOutbound: 3,
     features: [
-      '🌐 Speaks 7 languages, switches automatically',
+      '🌐 English and Spanish — switches automatically',
       '50 AI call minutes every month',
       '1 local phone number included',
       'Busy periods covered — usage billed in AI minutes',
@@ -152,7 +152,7 @@ export const PLANS: readonly Plan[] = [
     concurrentOutbound: 3,
     popular: true,
     features: [
-      '🌐 Speaks 7 languages, switches automatically',
+      '🌐 English and Spanish — switches automatically',
       '380 AI call minutes every month',
       '2 local phone numbers included',
       'Busy periods covered — usage billed in AI minutes',
@@ -179,7 +179,7 @@ export const PLANS: readonly Plan[] = [
     concurrentInbound: 50,
     concurrentOutbound: 8,
     features: [
-      '🌐 Speaks 7 languages, switches automatically',
+      '🌐 English and Spanish — switches automatically',
       '780 AI call minutes every month',
       '5 local phone numbers included',
       'Busy periods covered — usage billed in AI minutes',
@@ -206,7 +206,7 @@ export const PLANS: readonly Plan[] = [
     concurrentInbound: 50,
     concurrentOutbound: 25,
     features: [
-      '🌐 Speaks 7 languages, switches automatically',
+      '🌐 English and Spanish — switches automatically',
       '1,100 AI call minutes every month',
       '10 local phone numbers included',
       'Busy periods covered — usage billed in AI minutes',
@@ -233,7 +233,7 @@ export const PLANS: readonly Plan[] = [
     concurrentInbound: -1,
     concurrentOutbound: -1,
     features: [
-      '🌐 Speaks 7 languages, switches automatically',
+      '🌐 English and Spanish — switches automatically',
       'Business Associate Agreement available on request',
       'Your branding on the dashboard',
       'Custom AI minutes and number pool — billed on usage',

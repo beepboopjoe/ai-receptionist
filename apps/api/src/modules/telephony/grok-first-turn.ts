@@ -9,8 +9,15 @@
 // ============================================================
 import {
   buildDemoOpeningEn,
+  buildDemoOpeningEs,
   DEMO_OPENING_EN,
 } from '../voice-agent/call-me-demo.prompt.js';
+import {
+  inboundGreetingEs,
+  normalizeSpokenLanguage,
+  outboundGreetingEs,
+  type SpokenLanguage,
+} from '../voice-agent/spoken-language.js';
 
 export const GROK_REASONING_NONE = { effort: 'none' as const };
 
@@ -60,8 +67,34 @@ export function firstTurnGreetingText(params: {
   adHocTask?: string;
   /** Homepage demo spoken name. Empty / placeholder → Telfin. */
   agentName?: string | null;
+  /** Leftover / widget call-me language. `es` uses the Spanish AI-reveal open. */
+  language?: string | null;
+  /** Owner setting for paying-tenant calls. `es` greets in Spanish. */
+  spokenLanguage?: SpokenLanguage | string | null;
 }): string {
-  if (params.isDemo) return buildDemoOpeningEn(params.agentName);
+  if (params.isDemo) {
+    const demoLang = String(params.language ?? '').trim().toLowerCase();
+    if (demoLang === 'es' || demoLang === 'spanish' || demoLang === 'español') {
+      return buildDemoOpeningEs(params.agentName);
+    }
+    return buildDemoOpeningEn(params.agentName);
+  }
+
+  const spoken = normalizeSpokenLanguage(params.spokenLanguage);
+  if (spoken === 'es') {
+    if (params.adHocTask || params.isOutbound) {
+      return outboundGreetingEs({
+        practiceName: params.practiceName,
+        ...(params.leadFirstName ? { leadFirstName: params.leadFirstName } : {}),
+        ...(params.adHocTask ? { adHocTask: params.adHocTask } : {}),
+      });
+    }
+    return inboundGreetingEs({
+      practiceName: params.practiceName,
+      ...(params.callerFirstName ? { callerFirstName: params.callerFirstName } : {}),
+      ...(params.isAfterHours ? { isAfterHours: true } : {}),
+    });
+  }
 
   if (params.adHocTask) {
     return `Hi, this is ${params.practiceName} calling.`;

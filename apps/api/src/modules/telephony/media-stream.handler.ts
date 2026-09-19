@@ -25,7 +25,7 @@ import { emitWebhook } from '../webhooks/webhook.service.js';
 import { pushActivity } from '../activity/activity.service.js';
 import { isPromoTrialCapped } from '../billing/usage.service.js';
 import type { AppointmentType, OfficeHours, Contact } from '@ai-receptionist/shared';
-import { resolveSessionGrokVoice } from '@ai-receptionist/shared';
+import { normalizeSpokenLanguage, resolveSessionGrokVoice } from '@ai-receptionist/shared';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone.js';
 import utc from 'dayjs/plugin/utc.js';
@@ -765,6 +765,7 @@ export async function handleMediaStream(
       transferNumber: tenantSettings.transferNumber,
       voiceName:      tenantSettings.voiceName,
       businessContext: tenantSettings.businessContext,
+      spokenLanguage: tenantSettings.spokenLanguage,
     })
       .from(tenantSettings)
       .where(eq(tenantSettings.tenantId, tenantId))
@@ -801,6 +802,7 @@ export async function handleMediaStream(
 
   let leadFirstName: string | null = null;
   let inboundAfterHours = false;
+  const spokenLanguage = normalizeSpokenLanguage(settingsRow?.spokenLanguage);
   const inboundPromptArgs = {
     practiceName,
     vertical,
@@ -812,6 +814,7 @@ export async function handleMediaStream(
     workflowHint: 'new_contact' as 'new_contact' | 'existing_contact' | 'after_hours',
     transferNumber: settingsRow?.transferNumber ?? null,
     businessContext: settingsRow?.businessContext ?? null,
+    spokenLanguage,
     ...(adHocTask && { adHocTask }),
     ...(isDemo && { isDemo: true as const }),
     ...(isDemo && language && { demoLanguage: language }),
@@ -847,12 +850,14 @@ export async function handleMediaStream(
       availableAppointmentTypes: apptTypes.map((t: AppointmentType) => t.name).join(', '),
       campaignId: campaignId ?? '',
       campaignContactId,
+      spokenLanguage,
       ...(goalPitch && { goalPitch }),
     });
     greetingText = firstTurnGreetingText({
       isDemo,
       isOutbound: true,
       practiceName,
+      spokenLanguage,
       ...(leadFirstName ? { leadFirstName } : {}),
       ...(adHocTask ? { adHocTask } : {}),
     });
@@ -882,6 +887,8 @@ export async function handleMediaStream(
       isOutbound: false,
       practiceName,
       isAfterHours: inboundAfterHours,
+      spokenLanguage,
+      ...(isDemo && language ? { language } : {}),
       ...(!isDemo && contact?.firstName ? { callerFirstName: contact.firstName } : {}),
       ...(adHocTask ? { adHocTask } : {}),
     });

@@ -5,7 +5,7 @@
 // POST /api/v1/public/call-me. Idle → calling → ringing | error.
 // If DEMO_* env is missing the API returns 503; we show a clear
 // fallback that links to /demo instead of breaking the page.
-// Language is detected on the live call — no picker in this UI.
+// Optional EN / Español toggle. Default auto-detects (English open).
 // ============================================================
 import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -46,6 +46,7 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
   const [status, setStatus] = useState<WidgetStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [consented, setConsented] = useState(false);
+  const [lang, setLang] = useState<'auto' | 'es'>('auto');
 
   const display = useMemo(() => formatNational(digitsOnly(raw)), [raw]);
 
@@ -63,7 +64,7 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
       const res = await fetch(`${API_URL}/public/call-me`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: raw }),
+        body: JSON.stringify({ phone: raw, language: lang }),
       });
 
       let body: { message?: string; error?: string } = {};
@@ -84,7 +85,7 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
       setStatus('error');
       setError("We couldn't reach the demo line. Hear a sample instead — the page still works.");
     }
-  }, [raw, status, consented]);
+  }, [raw, status, consented, lang]);
 
   const reset = useCallback(() => {
     setStatus('idle');
@@ -104,8 +105,8 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
         <div>
           <p className="text-sm font-semibold text-cream-900">Hear it on your phone</p>
           <p className="text-xs text-cream-500 leading-relaxed">
-            We&apos;ll call you as Telfin in Aurora — US &amp; Canada mobiles. Language is
-            detected when you pick up. No sign-up.
+            We&apos;ll call you as Telfin in Aurora — US &amp; Canada mobiles. English or
+            Spanish. No sign-up.
           </p>
         </div>
       </div>
@@ -114,7 +115,7 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
         <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
           <p className="text-sm font-semibold text-emerald-800">Calling you now</p>
           <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
-            Pick up to talk to Telfin. Speak naturally — the AI matches your language.
+            Pick up to talk to Telfin. {lang === 'es' ? 'Opens in Spanish.' : 'Opens in English — speak Spanish and it follows.'}{' '}
             If it doesn&apos;t ring in 20 seconds, check spam / unknown callers.
           </p>
           <button
@@ -127,6 +128,27 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
         </div>
       ) : (
         <>
+          <div className="mb-3 flex rounded-lg border border-cream-200 bg-cream-50 p-0.5" role="group" aria-label="Demo language">
+            <button
+              type="button"
+              onClick={() => setLang('auto')}
+              className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                lang === 'auto' ? 'bg-white text-cream-900 shadow-sm' : 'text-cream-500 hover:text-cream-800'
+              }`}
+            >
+              English
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang('es')}
+              className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                lang === 'es' ? 'bg-white text-cream-900 shadow-sm' : 'text-cream-500 hover:text-cream-800'
+              }`}
+            >
+              Español
+            </button>
+          </div>
+
           <form
             onSubmit={(e) => {
               e.preventDefault();

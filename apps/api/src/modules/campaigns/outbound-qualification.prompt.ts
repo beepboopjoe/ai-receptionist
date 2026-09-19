@@ -1,5 +1,10 @@
 import type { Vertical } from '../voice-agent/prompt-builder.js';
 import { SOUND_HUMAN_PROMPT_SECTION } from '../voice-agent/sound-human.style.js';
+import {
+  normalizeSpokenLanguage,
+  spokenLanguagePromptBlock,
+  type SpokenLanguage,
+} from '../voice-agent/spoken-language.js';
 
 export interface OutboundPromptContext {
   practiceName: string;
@@ -16,6 +21,7 @@ export interface OutboundPromptContext {
    * you're due for your next cleaning" instead of the generic vertical pitch.
    */
   goalPitch?: string;
+  spokenLanguage?: SpokenLanguage | string;
 }
 
 const VERTICAL_PITCH: Record<Vertical, {
@@ -134,6 +140,8 @@ At the end of the call, you must output a JSON block (which will not be read alo
   "campaignContactId": "${campaignContactId}"
 }
 \`\`\`
+
+${spokenLanguagePromptBlock(normalizeSpokenLanguage(ctx.spokenLanguage))}
 
 # Hard Rules
 - NEVER discuss pricing. If asked: "Our front desk will be happy to share our fees when you come in."
