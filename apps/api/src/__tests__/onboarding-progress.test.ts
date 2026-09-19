@@ -110,3 +110,55 @@ describe('onboarding use-case picker removed', () => {
     expect(nextConfig).toMatch(/destination:\s*['"]\/dashboard['"]/);
   });
 });
+
+describe('optional onboarding steps stay skippable', () => {
+  const dashboardRoot = join(srcRoot, '../../dashboard/src');
+
+  function page(rel: string): string {
+    return readFileSync(join(dashboardRoot, rel), 'utf8');
+  }
+
+  function skipButton(src: string): string {
+    const matches = [...src.matchAll(/<button\b[\s\S]*?<\/button>/g)];
+    const skip = matches.find((m) => m[0].includes('Skip for now'));
+    if (!skip) throw new Error('Skip for now button not found');
+    return skip[0];
+  }
+
+  function handleSkipFn(src: string): string {
+    const m = src.match(/async function handleSkip\(\) \{[\s\S]*?\n  \}/);
+    if (!m) throw new Error('handleSkip not found');
+    return m[0];
+  }
+
+  it('calendar step skip is always enabled and advances without OAuth', () => {
+    const src = page('app/onboarding/step-2-calendar/page.tsx');
+    const btn = skipButton(src);
+    const skipFn = handleSkipFn(src);
+
+    expect(src).toMatch(/You can skip this and go live with office hours only/);
+    expect(src).toContain('Connect Google');
+    expect(src).toContain('connectGoogleCalendar');
+    expect(btn).not.toMatch(/\bdisabled\b/);
+    expect(btn).not.toMatch(/text-gray-400/);
+    expect(btn).not.toMatch(/cursor-not-allowed/);
+    expect(btn).toContain('onClick={() => void handleSkip()}');
+    expect(skipFn).toContain("router.push('/onboarding/step-3-patients')");
+    expect(skipFn).toMatch(/try\s*\{[\s\S]*completeStep\(2\)[\s\S]*\}\s*catch/);
+    expect(skipFn).not.toMatch(/connected|configured|status\?/);
+    expect(src).not.toMatch(/\b(Grok|Telnyx|xAI)\b/);
+  });
+
+  it('contacts step skip is enabled and not gated on a CSV upload', () => {
+    const src = page('app/onboarding/step-3-patients/page.tsx');
+    const btn = skipButton(src);
+    const skipFn = handleSkipFn(src);
+
+    expect(btn).not.toMatch(/\bdisabled\b/);
+    expect(btn).not.toMatch(/text-gray-400/);
+    expect(btn).not.toMatch(/cursor-not-allowed/);
+    expect(skipFn).toContain("router.push('/onboarding/step-4-rules')");
+    expect(skipFn).toMatch(/try\s*\{[\s\S]*completeStep\(3\)[\s\S]*\}\s*catch/);
+    expect(src).not.toMatch(/\b(Grok|Telnyx|xAI)\b/);
+  });
+});

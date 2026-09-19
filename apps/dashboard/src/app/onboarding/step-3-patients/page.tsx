@@ -10,6 +10,7 @@ export default function Step3ContactsPage() {
   const vertical = useVertical();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [skipping, setSkipping] = useState(false);
   const [result, setResult] = useState<{ imported: number; errors: number } | null>(null);
   const [error, setError] = useState('');
 
@@ -30,7 +31,13 @@ export default function Step3ContactsPage() {
   }
 
   async function handleSkip() {
-    await onboardingApi.completeStep(3);
+    if (skipping) return;
+    setSkipping(true);
+    try {
+      await onboardingApi.completeStep(3);
+    } catch {
+      /* contact import is optional — still continue */
+    }
     router.push('/onboarding/step-4-rules');
   }
 
@@ -88,12 +95,16 @@ export default function Step3ContactsPage() {
       )}
 
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="btn-secondary">
+        <button type="button" onClick={() => router.back()} className="btn-secondary">
           <ArrowLeft size={16} /> Back
         </button>
         {!result && (
-          <button onClick={handleSkip} className="text-sm text-gray-400 hover:text-gray-600">
-            Skip for now →
+          <button
+            type="button"
+            onClick={() => void handleSkip()}
+            className="text-sm font-medium text-brand-700 hover:text-brand-800 underline-offset-2 hover:underline cursor-pointer"
+          >
+            {skipping ? 'Continuing…' : 'Skip for now →'}
           </button>
         )}
       </div>
