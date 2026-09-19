@@ -1,34 +1,17 @@
 // ============================================================
-// /pricing — Public pricing page. Cream theme matching
-// /inbound, /outbound, /demo. Pulls plans from the shared
-// catalog (single source of truth) and uses the PricingCards
-// client component for the monthly/annual toggle.
-// Enterprise is now part of the card grid (Contact Sales CTA).
+// /pricing — Short public pricing page.
+// Cards + compare + a few FAQs. No $29 framing, no AI-reveal
+// script, no second ROI / partner / after-hours dump.
 // ============================================================
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
-import { CheckCircle, Clock, Mic, Phone, Calendar, Sparkles, Zap, MessageSquare, MapPin, Inbox } from 'lucide-react';
+import { Mic, Sparkles } from 'lucide-react';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { PLANS, PAY_AS_YOU_GO } from '@ai-receptionist/shared';
 import { PricingCards } from '@/components/ui/pricing-cards';
 import { PlanComparisonTable } from '@/components/ui/plan-comparison-table';
-import { RoiCalculator } from '@/components/marketing/roi-calculator';
-import { PricingVsAnswering } from '@/components/ui/pricing-vs-answering';
-import { Skeleton } from '@/components/ui/skeleton';
 import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
-const RoiSection = dynamic(
-  () => import('@/components/ui/roi-section').then((m) => m.RoiSection),
-  {
-    ssr: false,
-    loading: () => <Skeleton width="w-full" height="h-64" rounded="lg" />,
-  }
-);
-
-// Plans shown in the card grid. Trial goes first (leftmost) so visitors
-// see "free" before any paid price — strips the cost objection out of
-// the funnel without diluting the paid plans visually.
 const PRICING_PLANS = [
   PLANS.find((p) => p.key === 'trial')!,
   ...PLANS.filter((p) => p.key !== 'trial'),
@@ -36,40 +19,20 @@ const PRICING_PLANS = [
 
 const FAQS = [
   {
-    q: 'What happens when I run out of minutes?',
-    a: 'Your AI keeps answering — calls never drop mid-conversation. Overage minutes are billed at the per-minute rate for your plan (Starter $0.39/min, Growth $0.35/min, Scale $0.29/min, Business $0.25/min) and added to your next invoice. We email you at 80% usage so there are no surprises.',
-  },
-  {
-    q: 'Does it handle both inbound and outbound calls?',
-    a: 'Yes. Answering your phone 24/7 and calling out — reminders, follow-ups, win-backs, leaving a voicemail if nobody answers — are on every paid plan, including Starter. Free explores the dashboard; upgrade to go live.',
-  },
-  {
-    q: 'Does SMS come included?',
-    a: 'Yes — the two-way SMS inbox, automated appointment reminders (24h + 2h), and missed-call text-back are all included on every paid plan. SMS is sent from a number we provision for you (included on every paid plan).',
-  },
-  {
-    q: 'What languages does the AI speak?',
-    a: 'English is primary. Spanish is the extra language — pick English, Spanish, or Both in Settings → Voice Agent. Both opens in English and switches to Spanish when the caller does. No upgrade fee.',
-  },
-  {
-    q: 'What phone number do I get?',
-    a: 'Starter includes 1 local number, Growth 2, Scale 5, and Business 10. You can also port your existing business line to us for free, or buy additional local numbers at $5/mo each on any paid plan. Free explores the dashboard — upgrade to go live with a dedicated number.',
-  },
-  {
-    q: 'Can I change plans or cancel at any time?',
-    a: 'Yes. Upgrades are prorated and effective immediately. Downgrades apply at the next billing cycle. Monthly plans cancel any time — no fees, no minimums. Annual plans are paid up front but you can cancel auto-renew any time.',
-  },
-  {
     q: 'Can I try it free?',
     a: 'Yes — sign up Free with no credit card. Explore the dashboard and sample the AI. Upgrade to Starter ($20/mo) to go live with a dedicated number, SMS, outbound campaigns, Ask Telfin, a booking page, and 50 included minutes. Growth is $199/mo, Scale $399, Business $599 — more included minutes and numbers.',
   },
   {
-    q: 'Why not just use a $29 answering service?',
-    a: 'A typical $29/mo answering service takes a message. Telfin Starter is $20 and also runs outbound campaigns, two-way SMS, Ask Telfin, and a public booking page. Growth is $199 when you need more included minutes. Free stays how you explore the dashboard — no card.',
+    q: 'What happens when I run out of minutes?',
+    a: 'Calls never drop. You get an email at 80% usage. Extra minutes bill at your plan rate (Starter $0.39/min, Growth $0.35/min, Scale $0.29/min, Business $0.25/min). Only active talk time counts — not ringing, hold, or post-call work.',
+  },
+  {
+    q: 'Can I change plans or cancel at any time?',
+    a: 'Yes. Upgrades are prorated immediately. Downgrades apply next cycle. Monthly plans cancel any time. Annual auto-renew can be turned off any time.',
   },
   {
     q: 'Is my data secure? What about HIPAA?',
-    a: 'Call recordings and contact data are encrypted at rest and in transit. We are not HIPAA-certified. Healthcare practices that need a Business Associate Agreement can request one before processing PHI — see /legal/hipaa. Using Telfin does not by itself make a practice HIPAA-compliant.',
+    a: 'Call recordings and contact data are encrypted at rest and in transit. We are not HIPAA-certified. Healthcare practices that need a BAA can request one before processing PHI — see /legal/hipaa.',
   },
 ];
 
@@ -78,8 +41,7 @@ export default function PricingPage() {
     <div className="min-h-screen bg-cream-50 text-cream-900">
       <MarketingHeader />
 
-      {/* ── Hero ──────────────────────────────────────────── */}
-      <section className="mesh-gradient-light pt-20 sm:pt-24 pb-16 px-4 sm:px-6">
+      <section className="mesh-gradient-light pt-20 sm:pt-24 pb-12 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold px-4 py-2 rounded-full mb-7">
             <Sparkles size={13} />
@@ -92,7 +54,7 @@ export default function PricingPage() {
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
             Free to explore. Starter $20 goes live — outbound, SMS, Ask Telfin, and a booking page.
-            That&apos;s more than a typical $29 answering service. Growth is $199 when you need more minutes.
+            Growth is $199 when you need more minutes.
           </p>
           <p className="text-sm text-cream-500 mt-4">
             Free to explore · Monthly or annual · Cancel anytime · 30-day money-back on paid plans
@@ -100,209 +62,31 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ── Pricing cards (client — has monthly/annual toggle) ── */}
-      <section id="plans" className="max-w-7xl mx-auto px-6 pb-4 pt-6">
+      <section id="plans" className="max-w-7xl mx-auto px-6 pb-4 pt-2">
         <PricingCards plans={PRICING_PLANS} />
         <p className="text-center text-sm text-cream-500 mt-8">
           <a href="#compare" className="text-brand-600 hover:underline font-medium">
-            Compare every feature side-by-side ↓
+            Compare plans ↓
           </a>
+          {' · '}
+          <Link href="/signup?plan=payg" className="text-cream-600 hover:underline">
+            Pay as you go at ${PAY_AS_YOU_GO.perMinute.toFixed(2)}/min
+          </Link>
         </p>
       </section>
 
-      <PricingVsAnswering />
-
-      {/* ── Why we include phone numbers ──────────────────── */}
-      <section className="max-w-5xl mx-auto px-6 py-12">
-        <div className="rounded-3xl border border-cream-200 bg-white px-8 py-10 md:px-12">
-          <div className="grid grid-cols-1 md:grid-cols-[260px,1fr] gap-8 items-start">
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center mb-4">
-                <Phone size={22} className="text-brand-600" />
-              </div>
-              <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-2">
-                Why we include phone numbers
-              </p>
-              <h3 className="font-serif text-2xl text-cream-900 tracking-tight leading-snug">
-                Your numbers aren&apos;t a tax — they&apos;re the whole receptionist.
-              </h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="rounded-2xl bg-cream-50 border border-cream-200 p-5">
-                <div className="w-9 h-9 rounded-xl bg-white border border-cream-200 flex items-center justify-center mb-3">
-                  <MapPin size={16} className="text-brand-600" />
-                </div>
-                <h4 className="text-sm font-semibold text-cream-900 mb-1">Local presence</h4>
-                <p className="text-xs text-cream-600 leading-relaxed">
-                  Local caller IDs are often answered more readily than unfamiliar or toll-free numbers. Results vary; we do not guarantee pickup rates.
-                </p>
-              </div>
-              <div className="rounded-2xl bg-cream-50 border border-cream-200 p-5">
-                <div className="w-9 h-9 rounded-xl bg-white border border-cream-200 flex items-center justify-center mb-3">
-                  <Inbox size={16} className="text-brand-600" />
-                </div>
-                <h4 className="text-sm font-semibold text-cream-900 mb-1">Callbacks ring the AI</h4>
-                <p className="text-xs text-cream-600 leading-relaxed">
-                  When a lead calls the number back, our AI picks up and books the appointment. Spoofed caller IDs send the callback to your voicemail — the whole receptionist value evaporates.
-                </p>
-              </div>
-              <div className="rounded-2xl bg-cream-50 border border-cream-200 p-5">
-                <div className="w-9 h-9 rounded-xl bg-white border border-cream-200 flex items-center justify-center mb-3">
-                  <MessageSquare size={16} className="text-brand-600" />
-                </div>
-                <h4 className="text-sm font-semibold text-cream-900 mb-1">Two-way SMS</h4>
-                <p className="text-xs text-cream-600 leading-relaxed">
-                  Missed-call text-back, appointment reminders, and the SMS inbox all run on the numbers we provision. Your existing landline can&apos;t send SMS.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Feature comparison matrix ─────────────────────── */}
-      <section id="compare" className="max-w-7xl mx-auto px-6 py-16 scroll-mt-20">
-        <div className="text-center mb-10">
+      <section id="compare" className="max-w-7xl mx-auto px-6 py-14 scroll-mt-20">
+        <div className="text-center mb-8">
           <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">Compare plans</p>
-          <h2 className="font-serif text-4xl text-cream-900 tracking-tight">
-            What&apos;s included in each plan.
+          <h2 className="font-serif text-3xl md:text-4xl text-cream-900 tracking-tight">
+            Same product. More minutes as you grow.
           </h2>
-          <p className="text-cream-600 mt-3 max-w-2xl mx-auto">
-            SMS, transcripts, outbound campaigns, and English + Spanish are on every paid plan, including Starter.
-            The difference between Starter, Growth, Scale, and Business is included AI minutes and included phone numbers. Busy-period volume is billed in minutes — not concurrent seats.
-          </p>
         </div>
         <PlanComparisonTable />
       </section>
 
-      {/* ── ROI calculator (Phase 17) ─────────────────────── */}
-      <RoiCalculator vertical="generic" />
-
-      {/* TestimonialGrid removed (Phase 19.1) until real customer quotes. */}
-
-      {/* ── PAYG footnote strip ───────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-6 pb-8">
-        <p className="text-center text-xs text-cream-600">
-          Not ready for a subscription?{' '}
-          <Link href="/signup?plan=payg" className="text-brand-500 hover:underline font-medium">
-            Pay as you go at ${PAY_AS_YOU_GO.perMinute.toFixed(2)}/min
-          </Link>
-          {' '}— no monthly commitment. Good for low-volume testing.
-        </p>
-      </section>
-
-      {/* ── What counts as an AI voice minute? ───────────── */}
-      <section className="bg-white border-y border-cream-200 py-20 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-3">How minutes work</p>
-            <h2 className="font-serif text-4xl text-cream-900 tracking-tight">
-              What counts as an AI voice minute?
-            </h2>
-            <p className="text-cream-600 mt-3 max-w-xl mx-auto">
-              One minute = one minute of active AI conversation time. Simple.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            {[
-              {
-                icon: <Mic size={20} className="text-brand-600" />,
-                title: 'Counted',
-                color: 'bg-brand-50 border-brand-100',
-                items: [
-                  'Time the AI is actively talking with a caller',
-                  'Time the caller is speaking and the AI is listening',
-                  'Both inbound and outbound call time',
-                ],
-              },
-              {
-                icon: <Clock size={20} className="text-cream-500" />,
-                title: 'Not counted',
-                color: 'bg-cream-50 border-cream-200',
-                items: [
-                  'Ringing before the caller picks up',
-                  'Hold time / on-hold music',
-                  'Time after the call ends (transcription, logging)',
-                ],
-              },
-              {
-                icon: <Zap size={20} className="text-amber-600" />,
-                title: 'Good to know',
-                color: 'bg-amber-50 border-amber-100',
-                items: [
-                  'Average inbound call: 2–4 minutes',
-                  'Average outbound follow-up: 1–2 minutes',
-                  'Minutes reset at each billing cycle',
-                ],
-              },
-            ].map(({ icon, title, color, items }) => (
-              <div key={title} className={`rounded-2xl border p-6 ${color}`}>
-                <div className="flex items-center gap-2 mb-4">
-                  {icon}
-                  <h3 className="font-semibold text-cream-900">{title}</h3>
-                </div>
-                <ul className="space-y-2">
-                  {items.map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-cream-600">
-                      <span className="mt-1.5 w-1 h-1 rounded-full bg-cream-400 shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <div className="rounded-2xl bg-cream-50 border border-cream-200 px-8 py-5 text-center">
-            <p className="text-sm text-cream-600">
-              <span className="font-semibold text-cream-900">Example:</span> Growth plan (380 min/mo) typically covers{' '}
-              <span className="font-semibold text-cream-900">a few hundred inbound minutes</span> per month,
-              or a mix of inbound + outbound. Extra minutes bill at $0.35/min — you get an 80% usage email first.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── After-hours value block ──────────────────────── */}
-      <section className="max-w-5xl mx-auto px-6 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center mb-5">
-              <Calendar size={22} className="text-brand-600" />
-            </div>
-            <h2 className="font-serif text-4xl text-cream-900 tracking-tight">
-              Every missed call is a missed appointment.
-            </h2>
-            <p className="text-cream-600 mt-3 leading-relaxed">
-              A lot of callers reach you after hours. Your AI answers, qualifies the lead, and can book the appointment on the spot — even at 11 PM on a Sunday. One recovered booking often covers the plan.
-            </p>
-            <a href="#plans" className="glow-btn mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-6 py-3 text-sm font-semibold text-white transition-colors">
-              <Phone size={16} /> Choose your plan ↑
-            </a>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { stat: '24/7', label: 'Always available' },
-              { stat: '< 2s', label: 'Typical answer time' },
-              { stat: 'Live', label: 'Calendar-backed booking' },
-              { stat: '$0', label: 'Missed-call voicemail tax' },
-            ].map(({ stat, label }) => (
-              <div key={label} className="rounded-xl bg-white border border-cream-200 p-5 text-center">
-                <p className="font-serif text-3xl text-cream-900">{stat}</p>
-                <p className="text-xs text-cream-600 mt-1">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── ROI Calculator ────────────────────────────────── */}
-      <div className="bg-cream-100 border-y border-cream-200">
-        <RoiSection />
-      </div>
-
-      {/* ── FAQ ──────────────────────────────────────────── */}
-      <section className="max-w-3xl mx-auto px-6 py-20">
-        <h2 className="font-serif text-4xl text-cream-900 text-center mb-10">Frequently asked questions</h2>
+      <section className="max-w-3xl mx-auto px-6 py-14">
+        <h2 className="font-serif text-3xl text-cream-900 text-center mb-8">Questions</h2>
         <div className="space-y-3">
           {FAQS.map(({ q, a }) => (
             <details key={q} className="rounded-xl bg-white border border-cream-200 group">
@@ -316,29 +100,10 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ── Become a partner ──────────────────────────────── */}
-      <section className="max-w-3xl mx-auto px-6 pb-16">
-        <div className="rounded-2xl bg-cream-100 border border-cream-200 px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold text-cream-900">Become a partner</h3>
-            <p className="text-sm text-cream-600 mt-1">
-              Resell Telfin to your clients and earn a recurring commission on every customer you refer.
-            </p>
-          </div>
-          <Link
-            href="/partners"
-            className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-cream-300 text-cream-800 font-semibold text-sm hover:bg-cream-50 transition-colors"
-          >
-            Join the program →
-          </Link>
-        </div>
-      </section>
-
-      {/* ── Footer CTA ───────────────────────────────────── */}
-      <section className="bg-cream-900 text-white py-20 px-6 border-t border-white/5">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-serif text-4xl text-white mb-3">Ready to stop missing calls?</h2>
-          <p className="text-cream-300 mb-10 max-w-xl mx-auto">
+      <section className="bg-cream-900 text-white py-16 px-6 border-t border-white/5">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="font-serif text-3xl md:text-4xl text-white mb-3">Ready to go live?</h2>
+          <p className="text-cream-300 mb-8 max-w-xl mx-auto">
             Sign up Free to explore the dashboard, then upgrade when you&apos;re ready to go live.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -348,17 +113,11 @@ export default function PricingPage() {
             >
               Try Free →
             </Link>
-            <a
-              href="#plans"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/20 hover:bg-white/10 px-8 py-4 text-base font-semibold text-white transition-colors"
-            >
-              <CheckCircle size={18} /> See pricing
-            </a>
             <Link
-              href="/#call-me"
+              href="/demo"
               className="inline-flex items-center gap-2 rounded-xl border border-white/20 hover:bg-white/10 px-8 py-4 text-base font-semibold text-white transition-colors"
             >
-              <Mic size={18} /> Hear it on your phone
+              <Mic size={18} /> Listen to sample calls
             </Link>
             <a
               href={`mailto:${BRAND_SUPPORT_EMAIL}`}

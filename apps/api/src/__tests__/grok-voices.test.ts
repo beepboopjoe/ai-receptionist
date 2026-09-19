@@ -121,11 +121,11 @@ describe('marketing voice sample languages', () => {
   const voicesDir = join(repoRoot, 'apps/dashboard/public/audio/voices');
   const samples = readFileSync(join(repoRoot, 'apps/dashboard/src/lib/voice-samples.ts'), 'utf8');
   const homepage = readFileSync(
-    join(repoRoot, 'apps/dashboard/src/app/page.tsx'),
+    join(repoRoot, 'apps/dashboard/src/components/ui/homepage-voice-samples.tsx'),
     'utf8',
   );
-  const homepageSample = readFileSync(
-    join(repoRoot, 'apps/dashboard/src/components/ui/homepage-sample-call.tsx'),
+  const homepagePage = readFileSync(
+    join(repoRoot, 'apps/dashboard/src/app/page.tsx'),
     'utf8',
   );
   const demoUi = readFileSync(
@@ -164,17 +164,12 @@ describe('marketing voice sample languages', () => {
     expect(rtlFn).not.toContain("'hy'");
   });
 
-  it('homepage sample call is a script + call-me CTA; leftover chips stay off the home page', () => {
-    expect(homepage).toContain('HomepageSampleCall');
-    expect(homepage).not.toContain('HomepageVoiceSamples');
-    expect(homepageSample).not.toContain('SampleLanguageChips');
-    expect(homepageSample).not.toContain('voiceSampleSrc');
-    expect(homepageSample).not.toMatch(/\.mp3/);
-    expect(homepageSample).toContain('SAMPLE_CALL_SCRIPT');
-    expect(homepageSample).toContain('#call-me');
-    expect(
-      readFileSync(join(repoRoot, 'apps/dashboard/src/lib/demo-opener.ts'), 'utf8'),
-    ).toContain("I'm actually AI");
+  it('homepage and demo voice cards share language chips; call-me does not', () => {
+    expect(homepagePage).toContain('HomepageVoiceSamples');
+    expect(homepagePage).not.toContain('HomepageSampleCall');
+    expect(homepage).toContain('SampleLanguageChips');
+    expect(homepage).toContain('voiceSampleSrc');
+    expect(homepage).not.toMatch(/\$\{voice\.id\}-preview\.mp3/);
     expect(demoUi).toContain('SampleLanguageChips');
     expect(demoUi).toContain('useSampleLanguage');
     expect(demoUi).not.toContain('hideLanguageSelector');
@@ -191,6 +186,6 @@ describe('marketing voice sample languages', () => {
     expect(callMe).not.toContain('useSampleLanguage');
     expect(callMe).toMatch(/English or\s+Spanish/);
     expect(callMe).toContain("setLang('es')");
-    expect(callMe).toMatch(/actually AI/);
+    expect(callMe).not.toMatch(/actually AI/);
   });
 });

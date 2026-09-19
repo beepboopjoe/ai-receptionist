@@ -1,20 +1,21 @@
 // ============================================================
 // / — Marketing home page.
-// Live call-me + short AI-reveal sample script. Cream theme.
+// Voice sample MP3s + live call-me. Cream theme.
 // Shared MarketingHeader + MarketingFooter.
 // ============================================================
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { CheckCircle, Phone, Megaphone, MessageSquare, ArrowRight } from 'lucide-react';
 import { BRAND_NAME, BRAND_STACK_LINE } from '@/lib/brand';
-import { DEMO_OPENING_EN } from '@/lib/demo-opener';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
-import { PricingVsAnswering } from '@/components/ui/pricing-vs-answering';
-import { HomepageSampleCall } from '@/components/ui/homepage-sample-call';
 import { PLANS } from '@ai-receptionist/shared';
 
+const HomepageVoiceSamples = dynamic(
+  () => import('@/components/ui/homepage-voice-samples').then((m) => m.HomepageVoiceSamples),
+  { ssr: false }
+);
 const DashboardTeaser = dynamic(
   () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
   { ssr: false }
@@ -56,10 +57,6 @@ const FAQS = [
   {
     q: 'Can I try it free?',
     a: 'Yes. Create a Free account with no credit card and explore the dashboard — sample screens, settings, and the AI in the browser. Hear a live sample on this page first — no signup. Free does not include a live phone number or SMS. Upgrade to Starter ($20/mo) when you want a number, SMS, outbound, Ask Telfin, and a booking page. Growth is $199/mo, Scale $399, Business $599.',
-  },
-  {
-    q: 'Why not just use a $29 answering service?',
-    a: 'A typical $29/mo answering service takes a message. Telfin Starter is $20 and also runs outbound, two-way SMS, Ask Telfin (one call or text from chat), and a public booking page on the same calendar. Growth is $199 when you need more included minutes. Free stays how you explore.',
   },
 ];
 
@@ -118,7 +115,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto text-center">
 
           <div className="inline-flex items-center gap-2 bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold px-4 py-2 rounded-full mb-7">
-            Live sample — not a recording
+            Built for phone-heavy businesses
           </div>
 
           <h1 className="font-serif text-[2.15rem] leading-[1.1] sm:text-5xl md:text-7xl text-cream-900 tracking-tight sm:leading-[1.05] break-words">
@@ -127,8 +124,8 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
-            {BRAND_NAME} answers the phone, books the calendar, and calls people back.
-            The first line is honest: I&apos;m actually AI. Hear it on your phone — no signup.
+            {BRAND_NAME} answers every inbound call, books the calendar, and follows up by phone or text —
+            one receptionist, not three products.
           </p>
 
           <p className="text-sm text-cream-600 mt-4 max-w-xl mx-auto">
@@ -154,22 +151,13 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <blockquote className="mt-8 max-w-xl mx-auto text-left sm:text-center rounded-2xl bg-white/80 border border-cream-200 px-5 py-4">
-            <p className="text-sm text-cream-700 leading-relaxed italic">
-              &ldquo;{DEMO_OPENING_EN}&rdquo;
-            </p>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-cream-400 mt-2">
-              Live opener · English
-            </p>
-          </blockquote>
-
           <div id="call-me" className="mt-8 sm:mt-10 scroll-mt-24">
             <CallMeWidget />
           </div>
         </div>
       </section>
 
-      <HomepageSampleCall />
+      <HomepageVoiceSamples />
 
       <section className="bg-white border-y border-cream-200 py-20 px-6">
         <div className="max-w-6xl mx-auto">
@@ -304,6 +292,9 @@ export default function LandingPage() {
             <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
               From first ring to booked appointment.
             </h2>
+            <Link href="/how-it-works" className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 mt-4 hover:underline">
+              See how it works <ArrowRight size={14} />
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -311,17 +302,17 @@ export default function LandingPage() {
               {
                 n: '1',
                 title: 'Connect your number',
-                desc: 'Forward your existing line or we provision a new AI number. Works with any phone system. Upgrade to go live.',
+                desc: 'Forward your line or we provision one.',
               },
               {
                 n: '2',
                 title: 'AI handles every call',
-                desc: 'Greets callers, books appointments, answers questions, and escalates emergencies — 24/7.',
+                desc: 'Greets, books, and escalates — 24/7.',
               },
               {
                 n: '3',
                 title: 'Watch the results',
-                desc: 'Every call logged, every booking tracked. Transcripts, recordings, and analytics in one dashboard.',
+                desc: 'Transcripts, recordings, and bookings in one dashboard.',
               },
             ].map((step) => (
               <div key={step.n} className="rounded-2xl bg-cream-50 border border-cream-200 p-7">
@@ -396,8 +387,6 @@ export default function LandingPage() {
               Try Free →
             </Link>
           </div>
-
-          <PricingVsAnswering compact />
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
             {PLANS_PREVIEW.map((plan) => (

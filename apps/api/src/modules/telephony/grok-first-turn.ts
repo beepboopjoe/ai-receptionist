@@ -67,7 +67,7 @@ export function firstTurnGreetingText(params: {
   adHocTask?: string;
   /** Homepage demo spoken name. Empty / placeholder → Telfin. */
   agentName?: string | null;
-  /** Leftover / widget call-me language. `es` uses the Spanish AI-reveal open. */
+  /** Leftover / widget call-me language. `es` uses the Spanish representative open. */
   language?: string | null;
   /** Owner setting for paying-tenant calls. `es` greets in Spanish. */
   spokenLanguage?: SpokenLanguage | string | null;

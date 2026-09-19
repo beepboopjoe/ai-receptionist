@@ -21,7 +21,7 @@ import {
 type NavItem = { label: string; href: string };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'How it works', href: '/#how-it-works' },
+  { label: 'How it works', href: '/how-it-works' },
   { label: 'Pricing',      href: '/pricing' },
   { label: 'Hear it',      href: '/demo' },
 ];

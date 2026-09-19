@@ -98,7 +98,7 @@ describe('first-turn greetings', () => {
     );
   });
 
-  it('uses the Spanish AI-reveal demo opener when language is es', () => {
+  it('uses the Spanish representative demo opener when language is es', () => {
     expect(
       firstTurnGreetingText({
         isDemo: true,
@@ -107,7 +107,8 @@ describe('first-turn greetings', () => {
         language: 'es',
       }),
     ).toBe(DEMO_OPENING_ES);
-    expect(DEMO_OPENING_ES).toMatch(/en realidad soy IA/);
+    expect(DEMO_OPENING_ES).toBe('Hola, soy un representante de Telfin.');
+    expect(DEMO_OPENING_ES).not.toMatch(/en realidad soy IA/);
     expect(DEMO_OPENING_ES).not.toMatch(/Grok|Telnyx|xAI|receptionist/i);
     expect(buildDemoOpeningEs('Alex')).toContain('Alex');
   });

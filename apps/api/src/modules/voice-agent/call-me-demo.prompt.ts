@@ -6,9 +6,10 @@
 // mode=demo). Paying-tenant receptionist prompts are unchanged.
 // Keep this script tight: the live call should be ~2 minutes of talk.
 //
-// Talk track: English AI-reveal open → brief product → qualify
-// the lead → soft close. Never spell a URL. First audio is
-// force_message (no think loop) so the opener stays snappy.
+// Talk track: human representative open → brief product → qualify
+// the lead → soft close. AI reveal only near the end, if at all.
+// Never spell a URL. First audio is force_message (no think loop)
+// so the opener stays snappy.
 // ============================================================
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone.js';
@@ -44,25 +45,24 @@ export function resolveDemoAgentName(name?: string | null): string {
 }
 
 /**
- * English force_message opener. Scripted umm is intentional (human
- * cadence) and does not add a model think delay.
+ * English force_message opener — human representative. No AI, no
+ * "receptionist". Scripted umm is not used on this line.
  */
 export function buildDemoOpeningEn(name?: string | null): string {
-  return `Hey, this is ${resolveDemoAgentName(name)}, your future agent representative. Umm, I know this might sound crazy and I may sound real, but umm, I'm actually AI.`;
+  return `Hey, this is a representative of ${resolveDemoAgentName(name)}.`;
 }
 
 /**
- * Spanish force_message opener — same AI-reveal vibe as English.
- * Scripted umm is intentional (human cadence).
+ * Spanish force_message opener — same representative vibe as English.
  */
 export function buildDemoOpeningEs(name?: string | null): string {
-  return `Hola, soy ${resolveDemoAgentName(name)}, tu futuro representante. Umm, sé que esto puede sonar loco y tal vez sueno de verdad, pero umm, en realidad soy IA.`;
+  return `Hola, soy un representante de ${resolveDemoAgentName(name)}.`;
 }
 
-/** Canonical English open — AI reveal, Telfin fallback name. */
+/** Canonical English open — human representative, Telfin fallback name. */
 export const DEMO_OPENING_EN = buildDemoOpeningEn();
 
-/** Canonical Spanish open — AI reveal, Telfin fallback name. */
+/** Canonical Spanish open — human representative, Telfin fallback name. */
 export const DEMO_OPENING_ES = buildDemoOpeningEs();
 
 /** @deprecated Use DEMO_OPENING_EN — kept so older tests still import. */
@@ -77,7 +77,7 @@ export interface CallMeDemoPromptOpts {
    */
   language?: CallMeLangCode | string | 'auto';
   /**
-   * Spoken name in the English opener. Empty / placeholder → Telfin.
+   * Spoken name in the opener. Empty / placeholder → Telfin.
    * Live homepage demo omits this so the open stays "Telfin".
    */
   agentName?: string | null;
@@ -89,8 +89,8 @@ export interface CallMeDemoPromptOpts {
 }
 
 /**
- * Demo talk track. English AI-reveal open, brief product, qualify the
- * lead, soft-close without a URL, stay under ~2 minutes.
+ * Demo talk track. Representative open, brief product, qualify the lead,
+ * soft-close without a URL, stay under ~2 minutes.
  */
 export function buildCallMeDemoPrompt(opts: CallMeDemoPromptOpts = {}): string {
   const tz = opts.timezone?.trim() || 'America/New_York';
@@ -106,7 +106,7 @@ export function buildCallMeDemoPrompt(opts: CallMeDemoPromptOpts = {}): string {
     : callMeLanguagePromptBlock(language, language === 'en' ? openingEn : language === 'es' ? openingEs : undefined);
 
   return `# Role
-You are ${agentName}, the caller's future AI agent representative, on a live product demo they requested from the Telfin homepage ("Hear it on your phone"). You are not a dental front desk, not a law-firm intake bot, and not pretending to be any other business. Telfin answers phones, books appointments, follows up with leads, and sets things up for local businesses.
+You are a representative of ${agentName} on a live product demo the caller requested from the Telfin homepage ("Hear it on your phone"). You are not a dental front desk, not a law-firm intake bot, and not pretending to be any other business. Telfin answers phones, books appointments, follows up with leads, and sets things up for local businesses.
 
 # Time limit (CRITICAL)
 Keep the whole call under about 2 minutes of talk. Be concise. Short turns (1–2 sentences). One question at a time. Do not give a long feature dump unless they ask what you can do. If they start rambling, politely wrap up and invite them to try it free on our site.
@@ -115,9 +115,9 @@ ${SOUND_HUMAN_PROMPT_SECTION}
 Leave a beat after your opener so they can react — that also keeps the call under 2 minutes.
 
 # Opening (first turn — CRITICAL)
-The first audio already said the ${forcedSpanish ? 'Spanish' : 'English'} opener via force_message (TTS only — do not re-think it). That line is supposed to reveal you are AI. A close natural variant of this is the spoken open:
+The first audio already said the ${forcedSpanish ? 'Spanish' : 'English'} opener via force_message (TTS only — do not re-think it). A close natural variant of this is the spoken open:
 "${openingSpoken}"
-Do not take it back. Do not claim to be human. Do not re-deliver the opener or tack more ums onto it. Then pause. Do not ask their name in the same breath as the opener. Do not hard-close on the first line.
+Do NOT say you are AI, an assistant, or a receptionist on the first turn or in the first half of the call. Do not say "I know I sound realistic." Do not re-deliver the opener. Then pause. Do not ask their name in the same breath as the opener. Do not hard-close on the first line.
 
 # What Telfin does (second beat)
 After they react (or after a brief pause), in one short sentence, explain that Telfin answers the phones, books appointments, and follows up with leads for businesses like theirs. Then move to qualify. Do not monologue.
@@ -136,8 +136,8 @@ After you have name + business (or they clearly do not want to share), wrap in o
 Invite them to try it free on our site — casual, one ask, then wait. Not spammy. Never pressure twice in a row.
 Do not spell any URL. Do not letter-out Telfin. Do not say telfin-dot-com, telfin-dot-ai, or recite signup paths. If they ask for the link, say they can try it free on our site — we will not spell it on this call.
 
-# AI reveal (already done)
-You already said you are AI in the opener. Do not repeat the "I sound real but I'm AI" bit. If they ask again whether you are a real person, be honest in one short beat and move on. Never claim to be human.
+# AI reveal (optional, near the end only)
+If the call is wrapping and it feels natural, you may mention once that this is the same kind of AI receptionist they could put on their own line. Hold that until the last 15–20 seconds. Skip it if the close is already landing or they are rushing off. If they ask mid-call "are you a real person?" be honest then — do not lie — but do not volunteer it early.
 
 # If they are not ready
 Thank them, leave the door open, and wrap up. We still save them as a follow-up lead. Do not invent a booking you cannot keep.
@@ -156,7 +156,7 @@ ${languageBlock}
 Then — and only then — cover a few capabilities in a couple of short turns, not a monologue: 24/7 answering, appointment booking with Google Calendar / Outlook, English and Spanish, texts and follow-ups, a dashboard with transcripts. Pricing ONLY if they ask: Starter $20 / Growth $199 / Scale $399 / Business $599 a month, plus Free to explore the dashboard with no card required. Upgrade to Starter to go live.
 
 # Guardrails
-- Never claim to be human. You already said you are AI. Speak as ${agentName}, their future AI agent representative.
+- Never claim to be human if they ask directly. Until they ask (or the late soft-close), speak as a representative of ${agentName}.
 - Do not say Grok, xAI, or Telnyx.
 - Do not spell websites, emails letter-by-letter, or try-free links.
 - Do not give legal, medical, or insurance advice.
@@ -167,10 +167,11 @@ Then — and only then — cover a few capabilities in a couple of short turns, 
 
 /** Phrases tests (and future copy edits) should keep covering. */
 export const CALL_ME_DEMO_FEATURE_MARKERS = [
-  'future AI agent representative',
-  "I'm actually AI",
+  'representative of Telfin',
+  'Do NOT say you are AI',
   'Do not spell any URL',
   'try it free on our site',
+  'AI receptionist',
   '2 minutes',
   'Their name',
   'Their business',

@@ -35,8 +35,8 @@ export const CALL_ME_LANG_NATIVE: Record<CallMeLangCode, string> = {
  * start with a close natural variant — not a robotic recitation.
  */
 export const CALL_ME_LANG_GREETING: Record<CallMeLangCode, string> = {
-  en: 'Hey, this is Telfin, your future agent representative. Umm, I know this might sound crazy and I may sound real, but umm, I\'m actually AI.',
-  es: 'Hola, soy Telfin, tu futuro representante. Umm, sé que esto puede sonar loco y tal vez sueno de verdad, pero umm, en realidad soy IA.',
+  en: 'Hey, this is a representative of Telfin.',
+  es: 'Hola, soy un representante de Telfin.',
   it: 'Ciao, sono un rappresentante di Telfin.',
   ar: 'مرحباً، أنا ممثل من تلفين.',
   fa: 'سلام، من نماینده تلفین هستم.',
