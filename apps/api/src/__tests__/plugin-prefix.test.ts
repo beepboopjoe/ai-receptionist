@@ -23,6 +23,7 @@ const CRITICAL_ROUTERS = [
   'modules/compliance/compliance.router.ts',
   'modules/knowledge-base/kb.router.ts',
   'modules/public-api/site-chat.router.ts',
+  'modules/public-api/public-booking.router.ts',
   'modules/scheduler/google-calendar-oauth.router.ts',
   'modules/mcp/mcp.router.ts',
 ];

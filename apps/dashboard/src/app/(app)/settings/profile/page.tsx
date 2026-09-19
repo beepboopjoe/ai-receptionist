@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/toast';
 import { useTenant } from '@/lib/TenantProvider';
 import { useRouter } from 'next/navigation';
 import { VerticalSwitchConfirm } from '@/components/settings/vertical-switch-confirm';
+import { ShareBookingPageCard } from '@/components/settings/share-booking-page-card';
 
 const TIMEZONES = [
   'America/New_York',
@@ -170,6 +171,8 @@ export default function BusinessProfilePage() {
           }
         />
       )}
+
+      <ShareBookingPageCard />
     </div>
   );
 }

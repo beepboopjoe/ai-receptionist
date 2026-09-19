@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Save } from 'lucide-react';
 import { useToast } from '@/components/ui/toast';
 import { useVertical } from '@/lib/useVertical';
+import { ShareBookingPageCard } from '@/components/settings/share-booking-page-card';
 
 const DAYS = [
   { key: 'mon', label: 'Monday' },
@@ -111,6 +112,8 @@ export default function OfficeHoursPage() {
         <Save size={16} />
         {saving ? 'Saving…' : 'Save Changes'}
       </button>
+
+      <ShareBookingPageCard />
     </div>
   );
 }

@@ -3,18 +3,27 @@
 // Business logic lives here; providers are swappable via adapters.
 // ============================================================
 import { db } from '../../db/client.js';
-import { integrations, tenantSettings, appointments } from '../../db/schema.js';
-import { eq, and, gte, lte } from 'drizzle-orm';
+import { integrations, tenantSettings, appointments, tenants } from '../../db/schema.js';
+import { eq, and, gte, lt, gt } from 'drizzle-orm';
 import { decryptCredentials } from '../../lib/encryption.js';
 import { createCalendarAdapter } from './adapters/calendar.factory.js';
 import { persistGoogleCalendarTokens } from './google-calendar-oauth.js';
 import type { ICalendarAdapter, TimeSlot, CalendarEvent } from './adapters/base.adapter.js';
-import { NotFoundError, IntegrationError } from '../../lib/errors.js';
+import { ConflictError, NotFoundError } from '../../lib/errors.js';
 import { audit } from '../../audit/audit-logger.js';
 import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone.js';
+import utc from 'dayjs/plugin/utc.js';
 import type { AppointmentType, OfficeHours } from '@ai-receptionist/shared';
 import { emitWebhook } from '../webhooks/webhook.service.js';
 import { pushActivity } from '../activity/activity.service.js';
+import { isHolidayDate, lookupTodayHours } from '../telephony/office-hours.js';
+import { findAppointmentType, resolveAppointmentTypes } from './appointment-types.js';
+import { InternalCalendarAdapter, listConfirmedBusyRanges } from './adapters/internal.adapter.js';
+import { filterOpenSlots } from './slot-math.js';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export interface BookAppointmentParams {
   tenantId: string;
@@ -33,6 +42,8 @@ export interface BookAppointmentParams {
 export interface AvailabilityParams {
   tenantId: string;
   date: Date;
+  /** Calendar date YYYY-MM-DD in the tenant timezone. Preferred over `date`. */
+  dateKey?: string;
   appointmentType: string;
   timezone: string;
 }
@@ -43,7 +54,8 @@ async function getCalendarAdapter(tenantId: string): Promise<{
   adapter: ICalendarAdapter;
   calendarId: string;
 }> {
-  // Try Google first, then Microsoft
+  // Try Google first, then Microsoft. Fall back to the internal
+  // appointments table so voice + web can book without OAuth.
   for (const provider of ['google', 'microsoft']) {
     const [integration] = await db
       .select({ credentials: integrations.credentials, metadata: integrations.metadata })
@@ -77,7 +89,7 @@ async function getCalendarAdapter(tenantId: string): Promise<{
     }
   }
 
-  throw new IntegrationError('calendar', 'No connected calendar integration found for tenant');
+  return { adapter: new InternalCalendarAdapter(tenantId), calendarId: 'internal' };
 }
 
 async function getTenantSettings(tenantId: string): Promise<{
@@ -94,16 +106,40 @@ async function getTenantSettings(tenantId: string): Promise<{
     .where(eq(tenantSettings.tenantId, tenantId))
     .limit(1);
 
-  // Get timezone from tenant
-  const tenant = await db.query.tenants?.findFirst?.({
-    where: (t, { eq: eqFn }) => eqFn(t.id, tenantId),
-  });
+  const [tenant] = await db
+    .select({ timezone: tenants.timezone })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1);
 
   return {
-    appointmentTypes: (settings?.appointmentTypes as AppointmentType[]) ?? [],
+    appointmentTypes: resolveAppointmentTypes(settings?.appointmentTypes),
     officeHours: (settings?.officeHours as OfficeHours) ?? {},
     timezone: tenant?.timezone ?? 'America/New_York',
   };
+}
+
+export async function findOverlappingAppointment(opts: {
+  tenantId: string;
+  startAt: Date;
+  endAt: Date;
+  excludeId?: string;
+}): Promise<typeof appointments.$inferSelect | null> {
+  const rows = await db
+    .select()
+    .from(appointments)
+    .where(
+      and(
+        eq(appointments.tenantId, opts.tenantId),
+        eq(appointments.status, 'confirmed'),
+        lt(appointments.startsAt, opts.endAt),
+        gt(appointments.endsAt, opts.startAt),
+      ),
+    )
+    .limit(5);
+
+  const hit = opts.excludeId ? rows.find((row) => row.id !== opts.excludeId) : rows[0];
+  return hit ?? null;
 }
 
 // ---- Public API ----
@@ -112,27 +148,42 @@ async function getTenantSettings(tenantId: string): Promise<{
  * Get available appointment slots for a given date and appointment type.
  */
 export async function getAvailableSlots(params: AvailabilityParams): Promise<TimeSlot[]> {
-  const { tenantId, date, appointmentType, timezone } = params;
-  const { adapter, calendarId } = await getCalendarAdapter(tenantId);
+  const { tenantId, appointmentType } = params;
   const settings = await getTenantSettings(tenantId);
+  const timezone = params.timezone || settings.timezone;
+  const dateKey = params.dateKey ?? dayjs(params.date).tz(timezone).format('YYYY-MM-DD');
+  const date = dayjs.tz(`${dateKey}T12:00:00`, timezone).toDate();
 
-  const apptType = settings.appointmentTypes.find((t) => t.id === appointmentType);
+  const apptType = findAppointmentType(settings.appointmentTypes, appointmentType);
   if (!apptType) {
     throw new NotFoundError('Appointment type', appointmentType);
   }
 
-  const dayName = dayjs(date).format('ddd').toLowerCase() as keyof OfficeHours;
-  const dayHours = settings.officeHours[dayName];
+  const local = dayjs.tz(`${dateKey}T12:00:00`, timezone);
+  const dayKey = local.format('ddd').toLowerCase();
+  if (isHolidayDate(settings.officeHours, local)) return [];
+  const dayHours = lookupTodayHours(settings.officeHours, dayKey);
+  if (!dayHours) return [];
 
-  return adapter.listAvailableSlots({
+  const { adapter, calendarId } = await getCalendarAdapter(tenantId);
+  const slots = await adapter.listAvailableSlots({
     calendarId,
     date,
     durationMinutes: apptType.durationMin,
     bufferMinutes: apptType.bufferMin,
     timezone,
-    officeOpen: dayHours?.open,
-    officeClose: dayHours?.close,
+    officeOpen: dayHours.open,
+    officeClose: dayHours.close,
   });
+
+  const future = slots.filter((s) => s.startAt.getTime() > Date.now());
+  // Always subtract confirmed rows. Catches bookings that never reached
+  // the connected calendar (createEvent failed) and web/voice races.
+  if (adapter.provider === 'internal') return future;
+  const windowStart = dayjs.tz(`${dateKey}T00:00:00`, timezone).toDate();
+  const windowEnd = dayjs.tz(`${dateKey}T23:59:59`, timezone).toDate();
+  const busy = await listConfirmedBusyRanges(tenantId, windowStart, windowEnd);
+  return filterOpenSlots(future, busy, apptType.bufferMin);
 }
 
 /**
@@ -140,6 +191,15 @@ export async function getAvailableSlots(params: AvailabilityParams): Promise<Tim
  */
 export async function bookAppointment(params: BookAppointmentParams): Promise<typeof appointments.$inferSelect> {
   const { tenantId, contactId, callId, appointmentType, providerName, startAt, endAt, durationMinutes, notes, attendeeEmail, timezone } = params;
+
+  if (!(startAt instanceof Date) || Number.isNaN(startAt.getTime()) || startAt.getTime() <= Date.now()) {
+    throw new ConflictError('That time is no longer available.');
+  }
+
+  const conflict = await findOverlappingAppointment({ tenantId, startAt, endAt });
+  if (conflict) {
+    throw new ConflictError('That time is no longer available.');
+  }
 
   const { adapter, calendarId } = await getCalendarAdapter(tenantId);
 
@@ -149,11 +209,11 @@ export async function bookAppointment(params: BookAppointmentParams): Promise<ty
     calendarEvent = await adapter.createEvent({
       calendarId,
       title: `${appointmentType} — ${providerName ?? 'Any Provider'}`,
-      description: notes,
       startAt,
       endAt,
       attendeeEmails: attendeeEmail ? [attendeeEmail] : [],
       timezone,
+      ...(notes ? { description: notes } : {}),
     });
   } catch (err) {
     console.error('[scheduler] Calendar event creation failed:', err);
@@ -226,6 +286,16 @@ export async function rescheduleAppointment(params: {
     .limit(1);
 
   if (!existing) throw new NotFoundError('Appointment', appointmentId);
+
+  const conflict = await findOverlappingAppointment({
+    tenantId,
+    startAt: newStartAt,
+    endAt: newEndAt,
+    excludeId: appointmentId,
+  });
+  if (conflict) {
+    throw new ConflictError('That time is no longer available.');
+  }
 
   const before = { ...existing };
   const { adapter } = await getCalendarAdapter(tenantId);

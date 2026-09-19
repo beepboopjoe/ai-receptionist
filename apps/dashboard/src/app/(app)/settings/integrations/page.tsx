@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { FilevineCredentialsModal } from '@/components/integrations/filevine-credentials-modal';
 import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 import { useToast } from '@/components/ui/toast';
+import { ShareBookingPageCard } from '@/components/settings/share-booking-page-card';
 
 function googleOAuthErrorMessage(code: string): string {
   switch (code) {
@@ -196,7 +197,7 @@ export default function IntegrationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-serif text-3xl text-cream-900 tracking-tight">Integrations</h1>
-        <p className="text-gray-500 mt-1">Connect Google Calendar to book appointments for real, plus the CRMs that are live in beta.</p>
+        <p className="text-gray-500 mt-1">Connect Google Calendar to write bookings onto your calendar. Phone, text, and the booking page still share the same appointment list without it.</p>
       </div>
 
       {/* ── Calendar ── */}
@@ -226,6 +227,8 @@ export default function IntegrationsPage() {
           </div>
         </div>
       </div>
+
+      <ShareBookingPageCard />
 
       {/* ── CRM / Practice Management — filtered by vertical ── */}
       <div>
@@ -453,7 +456,7 @@ function GoogleCalendarCard({
         <p className="text-sm text-gray-500 mt-0.5">
           {isConnected
             ? 'The AI can check availability and book appointments on this calendar.'
-            : 'Connect so the AI can offer live slots and write events when a caller books.'}
+            : 'Connect to write phone, text, and web bookings onto this calendar. Without it, they still share the same appointment list.'}
         </p>
         {isConnected && accountEmail && (
           <p className="text-xs text-gray-400 mt-1">Signed in as {accountEmail}</p>
