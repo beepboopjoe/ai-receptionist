@@ -113,5 +113,12 @@ describe('paid go-live gates (source)', () => {
     expect(smsSend).toContain('SMS_UPGRADE_MESSAGE');
     const smsRouter = readFileSync(join(srcRoot, 'modules/sms/sms.router.ts'), 'utf8');
     expect(smsRouter).toContain('sendTenantSms');
+
+    const booking = readFileSync(join(srcRoot, 'modules/public-api/public-booking.router.ts'), 'utf8');
+    expect(booking).toContain('getTenantDemoFlags');
+    expect(booking).toContain("error: 'upgrade_required'");
+    expect(booking).toContain('BOOKING_UPGRADE_MESSAGE');
+    expect(booking).toContain("app.post(");
+    expect(booking).toContain("'/public/booking/:slug'");
   });
 });

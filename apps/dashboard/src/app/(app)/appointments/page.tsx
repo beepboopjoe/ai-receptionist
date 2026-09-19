@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/toast';
 import { DownloadCsvButton } from '@/components/ui/download-csv-button';
 import { SectionAgent } from '@/components/dashboard/section-agent';
 import { usePlan } from '@/lib/usePlan';
+import { ShareBookingPageCard } from '@/components/settings/share-booking-page-card';
 
 export default function AppointmentsPage() {
   const { isDemoAccount } = usePlan();
@@ -60,6 +61,8 @@ export default function AppointmentsPage() {
           filename={`${vertical.appointmentNounPlural}.csv`}
         />
       </div>
+
+      <ShareBookingPageCard />
 
       {/* Upcoming */}
       <div className="card">

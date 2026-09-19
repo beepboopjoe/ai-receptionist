@@ -19,7 +19,12 @@ function handle401Redirect(): void {
   const path = window.location.pathname;
   // Auth screens own their own error UX — don't yank the user away from a
   // bad-password message into a half-loaded /login.
-  if (path.startsWith('/login') || path.startsWith('/signup') || path.startsWith('/reset-password')) {
+  if (
+    path.startsWith('/login') ||
+    path.startsWith('/signup') ||
+    path.startsWith('/reset-password') ||
+    path.startsWith('/book/')
+  ) {
     return;
   }
   try {
@@ -285,6 +290,65 @@ export const appointmentsApi = {
     const q = new URLSearchParams({ date, duration: String(duration), ...(provider ? { provider } : {}) });
     return apiFetch<{ slots: unknown[] }>(`/appointments/availability?${q}`);
   },
+};
+
+export type PublicBookingPage = {
+  slug: string;
+  businessName: string;
+  timezone: string;
+  bookingLive: boolean;
+  message: string | null;
+  hours: Array<{ key: string; label: string; open: string | null; close: string | null; closed: boolean }>;
+  services: Array<{ id: string; name: string; durationMinutes: number }>;
+  calendarMode: 'connected' | 'internal';
+};
+
+async function publicFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new ApiError(res.status, (data as { message?: string }).message ?? 'Request failed', data);
+  }
+  return data as T;
+}
+
+/** Unauthenticated public booking page — do not use apiFetch (401 interceptor). */
+export const publicBookingApi = {
+  getPage: (slug: string) => publicFetch<PublicBookingPage>(`/public/booking/${encodeURIComponent(slug)}`),
+  getAvailability: (slug: string, date: string, appointmentType: string) =>
+    publicFetch<{
+      bookingLive: boolean;
+      timezone: string;
+      date: string;
+      slots: Array<{ startAt: string; endAt: string }>;
+    }>(
+      `/public/booking/${encodeURIComponent(slug)}/availability?${new URLSearchParams({ date, appointmentType })}`,
+    ),
+  book: (slug: string, body: {
+    name: string;
+    phone: string;
+    email?: string;
+    appointmentType: string;
+    startAt: string;
+    notes?: string;
+  }) =>
+    publicFetch<{
+      appointmentId: string;
+      businessName: string;
+      appointmentType: string;
+      startsAt: string;
+      endsAt: string;
+      durationMinutes: number;
+    }>(`/public/booking/${encodeURIComponent(slug)}`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 };
 
 // ---- Contacts ----
