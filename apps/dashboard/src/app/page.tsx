@@ -55,7 +55,7 @@ const FAQS = [
   },
   {
     q: 'Can I try it free?',
-    a: 'Yes. Sign up Free with no credit card to explore the dashboard. Hear a live sample on this page first — no signup. Upgrade to Starter ($20/mo) when you want a number, SMS, outbound, Ask Telfin, and a booking page.',
+    a: 'Yes. Create a Free account with no credit card and explore the dashboard — sample screens, settings, and the AI in the browser. Hear a live sample on this page first — no signup. Free does not include a live phone number or SMS. Upgrade to Starter ($20/mo) when you want a number, SMS, outbound, Ask Telfin, and a booking page. Growth is $199/mo, Scale $399, Business $599.',
   },
   {
     q: 'Why not just use a $29 answering service?',
@@ -96,13 +96,15 @@ const INDUSTRIES = [
   },
 ];
 
-const PLANS_PREVIEW = PLANS.filter((p) => ['starter', 'growth', 'scale', 'business'].includes(p.key)).map((p) => ({
+const PLANS_PREVIEW = PLANS.filter((p) => ['trial', 'starter', 'growth', 'scale', 'business'].includes(p.key)).map((p) => ({
   key: p.key,
   name: p.name,
-  price: `$${p.monthlyPrice}`,
+  isFree: p.key === 'trial',
+  price: p.key === 'trial' ? 'Free' : `$${p.monthlyPrice}`,
+  showPerMonth: p.key !== 'trial',
   tagline: p.tagline,
   features: p.features.slice(0, 4),
-  cta: `Subscribe to ${p.name}`,
+  cta: p.key === 'trial' ? 'Explore free' : `Subscribe to ${p.name}`,
   popular: !!p.popular,
 }));
 
@@ -397,16 +399,25 @@ export default function LandingPage() {
 
           <PricingVsAnswering compact />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
             {PLANS_PREVIEW.map((plan) => (
               <div
                 key={plan.name}
                 className={`rounded-2xl border p-7 flex flex-col ${
                   plan.popular
                     ? 'border-brand-300 bg-brand-50 ring-1 ring-brand-300'
-                    : 'border-cream-200 bg-white'
+                    : plan.isFree
+                      ? 'border-emerald-200 bg-emerald-50/50'
+                      : 'border-cream-200 bg-white'
                 }`}
               >
+                {plan.isFree && (
+                  <div className="text-center mb-3">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-200 rounded-full px-3 py-1 uppercase tracking-widest">
+                      Explore free
+                    </span>
+                  </div>
+                )}
                 {plan.popular && (
                   <div className="text-center mb-3">
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-700 bg-brand-100 border border-brand-200 rounded-full px-3 py-1 uppercase tracking-widest">
@@ -418,7 +429,9 @@ export default function LandingPage() {
                 <p className="text-xs text-cream-500 italic mb-4">&ldquo;{plan.tagline}&rdquo;</p>
                 <div className="flex items-end gap-1 mb-6">
                   <span className="text-4xl font-black text-cream-900">{plan.price}</span>
-                  <span className="text-cream-500 mb-1.5 text-sm">/mo</span>
+                  {plan.showPerMonth && (
+                    <span className="text-cream-500 mb-1.5 text-sm">/mo</span>
+                  )}
                 </div>
                 <ul className="space-y-2.5 flex-1 mb-6">
                   {plan.features.map((f) => (
@@ -429,11 +442,13 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href={`/signup?plan=${plan.key}&cycle=monthly`}
+                  href={plan.isFree ? '/signup?plan=trial' : `/signup?plan=${plan.key}&cycle=monthly`}
                   className={`block w-full text-center py-2.5 px-5 rounded-xl text-sm font-semibold transition-colors ${
                     plan.popular
                       ? 'bg-brand-600 text-white hover:bg-brand-700'
-                      : 'border border-cream-300 text-cream-800 hover:bg-cream-50'
+                      : plan.isFree
+                        ? 'bg-cream-900 text-white hover:bg-cream-800'
+                        : 'border border-cream-300 text-cream-800 hover:bg-cream-50'
                   }`}
                 >
                   {plan.cta}

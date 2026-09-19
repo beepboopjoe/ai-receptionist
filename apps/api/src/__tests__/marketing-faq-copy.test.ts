@@ -19,6 +19,7 @@ const MARKETING_FILES = [
   'app/demo/page.tsx',
   'app/resellers/page.tsx',
   'app/knowledge-base/page.tsx',
+  'app/(auth)/signup/page.tsx',
   'lib/vertical-landing-content.ts',
   'components/ui/embedded-voice-demo.tsx',
   'components/ui/outbound-roi.tsx',
@@ -101,6 +102,18 @@ describe('marketing FAQ and public CTAs match current product', () => {
     expect(home).toMatch(/\$29 answering service/);
     expect(readMarketing('app/page.tsx')).toContain('DEMO_OPENING_EN');
     expect(readMarketing('lib/demo-opener.ts')).toContain("I'm actually AI");
+    expect(home).toMatch(/Can I try it free\?/);
+    expect(home).toMatch(/Explore free/);
+    expect(home).toMatch(/Create a Free account/);
+    // Homepage pricing preview must include Free — Starter is first paid, not a replacement.
+    expect(readMarketing('app/page.tsx')).toMatch(/\['trial', 'starter', 'growth', 'scale', 'business'\]/);
+
+    const signup = readFileSync(join(dashboardRoot, 'app/(auth)/signup/page.tsx'), 'utf8');
+    expect(signup).toContain("useState<SignupPlanKey>('trial')");
+    expect(signup).toContain("plan === 'trial'");
+    expect(signup).toContain('Explore free →');
+    expect(signup).toMatch(/Explore the dashboard/);
+    expect(signup).not.toMatch(/minutes:\s*'10'/);
 
     const inbound = extractCopy(readMarketing('app/inbound/page.tsx'));
     expect(inbound).toMatch(/Starter \(\$20\/mo\)/);

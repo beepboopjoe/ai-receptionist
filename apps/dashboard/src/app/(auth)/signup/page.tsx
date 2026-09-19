@@ -24,9 +24,19 @@ function StashUrlParams({
     // Referral code
     const code = params.get('ref');
     if (code) persistReferralCode(code);
-    // Pricing-page plan/cycle — signals the user wants to buy immediately
+    // Pricing-page plan/cycle. Paid plans go to Stripe after signup.
+    // plan=trial (header / "Try Free" / "Explore free") must select Free —
+    // it used to be ignored, so those CTAs landed on Growth.
     const plan = params.get('plan');
     const cycle = params.get('cycle');
+    if (plan === 'trial') {
+      onPricingParams('trial', 'monthly');
+      try {
+        localStorage.removeItem('pricing_plan');
+        localStorage.removeItem('pricing_cycle');
+      } catch { /* ignore */ }
+      return;
+    }
     if (plan && (plan === 'starter' || plan === 'growth' || plan === 'scale' || plan === 'business')) {
       const validCycle: BillingCycle = cycle === 'annual' ? 'annual' : 'monthly';
       onPricingParams(plan, validCycle);
@@ -56,11 +66,11 @@ const PLAN_OPTIONS: {
 }[] = [
   {
     key: 'trial',
-    name: 'Free Access',
+    name: 'Free',
     priceDisplay: 'Free',
-    minutes: '10',
-    numbers: 'BYO',
-    badge: null,
+    minutes: 'Explore',
+    numbers: 'none',
+    badge: 'Explore',
     popular: false,
     note: 'No credit card required',
     paid: false,
@@ -123,7 +133,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<SignupPlanKey>('growth');
+  const [selectedPlan, setSelectedPlan] = useState<SignupPlanKey>('trial');
   const [referralInput, setReferralInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -144,6 +154,11 @@ export default function SignupPage() {
     const key = plan as SignupPlanKey;
     if (PLAN_OPTIONS.find((p) => p.key === key)) {
       setSelectedPlan(key);
+    }
+    // Free is explore-the-dashboard — never send a trial signup to Stripe.
+    if (key === 'trial') {
+      setFromPricingPage(false);
+      return;
     }
     setPricingCycle(cycle);
     setFromPricingPage(true);
@@ -233,7 +248,11 @@ export default function SignupPage() {
             TF
           </div>
           <h1 className="font-serif text-3xl text-cream-900 tracking-tight">{BRAND_NAME}</h1>
-          <p className="text-cream-600 mt-1">Create your account</p>
+          <p className="text-cream-600 mt-1">
+            {fromPricingPage && planInfo.paid
+              ? `Create your account — then subscribe to ${planInfo.name}`
+              : 'Create a Free account — explore the dashboard, no card needed'}
+          </p>
         </div>
 
         <div className="card p-8">
@@ -324,11 +343,11 @@ export default function SignupPage() {
 
             {/* ── Plan picker ────────────────────────────────── */}
             <div>
-              <p className="text-sm font-semibold text-gray-800 mb-1">Which plan fits you best?</p>
+              <p className="text-sm font-semibold text-gray-800 mb-1">Start free — or go live on a paid plan</p>
               <p className="text-xs text-gray-400 mb-3">
                 {fromPricingPage && planInfo.paid
                   ? "Confirm your plan — you'll continue to secure payment after creating your account."
-                  : "Pick a plan. Paid plans charge immediately via Stripe. Free lets you explore the dashboard — upgrade when you are ready to go live."}
+                  : "Free lets you explore the dashboard (no card, no live phone or SMS). Starter $20 is the first paid tier — then Growth $199 / Scale $399 / Business $599."}
               </p>
 
               <div className="space-y-2">
@@ -342,16 +361,22 @@ export default function SignupPage() {
                       className={[
                         'w-full flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
                         active
-                          ? plan.popular
-                            ? 'border-brand-600 bg-brand-50'
-                            : 'border-brand-500 bg-brand-50/50'
+                          ? !plan.paid
+                            ? 'border-emerald-600 bg-emerald-50'
+                            : plan.popular
+                              ? 'border-brand-600 bg-brand-50'
+                              : 'border-brand-500 bg-brand-50/50'
                           : 'border-gray-200 bg-white hover:border-gray-300',
                       ].join(' ')}
                     >
                       {/* Radio dot */}
                       <span className={[
                         'w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors',
-                        active ? 'border-brand-600 bg-brand-600' : 'border-gray-300 bg-white',
+                        active
+                          ? plan.paid
+                            ? 'border-brand-600 bg-brand-600'
+                            : 'border-emerald-600 bg-emerald-600'
+                          : 'border-gray-300 bg-white',
                       ].join(' ')}>
                         {active && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                       </span>
@@ -359,25 +384,37 @@ export default function SignupPage() {
                       {/* Plan name + badge */}
                       <span className="flex-1 min-w-0">
                         <span className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-sm font-semibold ${active ? 'text-brand-900' : 'text-gray-800'}`}>
+                          <span className={`text-sm font-semibold ${
+                            active
+                              ? plan.paid ? 'text-brand-900' : 'text-emerald-900'
+                              : 'text-gray-800'
+                          }`}>
                             {plan.name}
                           </span>
                           {plan.badge && (
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${
                               plan.popular
                                 ? 'bg-brand-600 text-white'
-                                : 'bg-gray-100 text-gray-500'
+                                : !plan.paid
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-gray-100 text-gray-500'
                             }`}>
                               {plan.badge}
                             </span>
                           )}
                         </span>
-                        <span className={`text-xs mt-0.5 block ${active ? 'text-brand-700' : 'text-gray-400'}`}>
-                          {plan.minutes} min&thinsp;·&thinsp;
-                          {plan.numbers === 'BYO'
-                            ? 'Bring your own number'
-                            : `${plan.numbers} phone ${plan.numbers === '1' ? 'number' : 'numbers'}`}
-                          &thinsp;·&thinsp;{plan.note}
+                        <span className={`text-xs mt-0.5 block ${
+                          active
+                            ? plan.paid ? 'text-brand-700' : 'text-emerald-800'
+                            : 'text-gray-400'
+                        }`}>
+                          {plan.paid
+                            ? <>
+                                {plan.minutes} min&thinsp;·&thinsp;
+                                {plan.numbers} phone {plan.numbers === '1' ? 'number' : 'numbers'}
+                                &thinsp;·&thinsp;{plan.note}
+                              </>
+                            : <>Explore the dashboard · No live phone or SMS · {plan.note}</>}
                         </span>
                       </span>
 
@@ -442,7 +479,11 @@ export default function SignupPage() {
             >
               {loading
                 ? (fromPricingPage && planInfo.paid ? 'Redirecting to checkout…' : 'Creating account…')
-                : (fromPricingPage && planInfo.paid ? `Create account & subscribe →` : 'Get started free →')}
+                : (fromPricingPage && planInfo.paid
+                  ? `Create account & subscribe →`
+                  : planInfo.paid
+                    ? 'Get started free →'
+                    : 'Explore free →')}
             </button>
 
             <p className="text-center text-xs text-gray-400">
@@ -450,7 +491,7 @@ export default function SignupPage() {
                 ? `You'll be taken to Stripe to complete your ${planInfo.name} (${planInfo.priceDisplay}) subscription.`
                 : planInfo.paid
                   ? `You'll start on Free so you can explore the dashboard; upgrade to ${planInfo.name} (${planInfo.priceDisplay}) any time from Billing.`
-                  : 'No credit card required. Explore the dashboard, then upgrade to go live.'}
+                  : 'No credit card required. Explore the dashboard, then upgrade to Starter ($20/mo) to go live.'}
             </p>
           </form>
 
