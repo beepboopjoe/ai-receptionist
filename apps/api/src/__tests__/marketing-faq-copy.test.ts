@@ -93,6 +93,15 @@ describe('marketing FAQ and public CTAs match current product', () => {
     expect(pricing).toContain('$599');
     expect(pricing).toMatch(/explore the dashboard/i);
     expect(pricing).toMatch(/ready to go live/i);
+    expect(pricing).not.toMatch(/\$29 answering service/);
+
+    const howItWorks = extractCopy(readMarketing('app/how-it-works/page.tsx'));
+    expect(howItWorks).toMatch(/Try Free/);
+    expect(howItWorks).toMatch(/Starter \$20/);
+    expect(howItWorks).toContain('$199');
+    expect(howItWorks).toContain('$399');
+    expect(howItWorks).toContain('$599');
+    expect(howItWorks).not.toMatch(/\$29 answering service/);
 
     const home = extractCopy(readMarketing('app/page.tsx'));
     expect(home).toMatch(/Explore the dashboard free/);
