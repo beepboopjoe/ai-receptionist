@@ -45,7 +45,7 @@ describe('extractDemoLeadFromTranscript', () => {
 
   it('captures a bare name and business after the agent asks (call-me friend path)', () => {
     const draft = extractDemoLeadFromTranscript([
-      { role: 'agent', text: 'Hey, this is a representative of Telfin.' },
+      { role: 'agent', text: 'Hey, this is Telfin, your future agent representative. Umm, I know this might sound crazy and I may sound real, but umm, I\'m actually AI.' },
       { role: 'caller', text: 'Hello?' },
       { role: 'agent', text: 'We answer phones and book appointments. What is your name?' },
       { role: 'caller', text: 'Mike' },

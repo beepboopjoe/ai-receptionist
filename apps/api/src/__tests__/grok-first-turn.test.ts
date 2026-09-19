@@ -22,7 +22,17 @@ describe('first-turn greeting text', () => {
       isOutbound: false,
       practiceName: 'Acme Dental',
     })).toBe(DEMO_OPENING_EN);
-    expect(DEMO_OPENING_EN).toBe('Hey, this is a representative of Telfin.');
+    expect(firstTurnGreetingText({
+      isDemo: true,
+      isOutbound: false,
+      practiceName: 'Telfin Demo',
+      agentName: 'Alex',
+    })).toBe(
+      'Hey, this is Alex, your future agent representative. Umm, I know this might sound crazy and I may sound real, but umm, I\'m actually AI.',
+    );
+    expect(DEMO_OPENING_EN).toBe(
+      'Hey, this is Telfin, your future agent representative. Umm, I know this might sound crazy and I may sound real, but umm, I\'m actually AI.',
+    );
   });
 
   it('uses a short inbound opener and names known callers', () => {

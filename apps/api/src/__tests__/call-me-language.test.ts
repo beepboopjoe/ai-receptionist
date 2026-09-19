@@ -43,12 +43,18 @@ describe('normalizeCallMeLanguage', () => {
     }
   });
 
-  it('English sample opening is the representative line (no AI, no receptionist)', async () => {
+  it('English sample opening is the AI-reveal line; other languages stay unchanged', async () => {
     const { DEMO_OPENING_EN } = await import('../modules/voice-agent/call-me-demo.prompt.js');
     expect(CALL_ME_LANG_GREETING.en).toBe(DEMO_OPENING_EN);
-    expect(CALL_ME_LANG_GREETING.en).toMatch(/representative of Telfin/i);
+    expect(CALL_ME_LANG_GREETING.en).toMatch(/your future agent representative/i);
+    expect(CALL_ME_LANG_GREETING.en).toMatch(/\bAI\b/);
     expect(CALL_ME_LANG_GREETING.en).not.toMatch(/receptionist/i);
-    expect(CALL_ME_LANG_GREETING.en).not.toMatch(/\bAI\b/i);
+    expect(CALL_ME_LANG_GREETING.es).toBe('Hola, soy un representante de Telfin.');
+    expect(CALL_ME_LANG_GREETING.it).toBe('Ciao, sono un rappresentante di Telfin.');
+    expect(CALL_ME_LANG_GREETING.ar).toBe('مرحباً، أنا ممثل من تلفين.');
+    expect(CALL_ME_LANG_GREETING.fa).toBe('سلام، من نماینده تلفین هستم.');
+    expect(CALL_ME_LANG_GREETING.hy).toBe('Բարև, ես Թելֆինի ներկայացուցիչն եմ.');
+    expect(CALL_ME_LANG_GREETING.ru).toBe('Привет, я представитель Telfin.');
   });
 });
 

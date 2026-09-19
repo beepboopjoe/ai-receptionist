@@ -69,7 +69,7 @@ describe('SOUND_HUMAN_PROMPT_SECTION', () => {
     }
   });
 
-  it('does not put fillers into the scripted first greeting', () => {
+  it('keeps paying-tenant first greeting filler-free; demo open has scripted umm only', () => {
     const inbound = firstTurnGreetingText({
       isDemo: false,
       isOutbound: false,
@@ -80,11 +80,12 @@ describe('SOUND_HUMAN_PROMPT_SECTION', () => {
       isOutbound: false,
       practiceName: 'Acme Dental',
     });
-    for (const line of [inbound, demo]) {
-      expect(line.toLowerCase()).not.toMatch(/\bum\b/);
-      expect(line.toLowerCase()).not.toMatch(/\buh\b/);
-      expect(line).not.toContain('[pause]');
-    }
+    expect(inbound.toLowerCase()).not.toMatch(/\bum\b/);
+    expect(inbound.toLowerCase()).not.toMatch(/\buh\b/);
+    expect(inbound).not.toContain('[pause]');
+    expect(demo).toMatch(/\bUmm\b/);
+    expect(demo).not.toContain('[pause]');
+    expect(demo).not.toContain('[long-pause]');
   });
 });
 
