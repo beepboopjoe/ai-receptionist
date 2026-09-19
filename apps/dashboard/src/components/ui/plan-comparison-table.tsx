@@ -45,6 +45,8 @@ const SECTIONS: {
       { label: 'Extra minutes (overage)',                 cells: ['—', '$0.39/min', '$0.35/min', '$0.29/min', '$0.25/min', 'Custom'] },
       { label: 'Call transcripts + summaries',            cells: [true, true, true, true, true, true] },
       { label: 'Calendar sync (Google / Outlook)',        cells: [true, true, true, true, true, true] },
+      { label: 'Ask Telfin (one call or text from chat)', cells: [false, true, true, true, true, true] },
+      { label: 'Public booking page',                     cells: [false, true, true, true, true, true] },
     ],
   },
   {

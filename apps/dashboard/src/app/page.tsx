@@ -1,21 +1,20 @@
 // ============================================================
 // / — Marketing home page.
-// One AI phone receptionist (Grok voice + Telnyx calling).
-// Cream theme. Shared MarketingHeader + MarketingFooter.
+// Live call-me + short AI-reveal sample script. Cream theme.
+// Shared MarketingHeader + MarketingFooter.
 // ============================================================
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { CheckCircle, Phone, Megaphone, MessageSquare, ArrowRight } from 'lucide-react';
 import { BRAND_NAME, BRAND_STACK_LINE } from '@/lib/brand';
+import { DEMO_OPENING_EN } from '@/lib/demo-opener';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
+import { PricingVsAnswering } from '@/components/ui/pricing-vs-answering';
+import { HomepageSampleCall } from '@/components/ui/homepage-sample-call';
 import { PLANS } from '@ai-receptionist/shared';
 
-const HomepageVoiceSamples = dynamic(
-  () => import('@/components/ui/homepage-voice-samples').then((m) => m.HomepageVoiceSamples),
-  { ssr: false }
-);
 const DashboardTeaser = dynamic(
   () => import('@/components/ui/dashboard-teaser').then((m) => m.DashboardTeaser),
   { ssr: false }
@@ -53,6 +52,14 @@ const FAQS = [
   {
     q: 'Does SMS come included?',
     a: 'Two-way SMS, appointment reminders (24h + 2h), and missed-call text-backs are included on paid plans (Starter, Growth, Scale, Business, Enterprise). Free accounts explore the dashboard and do not include SMS. Texts send from your provisioned business number on a paid plan.',
+  },
+  {
+    q: 'Can I try it free?',
+    a: 'Yes. Sign up Free with no credit card to explore the dashboard. Hear a live sample on this page first — no signup. Upgrade to Starter ($20/mo) when you want a number, SMS, outbound, Ask Telfin, and a booking page.',
+  },
+  {
+    q: 'Why not just use a $29 answering service?',
+    a: 'A typical $29/mo answering service takes a message. Telfin Starter is $20 and also runs outbound, two-way SMS, Ask Telfin (one call or text from chat), and a public booking page on the same calendar. Growth is $199 when you need more included minutes. Free stays how you explore.',
   },
 ];
 
@@ -109,7 +116,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto text-center">
 
           <div className="inline-flex items-center gap-2 bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold px-4 py-2 rounded-full mb-7">
-            Built for phone-heavy businesses
+            Live sample — not a recording
           </div>
 
           <h1 className="font-serif text-[2.15rem] leading-[1.1] sm:text-5xl md:text-7xl text-cream-900 tracking-tight sm:leading-[1.05] break-words">
@@ -118,8 +125,8 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
-            {BRAND_NAME} answers every inbound call, books the calendar, and follows up by phone or text —
-            one receptionist, not three products.
+            {BRAND_NAME} answers the phone, books the calendar, and calls people back.
+            The first line is honest: I&apos;m actually AI. Hear it on your phone — no signup.
           </p>
 
           <p className="text-sm text-cream-600 mt-4 max-w-xl mx-auto">
@@ -145,13 +152,22 @@ export default function LandingPage() {
             </Link>
           </div>
 
+          <blockquote className="mt-8 max-w-xl mx-auto text-left sm:text-center rounded-2xl bg-white/80 border border-cream-200 px-5 py-4">
+            <p className="text-sm text-cream-700 leading-relaxed italic">
+              &ldquo;{DEMO_OPENING_EN}&rdquo;
+            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-cream-400 mt-2">
+              Live opener · English
+            </p>
+          </blockquote>
+
           <div id="call-me" className="mt-8 sm:mt-10 scroll-mt-24">
             <CallMeWidget />
           </div>
         </div>
       </section>
 
-      <HomepageVoiceSamples />
+      <HomepageSampleCall />
 
       <section className="bg-white border-y border-cream-200 py-20 px-6">
         <div className="max-w-6xl mx-auto">
@@ -359,8 +375,27 @@ export default function LandingPage() {
             <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
               Simple pricing.<br />No surprises.
             </h2>
-            <p className="text-cream-600 mt-3 text-lg">Free, Starter, Growth, Scale, Business, or Enterprise. Cancel anytime.</p>
+            <p className="text-cream-600 mt-3 text-lg">
+              Free to explore. Starter $20 goes live. Growth $199+ when you need more minutes.
+            </p>
           </div>
+
+          <div className="rounded-2xl border border-cream-900 bg-cream-900 text-white px-6 py-5 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-center sm:text-left">
+              <p className="font-serif text-2xl">Free</p>
+              <p className="text-sm text-cream-300 mt-1">
+                Explore the dashboard — no card. Hear the live sample above first.
+              </p>
+            </div>
+            <Link
+              href="/signup?plan=trial"
+              className="glow-btn shrink-0 inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-brand-600 rounded-xl"
+            >
+              Try Free →
+            </Link>
+          </div>
+
+          <PricingVsAnswering compact />
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
             {PLANS_PREVIEW.map((plan) => (

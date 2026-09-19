@@ -14,6 +14,7 @@ import { PLANS, PAY_AS_YOU_GO } from '@ai-receptionist/shared';
 import { PricingCards } from '@/components/ui/pricing-cards';
 import { PlanComparisonTable } from '@/components/ui/plan-comparison-table';
 import { RoiCalculator } from '@/components/marketing/roi-calculator';
+import { PricingVsAnswering } from '@/components/ui/pricing-vs-answering';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
@@ -60,7 +61,11 @@ const FAQS = [
   },
   {
     q: 'Can I try it free?',
-    a: 'Yes — sign up Free with no credit card. Explore the dashboard and sample the AI. Upgrade to Starter ($20/mo) to go live with a dedicated number, SMS, outbound campaigns, and 50 included minutes. Growth is $199/mo, Scale $399, Business $599 — more included minutes and numbers.',
+    a: 'Yes — sign up Free with no credit card. Explore the dashboard and sample the AI. Upgrade to Starter ($20/mo) to go live with a dedicated number, SMS, outbound campaigns, Ask Telfin, a booking page, and 50 included minutes. Growth is $199/mo, Scale $399, Business $599 — more included minutes and numbers.',
+  },
+  {
+    q: 'Why not just use a $29 answering service?',
+    a: 'A typical $29/mo answering service takes a message. Telfin Starter is $20 and also runs outbound campaigns, two-way SMS, Ask Telfin, and a public booking page. Growth is $199 when you need more included minutes. Free stays how you explore the dashboard — no card.',
   },
   {
     q: 'Is my data secure? What about HIPAA?',
@@ -86,7 +91,8 @@ export default function PricingPage() {
             <span className="gradient-text">Clear plans. No surprises.</span>
           </h1>
           <p className="text-lg text-cream-700 mt-7 max-w-2xl mx-auto leading-relaxed">
-            Answer every call, book the calendar, and follow up by phone or text — without hiring more staff.
+            Free to explore. Starter $20 goes live — outbound, SMS, Ask Telfin, and a booking page.
+            That&apos;s more than a typical $29 answering service. Growth is $199 when you need more minutes.
           </p>
           <p className="text-sm text-cream-500 mt-4">
             Monthly or annual · Cancel anytime · 30-day money-back guarantee
@@ -103,6 +109,8 @@ export default function PricingPage() {
           </a>
         </p>
       </section>
+
+      <PricingVsAnswering />
 
       {/* ── Why we include phone numbers ──────────────────── */}
       <section className="max-w-5xl mx-auto px-6 py-12">
@@ -347,10 +355,10 @@ export default function PricingPage() {
               <CheckCircle size={18} /> See pricing
             </a>
             <Link
-              href="/demo"
+              href="/#call-me"
               className="inline-flex items-center gap-2 rounded-xl border border-white/20 hover:bg-white/10 px-8 py-4 text-base font-semibold text-white transition-colors"
             >
-              <Mic size={18} /> Listen to sample calls
+              <Mic size={18} /> Hear it on your phone
             </Link>
             <a
               href={`mailto:${BRAND_SUPPORT_EMAIL}`}

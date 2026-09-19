@@ -28,6 +28,9 @@ const MARKETING_FILES = [
   'components/ui/upgrade-modal.tsx',
   'components/dashboard/demo-upgrade-card.tsx',
   'components/settings/share-booking-page-card.tsx',
+  'lib/demo-opener.ts',
+  'components/ui/homepage-sample-call.tsx',
+  'components/ui/pricing-vs-answering.tsx',
 ];
 
 function stripComments(src: string): string {
@@ -94,6 +97,10 @@ describe('marketing FAQ and public CTAs match current product', () => {
     expect(home).toMatch(/Explore the dashboard free/);
     expect(home).toMatch(/Upgrade to go live/);
     expect(home).toMatch(/Starter/);
+    expect(home).toMatch(/Try Free/);
+    expect(home).toMatch(/\$29 answering service/);
+    expect(readMarketing('app/page.tsx')).toContain('DEMO_OPENING_EN');
+    expect(readMarketing('lib/demo-opener.ts')).toContain("I'm actually AI");
 
     const inbound = extractCopy(readMarketing('app/inbound/page.tsx'));
     expect(inbound).toMatch(/Starter \(\$20\/mo\)/);

@@ -241,13 +241,14 @@ export function VoiceLanguageDemo() {
       {/* Section header */}
       <div className="text-center mb-10">
         <div className="inline-flex items-center gap-2 bg-brand-50 border border-brand-100 rounded-full px-4 py-1.5 text-sm text-brand-600 font-medium mb-4">
-          🌐 Multilingual AI
+          Voice timbre
         </div>
         <h2 className="text-3xl md:text-4xl font-black text-cream-900 tracking-tight mb-3">
-          Every voice. Every language.
+          Four voices. One live opener.
         </h2>
         <p className="text-cream-600 text-base max-w-xl mx-auto">
-          Choose a voice and a sample language to hear a one-line intro — Aurora, Castor, Cosmo, and Zenith, each saying their own name. Live calls still detect language automatically.
+          These clips are short voice timbre samples — not the live receptionist. The real
+          opener is on the call-me above: I&apos;m actually AI. Live calls are English and Spanish.
         </p>
       </div>
 

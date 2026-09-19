@@ -105,8 +105,8 @@ export function CallMeWidget({ compact = false }: { compact?: boolean }) {
         <div>
           <p className="text-sm font-semibold text-cream-900">Hear it on your phone</p>
           <p className="text-xs text-cream-500 leading-relaxed">
-            We&apos;ll call you as Telfin in Aurora — US &amp; Canada mobiles. English or
-            Spanish. No sign-up.
+            We&apos;ll call you as Telfin in Aurora. First line: I&apos;m actually AI.
+            US &amp; Canada mobiles. English or Spanish. No sign-up.
           </p>
         </div>
       </div>
