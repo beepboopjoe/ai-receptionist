@@ -28,7 +28,7 @@ export interface SiteChatMessage {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const INTENT_RE =
-  /try free|sign\s*up|pricing|price|call me|hear it|demo|get started|start a trial|talk to (?:someone|sales)|contact (?:me|you)|email me|quote|plan|growth|scale|business/i;
+  /try free|sign\s*up|pricing|price|call me|hear it|demo|get started|start a trial|talk to (?:someone|sales)|contact (?:me|you)|email me|quote|plan|starter|growth|scale|business/i;
 
 export function sanitizeChatMessages(input: unknown): SiteChatMessage[] {
   if (!Array.isArray(input)) return [];

@@ -1,7 +1,7 @@
 'use client';
 // ============================================================
 // Pricing card grid with monthly/annual toggle.
-// Handles Trial + Growth + Scale + Business + Enterprise.
+// Handles Trial + Starter + Growth + Scale + Business + Enterprise.
 // Enterprise renders a "Contact Sales" CTA instead of checkout.
 // ============================================================
 import Link from 'next/link';
@@ -16,6 +16,7 @@ interface PricingCardsProps {
 }
 
 const BADGE_STYLES: Record<string, string> = {
+  'Go live':                 'bg-emerald-50 text-emerald-700 border-emerald-200',
   'Best for solo offices':   'bg-blue-50   text-blue-700   border-blue-200',
   'Most Popular':            'bg-brand-50  text-brand-700  border-brand-200',
   'Best for growing teams':  'bg-purple-50 text-purple-700 border-purple-200',
@@ -67,8 +68,8 @@ export function PricingCards({ plans }: PricingCardsProps) {
         </div>
       </div>
 
-      {/* Cards grid — 5 columns at lg to fit Free Trial alongside the four paid plans. */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
+      {/* Cards wrap 3-wide so Free + Starter + Growth sit on the first row. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {plans.map((plan) => {
           const isEnterprise = plan.key === 'enterprise';
           const isFree = plan.key === 'trial';

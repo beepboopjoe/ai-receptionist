@@ -76,6 +76,9 @@ export async function createCheckoutSession(params: CreateCheckoutParams): Promi
   if (params.planKey === 'enterprise') {
     throw new ValidationError('Enterprise plan is custom — please contact sales');
   }
+  if (params.planKey === 'trial' || plan.monthlyPrice <= 0) {
+    throw new ValidationError('This plan is not available for self-serve checkout');
+  }
 
   const priceId = priceIdFor(params.planKey, params.cycle);
   if (!priceId) {
@@ -213,6 +216,8 @@ export async function syncSubscription(subscription: Stripe.Subscription): Promi
 function inferPlanKeyFromPriceId(priceId: string | null): PlanKey | null {
   if (!priceId) return null;
   const map: Record<string, PlanKey> = {
+    [config.STRIPE_PRICE_STARTER_MONTHLY]:  'starter',
+    [config.STRIPE_PRICE_STARTER_ANNUAL]:   'starter',
     [config.STRIPE_PRICE_GROWTH_MONTHLY]:   'growth',
     [config.STRIPE_PRICE_GROWTH_ANNUAL]:    'growth',
     [config.STRIPE_PRICE_SCALE_MONTHLY]:    'scale',
@@ -227,10 +232,20 @@ function inferPlanKeyFromPriceId(priceId: string | null): PlanKey | null {
 
 function inferCycleFromPriceId(priceId: string | null): BillingCycle | null {
   if (!priceId) return null;
-  if ([config.STRIPE_PRICE_GROWTH_MONTHLY, config.STRIPE_PRICE_SCALE_MONTHLY, config.STRIPE_PRICE_BUSINESS_MONTHLY].includes(priceId)) {
+  if ([
+    config.STRIPE_PRICE_STARTER_MONTHLY,
+    config.STRIPE_PRICE_GROWTH_MONTHLY,
+    config.STRIPE_PRICE_SCALE_MONTHLY,
+    config.STRIPE_PRICE_BUSINESS_MONTHLY,
+  ].includes(priceId)) {
     return 'monthly';
   }
-  if ([config.STRIPE_PRICE_GROWTH_ANNUAL, config.STRIPE_PRICE_SCALE_ANNUAL, config.STRIPE_PRICE_BUSINESS_ANNUAL].includes(priceId)) {
+  if ([
+    config.STRIPE_PRICE_STARTER_ANNUAL,
+    config.STRIPE_PRICE_GROWTH_ANNUAL,
+    config.STRIPE_PRICE_SCALE_ANNUAL,
+    config.STRIPE_PRICE_BUSINESS_ANNUAL,
+  ].includes(priceId)) {
     return 'annual';
   }
   return null;

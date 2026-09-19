@@ -191,13 +191,13 @@ export default function DashboardPage() {
           <StatCard label="Missed Calls" value={missedCount} icon={PhoneMissed} color="bg-red-500" />
         </Link>
 
-        {/* Messages stat — locked on Starter/Trial */}
+        {/* Messages stat — locked on Free / unpaid demo */}
         {smsEnabled ? (
           <Link href="/messages" className="block">
             <StatCard label="Unread Messages" value={unreadMessages} icon={MessageSquare} color="bg-indigo-500" />
           </Link>
         ) : (
-          <LockedFeature requiredPlan="growth" reason="sms_locked" label="Two-way SMS">
+          <LockedFeature requiredPlan="starter" reason="sms_locked" label="Two-way SMS">
             <LockedStatCard label="Unread Messages" />
           </LockedFeature>
         )}

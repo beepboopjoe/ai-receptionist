@@ -36,11 +36,11 @@ const PRICING_PLANS = [
 const FAQS = [
   {
     q: 'What happens when I run out of minutes?',
-    a: 'Your AI keeps answering — calls never drop mid-conversation. Overage minutes are billed at the per-minute rate for your plan (Growth $0.35/min, Scale $0.29/min, Business $0.25/min) and added to your next invoice. We email you at 80% usage so there are no surprises.',
+    a: 'Your AI keeps answering — calls never drop mid-conversation. Overage minutes are billed at the per-minute rate for your plan (Starter $0.39/min, Growth $0.35/min, Scale $0.29/min, Business $0.25/min) and added to your next invoice. We email you at 80% usage so there are no surprises.',
   },
   {
     q: 'Does it handle both inbound and outbound calls?',
-    a: 'Yes. Answering your phone 24/7 is on every plan. Your AI can also call out for you — reminders, follow-ups, win-backs — leaving a voicemail if nobody answers and trying again later. Most competitors charge $99–$199/mo extra for outbound calling; we include it on every paid plan.',
+    a: 'Yes. Answering your phone 24/7 is on Starter and every plan above it. Outbound campaigns — reminders, follow-ups, win-backs, leaving a voicemail if nobody answers — start on Growth. Starter is inbound receptionist + SMS so you can go live without paying for dialer campaigns.',
   },
   {
     q: 'Does SMS come included?',
@@ -52,7 +52,7 @@ const FAQS = [
   },
   {
     q: 'What phone number do I get?',
-    a: 'Growth includes 2 local numbers, Scale 5, and Business 10. You can also port your existing business line to us for free, or buy additional local numbers at $5/mo each on any paid plan. Free explores the dashboard — upgrade to go live with a dedicated number.',
+    a: 'Starter includes 1 local number, Growth 2, Scale 5, and Business 10. You can also port your existing business line to us for free, or buy additional local numbers at $5/mo each on any paid plan. Free explores the dashboard — upgrade to go live with a dedicated number.',
   },
   {
     q: 'Can I change plans or cancel at any time?',
@@ -60,7 +60,7 @@ const FAQS = [
   },
   {
     q: 'Can I try it free?',
-    a: 'Yes — sign up Free with no credit card. Explore the dashboard and sample the AI. Upgrade to go live with a dedicated number, SMS, outbound campaigns, and included minutes. Growth is $199/mo, Scale $399, Business $599.',
+    a: 'Yes — sign up Free with no credit card. Explore the dashboard and sample the AI. Upgrade to Starter ($20/mo) to go live with a dedicated number, inbound answering, and SMS. Growth is $199/mo, Scale $399, Business $599 — those add outbound campaigns and more minutes.',
   },
   {
     q: 'Is my data secure? What about HIPAA?',
@@ -160,8 +160,8 @@ export default function PricingPage() {
             What&apos;s included in each plan.
           </h2>
           <p className="text-cream-600 mt-3 max-w-2xl mx-auto">
-            SMS, transcripts, outbound campaigns, and 7 languages are on every paid plan.
-            The difference between Growth, Scale, and Business is included AI minutes and included phone numbers. Busy-period volume is billed in minutes — not concurrent seats.
+            SMS, transcripts, and 7 languages are on every paid plan. Outbound campaigns start on Growth.
+            Starter is the inbound go-live tier; Growth, Scale, and Business add minutes, numbers, and outbound. Busy-period volume is billed in minutes — not concurrent seats.
           </p>
         </div>
         <PlanComparisonTable />

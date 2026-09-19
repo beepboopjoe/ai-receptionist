@@ -8,15 +8,39 @@ Go to https://dashboard.stripe.com → sign up if you don't have an account. Sta
 
 ## 1. Create the products + prices
 
-In the Stripe dashboard, go to **Product catalog** → **+ Add product** and create three products. For each one, add **two recurring prices** (Monthly and Annual).
+In the Stripe dashboard, go to **Product catalog** → **+ Add product** and create four products. For each one, add **two recurring prices** (Monthly and Annual). Stay in **test mode** while production is on `sk_test`.
 
 The prices below match `packages/shared/src/types/billing.types.ts` — keep them in sync if you ever change them there.
 
-| Product | Monthly price | Annual price | Description |
+Preferred: `STRIPE_SECRET_KEY=sk_test_… pnpm tsx scripts/setup-stripe-prices.ts` (idempotent via metadata).
+
+Manual Dashboard / CLI (Starter only — Growth/Scale/Business already exist):
+
+```bash
+# Monthly $20
+stripe prices create \
+  --unit-amount 2000 \
+  --currency usd \
+  -d "recurring[interval]=month" \
+  -d "product_data[name]=Telfin — Starter" \
+  -d "metadata[price_key]=ai_receptionist_starter_monthly"
+
+# Annual effective $17/mo, billed every 12 months ($204)
+stripe prices create \
+  --unit-amount 1700 \
+  --currency usd \
+  -d "recurring[interval]=month" \
+  -d "recurring[interval_count]=12" \
+  -d "product_data[name]=Telfin — Starter" \
+  -d "metadata[price_key]=ai_receptionist_starter_annual"
+```
+
+| Product | Monthly price | Annual (effective /mo) | Description |
 |---|---|---|---|
-| **Starter** | $79 USD / month | $804 USD / year (= $67/mo) | 200 AI minutes, 1 phone number, inbound + outbound |
-| **Growth**  | $179 USD / month | $1,824 USD / year (= $152/mo) | 600 AI minutes, 1 phone number, popular tier |
-| **Scale**   | $399 USD / month | $4,068 USD / year (= $339/mo) | 2,000 AI minutes, 2 phone numbers, multi-location |
+| **Starter** | $20 USD / month | $17/mo ($204/yr) | 50 AI minutes, 1 phone number, inbound + SMS |
+| **Growth**  | $199 USD / month | $169/mo | 380 AI minutes, 2 phone numbers, outbound |
+| **Scale**   | $399 USD / month | $339/mo | 780 AI minutes, 5 phone numbers |
+| **Business** | $599 USD / month | $509/mo | 1,100 AI minutes, 10 phone numbers |
 
 When creating each price, copy the **price ID** (starts with `price_…`) — you'll paste them into Railway env vars in step 4.
 
@@ -47,12 +71,17 @@ In Railway → ai-receptionist service → **Variables**, add:
 STRIPE_SECRET_KEY=sk_test_…             # from step 3
 STRIPE_WEBHOOK_SECRET=whsec_…           # from step 2
 
-STRIPE_PRICE_STARTER_MONTHLY=price_…    # 6 price IDs from step 1
+# Railway API service already has these two names from earlier catalog
+# work. Confirm they point at $20 / $17 test-mode prices — leftover $79
+# Starter IDs would check out the wrong amount.
+STRIPE_PRICE_STARTER_MONTHLY=price_…
 STRIPE_PRICE_STARTER_ANNUAL=price_…
 STRIPE_PRICE_GROWTH_MONTHLY=price_…
 STRIPE_PRICE_GROWTH_ANNUAL=price_…
 STRIPE_PRICE_SCALE_MONTHLY=price_…
 STRIPE_PRICE_SCALE_ANNUAL=price_…
+STRIPE_PRICE_BUSINESS_MONTHLY=price_…
+STRIPE_PRICE_BUSINESS_ANNUAL=price_…
 ```
 
 Railway redeploys automatically (~1 min). Migration `0012_stripe_subscriptions.sql` runs on startup and adds the Stripe columns to the `tenants` table.
@@ -69,11 +98,11 @@ Save. The "Manage billing" button on the in-app `/billing` page now opens this p
 
 ## 6. Test the full flow
 
-1. Visit https://ai-receptionist-dashboard-sigma.vercel.app/pricing → click "Start free trial" on Growth.
-2. Sign up for a new account.
-3. Inside the dashboard go to **Billing** → click **Switch to Growth** (or whatever tier).
+1. Visit `/pricing` → click Subscribe on **Starter** (or Growth).
+2. Sign up for a new account (or check out while logged in).
+3. Inside the dashboard go to **Billing** → click **Switch to Starter** (or whatever tier).
 4. Stripe Checkout opens. Use test card `4242 4242 4242 4242`, any future expiry, any CVC.
-5. After redirect back, the **Billing** page should show "Growth" as the current plan with a 14-day trial end date.
+5. After redirect back, the **Billing** page should show "Starter" as the current plan with a 14-day trial end date.
 6. In the Stripe dashboard → **Webhooks** → your endpoint → check that recent deliveries are 200 OK.
 
 ## 7. Going live

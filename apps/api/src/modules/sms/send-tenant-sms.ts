@@ -9,7 +9,7 @@ import { smsMessages } from '../../db/schema.js';
 import { sendSms } from '../notifications/adapters/telnyx-sms.adapter.js';
 import { getTenantFromNumber } from './tenant-from-number.js';
 import { getTenantDemoFlags } from '../billing/demo-account.js';
-import { normalizeNanp } from '@ai-receptionist/shared';
+import { normalizeNanp, planAllowsSms } from '@ai-receptionist/shared';
 import { classifySmsSendError } from './sms-send-error.js';
 import { ensureSmsContact } from './sms-contact.js';
 import { notesHaveSmsOptOut } from './sms-keywords.js';
@@ -19,7 +19,7 @@ import { emitWebhook } from '../webhooks/webhook.service.js';
 import { pushActivity } from '../activity/activity.service.js';
 import { auditLog } from '../../audit/audit-logger.js';
 
-export const SMS_SEND_PLANS = new Set(['growth', 'scale', 'business', 'enterprise']);
+export const SMS_SEND_PLANS = new Set(['starter', 'growth', 'scale', 'business', 'enterprise']);
 
 export const SMS_UPGRADE_MESSAGE =
   'Upgrade to a paid plan to send and receive SMS on your business number.';
@@ -91,7 +91,7 @@ export async function sendTenantSms(params: {
 
   // Promo-trial stays on plan key `trial` but is not a demo. Paid plans
   // plus promo-trial may send; unpaid Free cannot.
-  if (!demo.promoTrial && !SMS_SEND_PLANS.has(demo.plan ?? 'trial')) {
+  if (!demo.promoTrial && !planAllowsSms(demo.plan ?? 'trial')) {
     return {
       ok: false,
       httpStatus: 402,

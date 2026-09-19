@@ -99,6 +99,8 @@ const envSchema = z.object({
   // Per-plan price IDs. Each plan has both a monthly and an annual price
   // (the customer sees a 15% annual discount). All optional so dev works
   // without Stripe configured.
+  STRIPE_PRICE_STARTER_MONTHLY:  z.string().default(''),
+  STRIPE_PRICE_STARTER_ANNUAL:   z.string().default(''),
   STRIPE_PRICE_GROWTH_MONTHLY:   z.string().default(''),
   STRIPE_PRICE_GROWTH_ANNUAL:    z.string().default(''),
   STRIPE_PRICE_SCALE_MONTHLY:    z.string().default(''),

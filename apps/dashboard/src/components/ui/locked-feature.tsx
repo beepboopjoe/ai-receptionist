@@ -16,7 +16,7 @@ import { UpgradeModal } from './upgrade-modal';
 import type { UpgradeReason } from './upgrade-modal';
 
 interface LockedFeatureProps {
-  requiredPlan: 'growth' | 'pro' | 'scale' | 'business';
+  requiredPlan: 'starter' | 'growth' | 'pro' | 'scale' | 'business';
   reason: UpgradeReason;
   /** Optional override for the lock overlay label */
   label?: string;
@@ -31,7 +31,13 @@ export function LockedFeature({
 }: LockedFeatureProps) {
   const [open, setOpen] = useState(false);
   const planLabel =
-    requiredPlan === 'business' ? 'Business' : requiredPlan === 'scale' || requiredPlan === 'pro' ? 'Scale' : 'Growth';
+    requiredPlan === 'business'
+      ? 'Business'
+      : requiredPlan === 'scale' || requiredPlan === 'pro'
+        ? 'Scale'
+        : requiredPlan === 'starter'
+          ? 'Starter'
+          : 'Growth';
 
   return (
     <>

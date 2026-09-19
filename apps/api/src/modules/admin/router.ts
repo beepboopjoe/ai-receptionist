@@ -979,14 +979,21 @@ export async function adminPlugin(app: FastifyInstance) {
         lastName?: string;
       };
 
-      const { getTenantDemoFlags, UPGRADE_TO_GO_LIVE_MESSAGE } = await import(
+      const { getTenantDemoFlags, UPGRADE_TO_GO_LIVE_MESSAGE, OUTBOUND_UPGRADE_MESSAGE } = await import(
         '../billing/demo-account.js'
       );
+      const { planAllowsOutbound } = await import('@ai-receptionist/shared');
       const demo = await getTenantDemoFlags(tenantId);
       if (demo.isDemo) {
         return reply.status(402).send({
           error: 'upgrade_required',
           message: UPGRADE_TO_GO_LIVE_MESSAGE,
+        });
+      }
+      if (!planAllowsOutbound(demo.plan)) {
+        return reply.status(402).send({
+          error: 'upgrade_required',
+          message: OUTBOUND_UPGRADE_MESSAGE,
         });
       }
 

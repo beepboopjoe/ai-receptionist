@@ -17,15 +17,22 @@
 //   85% margin floor is enforced — every paid tier carries
 //   ≥0.2pp cushion above 85% at full utilization.
 //
-//   Current pricing (Phase 23 rework, 2026-05-30):
+//   Current pricing:
+//     Starter:  ($20  - $4.50)   / $20  ≈ 77.5%   (50 min, 1 number)
 //     Growth:   ($199 - $28.60)  / $199 ≈ 85.6%   (380 min, 2 numbers)
 //     Scale:    ($399 - $59.60)  / $399 ≈ 85.1%   (780 min, 5 numbers)
 //     Business: ($599 - $87.00)  / $599 ≈ 85.5%   (1,100 min, 10 numbers)
 //
-//   Phase 23 dropped Starter entirely. The 10-min Trial is the
-//   only sub-$199 on-ramp; everything else is committed-customer
-//   pricing matching the managed-AI-receptionist segment
-//   (SmithAI $290+, Ruby $300+).
+//   Starter is the foot-in-door paid go-live (inbound receptionist +
+//   basic SMS + 1 DID). 50 min is the documented allotment: inside the
+//   ~40–75 requested band, ~13% of Growth minutes vs ~10% of Growth
+//   price, ~12–25 typical inbound calls (2–4 min). Margin is an
+//   intentional on-ramp exception vs the 85% floor on Growth/Scale/
+//   Business. Overage matches PAYG ($0.39/min) so extra usage does
+//   not undercut the PAYG strip.
+//
+//   Starter has outbound: false — no campaign pool, no Ask-Telfin
+//   live dials. Free remains the dashboard demo (no live DID).
 //
 //   Legacy pricing block (kept as defensive infrastructure for
 //   future grandfathering — no rows fire it today since no subs
@@ -40,7 +47,7 @@
 //   ceilings for ops (inbound) and outbound pool/campaign caps.
 // ============================================================
 
-export type PlanKey = 'trial' | 'growth' | 'scale' | 'business' | 'enterprise';
+export type PlanKey = 'trial' | 'starter' | 'growth' | 'scale' | 'business' | 'enterprise';
 export type BillingCycle = 'monthly' | 'annual';
 
 export interface Plan {
@@ -104,6 +111,30 @@ export const PLANS: readonly Plan[] = [
       '🌐 Speaks 7 languages, switches automatically',
       'Upgrade to go live with a dedicated number',
       'No credit card required',
+    ],
+  },
+  {
+    key: 'starter',
+    name: 'Starter',
+    badge: 'Go live',
+    tagline: 'Your own number. AI answers every inbound call.',
+    description: 'Paid go-live for inbound answering: one local number, a small monthly minute allotment, and basic two-way SMS. Upgrade to Growth when you want outbound campaigns.',
+    monthlyPrice: 20,
+    annualMonthlyPrice: 17,
+    monthlyMinutes: 50,
+    overagePerMin: 0.39,
+    includedPhoneNumbers: 1,
+    outbound: false,
+    concurrentInbound: 50,
+    concurrentOutbound: 0,
+    features: [
+      '🌐 Speaks 7 languages, switches automatically',
+      '50 AI call minutes every month',
+      '1 local phone number included',
+      '24/7 inbound answering',
+      'Books appointments into your calendar',
+      'Texts customers back and forth',
+      'Upgrade to Growth for outbound campaigns',
     ],
   },
   {
@@ -253,7 +284,7 @@ export function getPlan(key: string): Plan | undefined {
 }
 
 /** Paid catalog keys that can go live (phone + activate). Enterprise is custom/paid. */
-const PAID_PLAN_KEYS: ReadonlySet<string> = new Set(['growth', 'scale', 'business', 'enterprise']);
+const PAID_PLAN_KEYS: ReadonlySet<string> = new Set(['starter', 'growth', 'scale', 'business', 'enterprise']);
 
 export function isPaidPlanKey(plan: string | null | undefined): boolean {
   return PAID_PLAN_KEYS.has((plan ?? '').toLowerCase());
@@ -274,7 +305,7 @@ export function isUnpaidDemoAccount(
 
 /**
  * Knowledge Base (PDF/DOCX RAG uploads) is a Business+ feature.
- * Trial / Growth / Scale / starter / unknown plans do not get uploads.
+ * Trial / Starter / Growth / Scale / unknown plans do not get uploads.
  * Voice retrieval still no-ops to [] when a tenant has no chunks.
  */
 export const KB_PLAN_REQUIRED_MESSAGE =
@@ -282,6 +313,16 @@ export const KB_PLAN_REQUIRED_MESSAGE =
 
 export function planAllowsKb(plan: string): boolean {
   return plan === 'business' || plan === 'enterprise';
+}
+
+/** Outbound campaigns, rotating dialer pool, and Ask Telfin live dials. */
+export function planAllowsOutbound(plan: string | null | undefined): boolean {
+  return getPlan(plan ?? '')?.outbound === true;
+}
+
+/** Two-way SMS inbox / reminders / missed-call text-back — every paid plan. */
+export function planAllowsSms(plan: string | null | undefined): boolean {
+  return isPaidPlanKey(plan);
 }
 
 /**

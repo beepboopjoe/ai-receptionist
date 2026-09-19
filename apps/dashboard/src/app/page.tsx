@@ -89,7 +89,7 @@ const INDUSTRIES = [
   },
 ];
 
-const PLANS_PREVIEW = PLANS.filter((p) => ['growth', 'scale', 'business'].includes(p.key)).map((p) => ({
+const PLANS_PREVIEW = PLANS.filter((p) => ['starter', 'growth', 'scale', 'business'].includes(p.key)).map((p) => ({
   key: p.key,
   name: p.name,
   price: `$${p.monthlyPrice}`,
@@ -359,10 +359,10 @@ export default function LandingPage() {
             <h2 className="font-serif text-4xl md:text-5xl text-cream-900 tracking-tight">
               Simple pricing.<br />No surprises.
             </h2>
-            <p className="text-cream-600 mt-3 text-lg">Trial, Growth, Scale, Business, or Enterprise. Cancel anytime.</p>
+            <p className="text-cream-600 mt-3 text-lg">Free, Starter, Growth, Scale, Business, or Enterprise. Cancel anytime.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
             {PLANS_PREVIEW.map((plan) => (
               <div
                 key={plan.name}

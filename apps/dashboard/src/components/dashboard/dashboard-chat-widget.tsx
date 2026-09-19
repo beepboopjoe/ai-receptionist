@@ -59,7 +59,7 @@ function revalidateSurfaces(kind: 'call' | 'sms') {
 
 export function DashboardChatWidget() {
   const toast = useToast();
-  const { isDemoAccount, loading: planLoading } = usePlan();
+  const { isDemoAccount, outboundEnabled, loading: planLoading } = usePlan();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -109,6 +109,19 @@ export function DashboardChatWidget() {
             intent.kind === 'sms'
               ? 'Live SMS unlocks after you upgrade. Explore the dashboard now — we’ll text from your business number once you’re on a paid plan.'
               : 'Live outbound calls unlock after you upgrade. Explore the dashboard now — we’ll dial from here once you’re on a paid plan.',
+          upgrade: true,
+        },
+      ]);
+      return;
+    }
+    if (intent.kind !== 'sms' && !outboundEnabled) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: newId(),
+          role: 'assistant',
+          content:
+            'Live outbound dials start on Growth. Starter covers inbound answering and SMS — upgrade when you want the AI to place calls for you.',
           upgrade: true,
         },
       ]);

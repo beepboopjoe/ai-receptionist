@@ -150,6 +150,7 @@ describe('transcript + grok extract', () => {
 
 describe('system prompt stays on-product', () => {
   it('pins prices, voices, call-me, join, and refuse-off-topic', () => {
+    expect(SITE_CHAT_SYSTEM_PROMPT).toContain('Starter $20');
     expect(SITE_CHAT_SYSTEM_PROMPT).toContain('Growth $199');
     expect(SITE_CHAT_SYSTEM_PROMPT).toContain('Scale $399');
     expect(SITE_CHAT_SYSTEM_PROMPT).toContain('Business $599');

@@ -16,7 +16,7 @@ const API_URL = (process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001/ap
 
 const STORAGE_KEY = 'telfin-site-chat-v1';
 const WELCOME =
-  "Hi — I'm the Telfin assistant. Ask about the AI receptionist, plans (Growth $199 / Scale $399 / Business $599), voices, going live, or hearing it on your phone.";
+  "Hi — I'm the Telfin assistant. Ask about the AI receptionist, plans (Starter $20 / Growth $199 / Scale $399 / Business $599), voices, going live, or hearing it on your phone.";
 
 type ChatRole = 'user' | 'assistant';
 type ChatMessage = { role: ChatRole; content: string };

@@ -92,7 +92,7 @@ describe('plan catalog helpers (shared PLANS, not a stale copy)', () => {
     expect(planPriceCents('scale')).toBe(39900);
     expect(planPriceCents('business')).toBe(59900);
     expect(planPriceCents('trial')).toBe(0);
-    expect(planPriceCents('starter')).toBe(0);
+    expect(planPriceCents('starter')).toBe(2000);
   });
 
   it('resolves included minutes from the live catalog + override', () => {

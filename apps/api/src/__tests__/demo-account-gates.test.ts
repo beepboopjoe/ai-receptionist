@@ -12,10 +12,10 @@ const srcRoot = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const dashboardRoot = join(srcRoot, '../../dashboard/src');
 
 describe('isUnpaidDemoAccount', () => {
-  it('treats trial and leftover starter as demo, paid plans as live-capable', () => {
+  it('treats trial as demo, paid plans (including Starter) as live-capable', () => {
     expect(isUnpaidDemoAccount('trial', false)).toBe(true);
-    expect(isUnpaidDemoAccount('starter', false)).toBe(true);
     expect(isUnpaidDemoAccount(null, false)).toBe(true);
+    expect(isUnpaidDemoAccount('starter', false)).toBe(false);
     expect(isUnpaidDemoAccount('growth', false)).toBe(false);
     expect(isUnpaidDemoAccount('scale', false)).toBe(false);
     expect(isUnpaidDemoAccount('business', false)).toBe(false);
@@ -25,30 +25,33 @@ describe('isUnpaidDemoAccount', () => {
   it('does not treat platform-granted promo trials as demo', () => {
     expect(isUnpaidDemoAccount('trial', true)).toBe(false);
     expect(isPaidPlanKey('trial')).toBe(false);
+    expect(isPaidPlanKey('starter')).toBe(true);
     expect(isPaidPlanKey('growth')).toBe(true);
   });
 });
 
 describe('catalog prices for upgrade CTAs', () => {
-  it('keeps Growth / Scale / Business at $199 / $399 / $599 and drops Starter', () => {
+  it('keeps Growth / Scale / Business at $199 / $399 / $599 and adds Starter at $20', () => {
     expect(getPlan('growth')!.monthlyPrice).toBe(199);
     expect(getPlan('scale')!.monthlyPrice).toBe(399);
     expect(getPlan('business')!.monthlyPrice).toBe(599);
-    expect(getPlan('starter')).toBeUndefined();
+    expect(getPlan('starter')!.monthlyPrice).toBe(20);
+    expect(getPlan('starter')!.monthlyMinutes).toBe(50);
+    expect(getPlan('starter')!.outbound).toBe(false);
     expect(getPlan('trial')!.name).toBe('Free');
   });
 });
 
 describe('upgrade modal + demo UI (source)', () => {
-  it('UpgradeModal uses catalog prices and has no Starter / $79 / $179', () => {
+  it('UpgradeModal uses catalog prices and go-live points at Starter, not $79 / $179', () => {
     const modal = readFileSync(join(dashboardRoot, 'components/ui/upgrade-modal.tsx'), 'utf8');
+    expect(modal).toContain("getPlan('starter')");
     expect(modal).toContain("getPlan('growth')");
     expect(modal).toContain("getPlan('scale')");
     expect(modal).toContain("getPlan('business')");
     expect(modal).toContain('go_live:');
     expect(modal).not.toMatch(/\$79/);
     expect(modal).not.toMatch(/\$179/);
-    expect(modal).not.toMatch(/Starter/);
   });
 
   it('does not pressure Free accounts through finish-setup / go-live checklist', () => {

@@ -29,7 +29,7 @@ export function assertKbAllowed(plan: string): void {
 }
 
 /**
- * Lower plans (trial, growth, scale, starter, unknown) get 0/0 so
+ * Lower plans (trial, starter, growth, scale, unknown) get 0/0 so
  * uploadDocument's quota check is a second fence even if the 403
  * gate is skipped. Business + enterprise keep Scale-tier quotas.
  */
