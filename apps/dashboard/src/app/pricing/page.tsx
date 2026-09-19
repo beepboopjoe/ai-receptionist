@@ -95,7 +95,7 @@ export default function PricingPage() {
             That&apos;s more than a typical $29 answering service. Growth is $199 when you need more minutes.
           </p>
           <p className="text-sm text-cream-500 mt-4">
-            Monthly or annual · Cancel anytime · 30-day money-back guarantee
+            Free to explore · Monthly or annual · Cancel anytime · 30-day money-back on paid plans
           </p>
         </div>
       </section>

@@ -114,6 +114,8 @@ describe('Starter UI (source)', () => {
     const signup = readFileSync(join(dashboardRoot, 'app/(auth)/signup/page.tsx'), 'utf8');
     expect(signup).toContain("key: 'starter'");
     expect(signup).toContain("'$20/mo'");
+    expect(signup).toContain("useState<SignupPlanKey>('trial')");
+    expect(signup).toContain('Starter $20 is the first paid tier');
 
     const modal = readFileSync(join(dashboardRoot, 'components/ui/upgrade-modal.tsx'), 'utf8');
     expect(modal).toContain("getPlan('starter')");
