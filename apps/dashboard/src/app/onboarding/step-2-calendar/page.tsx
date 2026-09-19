@@ -24,6 +24,7 @@ export default function Step2CalendarPage() {
     integrationsApi.googleCalendarStatus()
   );
   const [connecting, setConnecting] = useState(false);
+  const [skipping, setSkipping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [justConnected, setJustConnected] = useState(false);
 
@@ -47,7 +48,14 @@ export default function Step2CalendarPage() {
   }, []);
 
   async function handleSkip() {
-    await onboardingApi.completeStep(2);
+    if (skipping) return;
+    setSkipping(true);
+    // Calendar OAuth is optional — always advance even if the cursor update fails.
+    try {
+      await onboardingApi.completeStep(2);
+    } catch {
+      /* still continue */
+    }
     router.push('/onboarding/step-3-patients');
   }
 
@@ -155,11 +163,15 @@ export default function Step2CalendarPage() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="btn-secondary">
+        <button type="button" onClick={() => router.back()} className="btn-secondary">
           <ArrowLeft size={16} /> Back
         </button>
-        <button onClick={handleSkip} className="text-sm text-gray-400 hover:text-gray-600">
-          Skip for now →
+        <button
+          type="button"
+          onClick={() => void handleSkip()}
+          className="text-sm font-medium text-brand-700 hover:text-brand-800 underline-offset-2 hover:underline cursor-pointer"
+        >
+          {skipping ? 'Continuing…' : 'Skip for now →'}
         </button>
       </div>
     </div>
