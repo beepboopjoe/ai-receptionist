@@ -1,126 +1,118 @@
 // ============================================================
-// /how-it-works — Short walkthrough. Nav destination.
-// Three steps, then inbound / outbound / SMS. No script dump.
+// /how-it-works — Short walkthrough for the site-nav link.
+// Five tight steps. No answering-service comparison.
+// Free signup stays the primary CTA.
 // ============================================================
 import Link from 'next/link';
-import { ArrowRight, Megaphone, MessageSquare, Phone } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { MarketingHeader } from '@/components/ui/marketing-header';
 import { MarketingFooter } from '@/components/ui/marketing-footer';
 import { BRAND_NAME } from '@/lib/brand';
 
+export const metadata = {
+  title: `How it works — ${BRAND_NAME}`,
+  description:
+    'Sign up Free, connect a number, and Telfin answers, books, and texts. Five steps.',
+};
+
 const STEPS = [
   {
     n: '1',
-    title: 'Connect a number',
-    desc: 'Forward your line or we provision one. Works with any phone system. Upgrade to go live.',
+    title: 'Sign up Free',
+    desc: 'No credit card. Explore the dashboard and sample the AI in the browser.',
   },
   {
     n: '2',
-    title: 'AI answers every call',
-    desc: 'Greets callers, books the calendar, texts when needed, and escalates to staff — 24/7.',
+    title: 'Connect a number',
+    desc: 'Forward your existing line or we provision a local number. Upgrade to go live.',
   },
   {
     n: '3',
-    title: 'You watch the dashboard',
-    desc: 'Every call logged. Transcript, recording, and what the AI did — in one place.',
-  },
-];
-
-const LANES = [
-  {
-    href: '/inbound',
-    icon: Phone,
-    label: 'Inbound',
-    desc: 'Picks up, books, and hands off emergencies.',
+    title: 'Telfin answers every call',
+    desc: 'Greets callers, books the calendar, answers questions, and escalates urgent ones — 24/7.',
   },
   {
-    href: '/outbound',
-    icon: Megaphone,
-    label: 'Outbound',
-    desc: 'Calls your lists back on paid plans.',
+    n: '4',
+    title: 'Texts and follow-ups',
+    desc: 'Paid plans add missed-call text-back, reminder SMS, and outbound campaigns from the same number.',
   },
   {
-    href: '/pricing',
-    icon: MessageSquare,
-    label: 'SMS',
-    desc: 'Reminders and missed-call texts from your number.',
+    n: '5',
+    title: 'Review in the dashboard',
+    desc: 'Transcripts, recordings, bookings, and campaigns in one place.',
   },
-];
+] as const;
 
 export default function HowItWorksPage() {
   return (
     <div className="min-h-screen bg-cream-50 text-cream-900">
       <MarketingHeader />
 
-      <section className="mesh-gradient-light pt-20 sm:pt-24 pb-12 px-4 sm:px-6">
+      <section className="mesh-gradient-light pt-16 sm:pt-20 pb-10 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto text-center">
-          <p className="text-xs font-bold text-brand-600 uppercase tracking-[0.2em] mb-4">
+          <div className="inline-flex items-center gap-2 bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold px-4 py-2 rounded-full mb-6">
+            <Sparkles size={13} />
             How it works
-          </p>
+          </div>
           <h1 className="font-serif text-[2.15rem] leading-[1.1] sm:text-5xl text-cream-900 tracking-tight">
-            First ring to booked appointment.
+            Five steps.{' '}
+            <span className="gradient-text">Then your phone is covered.</span>
           </h1>
-          <p className="text-lg text-cream-700 mt-6 max-w-xl mx-auto leading-relaxed">
-            {BRAND_NAME} is one receptionist: answer, book, follow up. Hear the voices or try it free.
+          <p className="text-lg text-cream-700 mt-5 max-w-xl mx-auto leading-relaxed">
+            Start Free. Go live on Starter $20 when you want a number.
+            Growth $199 · Scale $399 · Business $599.
           </p>
-        </div>
-      </section>
-
-      <section className="max-w-5xl mx-auto px-6 pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {STEPS.map((step) => (
-            <div key={step.n} className="rounded-2xl bg-white border border-cream-200 p-7">
-              <div className="w-10 h-10 rounded-full bg-brand-600 text-white font-serif flex items-center justify-center mb-4 text-lg">
-                {step.n}
-              </div>
-              <h2 className="font-semibold text-cream-900 mb-2">{step.title}</h2>
-              <p className="text-sm text-cream-600 leading-relaxed">{step.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="max-w-5xl mx-auto px-6 pb-14">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {LANES.map(({ href, icon: Icon, label, desc }) => (
-            <Link
-              key={label}
-              href={href}
-              className="group rounded-2xl bg-white border border-cream-200 p-5 hover:border-brand-300 hover:shadow-sm transition-all"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Icon size={16} className="text-brand-600" />
-                <p className="text-sm font-semibold text-cream-900">{label}</p>
-              </div>
-              <p className="text-sm text-cream-600 leading-relaxed">{desc}</p>
-              <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand-600 group-hover:gap-2 transition-all">
-                More <ArrowRight size={12} />
-              </p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="bg-cream-900 text-white py-14 px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-serif text-3xl tracking-tight mb-4">Try it, then go live.</h2>
-          <p className="text-cream-400 mb-8">
-            Free explores the dashboard. Starter $20 puts a number on the line.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/signup?plan=trial"
-              className="glow-btn inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold text-white bg-brand-600 rounded-xl"
+              className="glow-btn inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-7 py-3.5 text-sm font-semibold text-white"
             >
               Try Free →
             </Link>
             <Link
-              href="/demo"
-              className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-semibold text-cream-200 border border-white/20 rounded-xl hover:bg-white/5"
+              href="/pricing#plans"
+              className="inline-flex items-center gap-2 rounded-xl border border-cream-300 bg-white px-7 py-3.5 text-sm font-semibold text-cream-800 hover:bg-cream-50"
             >
-              Hear the voices
+              See pricing
             </Link>
           </div>
+        </div>
+      </section>
+
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 pb-16">
+        <ol className="space-y-3">
+          {STEPS.map((step) => (
+            <li
+              key={step.n}
+              className="flex gap-4 rounded-2xl bg-white border border-cream-200 p-5 sm:p-6"
+            >
+              <div
+                className="w-10 h-10 rounded-full bg-brand-600 text-white font-serif flex items-center justify-center text-lg shrink-0"
+                aria-hidden
+              >
+                {step.n}
+              </div>
+              <div>
+                <h2 className="font-semibold text-cream-900">{step.title}</h2>
+                <p className="text-sm text-cream-600 mt-1 leading-relaxed">{step.desc}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="bg-cream-900 text-white py-16 px-6">
+        <div className="max-w-xl mx-auto text-center">
+          <h2 className="font-serif text-3xl text-white mb-3">Try it Free first.</h2>
+          <p className="text-cream-300 mb-8">
+            Explore the dashboard with no card. Upgrade when you&apos;re ready to go live.
+          </p>
+          <Link
+            href="/signup?plan=trial"
+            className="glow-btn inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-8 py-4 text-base font-bold text-white"
+          >
+            Try Free →
+          </Link>
         </div>
       </section>
 
