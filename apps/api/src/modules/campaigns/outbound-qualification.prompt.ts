@@ -1,4 +1,5 @@
 import type { Vertical } from '../voice-agent/prompt-builder.js';
+import { SOUND_HUMAN_PROMPT_SECTION } from '../voice-agent/sound-human.style.js';
 
 export interface OutboundPromptContext {
   practiceName: string;
@@ -93,6 +94,8 @@ export function buildOutboundQualificationPrompt(ctx: OutboundPromptContext): st
 
   return `# Role
 You are a friendly outbound caller for ${practiceName}. You are calling ${greeting} to introduce yourself and offer to help. You are warm, professional, and never pushy. This is a phone call — be concise, use short natural sentences. Keep responses under 30 words per turn.
+
+${SOUND_HUMAN_PROMPT_SECTION}
 
 # Goal
 1. Introduce yourself and ${practiceName} within the first 10 seconds.
