@@ -102,7 +102,7 @@ export default function TermsPage() {
       <p>
         Overage minutes, extra numbers, and add-ons (for example voice clone) are billed as
         described at checkout or in the dashboard. We do <strong>not</strong> promise an
-        uptime SLA or service credits on Growth, Scale, or Business unless a separate written
+        uptime SLA or service credits on Starter, Growth, Scale, or Business unless a separate written
         enterprise agreement says otherwise.
       </p>
 

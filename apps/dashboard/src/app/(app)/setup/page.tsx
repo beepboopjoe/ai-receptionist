@@ -164,7 +164,7 @@ export default function SetupPage() {
           ) : isDemoAccount ? (
             <DemoUpgradeCard
               title="Upgrade to get your public number"
-              body="Explore the dashboard first if you want. A live number is included on Growth, Scale, and Business."
+              body="Explore the dashboard first if you want. A live number is included on Starter, Growth, Scale, and Business."
             />
           ) : (
             <div className="space-y-3">

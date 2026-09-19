@@ -69,7 +69,7 @@ export default function RefundsPage() {
 
       <h2>5. No SLA credits on standard plans</h2>
       <p>
-        Growth, Scale, and Business do not include a contractual uptime guarantee or
+        Starter, Growth, Scale, and Business do not include a contractual uptime guarantee or
         automatic service credits. If the product is unavailable, contact support; any
         courtesy credit is discretionary and not an admission of liability.
       </p>

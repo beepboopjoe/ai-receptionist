@@ -100,7 +100,7 @@ export default function MessagesPage() {
         </div>
         <LockedFeature requiredPlan="starter" reason="sms_locked" label="Requires a paid plan">
           <div className="card p-12 min-h-[260px] flex items-center justify-center">
-            <EmptyState icon={MessageSquare} label="Two-way SMS preview" hint="Upgrade to Growth to send and receive messages." />
+            <EmptyState icon={MessageSquare} label="Two-way SMS preview" hint="Upgrade to Starter to send and receive messages." />
           </div>
         </LockedFeature>
       </div>

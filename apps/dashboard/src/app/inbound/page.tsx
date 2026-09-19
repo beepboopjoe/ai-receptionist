@@ -372,7 +372,7 @@ export default function InboundPage() {
             Inbound answering on every plan. SMS on paid plans.
           </h2>
           <p className="text-cream-300 mt-4 max-w-xl mx-auto">
-            Free explores the dashboard. Growth ($199/mo) adds outbound campaigns, SMS, and 380 minutes. Scale ($399/mo) is 780 minutes; Business ($599/mo) is 1,100. Bilingual + transcripts on all of them.
+            Free explores the dashboard. Starter ($20/mo) goes live with outbound, SMS, and 50 minutes. Growth ($199/mo) is 380 minutes; Scale ($399/mo) is 780; Business ($599/mo) is 1,100. Bilingual + transcripts on all of them.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link

@@ -1,7 +1,7 @@
 // ============================================================
 // Marketing FAQ + public site copy must match current product:
 // Free = dashboard demo (#43), no vendor names (#45),
-// Growth $199 / Scale $399 / Business $599, no onboarding
+// Starter $20 / Growth $199 / Scale $399 / Business $599, no onboarding
 // plan-picker headline (#42). Legal subprocessors stay named.
 // ============================================================
 import { describe, it, expect } from 'vitest';
@@ -17,12 +17,17 @@ const MARKETING_FILES = [
   'app/inbound/page.tsx',
   'app/outbound/page.tsx',
   'app/demo/page.tsx',
+  'app/resellers/page.tsx',
+  'app/knowledge-base/page.tsx',
   'lib/vertical-landing-content.ts',
   'components/ui/embedded-voice-demo.tsx',
   'components/ui/outbound-roi.tsx',
   'components/ui/roi-section.tsx',
   'components/ui/plan-comparison-table.tsx',
   'components/ui/pricing-cards.tsx',
+  'components/ui/upgrade-modal.tsx',
+  'components/dashboard/demo-upgrade-card.tsx',
+  'components/settings/share-booking-page-card.tsx',
 ];
 
 function stripComments(src: string): string {
@@ -78,6 +83,7 @@ describe('marketing FAQ and public CTAs match current product', () => {
 
   it('keeps current paid prices and Free = explore the dashboard', () => {
     const pricing = extractCopy(readMarketing('app/pricing/page.tsx'));
+    expect(pricing).toMatch(/Starter \(\$20\/mo\)/);
     expect(pricing).toMatch(/Growth \(\$199\/mo\)|Growth is \$199/);
     expect(pricing).toContain('$399');
     expect(pricing).toContain('$599');
@@ -87,6 +93,16 @@ describe('marketing FAQ and public CTAs match current product', () => {
     const home = extractCopy(readMarketing('app/page.tsx'));
     expect(home).toMatch(/Explore the dashboard free/);
     expect(home).toMatch(/Upgrade to go live/);
+    expect(home).toMatch(/Starter/);
+
+    const inbound = extractCopy(readMarketing('app/inbound/page.tsx'));
+    expect(inbound).toMatch(/Starter \(\$20\/mo\)/);
+
+    const outbound = extractCopy(readMarketing('app/outbound/page.tsx'));
+    expect(outbound).toMatch(/Starter \(\$20\/mo\)/);
+
+    const roi = extractCopy(readMarketing('components/ui/roi-section.tsx'));
+    expect(roi).toMatch(/We start at \$20/);
 
     const chatPrompt = readFileSync(
       join(fileURLToPath(new URL('.', import.meta.url)), '../modules/public-api/site-chat.prompt.ts'),

@@ -52,7 +52,7 @@ const FAQS = [
   },
   {
     q: 'Does SMS come included?',
-    a: 'Two-way SMS, appointment reminders (24h + 2h), and missed-call text-backs are included on paid plans (Growth, Scale, Business, Enterprise). Free accounts explore the dashboard and do not include SMS. Texts send from your provisioned business number on a paid plan.',
+    a: 'Two-way SMS, appointment reminders (24h + 2h), and missed-call text-backs are included on paid plans (Starter, Growth, Scale, Business, Enterprise). Free accounts explore the dashboard and do not include SMS. Texts send from your provisioned business number on a paid plan.',
   },
 ];
 
@@ -505,7 +505,7 @@ export default function LandingPage() {
             <span className="gradient-text">Upgrade to go live.</span>
           </h2>
           <p className="text-cream-400 text-lg mb-10 max-w-xl mx-auto">
-            Sign up Free with no card, then pick Growth, Scale, Business, or Enterprise when you&apos;re ready.
+            Sign up Free with no card, then pick Starter, Growth, Scale, Business, or Enterprise when you&apos;re ready.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link

@@ -138,14 +138,14 @@ const MODAL_CONTENT: Record<
   public_booking: {
     icon: '📅',
     title: 'Upgrade to take online bookings',
-    description: `Your booking page is ready to share after upgrade. ${growth.name} is $${growth.monthlyPrice}/mo, ${scale.name} $${scale.monthlyPrice}, ${business.name} $${business.monthlyPrice}. Phone, text, and web write to the same calendar.`,
+    description: `Your booking page is ready to share after upgrade. ${starter.name} is $${starter.monthlyPrice}/mo, ${growth.name} $${growth.monthlyPrice}, ${scale.name} $${scale.monthlyPrice}, ${business.name} $${business.monthlyPrice}. Phone, text, and web write to the same calendar.`,
     features: [
       'Public booking page for your customers',
       'Same calendar the AI uses on the phone',
-      `${growth.includedPhoneNumbers} local phone numbers included`,
+      `${starter.includedPhoneNumbers} local phone number included`,
     ],
-    cta: `Upgrade to ${growth.name} · ${usdMo(growth.monthlyPrice)}`,
-    targetPlan: growth.name,
+    cta: `Upgrade to ${starter.name} · ${usdMo(starter.monthlyPrice)}`,
+    targetPlan: starter.name,
   },
 };
 

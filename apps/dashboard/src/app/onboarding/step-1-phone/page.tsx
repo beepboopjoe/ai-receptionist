@@ -151,8 +151,8 @@ function Step1PhoneInner() {
                   <p className="text-sm font-semibold text-amber-950">Your public number comes with a paid plan</p>
                 </div>
                 <p className="text-sm text-amber-900">
-                  Free accounts do not include a live number. Upgrade to go live — Growth includes 2
-                  numbers. You can keep exploring the dashboard without setting this up now.
+                  Free accounts do not include a live number. Upgrade to go live — Starter includes 1
+                  number. You can keep exploring the dashboard without setting this up now.
                 </p>
                 <div className="flex flex-wrap gap-2 pt-1">
                   <Link href="/billing" className="btn-primary text-sm">

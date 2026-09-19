@@ -95,12 +95,12 @@ function CommissionCalculator() {
             <span className="text-sm font-bold text-cream-900">${avgPlan}/mo</span>
           </div>
           <input
-            type="range" min={79} max={399} step={10} value={avgPlan}
+            type="range" min={20} max={599} step={1} value={avgPlan}
             onChange={(e) => setAvgPlan(Number(e.target.value))}
             className="w-full h-2 bg-cream-200 rounded-full appearance-none cursor-pointer accent-brand-600"
           />
           <div className="flex justify-between text-[10px] text-cream-400 mt-1">
-            <span>$79</span><span>$199</span><span>$399</span>
+            <span>$20</span><span>$199</span><span>$399</span><span>$599</span>
           </div>
         </div>
       </div>
